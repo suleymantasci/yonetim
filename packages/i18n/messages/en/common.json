@@ -28,7 +28,22 @@
     "verify": "Verify",
     "apply": "Apply",
     "logout": "Sign out",
-    "login": "Sign in"
+    "login": "Sign in",
+    "create": "Create",
+    "saveAndNew": "Save and add another",
+    "selectAll": "Select all",
+    "clearSelection": "Clear selection",
+    "restore": "Restore",
+    "previous": "Previous",
+    "clear": "Clear",
+    "reset": "Reset",
+    "duplicate": "Duplicate",
+    "assign": "Assign",
+    "approve": "Approve",
+    "reject": "Reject",
+    "collect": "Collect",
+    "preview": "Preview",
+    "more": "More"
   },
   "state": {
     "saved": "Saved",
@@ -45,7 +60,11 @@
     "active": "On",
     "inactive": "Off",
     "required": "Required",
-    "optional": "Optional"
+    "optional": "Optional",
+    "showing": "{from}–{to} of {total}",
+    "noResult": "No records match your search",
+    "selectedCount": "{count} selected",
+    "unsavedChanges": "You have unsaved changes"
   },
   "unit": {
     "days": "{count, plural, one {# day} other {# days}}",
@@ -74,7 +93,11 @@
     "skipToContent": "Skip to content",
     "mainMenu": "Main menu",
     "modules": "Modules",
-    "breadcrumb": "Breadcrumb"
+    "breadcrumb": "Breadcrumb",
+    "sortBy": "Sort by {column}",
+    "rowSelect": "Select row",
+    "chartAsTable": "Show as table",
+    "chartAsChart": "Show as chart"
   },
   "legal": {
     "allRightsReserved": "All rights reserved.",
@@ -90,7 +113,13 @@
     "maxLength": "Must be at most {count} characters.",
     "invalidAmount": "Enter a valid amount.",
     "invalidIban": "Enter a valid IBAN.",
-    "invalidTckn": "Enter a valid Turkish ID number."
+    "invalidTckn": "Enter a valid Turkish ID number.",
+    "invalidDate": "Enter a valid date.",
+    "invalidPeriod": "Select a valid period (YYYY-MM).",
+    "invalidSelection": "Make a valid selection.",
+    "minValue": "Must be at least {count}.",
+    "maxValue": "Must be at most {count}.",
+    "duplicate": "This record already exists."
   },
   "error": {
     "unauthorized": "You need to sign in.",
@@ -102,6 +131,7 @@
     "rateLimited": "Too many requests, please wait.",
     "tenantMismatch": "This record belongs to another property.",
     "integrationUnavailable": "The {provider} integration is currently unavailable.",
-    "internal": "An unexpected error occurred."
+    "internal": "An unexpected error occurred.",
+    "validationFailed": "The form is incomplete or invalid. Fix the highlighted fields."
   }
 }

@@ -4,3 +4,4 @@ export * from "./simulator";
 export * from "./allocation";
 export * from "./collection-score";
 export * from "./kmk";
+export * from "./share";

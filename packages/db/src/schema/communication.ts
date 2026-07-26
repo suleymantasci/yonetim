@@ -261,3 +261,62 @@ export const npsResponses = pgTable(
     uniqueIndex("idx_nps_user_period").on(t.userId, t.period),
   ],
 );
+
+/**
+ * Bildirim/duyuru şablonları — GAP 4.2.10.
+ *
+ * NOT: GAP dokümanı bu tablonun "zaten var" olduğunu söylüyordu; kod tabanında
+ * yoktu (yalnız `packages/notifications` içinde kanal yönlendirme mantığı vardı).
+ * Burada oluşturuluyor.
+ *
+ * KARAR — kanal başına ayrı gövde: tek bir `body` alanı paylaşmak yanlıştı.
+ * WhatsApp şablonu Meta onayına tabi ve değişken sırası sabit; SMS 160 karakter
+ * ve link kısaltması istiyor; e-posta HTML ve konu satırı taşıyor. Aynı metni
+ * üçüne dayatmak ya SMS'i kesiyor ya e-postayı çıplak bırakıyordu.
+ *
+ * `variables` alanı beklenen değişkenleri **tipiyle** tanımlar
+ * (`[{key:"amount",type:"money"},…]`); render aşaması eksik/fazla değişkeni
+ * yakalar, böylece sakine "{{tutar}}" yazan bir SMS gitmez.
+ */
+export const messageTemplates = pgTable(
+  "message_templates",
+  {
+    id: idCol(),
+    /** Null = platform genelinde hazır şablon; dolu = siteye özel kopya. */
+    tenantId: uuid("tenant_id"),
+    /** Kod, uygulama tarafından referans alınır (örn. "dues_reminder"). */
+    code: varchar("code", { length: 60 }).notNull(),
+    name: varchar("name", { length: 120 }).notNull(),
+    /** 'dues' | 'debt' | 'announcement' | 'meeting' | 'maintenance' | 'kvkk' | 'custom' */
+    category: varchar("category", { length: 30 }).notNull().default("custom"),
+    locale: varchar("locale", { length: 5 }).notNull().default("tr"),
+
+    whatsappBody: text("whatsapp_body"),
+    /** Meta'da onaylanan şablon adı; onay yoksa serbest metin gönderilemez. */
+    whatsappTemplateName: varchar("whatsapp_template_name", { length: 120 }),
+    /** 'none' | 'pending' | 'approved' | 'rejected' */
+    whatsappApprovalStatus: varchar("whatsapp_approval_status", { length: 20 })
+      .notNull()
+      .default("none"),
+    whatsappRejectionReason: text("whatsapp_rejection_reason"),
+
+    smsBody: text("sms_body"),
+    emailSubject: varchar("email_subject", { length: 200 }),
+    emailBody: text("email_body"),
+    inAppTitle: varchar("in_app_title", { length: 200 }),
+    inAppBody: text("in_app_body"),
+
+    /** Beklenen değişkenler: [{ key, type, required }]. */
+    variables: jsonb("variables").notNull().default([]),
+    /** Kanal tercih sırası; boşsa `packages/notifications` varsayılanı işler. */
+    channelPriority: jsonb("channel_priority").notNull().default([]),
+    isActive: boolean("is_active").notNull().default(true),
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+    ...timestamps,
+    ...softDelete,
+  },
+  (t) => [
+    uniqueIndex("idx_message_templates_scope_code").on(t.tenantId, t.code, t.locale),
+    index("idx_message_templates_category").on(t.category),
+  ],
+);

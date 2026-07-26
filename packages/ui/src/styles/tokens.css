@@ -95,13 +95,42 @@
   --t-info-fg: #075985;
   --t-info-border: #bae6fd;
 
-  /* Veri görselleştirme serisi (SPEC Bölüm 6.13 raporlar) */
-  --t-chart-1: var(--brand-primary);
-  --t-chart-2: var(--brand-secondary);
-  --t-chart-3: var(--brand-accent);
-  --t-chart-4: #8b5cf6;
-  --t-chart-5: #10b981;
-  --t-chart-6: #ec4899;
+  /*
+   * VERİ GÖRSELLEŞTİRME SERİSİ (SPEC Bölüm 6.13 raporlar)
+   *
+   * Kategorik palet **sıra bağımlıdır**: renk seriye göre atanır, sıralamaya
+   * göre değil; 6'dan fazla seri gerekirse yeni renk üretilmez, "Diğer"de
+   * toplanır. Sıra, renk körlüğü ayrımı (komşu çiftlerde OKLab ΔE ≥ 8) esas
+   * alınarak seçildi — kozmetik değildir, değiştirilmemelidir.
+   *
+   * Marka rengi (lacivert #0f4c81) seri rengi olarak KULLANILMAZ: açık zeminde
+   * L 0.41 ile bant dışında kalıyor ve önceki palet (turkuaz/pembe/yeşil)
+   * deutan ΔE 4.9 ile başarısızdı. Marka kimliği butonlarda/başlıklarda taşınır.
+   *
+   * Açık temada 3 slot (aqua, yellow, magenta) 3:1 kontrastın altında kalır →
+   * "relief" kuralı: grafikler her zaman lejant + tablo görünümü sunar
+   * (bkz. `chart.tsx` — `ChartFrame` tablo alternatifini zorunlu tutar).
+   */
+  --t-chart-1: #2a78d6; /* blue */
+  --t-chart-2: #eb6834; /* orange */
+  --t-chart-3: #1baf7a; /* aqua */
+  --t-chart-4: #eda100; /* yellow */
+  --t-chart-5: #e87ba4; /* magenta */
+  --t-chart-6: #008300; /* green */
+
+  /* Tek renk (büyüklük) rampası — ısı haritası, doluluk. Açık → koyu. */
+  --t-seq-1: #cde2fb;
+  --t-seq-2: #9ec5f4;
+  --t-seq-3: #6da7ec;
+  --t-seq-4: #3987e5;
+  --t-seq-5: #256abf;
+  --t-seq-6: #184f95;
+  --t-seq-7: #0d366b;
+
+  /* Kutupsal (bütçe sapması: fazla ↔ eksik). Orta nokta nötr gri. */
+  --t-div-neg: #e34948;
+  --t-div-mid: #f0efec;
+  --t-div-pos: #2a78d6;
 
   color-scheme: light;
 }
@@ -167,12 +196,30 @@
   --t-info-fg: #7dd3fc;
   --t-info-border: color-mix(in oklab, #0ea5e9 38%, #111827);
 
-  --t-chart-1: color-mix(in oklab, var(--brand-primary) 62%, #ffffff);
-  --t-chart-2: #38bdf8;
-  --t-chart-3: #fbbf24;
-  --t-chart-4: #a78bfa;
-  --t-chart-5: #34d399;
-  --t-chart-6: #f472b6;
+  /*
+   * Koyu tema serisi otomatik çevrim DEĞİL: aynı 6 ton, koyu zemin için
+   * yeniden basamaklandırıldı (OKLCH L ≈ 0.48–0.67, zemine karşı ≥ 3:1) ve
+   * set olarak doğrulandı.
+   */
+  --t-chart-1: #3987e5;
+  --t-chart-2: #d95926;
+  --t-chart-3: #199e70;
+  --t-chart-4: #c98500;
+  --t-chart-5: #d55181;
+  --t-chart-6: #008300;
+
+  /* Koyu zeminde rampa yönü tersine döner: koyu → açık. */
+  --t-seq-1: #0d366b;
+  --t-seq-2: #184f95;
+  --t-seq-3: #256abf;
+  --t-seq-4: #3987e5;
+  --t-seq-5: #6da7ec;
+  --t-seq-6: #9ec5f4;
+  --t-seq-7: #cde2fb;
+
+  --t-div-neg: #e66767;
+  --t-div-mid: #383835;
+  --t-div-pos: #3987e5;
 
   color-scheme: dark;
 }
@@ -260,9 +307,51 @@
   --color-chart-5: var(--t-chart-5);
   --color-chart-6: var(--t-chart-6);
 
+  --color-seq-1: var(--t-seq-1);
+  --color-seq-2: var(--t-seq-2);
+  --color-seq-3: var(--t-seq-3);
+  --color-seq-4: var(--t-seq-4);
+  --color-seq-5: var(--t-seq-5);
+  --color-seq-6: var(--t-seq-6);
+  --color-seq-7: var(--t-seq-7);
+
+  --color-div-neg: var(--t-div-neg);
+  --color-div-mid: var(--t-div-mid);
+  --color-div-pos: var(--t-div-pos);
+
   --radius-card: 8px;
   --radius-input: 4px;
   --radius-modal: 16px;
+}
+
+/* --------------------------------------------------------------------------
+ * OVERLAY / TOAST ANİMASYONLARI
+ * `motion-safe:` varyantı ile kullanılır; hareket azaltma tercihinde temel
+ * katmandaki kural süreyi 0.01ms'e indirir, yani efekt kendiliğinden kapanır.
+ * -------------------------------------------------------------------------- */
+@keyframes overlay-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes overlay-zoom {
+  from { opacity: 0; transform: scale(0.96) translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes overlay-slide-right {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes overlay-slide-left {
+  from { opacity: 0; transform: translateX(-16px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes overlay-slide-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
 }
 
 /* --------------------------------------------------------------------------
@@ -315,4 +404,72 @@
       scroll-behavior: auto !important;
     }
   }
+}
+
+/* --------------------------------------------------------------------------
+ * ERİŞİLEBİLİRLİK TERCİHLERİ — SPEC Bölüm 11.5, GAP 4.7.1
+ *
+ * Üç tercih `<html>` üzerindeki niteliklerle taşınır ve çerezde saklanır:
+ *   data-font-scale="sm|md|lg|xl"   → gövde metni ölçeği (yaşlı sakinler)
+ *   data-contrast="high"            → yüksek karşıtlık
+ *   data-motion="reduced"           → kullanıcı isteğiyle hareket kısıtlama
+ *
+ * Ölçek `body` font boyutunu değiştirir; bileşenler `rem` değil `text-sm`
+ * gibi sınıflar kullandığı için Tailwind'in kök ölçeği de büyütülür.
+ * -------------------------------------------------------------------------- */
+:root[data-font-scale="sm"] { font-size: 14px; }
+:root[data-font-scale="md"] { font-size: 16px; }
+:root[data-font-scale="lg"] { font-size: 18px; }
+:root[data-font-scale="xl"] { font-size: 20px; }
+
+/*
+ * Yüksek karşıtlık: yumuşak zeminler beyaza/siyaha çekilir, ikincil metin
+ * ana metinle eşitlenir, kenarlıklar kalınlaşır. Renk anlamı korunur
+ * (yalnız doygunluk/karşıtlık artar) — bu yüzden ayrı bir tema değil,
+ * mevcut temanın üzerine binen bir katmandır.
+ */
+:root[data-contrast="high"] {
+  --t-fg-muted: var(--t-fg);
+  --t-fg-subtle: var(--t-fg);
+  --t-border: var(--t-fg);
+  --t-border-strong: var(--t-fg);
+}
+
+:root[data-contrast="high"] *:focus-visible {
+  outline-width: 3px;
+}
+
+:root[data-motion="reduced"] *,
+:root[data-motion="reduced"] *::before,
+:root[data-motion="reduced"] *::after {
+  animation-duration: 0.01ms !important;
+  transition-duration: 0.01ms !important;
+}
+
+/* Zorlanmış renk modu (Windows yüksek karşıtlık): kenarlıklar kaybolmasın. */
+@media (forced-colors: active) {
+  .forced-border,
+  [role="dialog"],
+  table, th, td {
+    border-color: CanvasText;
+  }
+}
+
+/* İçeriğe atla bağlantısı — odaklanınca görünür (GAP 4.7.2). */
+.skip-link {
+  position: fixed;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 100;
+  transform: translateY(-200%);
+  border-radius: 0.5rem;
+  background-color: var(--color-primary);
+  color: var(--color-primary-fg);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.skip-link:focus-visible {
+  transform: none;
 }

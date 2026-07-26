@@ -1,119 +1,243 @@
-import { desc, isNull } from "drizzle-orm";
+import { FolderTree, Plus, Receipt } from "lucide-react";
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
-import { expenseCategories, expenses, withTenant } from "@yonetim/db";
-import {
-  Card, CardBody, CardHeader, EmptyState, ProgressBar, Stat, tableClasses as tc,
-} from "@yonetim/ui";
+import { hasPermission } from "@yonetim/auth";
+import { Alert, Card, CardBody, CardHeader, EmptyState, Pagination, Stat } from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
+import { ListControls } from "@/components/list/list-controls";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
+import { buildListHref, pageRange, parseListParams, type SearchParamsInput } from "@/lib/list-params";
+import { EXPENSE_SORT_KEYS, listExpenses } from "@/lib/queries/expenses";
+import { CategoryBreakdown } from "./category-breakdown";
+import { ExpensesTable, type ExpenseRowView } from "./expenses-table";
 
 export const dynamic = "force-dynamic";
 
-const LIMIT = 200;
+const STATUSES = ["draft", "pending_approval", "approved", "paid", "rejected"] as const;
 
-export default async function ExpensesPage() {
+export default async function ExpensesPage({
+  searchParams,
+}: {
+  readonly searchParams: Promise<SearchParamsInput>;
+}) {
   const ctx = await requirePermission("expense:read");
   const t = await getTranslations("app.expenses");
+  const tCommon = await getTranslations("common");
   const tEnum = await getTranslations("enum");
-  const f = await formatters();
+  const fmt = await formatters();
 
-  const data = await withTenant(ctx.tenantId, async (tx) => {
-    const rows = await tx
-      .select()
-      .from(expenses)
-      .where(isNull(expenses.deletedAt))
-      .orderBy(desc(expenses.expenseDate))
-      .limit(LIMIT);
-    const cats = await tx
-      .select()
-      .from(expenseCategories)
-      .where(isNull(expenseCategories.deletedAt));
-    return { rows, cats };
+  const canApprove = hasPermission(ctx.roles, "expense:approve");
+  const canWrite = hasPermission(ctx.roles, "expense:write");
+
+  const params = parseListParams(await searchParams, {
+    sortableKeys: EXPENSE_SORT_KEYS,
+    defaultSort: "expenseDate",
+    defaultDirection: "desc",
+    filterKeys: ["kategori", "donem", "durum", "dagitim"],
   });
 
-  if (data.rows.length === 0) {
+  const data = await listExpenses(ctx, params);
+  const { from, to, pageCount } = pageRange(params, data.total);
+
+  const actions = (
+    <>
+      {canWrite ? (
+        <Link
+          href="/panel/giderler/kategoriler"
+          className="inline-flex h-10 items-center gap-2 rounded-lg border border-border-strong bg-surface px-3 text-sm font-semibold text-fg hover:bg-hover"
+        >
+          <FolderTree aria-hidden className="h-4 w-4" />
+          {t("categoriesTitle")}
+        </Link>
+      ) : null}
+      {canWrite ? (
+        <Link
+          href="/panel/giderler/yeni"
+          className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-fg hover:bg-primary-hover"
+        >
+          <Plus aria-hidden className="h-4 w-4" />
+          {t("newExpense")}
+        </Link>
+      ) : null}
+    </>
+  );
+
+  if (data.total === 0 && !params.query && Object.keys(params.filters).length === 0) {
     return (
       <>
-        <PageHeader title={t("title")} />
+        <PageHeader title={t("title")} action={actions} />
         <EmptyState
+          icon={<Receipt aria-hidden className="h-10 w-10" />}
           title={t("emptyTitle")}
           description={t("emptyDescription")}
           steps={[t("emptyStep1"), t("emptyStep2"), t("emptyStep3")]}
+          action={actions}
         />
       </>
     );
   }
 
-  const total = data.rows.reduce((a, e) => a + e.amountKurus, 0);
-  const vat = data.rows.reduce((a, e) => a + e.vatKurus, 0);
+  const rows: ExpenseRowView[] = data.rows.map((row) => {
+    let statusTone: ExpenseRowView["statusTone"] = "neutral";
+    if (row.status === "paid" || row.status === "approved") statusTone = "success";
+    else if (row.status === "pending_approval") statusTone = "warning";
+    else if (row.status === "rejected") statusTone = "danger";
 
-  const byCategory = new Map<string, number>();
-  for (const e of data.rows) {
-    const name = data.cats.find((c) => c.id === e.categoryId)?.name ?? "—";
-    byCategory.set(name, (byCategory.get(name) ?? 0) + e.amountKurus);
-  }
-  const topCategories = [...byCategory.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+    return {
+      id: row.id,
+      description: row.description,
+      vendorName: row.vendorName,
+      categoryName: row.categoryName,
+      categoryColor: row.categoryColor,
+      amount: fmt.money(row.amountKurus),
+      vat: row.vatKurus > 0 ? fmt.money(row.vatKurus) : "—",
+      expenseDate: fmt.date(row.expenseDate),
+      statusLabel: tEnum(`expenseStatus.${row.status}`),
+      statusTone,
+      distributed: row.distributedAt !== null,
+      hasAttachment: row.attachmentUrl !== null,
+      period: row.period ? fmt.period(row.period) : "—",
+    };
+  });
 
   return (
     <>
-      <PageHeader title={t("title")} description={t("description", { count: LIMIT })} />
+      <PageHeader title={t("title")} description={t("description")} action={actions} />
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Stat label={t("total")} value={f.money(total)} />
-        <Stat label={t("vat")} value={f.money(vat)} hint={t("vatHint")} />
-        <Stat label={t("count")} value={String(data.rows.length)} />
+      <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <Stat label={t("statMonth")} value={fmt.money(data.totals.monthKurus)} />
+        <Stat label={t("statYear")} value={fmt.money(data.totals.yearKurus)} />
+        <Stat
+          label={t("statPending")}
+          value={fmt.money(data.totals.pendingKurus)}
+          tone={data.totals.pendingKurus > 0 ? "warning" : "neutral"}
+        />
+        <Stat
+          label={t("statUndistributed")}
+          value={fmt.money(data.totals.undistributedKurus)}
+          tone={data.totals.undistributedKurus > 0 ? "warning" : "success"}
+          hint={data.totals.undistributedKurus > 0 ? t("statUndistributedHint") : undefined}
+        />
       </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader title={t("listTitle")} />
-          <CardBody className="p-0">
-            <div className={tc.wrapper}>
-              <table className={tc.table} style={{ minWidth: 640 }}>
-                <thead className={tc.thead}>
-                  <tr>
-                    <th scope="col" className={tc.th}>{t("date")}</th>
-                    <th scope="col" className={tc.th}>{t("descriptionColumn")}</th>
-                    <th scope="col" className={tc.th}>{t("category")}</th>
-                    <th scope="col" className={tc.th}>{t("status")}</th>
-                    <th scope="col" className={`${tc.th} text-right`}>{t("amount")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.rows.map((e) => (
-                    <tr key={e.id} className={tc.tr}>
-                      <td className={tc.tdMuted}>{f.date(e.expenseDate)}</td>
-                      <td className={tc.td}>{e.description}</td>
-                      <td className={tc.tdMuted}>
-                        {data.cats.find((c) => c.id === e.categoryId)?.name ?? "—"}
-                      </td>
-                      <td className={tc.td}>{tEnum(`expenseStatus.${e.status}`)}</td>
-                      <td className={tc.tdNum}>{f.money(e.amountKurus)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardBody>
-        </Card>
+      {data.categories.length === 0 ? (
+        <div className="mb-4">
+          <Alert tone="warning" title={t("noCategoriesTitle")}>
+            {t("noCategoriesBody")}
+          </Alert>
+        </div>
+      ) : null}
 
-        <Card>
-          <CardHeader title={t("categoryBreakdown")} />
-          <CardBody className="space-y-3">
-            {topCategories.map(([name, amount]) => (
-              <div key={name}>
-                <div className="flex justify-between text-sm text-fg">
-                  <span>{name}</span>
-                  <span className="tabular-nums">{f.money(amount)}</span>
-                </div>
-                <ProgressBar value={amount} max={total} label={name} className="mt-1" />
-              </div>
-            ))}
-          </CardBody>
-        </Card>
+      <div className="mb-4 grid gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <ListControls
+            searchPlaceholder={t("searchPlaceholder")}
+            filters={[
+              {
+                param: "kategori",
+                label: t("category"),
+                value: params.filters.kategori ?? "",
+                options: [
+                  { value: "", label: t("allCategories") },
+                  ...data.categories.map((category) => ({
+                    value: category.id,
+                    label: category.depth > 0 ? `— ${category.name}` : category.name,
+                  })),
+                ],
+              },
+              {
+                param: "durum",
+                label: t("status"),
+                value: params.filters.durum ?? "",
+                options: [
+                  { value: "", label: t("allStatuses") },
+                  ...STATUSES.map((status) => ({
+                    value: status,
+                    label: tEnum(`expenseStatus.${status}`),
+                  })),
+                ],
+              },
+              {
+                param: "dagitim",
+                label: t("distributionFilter"),
+                value: params.filters.dagitim ?? "",
+                options: [
+                  { value: "", label: t("allDistribution") },
+                  { value: "bekliyor", label: t("notDistributed") },
+                  { value: "yapildi", label: t("distributed") },
+                ],
+              },
+            ]}
+          />
+
+          <Card>
+            <CardBody className="p-0">
+              <ExpensesTable
+                rows={rows}
+                sort={params.sort}
+                direction={params.direction}
+                canApprove={canApprove}
+                hrefFor={(key, direction) =>
+                  buildListHref("/panel/giderler", params, {
+                    sirala: key,
+                    yon: direction,
+                    sayfa: 1,
+                  })
+                }
+                labels={{
+                  description: t("description2"),
+                  category: t("category"),
+                  vendor: t("vendor"),
+                  amount: t("amountGross"),
+                  vat: t("vatAmount"),
+                  expenseDate: t("expenseDate"),
+                  status: t("status"),
+                  period: t("period"),
+                  empty: tCommon("state.noResult"),
+                  approve: tCommon("action.approve"),
+                  reject: tCommon("action.reject"),
+                  markPaid: t("markPaid"),
+                  deleteTitle: t("deleteTitle"),
+                  deleteDescription: t("deleteDescription"),
+                  distributedTooltip: t("distributedTooltip"),
+                  notDistributedTooltip: t("notDistributedTooltip"),
+                  attachmentTooltip: t("attachmentTooltip"),
+                }}
+              />
+              <Pagination
+                page={params.page}
+                pageCount={pageCount}
+                total={data.total}
+                hrefFor={(page) => buildListHref("/panel/giderler", params, { sayfa: page })}
+                labels={{
+                  previous: tCommon("action.previous"),
+                  next: tCommon("action.next"),
+                  summary: tCommon("state.showing", { from, to, total: data.total }),
+                }}
+                linkComponent={Link as never}
+              />
+            </CardBody>
+          </Card>
+        </div>
+
+        <div>
+          <Card>
+            <CardHeader title={t("breakdownTitle")} description={t("breakdownHint")} />
+            <CardBody>
+              <CategoryBreakdown
+                rows={data.byCategory.map((row) => ({
+                  name: row.name,
+                  amountKurus: row.amountKurus,
+                  amountLabel: fmt.money(row.amountKurus),
+                }))}
+                emptyText={tCommon("state.empty")}
+              />
+            </CardBody>
+          </Card>
+        </div>
       </div>
     </>
   );

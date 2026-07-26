@@ -1,0 +1,160 @@
+import { and, asc, desc, eq, ilike, isNull, or, sql } from "drizzle-orm";
+import { z } from "zod";
+
+import { errors } from "@yonetim/core";
+import { blocks, debts, units, withTenant } from "@yonetim/db";
+
+import {
+  apiError, apiList, apiOk, authenticateApi, parseJsonBody, parsePagination,
+} from "@/lib/api";
+
+/**
+ * `/api/v1/debts` — borç listesi ve oluşturma.
+ *
+ * Muhasebe entegrasyonunun asıl ihtiyacı bu uç: dönem bazında borç ve tahsilat
+ * durumu. `outstandingKurus` hesaplanmış olarak döner — istemcinin
+ * `amount + lateFee - paid` aritmetiğini tekrar yazması, yuvarlama farkı
+ * üretmenin en kolay yolu olurdu.
+ */
+export const dynamic = "force-dynamic";
+
+const SORTS = {
+  dueDate: debts.dueDate,
+  amount: debts.amountKurus,
+  createdAt: debts.createdAt,
+} as const;
+
+export async function GET(request: Request) {
+  try {
+    const ctx = await authenticateApi(request, "debt:read");
+    const url = new URL(request.url);
+    const page = parsePagination(url);
+    const unitId = url.searchParams.get("unitId");
+    const period = url.searchParams.get("period");
+    const status = url.searchParams.get("status");
+
+    const result = await withTenant(ctx.tenantId, async (tx) => {
+      const conditions = [isNull(debts.deletedAt)];
+      if (page.q) {
+        const needle = `%${page.q}%`;
+        const search = or(ilike(debts.description, needle), ilike(units.number, needle));
+        if (search) conditions.push(search);
+      }
+      if (unitId) conditions.push(eq(debts.unitId, unitId));
+      if (period) conditions.push(eq(debts.period, period));
+      if (status === "open") conditions.push(sql`${debts.status} <> 'paid'`);
+      else if (status) conditions.push(sql`${debts.status}::text = ${status}`);
+
+      const where = and(...conditions);
+      const column = SORTS[page.sort as keyof typeof SORTS] ?? debts.dueDate;
+      const order = page.direction === "asc" ? asc(column) : desc(column);
+
+      const rows = await tx
+        .select({
+          id: debts.id,
+          unitId: debts.unitId,
+          unitNumber: units.number,
+          blockName: blocks.name,
+          debtorUserId: debts.debtorUserId,
+          kind: debts.kind,
+          description: debts.description,
+          period: debts.period,
+          amountKurus: debts.amountKurus,
+          paidKurus: debts.paidKurus,
+          lateFeeKurus: debts.lateFeeKurus,
+          outstandingKurus: sql<number>`${debts.amountKurus} + ${debts.lateFeeKurus} - ${debts.paidKurus}`,
+          dueDate: debts.dueDate,
+          status: debts.status,
+          lateFeeExempt: debts.lateFeeExempt,
+          installmentNo: debts.installmentNo,
+          installmentCount: debts.installmentCount,
+          createdAt: debts.createdAt,
+        })
+        .from(debts)
+        .innerJoin(units, eq(units.id, debts.unitId))
+        .leftJoin(blocks, eq(blocks.id, units.blockId))
+        .where(where)
+        .orderBy(order, asc(debts.id))
+        .limit(page.pageSize)
+        .offset((page.page - 1) * page.pageSize);
+
+      const [total] = await tx
+        .select({ value: sql<number>`COUNT(*)` })
+        .from(debts)
+        .innerJoin(units, eq(units.id, debts.unitId))
+        .where(where);
+
+      return {
+        rows: rows.map((row) => ({ ...row, outstandingKurus: Number(row.outstandingKurus) })),
+        total: Number(total?.value ?? 0),
+      };
+    });
+
+    return apiList(result.rows, {
+      page: page.page,
+      pageSize: page.pageSize,
+      total: result.total,
+    });
+  } catch (error) {
+    return apiError(error);
+  }
+}
+
+const createSchema = z.object({
+  unitId: z.string().uuid(),
+  debtorUserId: z.string().uuid().nullish(),
+  kind: z
+    .enum(["dues", "utility", "reservation", "penalty", "late_fee", "extra", "legal_cost"])
+    .default("dues"),
+  description: z.string().min(3).max(200),
+  amountKurus: z.number().int().positive(),
+  dueDate: z.string().datetime().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)),
+  period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).nullish(),
+  lateFeeExempt: z.boolean().default(false),
+});
+
+export async function POST(request: Request) {
+  try {
+    const ctx = await authenticateApi(request, "debt:write");
+    const input = await parseJsonBody(request, createSchema);
+
+    // "2026-07-15" biçimi İstanbul gününün başına sabitlenir; tam ISO ise olduğu gibi.
+    const dueDate = /^\d{4}-\d{2}-\d{2}$/.test(input.dueDate)
+      ? new Date(`${input.dueDate}T00:00:00+03:00`)
+      : new Date(input.dueDate);
+    if (Number.isNaN(dueDate.getTime())) throw errors.validation("Geçersiz vade tarihi.");
+
+    const created = await withTenant(
+      ctx.tenantId,
+      async (tx) => {
+        const unitRows = await tx
+          .select({ id: units.id, lateFeeExempt: units.lateFeeExempt })
+          .from(units)
+          .where(and(eq(units.id, input.unitId), isNull(units.deletedAt)))
+          .limit(1);
+        if (!unitRows[0]) throw errors.notFound("Bağımsız bölüm bulunamadı.");
+
+        const [row] = await tx
+          .insert(debts)
+          .values({
+            tenantId: ctx.tenantId,
+            unitId: input.unitId,
+            debtorUserId: input.debtorUserId ?? null,
+            kind: input.kind,
+            description: input.description,
+            amountKurus: input.amountKurus,
+            dueDate,
+            period: input.period ?? null,
+            lateFeeExempt: input.lateFeeExempt || unitRows[0].lateFeeExempt,
+          })
+          .returning();
+        return row;
+      },
+      { userId: ctx.userId },
+    );
+
+    return apiOk(created, { status: 201 });
+  } catch (error) {
+    return apiError(error);
+  }
+}

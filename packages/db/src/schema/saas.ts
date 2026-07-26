@@ -251,3 +251,46 @@ export const migrationJobs = pgTable(
   },
   (t) => [index("idx_migration_tenant").on(t.tenantId)],
 );
+
+/**
+ * API anahtarları — GAP 4.8.3 / TD-03, SPEC Bölüm 21.2.
+ *
+ * Dış entegrasyonlar (muhasebe yazılımı, yönetim şirketinin kendi paneli)
+ * `/api/v1/*` uçlarına bu anahtarla erişir.
+ *
+ * GÜVENLİK KARARLARI:
+ * - Anahtar **hash'lenmiş** saklanır; açık değer yalnız üretim anında bir kez
+ *   gösterilir. Veritabanı sızsa da anahtarlar kullanılamaz.
+ * - `prefix` ilk 8 karakteri tutar: kullanıcı "hangi anahtar bu?" sorusunu
+ *   listeden cevaplayabilsin (hash'ten geri dönmek mümkün değil).
+ * - İzinler anahtar başına daraltılır (`scopes`): tam yetkili anahtar
+ *   varsayılan değil. En küçük yetki ilkesi.
+ * - Kendi hız sınırı (`rateLimitPerMinute`): tek entegrasyonun tüm kotayı
+ *   tüketmesi engellenir.
+ */
+export const apiKeys = pgTable(
+  "api_keys",
+  {
+    id: idCol(),
+    tenantId: uuid("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 120 }).notNull(),
+    /** SHA-256 hash — açık anahtar hiçbir yerde saklanmaz. */
+    keyHash: varchar("key_hash", { length: 64 }).notNull(),
+    /** Görüntüleme için ilk 8 karakter (örn. "yk_live_"). */
+    prefix: varchar("prefix", { length: 12 }).notNull(),
+    /** İzin listesi: ["unit:read","debt:read"]. Boş dizi = hiçbir şey. */
+    scopes: jsonb("scopes").notNull().default([]),
+    rateLimitPerMinute: integer("rate_limit_per_minute").notNull().default(60),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    /** Kullanım sayacı — kotanın nerede tükendiğini görmek için. */
+    requestCount: integer("request_count").notNull().default(0),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    createdBy: uuid("created_by"),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("idx_api_keys_hash").on(t.keyHash),
+    index("idx_api_keys_tenant").on(t.tenantId),
+  ],
+);

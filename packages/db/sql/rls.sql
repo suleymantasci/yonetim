@@ -126,6 +126,39 @@ CREATE POLICY tenant_delete ON public.tenants
   USING (false);
 
 -- -----------------------------------------------------------------------------
+-- message_templates: platform geneli (tenant_id IS NULL) hazır şablonlar
+-- her siteden OKUNABİLİR, ama yalnız platform rolü yazabilir. Siteye özel
+-- kopyalar normal tenant izolasyonuna tabidir.
+--
+-- Yukarıdaki jenerik döngü bu tabloya da `tenant_isolation` politikası
+-- uyguladı; NULL tenant_id satırları o politikayla görünmez olurdu.
+-- Bu yüzden politika burada özelleştirilir.
+-- -----------------------------------------------------------------------------
+DROP POLICY IF EXISTS tenant_isolation ON public.message_templates;
+
+DROP POLICY IF EXISTS template_read ON public.message_templates;
+CREATE POLICY template_read ON public.message_templates
+  FOR SELECT
+  USING (tenant_id = app_current_tenant() OR tenant_id IS NULL);
+
+DROP POLICY IF EXISTS template_write ON public.message_templates;
+CREATE POLICY template_write ON public.message_templates
+  FOR ALL
+  USING (tenant_id = app_current_tenant())
+  WITH CHECK (tenant_id = app_current_tenant());
+
+-- -----------------------------------------------------------------------------
+-- user_addresses: kişiye bağlı ama tenant kapsamlı okunur.
+--
+-- Uygulama bu tabloya HER ZAMAN tenant_id yazar (bkz. schema/users.ts notu):
+-- adres, sakinin o sitedeki tebligat/fatura adresidir. tenant_id NULL bırakılan
+-- satır kasıtlı olarak görünmez kalır (fail-closed) — yanlışlıkla tenant'sız
+-- yazılan kişisel veri hiçbir panelde sızmaz.
+-- -----------------------------------------------------------------------------
+ALTER TABLE public.user_addresses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.user_addresses FORCE ROW LEVEL SECURITY;
+
+-- -----------------------------------------------------------------------------
 -- Append-only kütükler: aidat değişiklik timeline'ı ve audit log
 -- (SPEC Bölüm 1.2 "immutable timeline", Bölüm 14.2 "audit").
 -- -----------------------------------------------------------------------------

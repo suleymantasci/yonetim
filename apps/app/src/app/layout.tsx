@@ -7,7 +7,7 @@ import type { Metadata, Viewport } from "next";
 import { siteConfig } from "@yonetim/config";
 import { getNamespaces, LOCALE_META, type Locale } from "@yonetim/i18n";
 import {
-  parseThemePreference, serverThemeAttribute, themeInitScript, THEME_COOKIE,
+  a11yInitScript, parseThemePreference, serverThemeAttribute, themeInitScript, THEME_COOKIE,
 } from "@yonetim/ui";
 
 import { CLIENT_NAMESPACES } from "@/i18n/client-namespaces";
@@ -70,6 +70,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         }`}</style>
         {/* Tema atlamasını (FOUC) engeller: stil sonrası, gövde öncesi çalışır. */}
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        {/* Yazı ölçeği / karşıtlık tercihi — aynı gerekçe, aynı an. */}
+        <script dangerouslySetInnerHTML={{ __html: a11yInitScript }} />
       </head>
       <body className="min-h-dvh bg-canvas font-sans text-fg antialiased">
         <NextIntlClientProvider locale={locale} messages={clientMessages}>

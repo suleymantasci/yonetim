@@ -32,6 +32,15 @@ export const duesPlans = pgTable(
     lateFeeMonthlyPct: numeric("late_fee_monthly_pct", { precision: 5, scale: 2 })
       .notNull()
       .default("5"),
+    /**
+     * Gecikme tazminatı günlük mü işlesin — GAP 4.1.3 / Q4.
+     *
+     * Varsayılan aylık (false): KMK md.20 aylık %5 üst sınırını bu dille
+     * koyuyor ve yönetim planlarının çoğu böyle yazılı. Günlük açıldığında
+     * aylık oran 30'a bölünür — üst sınır aşılmaz, yalnız daha adil dağılır
+     * (ayın 2'sinde ödeyen ile 29'unda ödeyen aynı faizi ödemez).
+     */
+    lateFeeDailyMode: boolean("late_fee_daily_mode").notNull().default(false),
     startPeriod: varchar("start_period", { length: 7 }).notNull(),
     endPeriod: varchar("end_period", { length: 7 }),
     isActive: boolean("is_active").notNull().default(true),
@@ -84,6 +93,17 @@ export const debts = pgTable(
     lateFeeKurus: money("late_fee_kurus").notNull().default(0),
     /** Gecikme tazminatının en son hesaplandığı gün (idempotans). */
     lateFeeCalculatedAt: timestamp("late_fee_calculated_at", { withTimezone: true }),
+    /**
+     * Bu borca gecikme tazminatı işlemez — GAP 4.2.5.
+     * Taksitlendirilen, dava konusu olan veya yönetim kararıyla dondurulan
+     * borçlarda kullanılır; gerekçe `metadata.lateFeeExemptReason`'a yazılır.
+     */
+    lateFeeExempt: boolean("late_fee_exempt").notNull().default(false),
+    /** Taksit planı üst kaydı (bu borç bir taksitse). */
+    parentDebtId: uuid("parent_debt_id"),
+    /** Taksit sırası (1/12, 2/12 …); tek seferlik borçta null. */
+    installmentNo: integer("installment_no"),
+    installmentCount: integer("installment_count"),
     dueDate: timestamp("due_date", { withTimezone: true }).notNull(),
     status: debtStatusEnum("status").notNull().default("pending"),
     /** İcra sürecine devredildiyse. */
@@ -135,6 +155,16 @@ export const payments = pgTable(
     tenantId: tenantId().references(() => tenants.id, { onDelete: "cascade" }),
     unitId: uuid("unit_id").references(() => units.id, { onDelete: "set null" }),
     payerUserId: uuid("payer_user_id").references(() => users.id, { onDelete: "set null" }),
+    /**
+     * Borcun yükümlüsü — GAP 4.2.8.
+     *
+     * Ödeyen ile borçlu farklı olabilir: kiracı malikin borcunu öder, çocuk
+     * ebeveynin aidatını yatırır. İki alanı ayırmak iki şeyi mümkün kılıyor:
+     * (1) malik kendi cari hesabında ödemeyi görebilir, (2) "borçlu değilken
+     * ödedi" durumu makbuzda ve denetim kütüğünde açıkça durur.
+     * Null ise ödeyen aynı zamanda borçludur.
+     */
+    debtorUserId: uuid("debtor_user_id").references(() => users.id, { onDelete: "set null" }),
     amountKurus: money("amount_kurus").notNull(),
     /** Şeffaf komisyon göstergesi (Bölüm 1.2). */
     platformFeeKurus: money("platform_fee_kurus").notNull().default(0),
@@ -189,18 +219,35 @@ export const expenseCategories = pgTable(
     id: idCol(),
     tenantId: tenantId().references(() => tenants.id, { onDelete: "cascade" }),
     name: varchar("name", { length: 120 }).notNull(),
+    /**
+     * Hiyerarşi — GAP 4.2.1. "Personel Maaşı > Kapıcı" gibi iki seviye.
+     * `depth` denormalize tutulur: ağaç sorgusu (recursive CTE) yerine
+     * tek seviyeli sıralama yeterli olsun; iki seviye ile sınırlıyoruz
+     * (0 = kök, 1 = alt kategori) — daha derini yönetici için kullanışsız.
+     */
     parentId: uuid("parent_id"),
-    /** Gider ortak mı, sayaç bazlı mı dağıtılacak. */
+    depth: integer("depth").notNull().default(0),
+    /**
+     * Bu kategorinin gideri dairelere hangi formülle yansır (varsayılan).
+     * Gider kaydı bunu ezebilir; kategori yalnız makul başlangıcı verir.
+     */
     distribution: duesFormulaEnum("distribution").notNull().default("equal"),
     isShared: boolean("is_shared").notNull().default(true),
+    /** Lucide ikon adı (örn. "Wrench"). Arayüz bilinmeyen adı yok sayar. */
+    icon: varchar("icon", { length: 40 }),
     color: varchar("color", { length: 9 }),
+    /** Varsayılan KDV oranı (0.20 = %20); gider formunda ön dolu gelir. */
+    defaultVatRate: numeric("default_vat_rate", { precision: 4, scale: 2 }),
+    isActive: boolean("is_active").notNull().default(true),
     sortOrder: integer("sort_order").notNull().default(0),
+    metadata: jsonb("metadata").notNull().default({}),
     ...timestamps,
     ...softDelete,
   },
   (t) => [
     index("idx_expense_categories_tenant").on(t.tenantId),
     uniqueIndex("idx_expense_categories_tenant_name").on(t.tenantId, t.name),
+    index("idx_expense_categories_parent").on(t.parentId),
   ],
 );
 

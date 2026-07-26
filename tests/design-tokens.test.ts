@@ -39,12 +39,23 @@ it("bileşenler ham Tailwind renk paleti kullanmıyor", () => {
   expect(offenders).toEqual([]);
 });
 
+/**
+ * Token disiplininden muaf dosyalar — her biri gerekçeli.
+ *
+ * `global-error.tsx`: kök hata sınırı, stil dosyası yüklenememişken de
+ * render edilmek zorundadır (hatanın kaynağı layout veya CSS olabilir).
+ * Token'lara güvenmek "beyaz sayfa üstüne beyaz yazı" riski taşırdı;
+ * bu yüzden satır içi ve sabit renkler bilinçli tercih.
+ */
+const HEX_EXEMPT = ["apps/app/src/app/global-error.tsx"];
+
 it("bileşenlerde sabit hex/rgb renk yok", () => {
   // E-posta şablonları hariç: e-posta istemcileri CSS değişkeni desteklemez.
   // Çapa bağlantıları (`href="#icerik"`) renk değildir; hex yalnızca 3/6/8 hane sayılır.
   const hex = /#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})\b|\brgba?\(/;
   const offenders = files
     .filter((file) => !file.includes("packages/emails"))
+    .filter((file) => !HEX_EXEMPT.includes(file))
     .filter((file) => hex.test(readFileSync(file, "utf8")));
   expect(offenders).toEqual([]);
 });

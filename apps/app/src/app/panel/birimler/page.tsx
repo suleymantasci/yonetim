@@ -1,60 +1,155 @@
-import { asc, isNull } from "drizzle-orm";
+import { Building2, Plus, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
-import { blocks, units, withTenant } from "@yonetim/db";
-import { Alert, Badge, Card, CardBody, CardHeader, EmptyState, tableClasses as tc } from "@yonetim/ui";
+import { landShareTotalLooksWrong } from "@yonetim/dues";
+import { Alert, Card, CardBody, EmptyState, Pagination, Stat } from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
+import { ListControls } from "@/components/list/list-controls";
 import { requirePermission } from "@/lib/context";
+import { formatters } from "@/lib/format";
+import { buildListHref, pageRange, parseListParams, type SearchParamsInput } from "@/lib/list-params";
+import { listUnits, UNIT_SORT_KEYS } from "@/lib/queries/units";
+import { UnitsTable, type UnitRowView } from "./units-table";
 
 export const dynamic = "force-dynamic";
 
-export default async function UnitsPage() {
+const UNIT_TYPES = ["flat", "shop", "office", "depot", "garage", "villa", "common_area"] as const;
+
+export default async function UnitsPage({
+  searchParams,
+}: {
+  readonly searchParams: Promise<SearchParamsInput>;
+}) {
   const ctx = await requirePermission("unit:read");
   const t = await getTranslations("app.units");
+  const tCommon = await getTranslations("common");
   const tEnum = await getTranslations("enum");
+  const fmt = await formatters();
 
-  const data = await withTenant(ctx.tenantId, async (tx) => {
-    const blockRows = await tx
-      .select()
-      .from(blocks)
-      .where(isNull(blocks.deletedAt))
-      .orderBy(asc(blocks.sortOrder));
-    const unitRows = await tx
-      .select()
-      .from(units)
-      .where(isNull(units.deletedAt))
-      .orderBy(asc(units.number));
-    return { blockRows, unitRows };
+  const params = parseListParams(await searchParams, {
+    sortableKeys: UNIT_SORT_KEYS,
+    defaultSort: "number",
+    filterKeys: ["blok", "tip", "durum"],
   });
 
-  if (data.unitRows.length === 0) {
+  const data = await listUnits(ctx, params);
+  const { from, to, pageCount } = pageRange(params, data.total);
+
+  // Hiç birim yoksa (çöp kutusu dahil) eğitici boş durum göster (SPEC 11.2).
+  if (data.unitTotal === 0 && data.trashedCount === 0 && !params.query) {
     return (
       <>
-        <PageHeader title={t("title")} />
+        <PageHeader
+          title={t("title")}
+          action={
+            <Link
+              href="/panel/birimler/yeni"
+              className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-fg hover:bg-primary-hover"
+            >
+              <Plus aria-hidden className="h-4 w-4" />
+              {t("newUnit")}
+            </Link>
+          }
+        />
         <EmptyState
+          icon={<Building2 aria-hidden className="h-10 w-10" />}
           title={t("emptyTitle")}
           description={t("emptyDescription")}
           steps={[t("emptyStep1"), t("emptyStep2"), t("emptyStep3")]}
+          action={
+            <div className="flex flex-wrap justify-center gap-2">
+              <Link
+                href="/panel/birimler/toplu"
+                className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-fg hover:bg-primary-hover"
+              >
+                {t("bulkWizard")}
+              </Link>
+              <Link
+                href="/panel/birimler/yeni"
+                className="inline-flex h-10 items-center rounded-lg border border-border-strong bg-surface px-4 text-sm font-semibold text-fg hover:bg-hover"
+              >
+                {t("newUnit")}
+              </Link>
+            </div>
+          }
         />
       </>
     );
   }
 
-  const totalArea = data.unitRows.reduce((a, u) => a + Number(u.areaM2 ?? 0), 0);
-  const totalShare = data.unitRows.reduce((a, u) => a + Number(u.landShare ?? 0), 0);
-  const shareLooksWrong = totalShare > 0 && Math.abs(totalShare - 1) > 0.01 && Math.abs(totalShare - 1000) > 1;
+  // Arsa payı toplamı 1.0 ya da 1000 olmalı; sapma varsa yönetici uyarılır.
+  const shareLooksWrong = landShareTotalLooksWrong(data.landShareTotal);
+
+  const rows: UnitRowView[] = data.rows.map((row) => {
+    const share =
+      row.landShareNumerator && row.landShareDenominator
+        ? `${row.landShareNumerator}/${row.landShareDenominator}`
+        : row.landShare
+          ? Number(row.landShare).toFixed(4)
+          : "—";
+
+    let statusBadge: UnitRowView["statusBadge"];
+    if (row.deletedAt) {
+      statusBadge = { label: t("trashed"), tone: "danger" };
+    } else if (row.duesExempt) {
+      statusBadge = { label: t("duesExempt"), tone: "warning" };
+    } else if (row.ownershipType === "vacant") {
+      statusBadge = { label: tEnum("occupancy.vacant"), tone: "neutral" };
+    } else {
+      statusBadge = { label: tEnum(`occupancy.${row.ownershipType}`), tone: "success" };
+    }
+
+    return {
+      id: row.id,
+      number: row.number,
+      blockName: row.blockName,
+      floor: row.floor,
+      typeLabel: tEnum(`unitType.${row.type}`),
+      area: row.areaM2 ? `${Number(row.areaM2).toLocaleString(fmt.locale)} m²` : "—",
+      landShare: share,
+      statusBadge,
+      outstanding: row.outstandingKurus > 0 ? fmt.money(row.outstandingKurus) : "—",
+      hasOutstanding: row.outstandingKurus > 0,
+      occupantCount: row.occupantCount,
+      multiplier: row.duesMultiplier === "1.000" ? null : row.duesMultiplier,
+    };
+  });
 
   return (
     <>
       <PageHeader
         title={t("title")}
         description={t("summary", {
-          units: data.unitRows.length,
-          blocks: data.blockRows.length,
-          area: totalArea.toLocaleString(ctx.locale),
-          share: totalShare.toFixed(4),
+          units: data.unitTotal,
+          blocks: data.blocks.length,
+          area: data.areaTotal.toLocaleString(fmt.locale),
+          share: data.landShareTotal.toFixed(4),
         })}
+        action={
+          <>
+            <Link
+              href="/panel/birimler/bloklar"
+              className="inline-flex h-10 items-center rounded-lg border border-border-strong bg-surface px-3 text-sm font-semibold text-fg hover:bg-hover"
+            >
+              {t("manageBlocks")}
+            </Link>
+            <Link
+              href="/panel/birimler/toplu"
+              className="inline-flex h-10 items-center rounded-lg border border-border-strong bg-surface px-3 text-sm font-semibold text-fg hover:bg-hover"
+            >
+              {t("bulkWizard")}
+            </Link>
+            <Link
+              href="/panel/birimler/yeni"
+              className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-fg hover:bg-primary-hover"
+            >
+              <Plus aria-hidden className="h-4 w-4" />
+              {t("newUnit")}
+            </Link>
+          </>
+        }
       />
 
       {shareLooksWrong ? (
@@ -63,46 +158,106 @@ export default async function UnitsPage() {
         </div>
       ) : null}
 
+      <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <Stat label={t("statUnits")} value={String(data.unitTotal)} />
+        <Stat label={t("statBlocks")} value={String(data.blocks.length)} />
+        <Stat
+          label={t("statArea")}
+          value={`${data.areaTotal.toLocaleString(fmt.locale)} m²`}
+        />
+        <Stat label={t("statLandShare")} value={data.landShareTotal.toFixed(4)} />
+      </div>
+
+      <ListControls
+        searchPlaceholder={t("searchPlaceholder")}
+        filters={[
+          {
+            param: "blok",
+            label: t("block"),
+            value: params.filters.blok ?? "",
+            options: [
+              { value: "", label: t("allBlocks") },
+              ...data.blocks.map((block) => ({ value: block.id, label: block.name })),
+            ],
+          },
+          {
+            param: "tip",
+            label: t("type"),
+            value: params.filters.tip ?? "",
+            options: [
+              { value: "", label: t("allTypes") },
+              ...UNIT_TYPES.map((type) => ({ value: type, label: tEnum(`unitType.${type}`) })),
+            ],
+          },
+          {
+            param: "durum",
+            label: t("status"),
+            value: params.filters.durum ?? "",
+            options: [
+              { value: "", label: t("allStatuses") },
+              { value: "borclu", label: t("filterInDebt") },
+              { value: "bos", label: tEnum("occupancy.vacant") },
+              { value: "muaf", label: t("duesExempt") },
+            ],
+          },
+        ]}
+        trailing={
+          <Link
+            href={buildListHref("/panel/birimler", params, {
+              cop: params.trashed ? "" : "1",
+              sayfa: 1,
+            })}
+            className={`inline-flex h-9 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-medium ${
+              params.trashed
+                ? "border-danger bg-danger-soft text-danger-fg"
+                : "border-border-strong text-fg-muted hover:bg-hover hover:text-fg"
+            }`}
+          >
+            <Trash2 aria-hidden className="h-3.5 w-3.5" />
+            {t("trash", { count: data.trashedCount })}
+          </Link>
+        }
+      />
+
       <Card>
-        <CardHeader title={t("listTitle")} />
         <CardBody className="p-0">
-          <div className={tc.wrapper}>
-            <table className={tc.table} style={{ minWidth: 720 }}>
-              <thead className={tc.thead}>
-                <tr>
-                  <th scope="col" className={tc.th}>{t("number")}</th>
-                  <th scope="col" className={tc.th}>{t("block")}</th>
-                  <th scope="col" className={tc.th}>{t("floor")}</th>
-                  <th scope="col" className={tc.th}>{t("type")}</th>
-                  <th scope="col" className={`${tc.th} text-right`}>{t("area")}</th>
-                  <th scope="col" className={`${tc.th} text-right`}>{t("landShare")}</th>
-                  <th scope="col" className={tc.th}>{t("status")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.unitRows.map((u) => {
-                  const block = data.blockRows.find((b) => b.id === u.blockId);
-                  return (
-                    <tr key={u.id} className={tc.tr}>
-                      <td className={`${tc.td} font-medium`}>{u.number}</td>
-                      <td className={tc.tdMuted}>{block?.name ?? "—"}</td>
-                      <td className={tc.td}>{u.floor}</td>
-                      <td className={tc.td}>{tEnum(`unitType.${u.type}`)}</td>
-                      <td className={tc.tdNum}>{u.areaM2 ?? "—"}</td>
-                      <td className={tc.tdNum}>{u.landShare ?? "—"}</td>
-                      <td className={tc.td}>
-                        {u.duesExempt ? (
-                          <Badge tone="warning">{t("duesExempt")}</Badge>
-                        ) : (
-                          <Badge tone="neutral">{tEnum(`occupancy.${u.ownershipType}`)}</Badge>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <UnitsTable
+            rows={rows}
+            sort={params.sort}
+            direction={params.direction}
+            hrefFor={(key, direction) =>
+              buildListHref("/panel/birimler", params, { sirala: key, yon: direction, sayfa: 1 })
+            }
+            trashed={params.trashed}
+            labels={{
+              number: t("number"),
+              block: t("block"),
+              floor: t("floor"),
+              type: t("type"),
+              area: t("area"),
+              landShare: t("landShare"),
+              status: t("status"),
+              outstanding: t("outstanding"),
+              occupants: t("occupants"),
+              empty: tCommon("state.noResult"),
+              deleteTitle: t("deleteTitle"),
+              deleteDescription: t("deleteDescription"),
+              raise: t("bulkRaise"),
+              exempt: t("bulkExempt"),
+            }}
+          />
+          <Pagination
+            page={params.page}
+            pageCount={pageCount}
+            total={data.total}
+            hrefFor={(page) => buildListHref("/panel/birimler", params, { sayfa: page })}
+            labels={{
+              previous: tCommon("action.previous"),
+              next: tCommon("action.next"),
+              summary: tCommon("state.showing", { from, to, total: data.total }),
+            }}
+            linkComponent={Link as never}
+          />
         </CardBody>
       </Card>
     </>

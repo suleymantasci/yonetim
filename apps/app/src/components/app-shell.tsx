@@ -3,53 +3,45 @@ import { getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 
 import { siteConfig } from "@yonetim/config";
-import type { Permission, Role, TenantStatus } from "@yonetim/core";
-import { ThemeToggle, type ThemePreference } from "@yonetim/ui";
+import type { Role, TenantStatus } from "@yonetim/core";
+import {
+  A11yMenu, Badge, Breadcrumb, ThemeToggle, type A11yPreferences, type Crumb,
+  type ThemePreference,
+} from "@yonetim/ui";
 
 import { LocaleSwitcher } from "@/components/locale-switcher";
+import { markAllNotificationsRead, markNotificationRead } from "@/components/shell/actions";
+import { CommandPalette, type PaletteEntry } from "@/components/shell/command-palette";
+import { NotificationBell } from "@/components/shell/notification-bell";
+import {
+  NAV_GROUP_ORDER, NAV_ITEMS, QUICK_ACTIONS, type NavBadgeKey, type NavGroup,
+} from "@/components/shell/nav";
+import { ShellFrame } from "@/components/shell/shell-frame";
+import type { SidebarItem } from "@/components/shell/sidebar";
+import { formatters } from "@/lib/format";
+import {
+  notificationCategory, notificationHref, type InAppNotification, type NavBadges,
+} from "@/lib/shell-data";
 
-/** Uygulama kabuğu — SPEC Bölüm 11.4 (sol menü + üst bar + içerik). */
-export interface NavItem {
-  href: string;
-  /** `app.nav.<key>` çeviri anahtarı. */
-  key: string;
-  permission: Permission;
-  group: NavGroup;
-}
+/** Rozet acil mi — renk kararı tek yerde. */
+const BADGE_TONE: Record<NavBadgeKey, "danger" | "warning" | "info"> = {
+  openRequests: "info",
+  slaBreached: "danger",
+  kvkkPending: "warning",
+  unmatchedBankTx: "warning",
+  overdueMaintenance: "danger",
+};
 
-type NavGroup = "general" | "property" | "finance" | "communication" | "operations" | "compliance";
+export { NAV_ITEMS };
 
-export const NAV_ITEMS: NavItem[] = [
-  { href: "/panel", key: "dashboard", permission: "tenant:read", group: "general" },
-  { href: "/panel/birimler", key: "units", permission: "unit:read", group: "property" },
-  { href: "/panel/sakinler", key: "residents", permission: "resident:read", group: "property" },
-  { href: "/panel/gecis", key: "migration", permission: "unit:write", group: "property" },
-  { href: "/panel/aidat", key: "duesPlans", permission: "dues:read", group: "finance" },
-  { href: "/panel/borclar", key: "debts", permission: "debt:read", group: "finance" },
-  { href: "/panel/borcu-yoktur", key: "certificate", permission: "debt:read", group: "finance" },
-  { href: "/panel/giderler", key: "expenses", permission: "expense:read", group: "finance" },
-  { href: "/panel/banka", key: "bank", permission: "bank:read", group: "finance" },
-  { href: "/panel/simulator", key: "simulator", permission: "dues:simulate", group: "finance" },
-  { href: "/panel/duyurular", key: "announcements", permission: "announcement:read", group: "communication" },
-  { href: "/panel/anketler", key: "polls", permission: "poll:read", group: "communication" },
-  { href: "/panel/toplantilar", key: "meetings", permission: "meeting:read", group: "communication" },
-  { href: "/panel/mesajlar", key: "messages", permission: "message:read", group: "communication" },
-  { href: "/panel/talepler", key: "requests", permission: "request:read", group: "operations" },
-  { href: "/panel/bakim", key: "maintenance", permission: "maintenance:read", group: "operations" },
-  { href: "/panel/sayaclar", key: "meters", permission: "meter:read", group: "operations" },
-  { href: "/panel/rezervasyon", key: "reservations", permission: "reservation:read", group: "operations" },
-  { href: "/panel/personel", key: "staff", permission: "staff:read", group: "operations" },
-  { href: "/panel/belgeler", key: "documents", permission: "document:read", group: "operations" },
-  { href: "/panel/hukuk", key: "legal", permission: "legal:read", group: "compliance" },
-  { href: "/panel/kvkk", key: "kvkk", permission: "kvkk:read", group: "compliance" },
-  { href: "/panel/denetim", key: "audit", permission: "audit:read", group: "compliance" },
-  { href: "/panel/raporlar", key: "reports", permission: "report:read", group: "compliance" },
-  { href: "/panel/ayarlar", key: "settings", permission: "settings:read", group: "general" },
-];
-
-const GROUP_ORDER: NavGroup[] = [ "general", "property", "finance", "communication", "operations", "compliance",
-];
-
+/**
+ * Uygulama kabuğu — SPEC Bölüm 11.4, GAP 4.4.
+ *
+ * Sunucu bileşeni: çeviriler, rozet sayıları ve bildirimler burada çözülür,
+ * istemciye yalnız hazır metin gider. Etkileşim gerektiren üç parça
+ * (`ShellFrame`, `CommandPalette`, `NotificationBell`) ayrı istemci
+ * bileşenleridir; kabuk bir bütün olarak "use client" olmaz.
+ */
 export async function AppShell({
   children,
   tenantName,
@@ -59,6 +51,10 @@ export async function AppShell({
   allowedHrefs,
   impersonated,
   themePreference,
+  a11yPreferences,
+  badges,
+  notifications,
+  unreadNotificationCount,
 }: {
   children: ReactNode;
   tenantName: string;
@@ -68,116 +64,256 @@ export async function AppShell({
   allowedHrefs: string[];
   impersonated?: boolean;
   themePreference: ThemePreference;
+  a11yPreferences: A11yPreferences;
+  badges: NavBadges;
+  notifications: InAppNotification[];
+  unreadNotificationCount: number;
 }) {
   const t = await getTranslations("app");
   const tCommon = await getTranslations("common");
   const tEnum = await getTranslations("enum");
+  const fmt = await formatters();
 
-  const grouped = GROUP_ORDER.map((group) => ({
-    group,
-    items: NAV_ITEMS.filter((i) => i.group === group && allowedHrefs.includes(i.href)),
-  })).filter((g) => g.items.length > 0);
+  const allowed = new Set(allowedHrefs);
+
+  const sidebarItems: SidebarItem[] = NAV_ITEMS.filter((item) => allowed.has(item.href)).map(
+    (item) => ({
+      href: item.href,
+      key: item.key,
+      label: t(`nav.${item.key}`),
+      group: item.group,
+      badgeCount: item.badge ? badges[item.badge] : undefined,
+      badgeTone: item.badge ? BADGE_TONE[item.badge] : undefined,
+    }),
+  );
+
+  const groupLabels = Object.fromEntries(
+    NAV_GROUP_ORDER.map((group) => [group, t(`nav.group.${group}`)]),
+  ) as Record<NavGroup, string>;
+
+  // Komut paleti girdileri: sayfalar + hızlı işlemler (yalnız yetkili olanlar).
+  const paletteEntries: PaletteEntry[] = [
+    ...QUICK_ACTIONS.filter((action) => allowed.has(quickActionOwner(action.href))).map(
+      (action) => ({
+        id: `action-${action.key}`,
+        label: t(`nav.quick.${action.key}`),
+        group: tCommon("action.add"),
+        href: action.href,
+        kind: "action" as const,
+      }),
+    ),
+    ...sidebarItems.map((item) => ({
+      id: `page-${item.key}`,
+      label: item.label,
+      group: groupLabels[item.group],
+      href: item.href,
+      kind: "page" as const,
+    })),
+  ];
+
+  const brandHeader = (
+    <div className="flex h-16 items-center gap-2 border-b border-border px-4">
+      <Link
+        href="/panel"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-fg"
+        aria-label={siteConfig.brand.shortName}
+      >
+        {siteConfig.brand.shortName.charAt(0)}
+      </Link>
+      <div className="min-w-0">
+        <div className="truncate text-sm font-semibold text-fg">{tenantName}</div>
+        <div className="text-xs text-fg-subtle">
+          {tEnum(`tenantStatus.${tenantStatus as TenantStatus}`)}
+        </div>
+      </div>
+    </div>
+  );
 
   const primaryRole = roles[0];
 
   return (
-    <div className="flex min-h-dvh">
-      <aside className="hidden w-64 shrink-0 border-r border-border bg-surface lg:block">
-        <div className="flex h-16 items-center gap-2 border-b border-border px-4">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-fg">
-            {siteConfig.brand.shortName.charAt(0)}
-          </span>
-          <div className="min-w-0">
-            <div className="truncate text-sm font-semibold text-fg">{tenantName}</div>
-            <div className="text-xs text-fg-subtle">
-              {tEnum(`tenantStatus.${tenantStatus as TenantStatus}`)}
-            </div>
-          </div>
-        </div>
-
-        <nav aria-label={tCommon("a11y.modules")} className="space-y-4 p-3">
-          {grouped.map((g) => (
-            <div key={g.group}>
-              <div className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-fg-subtle">
-                {t(`nav.group.${g.group}`)}
-              </div>
-              <ul className="space-y-0.5">
-                {g.items.map((item) => (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      className="block rounded-lg px-2 py-1.5 text-sm text-fg-muted transition-colors hover:bg-hover hover:text-fg"
-                    >
-                      {t(`nav.${item.key}`)}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </nav>
-      </aside>
-
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-16 items-center justify-between gap-4 border-b border-border bg-surface px-4">
-          <Link href="/panel" className="font-heading font-bold text-fg lg:hidden">
+    <ShellFrame
+      labels={{
+        openMenu: tCommon("a11y.mainMenu"),
+        skipToContent: tCommon("a11y.skipToContent"),
+        closeToast: tCommon("action.close"),
+      }}
+      sidebar={{
+        items: sidebarItems,
+        groupLabels,
+        groupOrder: NAV_GROUP_ORDER,
+        header: brandHeader,
+        labels: {
+          modules: tCommon("a11y.modules"),
+          pinned: t("shell.pinned"),
+          pin: t("shell.pin"),
+          unpin: t("shell.unpin"),
+          close: tCommon("action.close"),
+        },
+      }}
+      headerLeft={
+        <>
+          <Link href="/panel" className="truncate font-heading font-bold text-fg lg:hidden">
             {tenantName}
           </Link>
-          <div className="ml-auto flex items-center gap-2">
-            <span className="hidden text-sm text-fg-muted md:block">
-              {userName}
-              {primaryRole ? (
-                <span className="ml-2 rounded bg-surface-sunken px-1.5 py-0.5 text-[11px]">
-                  {tEnum(`role.${primaryRole}`)}
-                </span>
-              ) : null}
-            </span>
-            <LocaleSwitcher className="hidden sm:inline-flex" />
-            <ThemeToggle
-              initialPreference={themePreference}
+          <div className="hidden lg:block">
+            <CommandPalette
+              entries={paletteEntries}
               labels={{
-                group: tCommon("theme.group"),
-                light: tCommon("theme.light"),
-                dark: tCommon("theme.dark"),
-                system: tCommon("theme.system"),
+                trigger: t("shell.search"),
+                placeholder: t("shell.searchPlaceholder"),
+                empty: t("shell.searchEmpty"),
+                pages: tCommon("a11y.modules"),
+                actions: tCommon("action.add"),
+                hintOpen: t("shell.searchHint"),
+                close: tCommon("action.close"),
               }}
             />
-            <form action="/api/oturum/cikis" method="post">
-              <button className="rounded-lg border border-border-strong px-3 py-1.5 text-sm text-fg hover:bg-hover">
-                {tCommon("action.logout")}
-              </button>
-            </form>
           </div>
-        </header>
+        </>
+      }
+      headerRight={
+        <>
+          {tenantStatus !== "active" ? (
+            <Badge tone={tenantStatus === "trial" ? "info" : "warning"} className="hidden sm:inline-flex">
+              {tEnum(`tenantStatus.${tenantStatus as TenantStatus}`)}
+            </Badge>
+          ) : null}
 
-        {impersonated ? (
+          <NotificationBell
+            items={notifications.map((item) => ({
+              id: item.id,
+              title: item.title,
+              body: item.body,
+              createdAt: fmt.dateTime(item.createdAt),
+              read: item.read,
+              href: notificationHref(item.resourceType, item.resourceId),
+              category: notificationCategory(item.resourceType),
+            }))}
+            unreadCount={unreadNotificationCount}
+            markAllRead={markAllNotificationsRead}
+            markRead={markNotificationRead}
+            labels={{
+              trigger: t("shell.notifications"),
+              title: t("shell.notifications"),
+              empty: t("shell.notificationsEmpty"),
+              markAll: t("shell.markAllRead"),
+              viewAll: tCommon("action.viewAll"),
+              category: {
+                debt: t("nav.debts"),
+                request: t("nav.requests"),
+                announcement: t("nav.announcements"),
+                system: t("shell.categorySystem"),
+              },
+            }}
+          />
+
+          <span className="hidden text-sm text-fg-muted xl:block">
+            {userName}
+            {primaryRole ? (
+              <span className="ml-2 rounded bg-surface-sunken px-1.5 py-0.5 text-[11px]">
+                {tEnum(`role.${primaryRole}`)}
+              </span>
+            ) : null}
+          </span>
+
+          <LocaleSwitcher className="hidden sm:inline-flex" />
+
+          <A11yMenu
+            initial={a11yPreferences}
+            labels={{
+              trigger: t("shell.a11y"),
+              fontSize: t("shell.fontSize"),
+              scale: {
+                sm: t("shell.fontScale.sm"),
+                md: t("shell.fontScale.md"),
+                lg: t("shell.fontScale.lg"),
+                xl: t("shell.fontScale.xl"),
+              },
+              highContrast: t("shell.highContrast"),
+              reducedMotion: t("shell.reducedMotion"),
+            }}
+          />
+
+          <ThemeToggle
+            initialPreference={themePreference}
+            labels={{
+              group: tCommon("theme.group"),
+              light: tCommon("theme.light"),
+              dark: tCommon("theme.dark"),
+              system: tCommon("theme.system"),
+            }}
+          />
+
+          <form action="/api/oturum/cikis" method="post">
+            <button className="rounded-lg border border-border-strong px-3 py-1.5 text-sm text-fg hover:bg-hover">
+              {tCommon("action.logout")}
+            </button>
+          </form>
+        </>
+      }
+      banner={
+        impersonated ? (
           <div className="bg-warning px-4 py-2 text-sm font-semibold text-accent-fg">
             {t("shell.impersonationWarning")}
           </div>
-        ) : null}
-
-        <main className="flex-1 p-4 lg:p-6">{children}</main>
-      </div>
-    </div>
+        ) : null
+      }
+    >
+      {children}
+    </ShellFrame>
   );
 }
 
+/**
+ * Hızlı işlem adresinin hangi liste sayfasına ait olduğunu bulur;
+ * yetki kontrolü liste sayfasının izniyle yapılır (`/panel/birimler/yeni`
+ * → `/panel/birimler`). Yazma izni olmayan bir kullanıcının "yeni" bağlantısı
+ * paletten hiç görünmez.
+ */
+function quickActionOwner(href: string): string {
+  const [base] = href.split("?");
+  const segments = (base ?? "").split("/").filter(Boolean);
+  return `/${segments.slice(0, 2).join("/")}`;
+}
+
+/**
+ * Sayfa başlığı bloğu — breadcrumb + başlık + açıklama + birincil aksiyon.
+ *
+ * GAP 4.3.1: her liste/detay sayfasının sağ üstünde birincil aksiyon
+ * (`Yeni Birim`, `Yeni Gider`) ve derin sayfalarda breadcrumb bulunmalı.
+ */
 export function PageHeader({
   title,
   description,
   action,
+  breadcrumb,
+  meta,
 }: {
   title: string;
   description?: string;
   action?: ReactNode;
+  breadcrumb?: Crumb[];
+  /** Başlığın yanında rozet/durum bilgisi. */
+  meta?: ReactNode;
 }) {
   return (
-    <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
-      <div>
-        <h1 className="font-heading text-2xl font-extrabold text-fg">{title}</h1>
-        {description ? <p className="mt-1 max-w-2xl text-sm text-fg-muted">{description}</p> : null}
+    <div className="mb-6">
+      {breadcrumb && breadcrumb.length > 0 ? (
+        <Breadcrumb items={breadcrumb} linkComponent={Link as never} />
+      ) : null}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="font-heading text-2xl font-extrabold text-fg">{title}</h1>
+            {meta}
+          </div>
+          {description ? (
+            <p className="mt-1 max-w-2xl text-sm text-fg-muted">{description}</p>
+          ) : null}
+        </div>
+        {action ? <div className="flex flex-wrap items-center gap-2">{action}</div> : null}
       </div>
-      {action}
     </div>
   );
 }

@@ -36,8 +36,20 @@ export const units = pgTable(
     floor: integer("floor").notNull().default(0),
     type: unitTypeEnum("type").notNull().default("flat"),
     areaM2: numeric("area_m2", { precision: 8, scale: 2 }),
-    /** Arsa payı (pay/payda yerine ondalık oran) — borçlandırma formülü girdisi. */
+    /**
+     * Arsa payı — borçlandırma formülü girdisi.
+     *
+     * KARAR (GAP 4.2.3): ondalık oran **kanonik** kalır (formüller, toplama ve
+     * `distribute()` bu sütunu okur), pay/payda ise **girdi ve gösterim** için
+     * ayrıca saklanır. Tapuda arsa payı "120/1000" biçiminde yazılıdır; yöneticiden
+     * "0.120000" yazmasını istemek hata kaynağıydı. İki temsil arasındaki tutarlılık
+     * uygulama katmanında kurulur: pay/payda girildiğinde ondalık türetilir.
+     */
     landShare: numeric("land_share", { precision: 10, scale: 6 }),
+    /** Tapudaki pay (örn. 120). Girildiyse `landShare` bundan türetilir. */
+    landShareNumerator: integer("land_share_numerator"),
+    /** Tapudaki payda (örn. 1000). Blok/site genelinde aynı olması beklenir. */
+    landShareDenominator: integer("land_share_denominator"),
     roomCount: varchar("room_count", { length: 10 }),
     residentCount: integer("resident_count").notNull().default(0),
     ownershipType: ownershipTypeEnum("ownership_type").notNull().default("owner"),
@@ -45,6 +57,16 @@ export const units = pgTable(
     currentTenantId: uuid("current_tenant_id").references(() => users.id, { onDelete: "set null" }),
     /** Aidat muafiyeti (örn. boş daire kararı, yönetici muafiyeti). */
     duesExempt: boolean("dues_exempt").notNull().default(false),
+    /**
+     * Gecikme tazminatı muafiyeti — GAP 4.2.5.
+     *
+     * Rakip şikâyeti: "102 daireden 20'sine farklı gecikme uygulamak için manuel
+     * hesap gerekiyor." Muafiyet üç düzeyde çalışır: birim (bu sütun), tek borç
+     * (`debts.late_fee_exempt`) ve plan (`dues_plans.late_fee_monthly_pct = 0`).
+     * Herhangi biri muaf diyorsa tazminat işlemez (fail-safe: tahsil etmemek,
+     * haksız tahsil etmekten iyidir).
+     */
+    lateFeeExempt: boolean("late_fee_exempt").notNull().default(false),
     duesMultiplier: numeric("dues_multiplier", { precision: 5, scale: 3 }).notNull().default("1"),
     notes: text("notes"),
     metadata: jsonb("metadata").notNull().default({}),

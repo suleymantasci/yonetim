@@ -28,7 +28,22 @@
     "verify": "Doğrula",
     "apply": "Başvur",
     "logout": "Çıkış",
-    "login": "Giriş yap"
+    "login": "Giriş yap",
+    "create": "Oluştur",
+    "saveAndNew": "Kaydet ve yeni ekle",
+    "selectAll": "Tümünü seç",
+    "clearSelection": "Seçimi temizle",
+    "restore": "Geri yükle",
+    "previous": "Önceki",
+    "clear": "Temizle",
+    "reset": "Sıfırla",
+    "duplicate": "Kopyala",
+    "assign": "Ata",
+    "approve": "Onayla",
+    "reject": "Reddet",
+    "collect": "Tahsil et",
+    "preview": "Önizle",
+    "more": "Daha fazla"
   },
   "state": {
     "saved": "Kaydedildi",
@@ -45,7 +60,11 @@
     "active": "Açık",
     "inactive": "Kapalı",
     "required": "Zorunlu",
-    "optional": "İsteğe bağlı"
+    "optional": "İsteğe bağlı",
+    "showing": "{from}–{to} / {total} kayıt",
+    "noResult": "Aramanıza uygun kayıt bulunamadı",
+    "selectedCount": "{count} kayıt seçildi",
+    "unsavedChanges": "Kaydedilmemiş değişiklikler var"
   },
   "unit": {
     "days": "{count, plural, one {# gün} other {# gün}}",
@@ -74,7 +93,11 @@
     "skipToContent": "İçeriğe atla",
     "mainMenu": "Ana menü",
     "modules": "Modüller",
-    "breadcrumb": "Sayfa yolu"
+    "breadcrumb": "Sayfa yolu",
+    "sortBy": "{column} sütununa göre sırala",
+    "rowSelect": "Satırı seç",
+    "chartAsTable": "Tablo olarak göster",
+    "chartAsChart": "Grafik olarak göster"
   },
   "legal": {
     "allRightsReserved": "Tüm hakları saklıdır.",
@@ -90,7 +113,13 @@
     "maxLength": "En fazla {count} karakter olabilir.",
     "invalidAmount": "Geçerli bir tutar giriniz.",
     "invalidIban": "Geçerli bir IBAN giriniz.",
-    "invalidTckn": "Geçerli bir T.C. kimlik numarası giriniz."
+    "invalidTckn": "Geçerli bir T.C. kimlik numarası giriniz.",
+    "invalidDate": "Geçerli bir tarih giriniz.",
+    "invalidPeriod": "Geçerli bir dönem seçiniz (YYYY-AA).",
+    "invalidSelection": "Geçerli bir seçim yapınız.",
+    "minValue": "En az {count} olmalı.",
+    "maxValue": "En fazla {count} olabilir.",
+    "duplicate": "Bu kayıt zaten mevcut."
   },
   "error": {
     "unauthorized": "Oturum açmanız gerekiyor.",
@@ -102,6 +131,7 @@
     "rateLimited": "Çok fazla istek gönderdiniz, lütfen bekleyin.",
     "tenantMismatch": "Kayıt başka bir siteye ait.",
     "integrationUnavailable": "{provider} entegrasyonu şu an kullanılamıyor.",
-    "internal": "Beklenmeyen bir hata oluştu."
+    "internal": "Beklenmeyen bir hata oluştu.",
+    "validationFailed": "Form eksik veya hatalı doldurulmuş. İşaretli alanları düzeltin."
   }
 }

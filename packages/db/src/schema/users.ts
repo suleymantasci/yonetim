@@ -26,6 +26,13 @@ export const users = pgTable(
     /** Eşitlik sorgusu için blind index. */
     tcknIndex: varchar("tckn_index", { length: 64 }),
     avatarUrl: text("avatar_url"),
+    /**
+     * Acil durumda aranacak kişi — GAP 4.1.2.
+     * Kişiye bağlıdır (siteye değil): aynı sakin iki sitede kayıtlıysa
+     * acil durum bilgisi tekrar sorulmaz.
+     */
+    emergencyContactName: varchar("emergency_contact_name", { length: 120 }),
+    emergencyContactPhone: varchar("emergency_contact_phone", { length: 20 }),
     locale: varchar("locale", { length: 5 }).notNull().default("tr"),
     /** Platform seviyesi rol; tenant rolleri memberships tablosunda. */
     platformRole: roleEnum("platform_role"),
@@ -46,6 +53,48 @@ export const users = pgTable(
   ],
 );
 
+/**
+ * Kullanıcı adresleri — GAP 4.2.9.
+ *
+ * Neden ayrı tablo: bir sakinin fatura adresi (ikamet ettiği daire),
+ * tebligat adresi (yurt dışında oturan malik) ve KEP adresi farklı olabilir.
+ * `users` tablosuna üç adres kolonu koymak hem şişirir hem "hangi adres
+ * güncel?" sorusunu cevaplayamazdı.
+ *
+ * Adres alanı serbest metin: Türkiye'de yapılandırılmış adres (il/ilçe/mahalle)
+ * standardı PTT kodu üzerinden çalışıyor; onu `postalCode` + `pttCode` ile
+ * taşıyıp gerisini serbest bırakmak, yurt dışı adreslerini de kapsıyor.
+ */
+export const userAddresses = pgTable(
+  "user_addresses",
+  {
+    id: idCol(),
+    /** Adres kişiye bağlıdır; tenant kapsamı üyelik üzerinden gelir. */
+    userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+    tenantId: uuid("tenant_id"),
+    /** 'invoice' | 'correspondence' | 'kep' | 'other' */
+    kind: varchar("kind", { length: 20 }).notNull().default("correspondence"),
+    label: varchar("label", { length: 60 }),
+    line1: varchar("line1", { length: 200 }).notNull(),
+    line2: varchar("line2", { length: 200 }),
+    district: varchar("district", { length: 80 }),
+    city: varchar("city", { length: 80 }),
+    postalCode: varchar("postal_code", { length: 12 }),
+    countryCode: varchar("country_code", { length: 2 }).notNull().default("TR"),
+    /** PTT adres kodu (varsa) — tebligatta adresin tekliğini garanti eder. */
+    pttCode: varchar("ptt_code", { length: 20 }),
+    /** KEP adresi (e-tebligat) — yalnız kind='kep' satırlarında dolu. */
+    kepAddress: varchar("kep_address", { length: 160 }),
+    isDefault: boolean("is_default").notNull().default(false),
+    ...timestamps,
+    ...softDelete,
+  },
+  (t) => [
+    index("idx_user_addresses_user").on(t.userId, t.kind),
+    index("idx_user_addresses_tenant").on(t.tenantId),
+  ],
+);
+
 /** Kullanıcı ↔ tenant ilişkisi ve rolü (multi-tenant üyelik). */
 export const memberships = pgTable(
   "memberships",
@@ -55,6 +104,11 @@ export const memberships = pgTable(
     userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
     role: roleEnum("role").notNull(),
     title: varchar("title", { length: 80 }),
+    /**
+     * Yönetimin bu sakinle ilgili notu — **siteye özel** olduğu için
+     * `users` değil `memberships` üzerinde. Sakine gösterilmez.
+     */
+    notes: text("notes"),
     isPrimary: boolean("is_primary").notNull().default(false),
     invitedBy: uuid("invited_by"),
     invitedAt: timestamp("invited_at", { withTimezone: true }),

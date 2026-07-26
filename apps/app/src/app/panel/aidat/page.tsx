@@ -1,4 +1,6 @@
 import { isNull } from "drizzle-orm";
+import { Pencil, Plus } from "lucide-react";
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
 import { currentPeriod, periodKey } from "@yonetim/core";
@@ -25,14 +27,25 @@ export default async function DuesPlansPage() {
     return { plans, runs };
   });
 
+  const newPlanButton = (
+    <Link
+      href="/panel/aidat/yeni"
+      className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-fg hover:bg-primary-hover"
+    >
+      <Plus aria-hidden className="h-4 w-4" />
+      {t("newPlan")}
+    </Link>
+  );
+
   if (data.plans.length === 0) {
     return (
       <>
-        <PageHeader title={t("title")} />
+        <PageHeader title={t("title")} action={newPlanButton} />
         <EmptyState
           title={t("emptyTitle")}
           description={t("emptyDescription")}
           steps={[t("emptyStep1"), t("emptyStep2"), t("emptyStep3")]}
+          action={newPlanButton}
         />
       </>
     );
@@ -40,7 +53,7 @@ export default async function DuesPlansPage() {
 
   return (
     <>
-      <PageHeader title={t("title")} description={t("description")} />
+      <PageHeader title={t("title")} description={t("description")} action={newPlanButton} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         {data.plans.map((p) => (
@@ -49,11 +62,20 @@ export default async function DuesPlansPage() {
               title={p.name}
               description={`${tEnum(`duesPeriod.${p.period}`)} · ${t("dueDaySuffix", { day: p.dueDayOfMonth })}`}
               action={
-                p.isActive ? (
-                  <Badge tone="success">{tCommon("state.active")}</Badge>
-                ) : (
-                  <Badge tone="neutral">{tCommon("state.inactive")}</Badge>
-                )
+                <div className="flex items-center gap-2">
+                  {p.isActive ? (
+                    <Badge tone="success">{tCommon("state.active")}</Badge>
+                  ) : (
+                    <Badge tone="neutral">{tCommon("state.inactive")}</Badge>
+                  )}
+                  <Link
+                    href={`/panel/aidat/${p.id}/duzenle`}
+                    aria-label={tCommon("action.edit")}
+                    className="rounded p-1 text-fg-subtle hover:bg-hover hover:text-fg"
+                  >
+                    <Pencil aria-hidden className="h-3.5 w-3.5" />
+                  </Link>
+                </div>
               }
             />
             <CardBody className="space-y-2 text-sm">

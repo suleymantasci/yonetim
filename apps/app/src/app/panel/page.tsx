@@ -1,6 +1,8 @@
+import { Layers, Megaphone, Plus, Receipt } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
+import { hasPermission } from "@yonetim/auth";
 import { siteConfig } from "@yonetim/config";
 import { Alert, Card, CardBody, CardHeader, EmptyState, Stat } from "@yonetim/ui";
 
@@ -8,11 +10,16 @@ import { PageHeader } from "@/components/app-shell";
 import { requireContext } from "@/lib/context";
 import { formatters } from "@/lib/format";
 import { getDashboardSummary } from "@/lib/queries";
+import { getDashboardCharts } from "@/lib/queries/dashboard-charts";
+import { DashboardCharts } from "./dashboard-charts";
+
+export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const ctx = await requireContext();
   const summary = await getDashboardSummary(ctx);
   const t = await getTranslations("app.dashboard");
+  const tCommon = await getTranslations("common");
   const f = await formatters();
 
   if (summary.unitCount === 0) {
@@ -37,12 +44,56 @@ export default async function DashboardPage() {
   }
 
   const net = summary.collectedThisMonthKurus - summary.expenseThisMonthKurus;
+  const charts = await getDashboardCharts(ctx);
+
+  // Hızlı işlemler yalnız yetkili olanlar için (GAP 4.3.4).
+  const quickActions = [
+    {
+      href: "/panel/borclar/toplu",
+      label: t("quickBulkDebt"),
+      permission: "debt:write" as const,
+      icon: <Layers aria-hidden className="h-4 w-4" />,
+      primary: true,
+    },
+    {
+      href: "/panel/giderler/yeni",
+      label: t("quickNewExpense"),
+      permission: "expense:write" as const,
+      icon: <Receipt aria-hidden className="h-4 w-4" />,
+    },
+    {
+      href: "/panel/duyurular",
+      label: t("quickNewAnnouncement"),
+      permission: "announcement:write" as const,
+      icon: <Megaphone aria-hidden className="h-4 w-4" />,
+    },
+    {
+      href: "/panel/birimler/yeni",
+      label: t("quickNewUnit"),
+      permission: "unit:write" as const,
+      icon: <Plus aria-hidden className="h-4 w-4" />,
+    },
+  ].filter((action) => hasPermission(ctx.roles, action.permission));
 
   return (
     <>
       <PageHeader
         title={t("greeting", { property: ctx.tenantName })}
         description={t("description")}
+        action={quickActions.map((action) => (
+          <Link
+            key={action.href}
+            href={action.href}
+            className={
+              action.primary
+                ? "inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-fg hover:bg-primary-hover"
+                : "inline-flex h-10 items-center gap-2 rounded-lg border border-border-strong bg-surface px-3 text-sm font-semibold text-fg hover:bg-hover"
+            }
+          >
+            {action.icon}
+            {action.label}
+          </Link>
+        ))}
       />
 
       {ctx.tenantStatus === "trial" ? (
@@ -141,6 +192,64 @@ export default async function DashboardPage() {
             </Link>
           </CardBody>
         </Card>
+      </div>
+
+      <div className="mt-5">
+        <DashboardCharts
+          monthly={{
+            periods: charts.monthly.periods,
+            periodLabels: charts.monthly.periods.map((period) => f.period(period)),
+            accruedKurus: charts.monthly.accruedKurus,
+            collectedKurus: charts.monthly.collectedKurus,
+            expenseKurus: charts.monthly.expenseKurus,
+            collectionRatePct: charts.monthly.collectionRatePct,
+          }}
+          aging={charts.aging}
+          forecast={{
+            periodLabels: charts.forecast.periods.map((period) => f.period(period)),
+            netKurus: charts.forecast.netKurus,
+            forecastFrom: charts.forecast.forecastFrom,
+            assumedCollectionRate: charts.forecast.assumedCollectionRate,
+          }}
+          collectionSplit={charts.collectionSplit}
+          labels={{
+            incomeExpenseTitle: t("chartIncomeExpense"),
+            incomeExpenseHint: t("chartIncomeExpenseHint"),
+            accrued: t("chartAccrued"),
+            collected: t("chartCollected"),
+            expense: t("chartExpense"),
+            collectionRateTitle: t("chartCollectionRate"),
+            collectionRateHint: t("chartCollectionRateHint"),
+            rate: t("collectionRate"),
+            agingTitle: t("chartAging"),
+            agingHint: t("chartAgingHint"),
+            agingBuckets: {
+              d0: t("aging.d0"),
+              d30: t("aging.d30"),
+              d60: t("aging.d60"),
+              d90: t("aging.d90"),
+              d180: t("aging.d180"),
+            },
+            overdueAmount: t("overdueReceivable"),
+            forecastTitle: t("chartForecast"),
+            forecastHint: t("chartForecastHint", {
+              rate: f.percent(charts.forecast.assumedCollectionRate),
+            }),
+            net: t("chartNet"),
+            forecastNote: t("chartForecastNote"),
+            splitTitle: t("chartSplit"),
+            splitHint: t("chartSplitHint"),
+            paid: t("splitPaid"),
+            open: t("splitOpen"),
+            overdue: t("splitOverdue"),
+            month: t("chartMonth"),
+            bucket: t("chartBucket"),
+            asTable: tCommon("a11y.chartAsTable"),
+            asChart: tCommon("a11y.chartAsChart"),
+            empty: tCommon("state.empty"),
+            totalLabel: t("chartTotal"),
+          }}
+        />
       </div>
     </>
   );
