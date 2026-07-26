@@ -1,0 +1,95 @@
+# GitHub Actions CI — SPEC Bölüm 20 (Faz 0: PR preview, lint, type-check, test).
+# Kurulum: bu dosyayı `.github/workflows/ci.yml` konumuna kopyalayın.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NEXT_TELEMETRY_DISABLED: "1"
+  TURBO_TELEMETRY_DISABLED: "1"
+
+jobs:
+  quality:
+    name: Tip kontrolü, test ve derleme
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: yonetim
+          POSTGRES_PASSWORD: yonetim
+          POSTGRES_DB: yonetim
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U yonetim -d yonetim"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+
+    env:
+      DATABASE_URL: postgresql://yonetim_app:yonetim_app@localhost:5432/yonetim
+      DATABASE_ADMIN_URL: postgresql://yonetim_admin:yonetim_admin@localhost:5432/yonetim
+      DATABASE_OWNER_URL: postgresql://yonetim:yonetim@localhost:5432/yonetim
+      AUTH_SECRET: ci-secret
+      FIELD_ENCRYPTION_KEY: "1111111111111111111111111111111111111111111111111111111111111111"
+      CRON_SECRET: ci-cron
+      NEXT_PUBLIC_BASE_URL: http://localhost:3000
+      NEXT_PUBLIC_APP_URL: http://localhost:3001
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Bağımlılıkları kur
+        run: pnpm install --frozen-lockfile
+
+      - name: Tip kontrolü (paketler + testler)
+        run: pnpm exec tsc --noEmit -p tsconfig.check.json
+
+      - name: Birim testleri
+        run: pnpm test
+
+      - name: Şema ve RLS uygula
+        run: |
+          pnpm db:generate
+          pnpm db:migrate
+          SEED_DEMO=false pnpm db:seed
+
+      - name: Entegrasyon testleri (RLS izolasyonu, borç motoru)
+        run: pnpm test:integration
+
+      - name: Uygulamaları derle
+        run: pnpm build
+
+  security:
+    name: Bağımlılık denetimi
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # SPEC Bölüm 21.2: sıfır kritik güvenlik açığı hedefi.
+      - name: Bilinen güvenlik açıklarını tara
+        run: pnpm audit --audit-level high

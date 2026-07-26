@@ -1,0 +1,344 @@
+{
+  "nav": {
+    "features": "Features",
+    "pricing": "Pricing",
+    "campaigns": "Offers",
+    "migration": "Switching",
+    "blog": "Blog",
+    "faq": "FAQ",
+    "signIn": "Sign in",
+    "startFree": "Start 30-day free trial"
+  },
+  "footer": {
+    "product": "Product",
+    "resources": "Resources",
+    "corporate": "Company",
+    "featuresLink": "Features",
+    "pricingLink": "Pricing",
+    "campaignsLink": "Offers",
+    "migrationLink": "Switching from another system",
+    "blogLink": "Blog",
+    "duesGuideLink": "Dues calculation guide",
+    "meetingGuideLink": "General assembly guide",
+    "faqLink": "Frequently asked questions",
+    "aboutLink": "About us",
+    "contactLink": "Contact",
+    "kvkkLink": "Privacy Notice",
+    "termsLink": "Terms of Use"
+  },
+  "home": {
+    "metaTitle": "{brand} — {tagline}",
+    "trialBadge": "30 days free · no credit card required",
+    "heroTitle": "Property management belongs on your phone,",
+    "heroTitleAccent": "not in a spreadsheet",
+    "heroSubtitle": "From dues accrual to online collection, from the maintenance calendar to the general assembly — everything in one panel. Residents check and pay their balance <strong>over WhatsApp</strong>.",
+    "ctaPrimary": "Start free now",
+    "ctaSecondary": "See pricing",
+    "priceNote": "<strong>{savings}% cheaper</strong> than the comparable package on the market — from {price} per year.",
+    "problem1Title": "Collecting dues stops being a chore",
+    "problem1Body": "No more knocking on doors or posting balances in WhatsApp groups. Automatic accrual, automatic reminders, card payment.",
+    "problem2Title": "Complaints are on the record",
+    "problem2Body": "Fault reports progress against an SLA; who did what and when is visible. The “but I told you” argument ends.",
+    "problem3Title": "Books ready for audit",
+    "problem3Body": "Income and expenses, the decision book, maintenance documents and the data protection log can be reported at any time.",
+    "killerTitle": "What the others don't have",
+    "killerSubtitle": "We started by solving the most complained-about problems in this market, one by one.",
+    "modulesTitle": "Every module in every package",
+    "modulesSubtitle": "Price differs only by unit count and SMS quota; no feature is held back.",
+    "ctaTitle": "Make this month's collection easier",
+    "ctaBody": "Setup takes 15 minutes. Importing data from your current software is free.",
+    "schemaFeature": {
+      "dues": "Dues and debt tracking",
+      "payment": "Online collection (3-D Secure)",
+      "bot": "WhatsApp resident bot",
+      "expense": "Expense and budget management",
+      "maintenance": "Maintenance calendar and statutory compliance",
+      "meeting": "General assembly and decision book",
+      "kvkk": "KVKK audit log",
+      "legal": "Enforcement and legal tracking"
+    }
+  },
+  "features": {
+    "metaTitle": "Features — dues, collection, maintenance, compliance, enforcement",
+    "metaDescription": "Dues accrual, online collection, a WhatsApp bot, maintenance calendar, general assembly, data protection audit log and debt enforcement on one platform.",
+    "title": "Features",
+    "subtitle": "Every package includes all modules. The headings below map one-to-one to the module numbers in the technical specification.",
+    "specSection": "Specification section {ref}",
+    "moduleListTitle": "Module list",
+    "comparisonTitle": "Comparison",
+    "comparisonDisclaimer": "This comparison is based on information published on the providers' public product pages and may change. If you spot an inaccurate row, tell us and we'll correct it.",
+    "comparisonFeature": "Feature",
+    "comparisonUs": "Us",
+    "partial": "partial",
+    "soon": "soon"
+  },
+  "pricing": {
+    "metaTitle": "Pricing — transparent packages based on unit count",
+    "metaDescription": "15 tiers priced transparently by unit count. Half the price of the comparable package, 30 days free, no credit card required.",
+    "title": "Transparent pricing",
+    "subtitle": "Packages differ only by <strong>unit count</strong> and SMS quota. All modules are enabled in every package. Prices include VAT.",
+    "unitCountLabel": "Your unit count",
+    "unitCountPlaceholder": "e.g. 48",
+    "periodLabel": "Payment period",
+    "findPlan": "Find my package",
+    "recommendedFor": "Recommended package for {count} units",
+    "installmentCount": "× {count} instalments",
+    "yearlyTotal": "Annual total",
+    "surcharge": "+{amount} instalment surcharge",
+    "noSurcharge": "Paid upfront — no surcharge",
+    "perUnitMonthly": "Per unit / month",
+    "smsIncluded": "{count} SMS/year included",
+    "savingsNote": "You save <strong>{amount}</strong> a year against the comparable package.",
+    "tableCaption": "Packages and annual prices",
+    "planColumn": "Package",
+    "unitsColumn": "Units",
+    "smsColumn": "SMS / year",
+    "yearlyColumn": "Annual",
+    "monthlyColumn": "Monthly equivalent",
+    "savingsColumn": "vs. comparable package",
+    "savingsBadge": "{pct}% saving",
+    "suitableBadge": "Your fit",
+    "enterprise": "Enterprise",
+    "unlimited": "Unlimited",
+    "negotiated": "Negotiated",
+    "enterpriseNote": "White-label, SSO, SLA and data protection audit support — contact us for a quote.",
+    "guarantee1": "30-day free trial, no credit card required",
+    "guarantee2": "{days}-day unconditional refund right",
+    "guarantee3": "Renewal increase capped at {pct}% (inflation-linked)",
+    "guarantee4": "SMS overage: {price} per message",
+    "guarantee5": "{days}-day grace period when the licence ends",
+    "guarantee6": "No platform commission on dues collection",
+    "faqTitle": "Questions about pricing"
+  },
+  "campaigns": {
+    "metaTitle": "Offers",
+    "metaDescription": "Switching offer, refer and earn, annual upfront discount and more. Explore the active offers.",
+    "title": "Offers",
+    "subtitle": "Offers don't stack; the system always applies the <strong>most advantageous</strong> one for you automatically. Even after an offer ends, your price stays locked until the end of the period.",
+    "seeConditions": "See conditions →",
+    "rewardTitle": "What you get",
+    "maxDiscount": "Total discount cap: {amount}",
+    "conditionsTitle": "Conditions",
+    "rulesTitle": "Rules",
+    "noExtraConditions": "No additional conditions",
+    "startWithCampaign": "Start with this offer",
+    "condition": {
+      "commitYears": "{years}-year commitment",
+      "minUnits": "At least {count} units",
+      "maxUnits": "At most {count} units",
+      "yearlyUpfront": "Annual upfront payment",
+      "migratingFrom": "Current system: {sources}",
+      "remainingContract": "At most {months} months left on the current contract",
+      "referrals": "At least {count} referrals",
+      "partnerContract": "A contract with a partner provider",
+      "firstN": "Limited to the first {count} properties",
+      "promoCode": "An offer code is required"
+    },
+    "rule": {
+      "stackable": "Can be combined with other offers.",
+      "notStackable": "Cannot be combined with other offers; the most advantageous one applies.",
+      "oncePerTenant": "Can be used once per property.",
+      "priceLocked": "Your price doesn't change for the current period even after the offer ends.",
+      "fraudCheck": "The offer may be cancelled if multiple sign-ups with the same ID/IBAN are detected."
+    },
+    "reward": {
+      "freeMonths": "{count} months free",
+      "percentOff": "{value}% discount",
+      "amountOff": "{value} ₺ off",
+      "freeFirstYear": "First year free",
+      "freeYears": "{count} years free",
+      "creditBalance": "{value} ₺ account credit",
+      "lifetime": "(for life)"
+    },
+    "template": {
+      "yeni_site_hosgeldin": {
+        "name": "New Property Welcome",
+        "description": "A one-month free trial for every newly registered property (default).",
+        "headline": "Try it free for a month — no card required",
+        "bullets": "All modules enabled|No credit card needed|No automatic charge when the trial ends"
+      },
+      "uc_yil_taahhut_ilk_yil_bedava": {
+        "name": "3-Year Commitment — First Year Free",
+        "description": "Properties committing to a three-year contract get the first year entirely free.",
+        "headline": "Stay three years, the first one is on us",
+        "bullets": "First 12 months free|Price fixed for three years|Export your data at any time"
+      },
+      "yonetim_firmasi_6_ay": {
+        "name": "Management Company — 6 Months Free",
+        "description": "For newly founded professional management companies using the platform for the first time.",
+        "headline": "Six months on us for your management company",
+        "bullets": "Add unlimited properties|Team permissions|Multi-property console on one screen"
+      },
+      "yonetim_firmasi_3_ay": {
+        "name": "Management Company — 3 Months Free",
+        "description": "Three months free for management companies using the platform for the first time.",
+        "headline": "Try it free for three months",
+        "bullets": "Onboarding support included|Free data import"
+      },
+      "gecis_kampanyasi": {
+        "name": "We Cover You Until Your Contract Ends",
+        "description": "For properties still under contract with another management software: free until that contract ends (up to 12 months).",
+        "headline": "Pay nothing until your current contract ends",
+        "bullets": "Import your Apsiyon / Biyos / Dijiyon / Yönetimcell data in one click|You never pay twice|Set up in an hour with the import wizard"
+      },
+      "tavsiye_et_kazan": {
+        "name": "Refer and Earn",
+        "description": "When a property you refer subscribes, both of you get a month free.",
+        "headline": "Refer neighbouring properties and earn up to 10,000 ₺",
+        "bullets": "One month free for every referral|The property you refer also gets a month|Your earnings are credited to your account"
+      },
+      "partner_sayac_ortakligi": {
+        "name": "Meter Partnership — Platform Free",
+        "description": "The platform is entirely free for properties using a partner meter/energy provider.",
+        "headline": "Get meter reading from our partner, the software is free",
+        "bullets": "Meter readings flow into the system automatically|No platform fee|Valid while the partner contract is active"
+      },
+      "yillik_pesin_indirim": {
+        "name": "17% Off for Annual Upfront",
+        "description": "Pay 12 months upfront and get two months free (about 17% off).",
+        "headline": "Pay annually, use two months free",
+        "bullets": "17% off instantly|Price fixed for 12 months"
+      },
+      "erken_kus": {
+        "name": "Early Bird — 25% for Life",
+        "description": "A lifetime 25% discount for the first 100 properties to sign up at launch.",
+        "headline": "25% off for life for the first 100 properties",
+        "bullets": "Unaffected by future price rises|Closes once the quota fills"
+      },
+      "black_friday": {
+        "name": "Black Friday",
+        "description": "A limited-time 25–50% discount on annual plans.",
+        "headline": "Black Friday: 30% off annual plans",
+        "bullets": "Valid with a code|Seven days only"
+      },
+      "cevre_dostu": {
+        "name": "Eco-Friendly 10%",
+        "description": "A 10% discount for properties actively using the carbon footprint module.",
+        "headline": "10% off for properties that measure their consumption",
+        "bullets": "Common area energy report|Carbon footprint indicator"
+      }
+    },
+    "badge": {
+      "new": "NEW",
+      "popular": "POPULAR",
+      "limited": "LIMITED",
+      "switch": "SWITCH",
+      "earn": "EARN",
+      "partner": "PARTNER",
+      "saving": "SAVE",
+      "first100": "FIRST 100",
+      "limitedTime": "LIMITED TIME",
+      "green": "GREEN"
+    }
+  },
+  "migration": {
+    "metaTitle": "Switching from your current software",
+    "metaDescription": "Import your data from Apsiyon, Biyos, Dijiyon, Yönetimcell or Excel. We charge nothing until your current contract ends.",
+    "title": "Switching is easier than you think",
+    "subtitle": "The average switch takes one hour. If your current software contract is still running, we charge nothing until it ends (up to 12 months) — you never pay twice.",
+    "step1Title": "1. Export",
+    "step1Body": "Download the unit list, resident details and current balances from your existing software as Excel.",
+    "step2Title": "2. Upload",
+    "step2Body": "Drop the file into the import wizard. Columns are detected automatically; you map any that aren't.",
+    "step3Title": "3. Preview",
+    "step3Body": "How many units, how many residents, how much balance will be imported — you see the report before saving.",
+    "step4Title": "4. Reconcile",
+    "step4Body": "After the import, compare against the old system using the balance reconciliation report.",
+    "sourcesTitle": "Supported sources",
+    "importFrom": "Import my {name} data",
+    "ownershipTitle": "Your data belongs to you",
+    "ownershipBody": "You can export all of your data as Excel and JSON at any time. Even if you decide to leave us, the export is free — we don't lock you in.",
+    "source": {
+      "apsiyonNote": "Unit, resident, debt and collection exports are supported.",
+      "biyosNote": "Excel exports are mapped automatically.",
+      "dijiyonNote": "Debt and expense items are imported.",
+      "yonetimcellNote": "Block/unit structure and balance import.",
+      "excelNote": "Upload your own template and map the columns."
+    }
+  },
+  "faq": {
+    "metaTitle": "Frequently asked questions",
+    "metaDescription": "Setup time, data protection compliance, late fees, commission policy and the switching process.",
+    "title": "Frequently asked questions"
+  },
+  "blog": {
+    "metaTitle": "Blog and guides",
+    "metaDescription": "Practical guides for property managers on dues calculation, general assemblies, data protection and debt enforcement.",
+    "title": "Blog & guides",
+    "subtitle": "Actionable, legislation-based content for apartment and community managers.",
+    "readingTime": "{minutes} min read",
+    "category": {
+      "rehber": "Guide",
+      "mevzuat": "Legislation",
+      "urun": "Product"
+    },
+    "ctaTitle": "Automate this work",
+    "ctaBody": "Dues accrual, reminders, collection and document generation don't have to be done by hand.",
+    "relatedTitle": "Related articles"
+  },
+  "guide": {
+    "ctaBody": "Don't do these calculations by hand: {brand} generates accruals, reminders and documents automatically.",
+    "ctaAction": "Try it free"
+  },
+  "kvkkPage": {
+    "metaTitle": "Privacy Notice",
+    "metaDescription": "What your personal data is processed for, retention periods, transfer policy and your rights under Turkish data protection law.",
+    "title": "Personal Data Protection",
+    "note": "This notice covers the data the platform itself processes. Each property management publishes its own notice for its residents; the system generates it automatically."
+  },
+  "landing": {
+    "metaTitle": "{property}{location} management",
+    "metaDescription": "Information page for {property}{location}. Dues payment, announcements, management contact and fault reporting.",
+    "units": "Units",
+    "managementSystem": "Management system",
+    "duesPayment": "Dues payment",
+    "online": "Online",
+    "residentTitle": "Are you a resident?",
+    "residentBody": "Sign in to the resident portal to view your balance, make a payment or report a fault. If management hasn't invited you yet, you can request access using the link below.",
+    "residentLogin": "Resident sign-in",
+    "registerRequest": "Request access",
+    "npsTitle": "How would you rate this property's management?",
+    "npsBody": "Your answer is collected anonymously and shared with management only as a summary.",
+    "disclaimer": "This page is published by {brand} at the request of the property management. It contains no personal data. To request removal, write to {email}."
+  },
+  "module": {
+    "duesTitle": "Dues & debt",
+    "duesItems": "Equal, land share, m², occupant, meter and mixed formulas|Automatic monthly accrual|Statutory late fee (Condominium Act art. 20)|Bulk debt import from Excel",
+    "collectionTitle": "Collection",
+    "collectionItems": "Card payment with mandatory 3D Secure|Instalment payments|Direct debit|PDF receipts",
+    "financeTitle": "Finance & accounting",
+    "financeItems": "Income and expense ledger|Bank integration and reconciliation|E-invoice provider|Budget vs. actual",
+    "communicationTitle": "Communication",
+    "communicationItems": "WhatsApp, SMS, email, in-app|Privacy-filtered announcements|Emergency override|Delivery and read reports",
+    "decisionTitle": "Decision making",
+    "decisionItems": "Polls and voting (land-share weighted)|Statutory quorum checks|Meetings and minutes|Decision book PDF",
+    "maintenanceTitle": "Maintenance & faults",
+    "maintenanceItems": "Fault reports with SLA|50+ periodic maintenance templates|Vendor rating|Contract expiry reminders",
+    "operationsTitle": "Operations",
+    "operationsItems": "Staff, payroll, social security, leave|Meter reading and cost sharing|Common area reservations|Document management and full-text search",
+    "complianceTitle": "Compliance & legal",
+    "complianceItems": "Data protection request handling|Audit log|Debt enforcement|Clearance certificate"
+  },
+  "llms": {
+    "featuresHeading": "Key features",
+    "pricingHeading": "Pricing",
+    "complianceHeading": "Legal compliance",
+    "faqHeading": "Frequently asked questions",
+    "linksHeading": "Links",
+    "contactHeading": "Contact",
+    "pricingTiers": "{count} transparent tiers based on unit count.",
+    "pricingRange": "From {min} to {max} per year.",
+    "pricingTrial": "{days}-day free trial, no credit card required.",
+    "pricingRefund": "{days}-day unconditional refund right.",
+    "pricingCap": "Renewal price increases are capped at {pct}%.",
+    "complianceCondominium": "Dues, quorum and decision book processes aligned with the Turkish Condominium Act (Law No. 634).",
+    "complianceKvkk": "Turkish Data Protection Law (No. 6698): field-level encryption, audit log, requests answered within {days} days.",
+    "complianceLogs": "{days}-day log retention under Law No. 5651.",
+    "linkHome": "Home",
+    "linkPricing": "Pricing",
+    "linkFeatures": "Features",
+    "linkCampaigns": "Offers",
+    "linkBlog": "Blog",
+    "linkApp": "Application"
+  }
+}

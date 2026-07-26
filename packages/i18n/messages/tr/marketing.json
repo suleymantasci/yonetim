@@ -1,0 +1,344 @@
+{
+  "nav": {
+    "features": "Özellikler",
+    "pricing": "Fiyatlandırma",
+    "campaigns": "Kampanyalar",
+    "migration": "Geçiş",
+    "blog": "Blog",
+    "faq": "S.S.S.",
+    "signIn": "Giriş yap",
+    "startFree": "30 gün ücretsiz dene"
+  },
+  "footer": {
+    "product": "Ürün",
+    "resources": "Kaynaklar",
+    "corporate": "Kurumsal",
+    "featuresLink": "Özellikler",
+    "pricingLink": "Fiyatlandırma",
+    "campaignsLink": "Kampanyalar",
+    "migrationLink": "Rakip sistemden geçiş",
+    "blogLink": "Blog",
+    "duesGuideLink": "Aidat hesaplama rehberi",
+    "meetingGuideLink": "Toplantı rehberi",
+    "faqLink": "Sık sorulan sorular",
+    "aboutLink": "Hakkımızda",
+    "contactLink": "İletişim",
+    "kvkkLink": "KVKK Aydınlatma Metni",
+    "termsLink": "Kullanım Sözleşmesi"
+  },
+  "home": {
+    "metaTitle": "{brand} — {tagline}",
+    "trialBadge": "30 gün ücretsiz · kredi kartı istemiyoruz",
+    "heroTitle": "Apartman yönetimi Excel'de değil,",
+    "heroTitleAccent": "telefonda olmalı",
+    "heroSubtitle": "Aidat tahakkukundan online tahsilata, bakım takviminden kat malikleri toplantısına kadar her şey tek panelde. Sakinler borçlarını <strong>WhatsApp'tan</strong> öğrenip ödüyor.",
+    "ctaPrimary": "Hemen ücretsiz başla",
+    "ctaSecondary": "Fiyatları gör",
+    "priceNote": "Piyasadaki muadil pakete göre <strong>%{savings} daha uygun</strong> — yıllık {price}'den başlayan fiyatlarla.",
+    "problem1Title": "Aidat toplamak dertten çıktı",
+    "problem1Body": "Kapı kapı dolaşmak, WhatsApp gruplarında borç yazmak yok. Otomatik tahakkuk, otomatik hatırlatma, kartla ödeme.",
+    "problem2Title": "Şikâyetler kayıt altında",
+    "problem2Body": "Arıza kayıtları SLA'lı ilerler; kim ne zaman ne yaptı görünür. “Söylemiştim ama” tartışması biter.",
+    "problem3Title": "Denetime hazır defter",
+    "problem3Body": "Gelir-gider, karar defteri, bakım belgeleri ve KVKK kütüğü her an raporlanabilir durumda.",
+    "killerTitle": "Rakiplerde olmayanlar",
+    "killerSubtitle": "Piyasadaki en çok şikâyet edilen konuları tek tek çözerek başladık.",
+    "modulesTitle": "Tüm paketlerde tüm modüller",
+    "modulesSubtitle": "Fiyat farkı yalnızca daire sayısından ve SMS kotasından gelir; özellik kısıtlaması yoktur.",
+    "ctaTitle": "Bu ay tahsilatınızı kolaylaştırın",
+    "ctaBody": "Kurulum 15 dakika. Mevcut programınızdan veri aktarımı ücretsiz.",
+    "schemaFeature": {
+      "dues": "Aidat ve borç takibi",
+      "payment": "Online tahsilat (3D Secure)",
+      "bot": "WhatsApp sakin botu",
+      "expense": "Gider ve bütçe yönetimi",
+      "maintenance": "Bakım takvimi ve yasal zorunluluk takibi",
+      "meeting": "Kat malikleri toplantısı ve karar defteri",
+      "kvkk": "KVKK denetim kütüğü",
+      "legal": "İcra ve hukuk takibi"
+    }
+  },
+  "features": {
+    "metaTitle": "Özellikler — aidat, tahsilat, bakım, KVKK, icra",
+    "metaDescription": "Aidat tahakkuku, online tahsilat, WhatsApp botu, bakım takvimi, kat malikleri toplantısı, KVKK denetim kütüğü ve icra takibi tek platformda.",
+    "title": "Özellikler",
+    "subtitle": "Her paket tüm modülleri içerir. Aşağıdaki başlıklar teknik şartnamedeki modül numaralarıyla birebir eşleşir.",
+    "specSection": "Şartname bölümü {ref}",
+    "moduleListTitle": "Modül listesi",
+    "comparisonTitle": "Karşılaştırma",
+    "comparisonDisclaimer": "Karşılaştırma, sağlayıcıların herkese açık ürün sayfalarındaki bilgilere dayanır ve değişebilir. Yanlış gördüğünüz bir satır olursa bize bildirin, düzeltelim.",
+    "comparisonFeature": "Özellik",
+    "comparisonUs": "Biz",
+    "partial": "kısmi",
+    "soon": "yakında"
+  },
+  "pricing": {
+    "metaTitle": "Fiyatlandırma — daire sayısına göre şeffaf paketler",
+    "metaDescription": "15 kademeli, daire sayısına göre şeffaf fiyatlandırma. Piyasadaki muadil pakete göre yarı fiyat, 30 gün ücretsiz deneme, kredi kartı gerekmez.",
+    "title": "Şeffaf fiyatlandırma",
+    "subtitle": "Paketler yalnızca <strong>bağımsız bölüm sayısına</strong> ve SMS kotasına göre değişir. Tüm modüller her pakette açıktır. Fiyatlar KDV dahildir.",
+    "unitCountLabel": "Daire sayınız",
+    "unitCountPlaceholder": "örn. 48",
+    "periodLabel": "Ödeme periyodu",
+    "findPlan": "Paketimi bul",
+    "recommendedFor": "{count} bağımsız bölüm için önerilen paket",
+    "installmentCount": "× {count} taksit",
+    "yearlyTotal": "Yıllık toplam",
+    "surcharge": "+{amount} vade farkı",
+    "noSurcharge": "Peşin — vade farkı yok",
+    "perUnitMonthly": "Daire başı / ay",
+    "smsIncluded": "{count} SMS/yıl dahil",
+    "savingsNote": "Muadil pakete göre yıllık <strong>{amount}</strong> tasarruf.",
+    "tableCaption": "Paketler ve yıllık fiyatlar",
+    "planColumn": "Paket",
+    "unitsColumn": "Bağımsız bölüm",
+    "smsColumn": "SMS / yıl",
+    "yearlyColumn": "Yıllık",
+    "monthlyColumn": "Aylık eşdeğeri",
+    "savingsColumn": "Muadil pakete göre",
+    "savingsBadge": "%{pct} tasarruf",
+    "suitableBadge": "Size uygun",
+    "enterprise": "Kurumsal",
+    "unlimited": "Sınırsız",
+    "negotiated": "Anlaşmalı",
+    "enterpriseNote": "White-label, SSO, SLA ve KVKK denetim desteği — teklif için bize yazın.",
+    "guarantee1": "30 gün ücretsiz deneme, kredi kartı istenmez",
+    "guarantee2": "{days} gün koşulsuz iade hakkı",
+    "guarantee3": "Yenilemede artış en fazla %{pct} (TÜFE bazlı)",
+    "guarantee4": "SMS kota aşımı: adet başına {price}",
+    "guarantee5": "Lisans bitiminde {days} gün ek süre",
+    "guarantee6": "Aidat tahsilatından platform komisyonu alınmaz",
+    "faqTitle": "Fiyatlandırma hakkında sorular"
+  },
+  "campaigns": {
+    "metaTitle": "Kampanyalar",
+    "metaDescription": "Geçiş kampanyası, tavsiye et kazan, yıllık peşin indirimi ve daha fazlası. Aktif kampanyaları inceleyin.",
+    "title": "Kampanyalar",
+    "subtitle": "Kampanyalar birbirine eklenmez; sistem her zaman <strong>sizin için en avantajlı</strong> olanı otomatik uygular. Kampanya bitse dahi aldığınız fiyat dönem sonuna kadar kilitlidir.",
+    "seeConditions": "Koşulları gör →",
+    "rewardTitle": "Kazancınız",
+    "maxDiscount": "Toplam indirim üst sınırı: {amount}",
+    "conditionsTitle": "Koşullar",
+    "rulesTitle": "Kurallar",
+    "noExtraConditions": "Ek koşul yok",
+    "startWithCampaign": "Bu kampanyayla başla",
+    "condition": {
+      "commitYears": "{years} yıllık taahhüt",
+      "minUnits": "En az {count} bağımsız bölüm",
+      "maxUnits": "En fazla {count} bağımsız bölüm",
+      "yearlyUpfront": "Yıllık peşin ödeme",
+      "migratingFrom": "Mevcut sistem: {sources}",
+      "remainingContract": "Kalan sözleşme süresi en fazla {months} ay",
+      "referrals": "En az {count} tavsiye",
+      "partnerContract": "Anlaşmalı partner sözleşmesi",
+      "firstN": "İlk {count} site ile sınırlı",
+      "promoCode": "Kampanya kodu gerekir"
+    },
+    "rule": {
+      "stackable": "Diğer kampanyalarla birleştirilebilir.",
+      "notStackable": "Diğer kampanyalarla birleştirilemez; en avantajlı olan uygulanır.",
+      "oncePerTenant": "Site başına bir kez kullanılabilir.",
+      "priceLocked": "Kampanya süresi bitse de mevcut döneminizde fiyat değişmez.",
+      "fraudCheck": "Aynı kimlik/IBAN ile çoklu kayıt tespitinde kampanya iptal edilebilir."
+    },
+    "reward": {
+      "freeMonths": "{count} ay ücretsiz",
+      "percentOff": "%{value} indirim",
+      "amountOff": "{value} ₺ indirim",
+      "freeFirstYear": "İlk yıl ücretsiz",
+      "freeYears": "{count} yıl ücretsiz",
+      "creditBalance": "{value} ₺ hesap kredisi",
+      "lifetime": "(ömür boyu)"
+    },
+    "template": {
+      "yeni_site_hosgeldin": {
+        "name": "Yeni Site Hoş Geldin",
+        "description": "Yeni kayıt olan her sitede 1 ay ücretsiz deneme (varsayılan).",
+        "headline": "1 ay ücretsiz deneyin, kart bilgisi istemiyoruz",
+        "bullets": "Tüm modüller açık|Kredi kartı gerekmez|Deneme bitince otomatik ücret alınmaz"
+      },
+      "uc_yil_taahhut_ilk_yil_bedava": {
+        "name": "3 Yıl Taahhüt — İlk Yıl Ücretsiz",
+        "description": "3 yıllık sözleşme taahhüdü veren sitelerde ilk yıl tamamen ücretsiz.",
+        "headline": "3 yıl bizimle kalın, ilk yıl bizden",
+        "bullets": "İlk 12 ay ücretsiz|Fiyat 3 yıl boyunca sabit|İstediğiniz zaman veri ihracı"
+      },
+      "yonetim_firmasi_6_ay": {
+        "name": "Yönetim Firması 6 Ay Ücretsiz",
+        "description": "Yeni kurulmuş ve platformu ilk defa kullanacak profesyonel yönetim firmaları.",
+        "headline": "Yönetim firmanıza 6 ay bizden",
+        "bullets": "Sınırsız site ekleme|Ekip yetkilendirme|Tek ekrandan çoklu site konsolu"
+      },
+      "yonetim_firmasi_3_ay": {
+        "name": "Yönetim Firması 3 Ay Ücretsiz",
+        "description": "Platformu ilk defa kullanacak yönetim firmaları için 3 ay ücretsiz.",
+        "headline": "3 ay ücretsiz deneyin",
+        "bullets": "Kurulum desteği dahil|Veri aktarımı ücretsiz"
+      },
+      "gecis_kampanyasi": {
+        "name": "Sözleşmeniz Bitene Kadar Ücretler Bizden",
+        "description": "Mevcut yönetim yazılımı sözleşmesi devam eden siteler: sözleşme bitene kadar (en fazla 12 ay) ücretsiz.",
+        "headline": "Mevcut sözleşmeniz bitene kadar ücret ödemeyin",
+        "bullets": "Apsiyon / Biyos / Dijiyon / Yönetimcell verilerinizi tek tıkla aktarın|Çift ödeme yapmazsınız|Geçiş sihirbazı ile 1 saatte kurulum"
+      },
+      "tavsiye_et_kazan": {
+        "name": "Tavsiye Et Kazan",
+        "description": "Tavsiye ettiğiniz site abone olursa hem siz hem onlar 1 ay ücretsiz.",
+        "headline": "Komşu sitelere tavsiye edin, 10.000 ₺'ye varan kazanç",
+        "bullets": "Her tavsiye için 1 ay ücretsiz|Tavsiye ettiğiniz site de 1 ay kazanır|Kazancınız hesap bakiyesine işlenir"
+      },
+      "partner_sayac_ortakligi": {
+        "name": "Sayaç Ortaklığı — Platform Ücretsiz",
+        "description": "Anlaşmalı sayaç/enerji firmasından hizmet alan siteler için platform tamamen ücretsiz.",
+        "headline": "Sayaç okuma hizmetini partnerimizden alın, yazılım ücretsiz",
+        "bullets": "Sayaç okuma otomatik sisteme işlenir|Platform ücreti alınmaz|Partner sözleşmesi devam ettiği sürece geçerli"
+      },
+      "yillik_pesin_indirim": {
+        "name": "Yıllık Peşin %17 İndirim",
+        "description": "12 ay peşin ödemede 2 ay bedava (yaklaşık %17 indirim).",
+        "headline": "Yıllık öde, 2 ay bedava kullan",
+        "bullets": "Anında %17 indirim|Fiyat 12 ay sabit"
+      },
+      "erken_kus": {
+        "name": "Erken Kuş — Ömür Boyu %25",
+        "description": "Lansmanda kayıt olan ilk 100 site için ömür boyu %25 indirim.",
+        "headline": "İlk 100 siteye ömür boyu %25 indirim",
+        "bullets": "Fiyat artışlarından etkilenmezsiniz|Kontenjan doldukça kapanır"
+      },
+      "black_friday": {
+        "name": "Black Friday",
+        "description": "Sınırlı süreli yıllık %25-50 indirim.",
+        "headline": "Black Friday: yıllık planlarda %30 indirim",
+        "bullets": "Kod ile geçerli|Sadece 7 gün"
+      },
+      "cevre_dostu": {
+        "name": "Çevre Dostu %10",
+        "description": "Karbon ayak izi modülünü aktif kullanan sitelere %10 indirim.",
+        "headline": "Tüketimini ölçen siteye %10 indirim",
+        "bullets": "Ortak alan enerji raporu|Karbon ayak izi göstergesi"
+      }
+    },
+    "badge": {
+      "new": "YENİ",
+      "popular": "POPÜLER",
+      "limited": "SINIRLI",
+      "switch": "GEÇİŞ",
+      "earn": "KAZAN",
+      "partner": "PARTNER",
+      "saving": "TASARRUF",
+      "first100": "İLK 100",
+      "limitedTime": "SINIRLI SÜRE",
+      "green": "YEŞİL"
+    }
+  },
+  "migration": {
+    "metaTitle": "Mevcut programınızdan geçiş",
+    "metaDescription": "Apsiyon, Biyos, Dijiyon, Yönetimcell veya Excel'den verilerinizi aktarın. Mevcut sözleşmeniz bitene kadar ücret almıyoruz.",
+    "title": "Geçiş, düşündüğünüzden kolay",
+    "subtitle": "Ortalama geçiş süresi 1 saat. Mevcut yazılım sözleşmeniz devam ediyorsa, sözleşmeniz bitene kadar (en fazla 12 ay) bizden ücret alınmaz — çift ödeme yapmazsınız.",
+    "step1Title": "1. Dışa aktarın",
+    "step1Body": "Mevcut programınızdan daire listesi, sakin bilgileri ve güncel bakiyeleri Excel olarak indirin.",
+    "step2Title": "2. Yükleyin",
+    "step2Body": "Geçiş sihirbazına dosyayı bırakın. Sütunlar otomatik tanınır; tanınmayanları siz eşleştirirsiniz.",
+    "step3Title": "3. Önizleyin",
+    "step3Body": "Kaç daire, kaç sakin, ne kadar bakiye aktarılacak — kaydetmeden önce raporu görürsünüz.",
+    "step4Title": "4. Doğrulayın",
+    "step4Body": "Aktarım sonrası bakiye mutabakat raporu ile eski sistemle karşılaştırma yaparsınız.",
+    "sourcesTitle": "Desteklenen kaynaklar",
+    "importFrom": "{name} verimi aktar",
+    "ownershipTitle": "Verileriniz size aittir",
+    "ownershipBody": "İstediğiniz an tüm verilerinizi Excel ve JSON olarak dışa aktarabilirsiniz. Bizden ayrılmayı seçerseniz de aktarım ücretsizdir — kilitlenme yaratmayız.",
+    "source": {
+      "apsiyonNote": "Daire, sakin, borç ve tahsilat dışa aktarımı desteklenir.",
+      "biyosNote": "Excel dışa aktarımı otomatik eşleştirilir.",
+      "dijiyonNote": "Borç ve gider kalemleri aktarılır.",
+      "yonetimcellNote": "Blok/daire yapısı ve bakiye aktarımı.",
+      "excelNote": "Kendi şablonunuzu yükleyin, sütunları eşleştirin."
+    }
+  },
+  "faq": {
+    "metaTitle": "Sık sorulan sorular",
+    "metaDescription": "Kurulum süresi, KVKK uyumu, gecikme tazminatı, komisyon politikası ve geçiş süreci hakkında merak edilenler.",
+    "title": "Sık sorulan sorular"
+  },
+  "blog": {
+    "metaTitle": "Blog ve rehberler",
+    "metaDescription": "Aidat hesaplama, kat malikleri toplantısı, KVKK ve icra takibi hakkında apartman yöneticileri için pratik rehberler.",
+    "title": "Blog & rehberler",
+    "subtitle": "Apartman ve site yöneticileri için mevzuata dayalı, uygulanabilir içerikler.",
+    "readingTime": "{minutes} dk okuma",
+    "category": {
+      "rehber": "Rehber",
+      "mevzuat": "Mevzuat",
+      "urun": "Ürün"
+    },
+    "ctaTitle": "Bu işlemleri otomatikleştirin",
+    "ctaBody": "Aidat tahakkuku, hatırlatma, tahsilat ve belge üretimi elle yapılmak zorunda değil.",
+    "relatedTitle": "İlgili yazılar"
+  },
+  "guide": {
+    "ctaBody": "Bu hesapları elle yapmayın: {brand} tahakkuku, hatırlatmayı ve belgeleri otomatik üretir.",
+    "ctaAction": "Ücretsiz deneyin"
+  },
+  "kvkkPage": {
+    "metaTitle": "KVKK Aydınlatma Metni",
+    "metaDescription": "Kişisel verilerinizin hangi amaçla işlendiği, saklama süreleri, aktarım politikası ve KVKK md.11 haklarınız.",
+    "title": "Kişisel Verilerin Korunması",
+    "note": "Bu metin platformun kendi işlediği veriler içindir. Her site yönetimi kendi sakinleri için ayrı aydınlatma metni yayınlar; sistem bunu otomatik oluşturur."
+  },
+  "landing": {
+    "metaTitle": "{property}{location} yönetimi",
+    "metaDescription": "{property}{location} site yönetimi bilgi sayfası. Aidat ödeme, duyurular, yönetim iletişimi ve talep bildirimi.",
+    "units": "Bağımsız bölüm",
+    "managementSystem": "Yönetim sistemi",
+    "duesPayment": "Aidat ödeme",
+    "online": "Online",
+    "residentTitle": "Sakin misiniz?",
+    "residentBody": "Borcunuzu görüntülemek, ödeme yapmak veya arıza bildirmek için sakin portalına giriş yapın. Yönetim tarafından davet edilmediyseniz, aşağıdaki bağlantıdan kayıt talebi oluşturabilirsiniz.",
+    "residentLogin": "Sakin girişi",
+    "registerRequest": "Kayıt talebi",
+    "npsTitle": "Bu sitenin yönetimini nasıl buluyorsunuz?",
+    "npsBody": "Yanıtınız anonim toplanır ve yalnızca özet olarak yönetime iletilir.",
+    "disclaimer": "Bu sayfa {brand} tarafından, site yönetiminin talebiyle yayınlanmaktadır. Kişisel veri içermez. Yayından kaldırılmasını istiyorsanız {email} adresine yazabilirsiniz."
+  },
+  "module": {
+    "duesTitle": "Aidat & Borç",
+    "duesItems": "Eşit, arsa payı, m², kişi, sayaç ve karma formüller|Otomatik aylık tahakkuk|KMK md.20 gecikme tazminatı|Toplu Excel borç yansıtma",
+    "collectionTitle": "Tahsilat",
+    "collectionItems": "3D Secure zorunlu kart ödemesi|Taksitli ödeme|Otomatik ödeme talimatı|PDF makbuz",
+    "financeTitle": "Finans & Muhasebe",
+    "financeItems": "Gelir-gider defteri|Banka entegrasyonu ve mutabakat|e-Fatura entegratörü|Bütçe vs gerçekleşen",
+    "communicationTitle": "İletişim",
+    "communicationItems": "WhatsApp, SMS, e-posta, uygulama içi|KVKK filtreli duyurular|Acil durum override|Okundu raporu",
+    "decisionTitle": "Karar Süreçleri",
+    "decisionItems": "Anket ve oylama (arsa payı ağırlıklı)|KMK yeter sayısı kontrolü|Toplantı ve tutanak|Karar defteri PDF",
+    "maintenanceTitle": "Bakım & Arıza",
+    "maintenanceItems": "SLA'lı arıza kaydı|50+ periyodik bakım şablonu|Tedarikçi puanlama|Sözleşme bitiş hatırlatıcı",
+    "operationsTitle": "Operasyon",
+    "operationsItems": "Personel, maaş, SGK, izin|Sayaç okuma ve paylaşım|Ortak alan rezervasyonu|Belge yönetimi ve tam metin arama",
+    "complianceTitle": "Uyum & Hukuk",
+    "complianceItems": "KVKK talep yönetimi|Denetim kütüğü|İcra takibi|Borcu yoktur belgesi"
+  },
+  "llms": {
+    "featuresHeading": "Öne çıkan özellikler",
+    "pricingHeading": "Fiyatlandırma",
+    "complianceHeading": "Yasal uyum",
+    "faqHeading": "Sık sorulan sorular",
+    "linksHeading": "Bağlantılar",
+    "contactHeading": "İletişim",
+    "pricingTiers": "{count} kademeli, daire sayısına göre şeffaf paket yapısı.",
+    "pricingRange": "Yıllık {min} ile {max} arası.",
+    "pricingTrial": "{days} gün ücretsiz deneme, kredi kartı istenmez.",
+    "pricingRefund": "{days} gün koşulsuz iade hakkı.",
+    "pricingCap": "Yıl sonu yenilemede fiyat artışı en fazla %{pct} ile sınırlıdır.",
+    "complianceCondominium": "634 sayılı Kat Mülkiyeti Kanunu'na uygun aidat, yeter sayı ve karar defteri süreçleri.",
+    "complianceKvkk": "6698 sayılı KVKK: alan bazlı şifreleme, denetim kütüğü, {days} gün içinde talep yanıtı.",
+    "complianceLogs": "5651 sayılı Kanun kapsamında {days} gün log saklama.",
+    "linkHome": "Ana sayfa",
+    "linkPricing": "Fiyatlandırma",
+    "linkFeatures": "Özellikler",
+    "linkCampaigns": "Kampanyalar",
+    "linkBlog": "Blog",
+    "linkApp": "Uygulama"
+  }
+}

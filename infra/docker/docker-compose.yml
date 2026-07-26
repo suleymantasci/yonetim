@@ -1,0 +1,40 @@
+# Yerel geliştirme altyapısı — SPEC Bölüm 4.2 (self-host alternatifi).
+# Kullanım: docker compose -f infra/docker/docker-compose.yml up -d
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: yonetim-postgres
+    environment:
+      POSTGRES_USER: yonetim
+      POSTGRES_PASSWORD: yonetim
+      POSTGRES_DB: yonetim
+      # Türkçe sıralama ve tarih biçimi için:
+      LANG: tr_TR.utf8
+      TZ: Europe/Istanbul
+    ports:
+      - "5433:5432"
+    volumes:
+      - yonetim_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U yonetim -d yonetim"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    container_name: yonetim-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6380:6379"
+    volumes:
+      - yonetim_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  yonetim_pgdata:
+  yonetim_redisdata:

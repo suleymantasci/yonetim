@@ -1,0 +1,107 @@
+{
+  "brand": {
+    "tagline": "Site Yönetiminin Dijital Adresi",
+    "description": "Türkiye'nin ilk AI-augmented, WhatsApp-native, çok kiracılı site yönetim platformu. Aidat, gider, duyuru, bakım, anket, toplantı ve icra takibi tek panelde."
+  },
+  "action": {
+    "save": "Kaydet",
+    "cancel": "Vazgeç",
+    "delete": "Sil",
+    "edit": "Düzenle",
+    "add": "Ekle",
+    "undo": "Geri al",
+    "export": "Dışa aktar",
+    "filter": "Filtrele",
+    "search": "Ara",
+    "close": "Kapat",
+    "back": "Geri",
+    "next": "İleri",
+    "continue": "Devam et",
+    "confirm": "Onayla",
+    "send": "Gönder",
+    "upload": "Yükle",
+    "download": "İndir",
+    "print": "Yazdır / PDF olarak kaydet",
+    "detail": "Detay",
+    "viewAll": "Tümünü gör",
+    "calculate": "Hesapla",
+    "verify": "Doğrula",
+    "apply": "Başvur",
+    "logout": "Çıkış",
+    "login": "Giriş yap"
+  },
+  "state": {
+    "saved": "Kaydedildi",
+    "deleted": "Silindi",
+    "loading": "Yükleniyor…",
+    "empty": "Henüz kayıt yok",
+    "error": "Bir hata oluştu",
+    "notFound": "Kayıt bulunamadı",
+    "sending": "Gönderiliyor…",
+    "processing": "İşleniyor…",
+    "none": "—",
+    "yes": "Evet",
+    "no": "Hayır",
+    "active": "Açık",
+    "inactive": "Kapalı",
+    "required": "Zorunlu",
+    "optional": "İsteğe bağlı"
+  },
+  "unit": {
+    "days": "{count, plural, one {# gün} other {# gün}}",
+    "months": "{count, plural, one {# ay} other {# ay}}",
+    "hours": "{count, plural, one {# saat} other {# saat}}",
+    "sms": "{count} SMS",
+    "perMonth": "/ ay",
+    "perYear": "/ yıl",
+    "perHour": "saat",
+    "perDay": "gün",
+    "squareMeters": "m²",
+    "record": "{count, plural, one {# kayıt} other {# kayıt}}",
+    "unitsCount": "{count, plural, one {# bağımsız bölüm} other {# bağımsız bölüm}}"
+  },
+  "theme": {
+    "group": "Tema",
+    "light": "Açık tema",
+    "dark": "Koyu tema",
+    "system": "Sistem tercihi"
+  },
+  "locale": {
+    "label": "Dil",
+    "switchTo": "{name} diline geç"
+  },
+  "a11y": {
+    "skipToContent": "İçeriğe atla",
+    "mainMenu": "Ana menü",
+    "modules": "Modüller",
+    "breadcrumb": "Sayfa yolu"
+  },
+  "legal": {
+    "allRightsReserved": "Tüm hakları saklıdır.",
+    "complianceNote": "6698 sayılı KVKK ve 634 sayılı Kat Mülkiyeti Kanunu'na uygun altyapı.",
+    "kvkkRightsContact": "KVKK kapsamındaki haklarınız için: {email}",
+    "kvkkRightsNote": "Kişisel verilerinize ilişkin haklarınız için <kvkk>KVKK Aydınlatma Metni</kvkk>"
+  },
+  "validation": {
+    "required": "Bu alan zorunludur.",
+    "invalidEmail": "Geçerli bir e-posta adresi giriniz.",
+    "invalidPhone": "Geçerli bir cep telefonu giriniz.",
+    "minLength": "En az {count} karakter olmalı.",
+    "maxLength": "En fazla {count} karakter olabilir.",
+    "invalidAmount": "Geçerli bir tutar giriniz.",
+    "invalidIban": "Geçerli bir IBAN giriniz.",
+    "invalidTckn": "Geçerli bir T.C. kimlik numarası giriniz."
+  },
+  "error": {
+    "unauthorized": "Oturum açmanız gerekiyor.",
+    "forbidden": "Bu işlem için yetkiniz yok.",
+    "forbiddenPermission": "Bu işlem için yetkiniz yok ({permission}).",
+    "forbiddenTenant": "Bu siteye erişim yetkiniz yok.",
+    "notFound": "Kayıt bulunamadı.",
+    "conflict": "Kayıt çakışması oluştu.",
+    "rateLimited": "Çok fazla istek gönderdiniz, lütfen bekleyin.",
+    "tenantMismatch": "Kayıt başka bir siteye ait.",
+    "integrationUnavailable": "{provider} entegrasyonu şu an kullanılamıyor.",
+    "internal": "Beklenmeyen bir hata oluştu."
+  }
+}

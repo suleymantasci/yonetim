@@ -1,0 +1,318 @@
+/**
+ * =============================================================================
+ * SEMANTİK TASARIM TOKEN'LARI — SPEC Bölüm 11.3 / 12.5
+ * =============================================================================
+ *
+ * KURAL: Bileşenler ham renk (`slate-900`, `white`, ...) veya `dark:` çifti
+ * KULLANMAZ. Yalnızca semantik roller kullanılır:
+ *
+ *   Yüzey    bg-canvas · bg-surface · bg-surface-raised · bg-surface-sunken
+ *   Metin    text-fg · text-fg-muted · text-fg-subtle · text-fg-inverted
+ *   Kenar    border-border · border-border-strong
+ *   Marka    bg-primary/text-primary-fg · bg-accent/text-accent-fg
+ *   Durum    bg-success-soft · text-success-fg · border-success-border
+ *            (warning / danger / info aynı üçlüyü izler)
+ *
+ * Tema değişimi tek yerden yönetilir; yeni tema eklemek yalnızca yeni bir
+ * `[data-theme="..."]` bloğu yazmak demektir.
+ *
+ * TEMA ÇÖZÜMLEME
+ * `<html data-theme="light|dark">` her zaman **açık** bir değer taşır.
+ * Kullanıcı "sistem" seçtiyse, paint'ten önce çalışan satır içi betik
+ * (`themeInitScript`) işletim sistemi tercihini okuyup bu niteliği yazar.
+ * Bu sayede CSS'te tek bir koyu tema bloğu yeterlidir; `prefers-color-scheme`
+ * kopyası tutulmaz ve tema atlaması (FOUC) oluşmaz.
+ * Betik çalışmazsa açık tema devreye girer — kabul edilebilir bozulma.
+ */
+
+/* --------------------------------------------------------------------------
+ * AÇIK TEMA (varsayılan)
+ * -------------------------------------------------------------------------- */
+:root {
+  /* Marka renkleri: packages/config/src/site.ts değerleri layout tarafından
+     enjekte edilir. Buradakiler yalnızca yedektir. */
+  --brand-primary: #0f4c81;
+  --brand-secondary: #06b6d4;
+  --brand-accent: #f59e0b;
+
+  /* Yüzeyler */
+  --t-canvas: #f8fafc;
+  --t-surface: #ffffff;
+  --t-surface-raised: #ffffff;
+  --t-surface-sunken: #f1f5f9;
+  --t-overlay: rgb(15 23 42 / 0.45);
+
+  /* Metin */
+  --t-fg: #0f172a;
+  --t-fg-muted: #475569;
+  --t-fg-subtle: #64748b;
+  --t-fg-inverted: #f8fafc;
+
+  /* Kenarlık ve odak */
+  --t-border: #e2e8f0;
+  --t-border-strong: #cbd5e1;
+  --t-ring: var(--brand-secondary);
+
+  /* Etkileşim durumları */
+  --t-hover: #f1f5f9;
+  --t-selected: color-mix(in oklab, var(--brand-primary) 10%, #ffffff);
+
+  /* Marka yüzeyleri */
+  --t-primary: var(--brand-primary);
+  --t-primary-hover: color-mix(in oklab, var(--brand-primary) 85%, #000000);
+  --t-primary-fg: #ffffff;
+  --t-primary-soft: color-mix(in oklab, var(--brand-primary) 10%, #ffffff);
+  --t-primary-soft-fg: color-mix(in oklab, var(--brand-primary) 80%, #000000);
+
+  --t-secondary: var(--brand-secondary);
+  --t-secondary-hover: color-mix(in oklab, var(--brand-secondary) 85%, #000000);
+  --t-secondary-fg: #ffffff;
+
+  --t-accent: var(--brand-accent);
+  --t-accent-hover: color-mix(in oklab, var(--brand-accent) 88%, #ffffff);
+  --t-accent-fg: #1f2937;
+  --t-accent-soft: color-mix(in oklab, var(--brand-accent) 16%, #ffffff);
+  --t-accent-soft-fg: #713f12;
+
+  /* Durum renkleri — ana renk + yumuşak zemin + okunur metin + kenarlık */
+  --t-success: #10b981;
+  --t-success-soft: #ecfdf5;
+  --t-success-fg: #065f46;
+  --t-success-border: #a7f3d0;
+
+  --t-warning: #f59e0b;
+  --t-warning-soft: #fffbeb;
+  --t-warning-fg: #78350f;
+  --t-warning-border: #fde68a;
+
+  --t-danger: #ef4444;
+  --t-danger-soft: #fef2f2;
+  --t-danger-fg: #991b1b;
+  --t-danger-border: #fecaca;
+
+  --t-info: #0ea5e9;
+  --t-info-soft: #f0f9ff;
+  --t-info-fg: #075985;
+  --t-info-border: #bae6fd;
+
+  /* Veri görselleştirme serisi (SPEC Bölüm 6.13 raporlar) */
+  --t-chart-1: var(--brand-primary);
+  --t-chart-2: var(--brand-secondary);
+  --t-chart-3: var(--brand-accent);
+  --t-chart-4: #8b5cf6;
+  --t-chart-5: #10b981;
+  --t-chart-6: #ec4899;
+
+  color-scheme: light;
+}
+
+/* --------------------------------------------------------------------------
+ * KOYU TEMA
+ * Karşıtlık hedefi WCAG 2.1 AA (SPEC Bölüm 11.5): gövde ve ikincil metin
+ * ≥ 4.5:1, kenarlık ≥ 3:1. Lacivert marka rengi koyu zeminde okunmadığı için
+ * açılarak kullanılır.
+ * -------------------------------------------------------------------------- */
+:root[data-theme="dark"] {
+  --t-canvas: #0a0f1a;
+  --t-surface: #111827;
+  --t-surface-raised: #1a2334;
+  --t-surface-sunken: #070b13;
+  --t-overlay: rgb(0 0 0 / 0.6);
+
+  --t-fg: #f1f5f9;
+  --t-fg-muted: #a8b3c4;
+  --t-fg-subtle: #8b97a8;
+  --t-fg-inverted: #0f172a;
+
+  --t-border: #263041;
+  --t-border-strong: #3a475c;
+  --t-ring: #38bdf8;
+
+  --t-hover: #1a2334;
+  --t-selected: color-mix(in oklab, var(--brand-primary) 32%, #111827);
+
+  --t-primary: color-mix(in oklab, var(--brand-primary) 62%, #ffffff);
+  --t-primary-hover: color-mix(in oklab, var(--brand-primary) 78%, #ffffff);
+  --t-primary-fg: #0a0f1a;
+  --t-primary-soft: color-mix(in oklab, var(--brand-primary) 26%, #111827);
+  --t-primary-soft-fg: color-mix(in oklab, var(--brand-primary) 45%, #ffffff);
+
+  --t-secondary: color-mix(in oklab, var(--brand-secondary) 78%, #ffffff);
+  --t-secondary-hover: color-mix(in oklab, var(--brand-secondary) 90%, #ffffff);
+  --t-secondary-fg: #062a33;
+
+  --t-accent: color-mix(in oklab, var(--brand-accent) 88%, #ffffff);
+  --t-accent-hover: var(--brand-accent);
+  --t-accent-fg: #1f2937;
+  --t-accent-soft: color-mix(in oklab, var(--brand-accent) 22%, #111827);
+  --t-accent-soft-fg: #fcd34d;
+
+  --t-success: #34d399;
+  --t-success-soft: color-mix(in oklab, #10b981 18%, #111827);
+  --t-success-fg: #6ee7b7;
+  --t-success-border: color-mix(in oklab, #10b981 38%, #111827);
+
+  --t-warning: #fbbf24;
+  --t-warning-soft: color-mix(in oklab, #f59e0b 18%, #111827);
+  --t-warning-fg: #fcd34d;
+  --t-warning-border: color-mix(in oklab, #f59e0b 38%, #111827);
+
+  --t-danger: #f87171;
+  --t-danger-soft: color-mix(in oklab, #ef4444 18%, #111827);
+  --t-danger-fg: #fca5a5;
+  --t-danger-border: color-mix(in oklab, #ef4444 38%, #111827);
+
+  --t-info: #38bdf8;
+  --t-info-soft: color-mix(in oklab, #0ea5e9 18%, #111827);
+  --t-info-fg: #7dd3fc;
+  --t-info-border: color-mix(in oklab, #0ea5e9 38%, #111827);
+
+  --t-chart-1: color-mix(in oklab, var(--brand-primary) 62%, #ffffff);
+  --t-chart-2: #38bdf8;
+  --t-chart-3: #fbbf24;
+  --t-chart-4: #a78bfa;
+  --t-chart-5: #34d399;
+  --t-chart-6: #f472b6;
+
+  color-scheme: dark;
+}
+
+/*
+ * Betik çalışmadan önce (veya JS kapalıyken) sistem tercihi koyu ise sayfanın
+ * beyaz parlamasını engelle. `data-theme` yazıldığı anda yukarıdaki bloklar
+ * devralır; bu yalnızca ilk boyama için bir emniyet ağıdır.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --t-canvas: #0a0f1a;
+    --t-surface: #111827;
+    --t-fg: #f1f5f9;
+    --t-fg-muted: #a8b3c4;
+    --t-border: #263041;
+    color-scheme: dark;
+  }
+}
+
+/* --------------------------------------------------------------------------
+ * TAILWIND BAĞLAMA
+ * `inline`, utility'lerin `var(--t-*)` referansını korumasını sağlar; böylece
+ * tema override'ları cascade ile çalışır (değer derleme anında sabitlenmez).
+ * -------------------------------------------------------------------------- */
+@theme inline {
+  --color-canvas: var(--t-canvas);
+  --color-surface: var(--t-surface);
+  --color-surface-raised: var(--t-surface-raised);
+  --color-surface-sunken: var(--t-surface-sunken);
+  --color-overlay: var(--t-overlay);
+
+  --color-fg: var(--t-fg);
+  --color-fg-muted: var(--t-fg-muted);
+  --color-fg-subtle: var(--t-fg-subtle);
+  --color-fg-inverted: var(--t-fg-inverted);
+
+  --color-border: var(--t-border);
+  --color-border-strong: var(--t-border-strong);
+  --color-ring: var(--t-ring);
+
+  --color-hover: var(--t-hover);
+  --color-selected: var(--t-selected);
+
+  --color-primary: var(--t-primary);
+  --color-primary-hover: var(--t-primary-hover);
+  --color-primary-fg: var(--t-primary-fg);
+  --color-primary-soft: var(--t-primary-soft);
+  --color-primary-soft-fg: var(--t-primary-soft-fg);
+
+  --color-secondary: var(--t-secondary);
+  --color-secondary-hover: var(--t-secondary-hover);
+  --color-secondary-fg: var(--t-secondary-fg);
+
+  --color-accent: var(--t-accent);
+  --color-accent-hover: var(--t-accent-hover);
+  --color-accent-fg: var(--t-accent-fg);
+  --color-accent-soft: var(--t-accent-soft);
+  --color-accent-soft-fg: var(--t-accent-soft-fg);
+
+  --color-success: var(--t-success);
+  --color-success-soft: var(--t-success-soft);
+  --color-success-fg: var(--t-success-fg);
+  --color-success-border: var(--t-success-border);
+
+  --color-warning: var(--t-warning);
+  --color-warning-soft: var(--t-warning-soft);
+  --color-warning-fg: var(--t-warning-fg);
+  --color-warning-border: var(--t-warning-border);
+
+  --color-danger: var(--t-danger);
+  --color-danger-soft: var(--t-danger-soft);
+  --color-danger-fg: var(--t-danger-fg);
+  --color-danger-border: var(--t-danger-border);
+
+  --color-info: var(--t-info);
+  --color-info-soft: var(--t-info-soft);
+  --color-info-fg: var(--t-info-fg);
+  --color-info-border: var(--t-info-border);
+
+  --color-chart-1: var(--t-chart-1);
+  --color-chart-2: var(--t-chart-2);
+  --color-chart-3: var(--t-chart-3);
+  --color-chart-4: var(--t-chart-4);
+  --color-chart-5: var(--t-chart-5);
+  --color-chart-6: var(--t-chart-6);
+
+  --radius-card: 8px;
+  --radius-input: 4px;
+  --radius-modal: 16px;
+}
+
+/* --------------------------------------------------------------------------
+ * TEMEL KATMAN
+ * -------------------------------------------------------------------------- */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    /* SPEC Bölüm 11.5 — 60+ yaş sakinler için minimum gövde metni. */
+    font-size: 15px;
+    background-color: var(--color-canvas);
+    color: var(--color-fg);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, h4 {
+    font-family: var(--font-heading), ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.015em;
+  }
+
+  /* Erişilebilirlik: klavye odağı her temada görünür (WCAG 2.1 AA). */
+  :focus-visible {
+    outline: 2px solid var(--color-ring);
+    outline-offset: 2px;
+  }
+
+  /* Native form kontrolleri ve seçim rengi tema ile uyumlu kalsın. */
+  ::selection {
+    background-color: var(--color-primary-soft);
+    color: var(--color-primary-soft-fg);
+  }
+
+  /* Tema değişiminde ani sıçramayı yumuşat; hareket azaltma tercihine saygılı. */
+  @media (prefers-reduced-motion: no-preference) {
+    html[data-theme-transition] * {
+      transition:
+        background-color 180ms ease,
+        border-color 180ms ease,
+        color 180ms ease;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}

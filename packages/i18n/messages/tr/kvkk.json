@@ -1,0 +1,98 @@
+{
+  "risk": {
+    "no_privacy_notice": {
+      "title": "Aydınlatma metni yayınlanmamış",
+      "action": "Sakinlere gösterilen aydınlatma metnini Ayarlar > KVKK bölümünden yayınlayın (KVKK md.10)."
+    },
+    "low_consent": {
+      "title": "Açık rıza oranı düşük (%{pct})",
+      "action": "WhatsApp/SMS gönderimi için açık rıza gerekir. Rızası olmayan sakinlere tek seferlik rıza talebi gönderin (KVKK md.5)."
+    },
+    "overdue_requests": {
+      "title": "{count} KVKK talebinin yanıt süresi geçti",
+      "action": "Süresi geçen talepleri hemen sonuçlandırın; gecikme Kurul şikâyetine konu olabilir (KVKK md.13)."
+    },
+    "blocked_announcements": {
+      "title": "{count} duyuru KVKK ihlali nedeniyle bloklandı",
+      "action": "Duyurularda borçlu ad/daire bilgisi paylaşmayın; toplu tutarları anonim özet olarak duyurun."
+    },
+    "stale_residents": {
+      "title": "{count} eski sakin kaydı hâlâ anonimleştirilmedi",
+      "action": "İlişkisi biten sakinlerin kişisel verilerini saklama süresi sonunda anonimleştirin (KVKK md.7)."
+    },
+    "no_verbis": {
+      "title": "VERBİS kaydı görünmüyor",
+      "action": "Yıllık çalışan sayısı ve mali bilanço eşiklerini aşıyorsanız VERBİS kaydı zorunludur; kaydınızı kontrol edin."
+    },
+    "no_dpo": {
+      "title": "İrtibat kişisi atanmamış",
+      "action": "Veri sorumlusu irtibat kişisini ve iletişim adresini Ayarlar bölümünde tanımlayın."
+    },
+    "breaches": {
+      "title": "Son 12 ayda {count} veri ihlali bildirimi var",
+      "action": "İhlal sonrası aksiyon planınızı gözden geçirin; ihlaller 72 saat içinde Kurula bildirilmelidir."
+    },
+    "no_mfa": {
+      "title": "Yönetici hesabında iki adımlı doğrulama kapalı",
+      "action": "Yönetici hesapları için iki adımlı doğrulamayı açın (KVKK md.12 teknik tedbir)."
+    },
+    "identity_docs": {
+      "title": "{count} kimlik belgesi kopyası saklanıyor",
+      "action": "Kimlik fotokopilerini zorunlu olmadıkça saklamayın; gereksiz olanları silin (veri minimizasyonu)."
+    }
+  },
+  "retention": {
+    "financialRecords": "Defter ve belge saklama yükümlülüğü (VUK md.253 — 5 yıl)",
+    "decisionBook": "Karar defteri kayıtları süresiz saklanır (KMK md.32)",
+    "auditLog": "Erişim ve işlem kayıtları güvenlik yükümlülüğü gereği saklanır (5651 sayılı Kanun)",
+    "until": {
+      "date": "{value} tarihine kadar",
+      "indefinite": "süresiz",
+      "days": "{value} gün"
+    }
+  },
+  "anonymize": {
+    "anonymizeName": "Ad-soyad yerine \"Eski sakin\" ifadesi yazılır",
+    "anonymizeContact": "E-posta ve telefon geri döndürülemez şekilde maskelenir",
+    "anonymizeVote": "Oy kaydı kalır, kimlik bağı koparılır",
+    "anonymizeRequest": "Talep kaydı kalır, talep sahibi bağı koparılır"
+  },
+  "finding": {
+    "unit_debt_disclosure": {
+      "message": "Belirli bir bağımsız bölümün borç durumu topluluğa açıklanamaz.",
+      "suggestion": "Daire numarası yerine toplam borç tutarını anonim olarak duyurun; borçlu sakine bireysel bildirim gönderin."
+    },
+    "name_debt_disclosure": {
+      "message": "Kişi adı ile borç bilgisi birlikte paylaşılamaz (KVKK md.5).",
+      "suggestion": "Adı kaldırın; ödeme hatırlatmasını yalnızca ilgili kişiye özel mesajla iletin."
+    },
+    "tckn": {
+      "message": "T.C. kimlik numarası özel nitelikli veri gibi korunmalıdır ve duyuruda yer alamaz.",
+      "suggestion": "Kimlik numarasını metinden çıkarın."
+    },
+    "iban": {
+      "message": "IBAN paylaşımı dolandırıcılık riski taşır ve kişisel veri niteliğindedir.",
+      "suggestion": "Ödeme bilgisini panelden veya bireysel bildirimden iletin."
+    },
+    "phone": {
+      "message": "Telefon numarası kişisel veridir; toplu duyuruda paylaşılmamalıdır.",
+      "suggestion": "Numarayı kaldırın veya yalnızca yönetim iletişim numarasını yazın."
+    },
+    "plate": {
+      "message": "Araç plakası kişiyi belirlenebilir kılar.",
+      "suggestion": "Plakayı kısmen maskeleyin ya da araç sahibine bireysel bildirim gönderin."
+    },
+    "health": {
+      "message": "Sağlık bilgisi özel nitelikli kişisel veridir; açık rıza olmadan paylaşılamaz (KVKK md.6).",
+      "suggestion": "Sağlık durumuna ilişkin ifadeleri metinden çıkarın."
+    },
+    "religion_politics": {
+      "message": "Din, inanç ve siyasi görüş özel nitelikli veridir.",
+      "suggestion": "İfadeyi nötr bir dille yeniden yazın."
+    },
+    "legal_threat": {
+      "message": "Tehdit veya küçük düşürücü ifade içeren duyurular hukuki risk doğurur.",
+      "suggestion": "Yasal süreci nesnel biçimde, kanun maddesine atıfla açıklayın."
+    }
+  }
+}

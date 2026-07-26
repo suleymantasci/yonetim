@@ -1,0 +1,325 @@
+{
+  "role": {
+    "super_admin": "Platform Yöneticisi",
+    "support_agent": "Destek Uzmanı",
+    "company_admin": "Yönetim Şirketi Yöneticisi",
+    "company_operator": "Yönetim Şirketi Operasyon",
+    "manager": "Site Yöneticisi",
+    "auditor": "Denetçi",
+    "accountant": "Muhasebe",
+    "staff": "Personel",
+    "owner": "Malik",
+    "tenant_resident": "Kiracı"
+  },
+  "tenantType": {
+    "apartment": "Apartman",
+    "site": "Site",
+    "residence": "Rezidans",
+    "plaza": "Plaza",
+    "avm": "AVM",
+    "office": "İş Merkezi",
+    "vakif": "Vakıf",
+    "dernek": "Dernek"
+  },
+  "tenantStatus": {
+    "trial": "Deneme",
+    "active": "Aktif",
+    "past_due": "Ödeme Gecikti",
+    "suspended": "Askıda",
+    "archived": "Arşivlendi",
+    "cancelled": "İptal Edildi"
+  },
+  "unitType": {
+    "flat": "Daire",
+    "shop": "Dükkan",
+    "office": "Ofis",
+    "depot": "Depo",
+    "garage": "Garaj",
+    "villa": "Villa",
+    "common_area": "Ortak alan"
+  },
+  "ownership": {
+    "owner": "Malik",
+    "tenant": "Kiracı",
+    "vacant": "Boş"
+  },
+  "occupancy": {
+    "owner": "Malik oturuyor",
+    "tenant": "Kiracı",
+    "vacant": "Boş"
+  },
+  "duesFormula": {
+    "equal": "Eşit",
+    "land_share": "Arsa Payı",
+    "area": "Alan (m²)",
+    "person_count": "Kişi Sayısı",
+    "meter": "Sayaç Endeksi",
+    "mixed": "Karma",
+    "custom": "Birime Özel"
+  },
+  "duesFormulaDescription": {
+    "equal": "Her bağımsız bölüm eşit tutar öder. KMK md.20'nin varsayılan kabulü.",
+    "land_share": "Gider arsa payı oranında bölüşülür (KMK md.20/b).",
+    "area": "Daire alanı (m²) oranında bölüşülür.",
+    "person_count": "Dairede yaşayan kişi sayısına göre bölüşülür (su/çöp giderlerinde yaygın).",
+    "meter": "Sayaç tüketimi oranında bölüşülür (ısı payölçer, su).",
+    "mixed": "Birden fazla yöntemin yüzdelik karışımı (örn. %50 eşit + %50 arsa payı).",
+    "custom": "Her bağımsız bölüm için elle girilen tutar."
+  },
+  "duesPeriod": {
+    "monthly": "Aylık",
+    "quarterly": "3 aylık",
+    "semiannual": "6 aylık",
+    "yearly": "Yıllık",
+    "one_time": "Tek seferlik"
+  },
+  "debtStatus": {
+    "pending": "Bekliyor",
+    "partial": "Kısmi ödendi",
+    "paid": "Ödendi",
+    "overdue": "Gecikti",
+    "in_legal": "İcrada",
+    "written_off": "Silindi",
+    "cancelled": "İptal"
+  },
+  "debtKind": {
+    "dues": "Aidat",
+    "utility": "Fatura payı",
+    "reservation": "Rezervasyon",
+    "penalty": "Ceza",
+    "late_fee": "Gecikme tazminatı",
+    "extra": "Ek tahakkuk",
+    "legal_cost": "Hukuki masraf"
+  },
+  "paymentMethod": {
+    "card": "Kredi/banka kartı",
+    "bank_transfer": "Havale / EFT",
+    "auto_debit": "Otomatik ödeme talimatı",
+    "cash": "Nakit",
+    "credit_balance": "Alacak bakiyesi",
+    "offset": "Mahsup"
+  },
+  "paymentStatus": {
+    "initiated": "Başlatıldı",
+    "pending_3ds": "3D Secure bekleniyor",
+    "authorized": "Provizyon alındı",
+    "completed": "Tamamlandı",
+    "failed": "Başarısız",
+    "refunded": "İade edildi",
+    "chargeback": "İtiraz"
+  },
+  "expenseStatus": {
+    "draft": "Taslak",
+    "pending_approval": "Onay bekliyor",
+    "approved": "Onaylandı",
+    "paid": "Ödendi",
+    "rejected": "Reddedildi"
+  },
+  "requestStatus": {
+    "open": "Açık",
+    "assigned": "Atandı",
+    "in_progress": "Devam ediyor",
+    "waiting_resident": "Sakin bekleniyor",
+    "resolved": "Çözüldü",
+    "closed": "Kapandı",
+    "rejected": "Reddedildi"
+  },
+  "requestPriority": {
+    "critical": "Kritik",
+    "high": "Yüksek",
+    "normal": "Normal",
+    "low": "Düşük"
+  },
+  "requestCategory": {
+    "asansor": "Asansör",
+    "su": "Su / Tesisat",
+    "elektrik": "Elektrik",
+    "dogalgaz": "Doğalgaz / Isıtma",
+    "ortak_alan": "Ortak Alan",
+    "guvenlik": "Güvenlik",
+    "temizlik": "Temizlik",
+    "hasere": "Haşere",
+    "diger": "Diğer"
+  },
+  "reservationStatus": {
+    "pending": "Onay bekliyor",
+    "approved": "Onaylandı",
+    "rejected": "Reddedildi",
+    "cancelled": "İptal edildi",
+    "completed": "Tamamlandı",
+    "no_show": "Gelinmedi"
+  },
+  "meterType": {
+    "water": "Su",
+    "hot_water": "Sıcak su",
+    "gas": "Doğalgaz",
+    "electric": "Elektrik",
+    "heat_calorimeter": "Isı pay ölçer"
+  },
+  "staffRole": {
+    "kapici": "Kapıcı",
+    "guvenlik": "Güvenlik",
+    "temizlik": "Temizlik",
+    "bahcivan": "Bahçıvan",
+    "teknik": "Teknik",
+    "diger": "Diğer"
+  },
+  "documentCategory": {
+    "contract": "Sözleşme",
+    "license": "Ruhsat",
+    "meeting_minutes": "Toplantı tutanağı",
+    "invoice": "Fatura",
+    "maintenance_report": "Bakım raporu",
+    "management_plan": "Yönetim planı",
+    "insurance": "Sigorta",
+    "legal": "Hukuk",
+    "kvkk": "KVKK",
+    "identity": "Kimlik",
+    "other": "Diğer"
+  },
+  "documentVisibility": {
+    "managers": "Yönetim",
+    "residents": "Sakinler",
+    "owners": "Malikler",
+    "public": "Herkese açık"
+  },
+  "legalStage": {
+    "warning_letter": "İhtarname",
+    "notice_served": "Tebligat yapıldı",
+    "lawsuit": "Dava",
+    "judgment": "İlam",
+    "enforcement": "İcra",
+    "seizure": "Haciz",
+    "collection": "Tahsilat",
+    "closed": "Kapandı"
+  },
+  "quorumRule": {
+    "simple_majority": "Katılanların salt çoğunluğu",
+    "absolute_majority": "Tüm kat maliklerinin sayı ve arsa payı çoğunluğu",
+    "two_thirds": "Kat maliklerinin 2/3 çoğunluğu",
+    "four_fifths": "Kat maliklerinin 4/5 çoğunluğu",
+    "unanimous": "Oybirliği"
+  },
+  "quorumExample": {
+    "simple_majority": "Olağan gündem maddeleri · Yönetim planında özel oran öngörülmeyen kararlar",
+    "absolute_majority": "Yönetici seçimi · İşletme projesinin kabulü · Denetçi seçimi",
+    "two_thirds": "Ortak yerlerde önemli yenilik ve ilaveler · Isıtma sistemi değişikliği",
+    "four_fifths": "Yönetim planı değişikliği · Anagayrimenkule ilave kat yapılması",
+    "unanimous": "Anagayrimenkulün mimari durumunun değiştirilmesi · Bağımsız bölüm üzerinde tasarruf"
+  },
+  "pollWeight": {
+    "equal": "Eşit oy",
+    "land_share": "Arsa payı"
+  },
+  "intent": {
+    "aidat_sorgu": "Aidat/borç sorgusu",
+    "odeme_talebi": "Ödeme talebi",
+    "odeme_bildirimi": "Ödeme bildirimi",
+    "talep_ariza": "Arıza/talep kaydı",
+    "duyuru_sorgu": "Duyuru sorgusu",
+    "yonetici_iletisim": "Yönetici iletişimi",
+    "borcu_yoktur_belgesi": "Borcu yoktur belgesi",
+    "toplanti_sorgu": "Toplantı bilgisi",
+    "rezervasyon": "Rezervasyon",
+    "anket_oy": "Anket/oylama",
+    "kvkk_talebi": "KVKK talebi",
+    "iptal_optout": "İletişim iptali",
+    "yardim": "Yardım menüsü",
+    "selamlama": "Selamlama",
+    "tesekkur": "Teşekkür",
+    "bilinmiyor": "Belirsiz"
+  },
+  "kvkkRequestType": {
+    "access": "Verilerime erişim talebi (md.11/1-a,b)",
+    "rectification": "Verilerimin düzeltilmesi (md.11/1-d)",
+    "erasure": "Verilerimin silinmesi/yok edilmesi (md.7, md.11/1-e)",
+    "objection": "İşlemeye itiraz (md.11/1-g)",
+    "portability": "Verilerimin taşınabilir formatta verilmesi"
+  },
+  "kvkkRequestStatus": {
+    "received": "Alındı",
+    "in_progress": "İşleniyor",
+    "fulfilled": "Tamamlandı",
+    "rejected": "Reddedildi",
+    "expired": "Süresi geçti"
+  },
+  "subscriptionStatus": {
+    "trialing": "Denemede",
+    "active": "Aktif",
+    "past_due": "Ödeme gecikti",
+    "grace": "Ek süre",
+    "suspended": "Askıda",
+    "cancelled": "İptal",
+    "archived": "Arşiv"
+  },
+  "migrationSource": {
+    "apsiyon": "Apsiyon",
+    "biyos": "Biyos",
+    "dijiyon": "Dijiyon",
+    "yonetimcell": "Yönetimcell",
+    "excel": "Excel / CSV"
+  },
+  "matchStatus": {
+    "unmatched": "Eşleşmedi",
+    "auto": "Otomatik eşleşti",
+    "manual": "Elle eşleştirildi",
+    "ignored": "Yok sayıldı"
+  },
+  "channel": {
+    "whatsapp": "WhatsApp",
+    "sms": "SMS",
+    "email": "E-posta",
+    "push": "Push bildirim",
+    "in_app": "Uygulama içi",
+    "voice": "Sesli arama"
+  },
+  "direction": {
+    "in": "Gelen",
+    "out": "Giden"
+  },
+  "billingPeriod": {
+    "yearly": "Yıllık peşin",
+    "semiannual": "6 aylık",
+    "quarterly": "3 aylık",
+    "monthly": "Aylık"
+  },
+  "audience": {
+    "all": "Tüm sakinler",
+    "owners": "Malikler",
+    "tenants": "Kiracılar",
+    "block": "Seçili blok",
+    "units": "Seçili daireler",
+    "new_residents": "Yeni taşınanlar"
+  },
+  "riskLevel": {
+    "dusuk": "Düşük",
+    "orta": "Orta",
+    "yuksek": "Yüksek",
+    "kritik": "Kritik"
+  },
+  "scoreBand": {
+    "yuksek": "Yüksek",
+    "orta": "Orta",
+    "dusuk": "Düşük"
+  },
+  "resourceKind": {
+    "salon": "Toplantı salonu",
+    "misafir_odasi": "Misafir odası",
+    "spor": "Spor salonu",
+    "havuz": "Havuz",
+    "otopark": "Otopark",
+    "teras": "Teras",
+    "bahce": "Bahçe",
+    "diger": "Diğer"
+  },
+  "feeUnit": {
+    "hour": "saat",
+    "day": "gün"
+  },
+  "jobStatus": {
+    "pending": "Bekliyor",
+    "running": "Çalışıyor",
+    "completed": "Tamamlandı",
+    "failed": "Başarısız"
+  }
+}

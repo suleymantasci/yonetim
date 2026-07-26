@@ -1,0 +1,325 @@
+{
+  "role": {
+    "super_admin": "Platform Administrator",
+    "support_agent": "Support Agent",
+    "company_admin": "Management Company Admin",
+    "company_operator": "Management Company Operator",
+    "manager": "Property Manager",
+    "auditor": "Auditor",
+    "accountant": "Accountant",
+    "staff": "Staff",
+    "owner": "Owner",
+    "tenant_resident": "Tenant"
+  },
+  "tenantType": {
+    "apartment": "Apartment building",
+    "site": "Gated community",
+    "residence": "Residence",
+    "plaza": "Plaza",
+    "avm": "Shopping centre",
+    "office": "Office building",
+    "vakif": "Foundation",
+    "dernek": "Association"
+  },
+  "tenantStatus": {
+    "trial": "Trial",
+    "active": "Active",
+    "past_due": "Payment overdue",
+    "suspended": "Suspended",
+    "archived": "Archived",
+    "cancelled": "Cancelled"
+  },
+  "unitType": {
+    "flat": "Flat",
+    "shop": "Shop",
+    "office": "Office",
+    "depot": "Storage",
+    "garage": "Garage",
+    "villa": "Villa",
+    "common_area": "Common area"
+  },
+  "ownership": {
+    "owner": "Owner",
+    "tenant": "Tenant",
+    "vacant": "Vacant"
+  },
+  "occupancy": {
+    "owner": "Owner-occupied",
+    "tenant": "Rented",
+    "vacant": "Vacant"
+  },
+  "duesFormula": {
+    "equal": "Equal split",
+    "land_share": "Land share",
+    "area": "Floor area (m²)",
+    "person_count": "Occupant count",
+    "meter": "Meter reading",
+    "mixed": "Mixed",
+    "custom": "Per unit"
+  },
+  "duesFormulaDescription": {
+    "equal": "Every unit pays the same amount. The default assumption of Condominium Act art. 20.",
+    "land_share": "Costs are split in proportion to land share (Condominium Act art. 20/b).",
+    "area": "Costs are split in proportion to unit floor area (m²).",
+    "person_count": "Split by the number of occupants — common for water and waste costs.",
+    "meter": "Split in proportion to metered consumption (heat cost allocators, water).",
+    "mixed": "A weighted blend of several methods (e.g. 50% equal + 50% land share).",
+    "custom": "An amount entered manually for each unit."
+  },
+  "duesPeriod": {
+    "monthly": "Monthly",
+    "quarterly": "Quarterly",
+    "semiannual": "Semi-annual",
+    "yearly": "Annual",
+    "one_time": "One-off"
+  },
+  "debtStatus": {
+    "pending": "Pending",
+    "partial": "Partly paid",
+    "paid": "Paid",
+    "overdue": "Overdue",
+    "in_legal": "In enforcement",
+    "written_off": "Written off",
+    "cancelled": "Cancelled"
+  },
+  "debtKind": {
+    "dues": "Dues",
+    "utility": "Utility share",
+    "reservation": "Reservation",
+    "penalty": "Penalty",
+    "late_fee": "Late fee",
+    "extra": "Extra charge",
+    "legal_cost": "Legal cost"
+  },
+  "paymentMethod": {
+    "card": "Credit/debit card",
+    "bank_transfer": "Bank transfer",
+    "auto_debit": "Direct debit",
+    "cash": "Cash",
+    "credit_balance": "Account credit",
+    "offset": "Offset"
+  },
+  "paymentStatus": {
+    "initiated": "Initiated",
+    "pending_3ds": "Awaiting 3D Secure",
+    "authorized": "Authorised",
+    "completed": "Completed",
+    "failed": "Failed",
+    "refunded": "Refunded",
+    "chargeback": "Chargeback"
+  },
+  "expenseStatus": {
+    "draft": "Draft",
+    "pending_approval": "Awaiting approval",
+    "approved": "Approved",
+    "paid": "Paid",
+    "rejected": "Rejected"
+  },
+  "requestStatus": {
+    "open": "Open",
+    "assigned": "Assigned",
+    "in_progress": "In progress",
+    "waiting_resident": "Awaiting resident",
+    "resolved": "Resolved",
+    "closed": "Closed",
+    "rejected": "Rejected"
+  },
+  "requestPriority": {
+    "critical": "Critical",
+    "high": "High",
+    "normal": "Normal",
+    "low": "Low"
+  },
+  "requestCategory": {
+    "asansor": "Lift",
+    "su": "Water / plumbing",
+    "elektrik": "Electrical",
+    "dogalgaz": "Gas / heating",
+    "ortak_alan": "Common area",
+    "guvenlik": "Security",
+    "temizlik": "Cleaning",
+    "hasere": "Pest control",
+    "diger": "Other"
+  },
+  "reservationStatus": {
+    "pending": "Awaiting approval",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "cancelled": "Cancelled",
+    "completed": "Completed",
+    "no_show": "No-show"
+  },
+  "meterType": {
+    "water": "Water",
+    "hot_water": "Hot water",
+    "gas": "Gas",
+    "electric": "Electricity",
+    "heat_calorimeter": "Heat cost allocator"
+  },
+  "staffRole": {
+    "kapici": "Caretaker",
+    "guvenlik": "Security",
+    "temizlik": "Cleaning",
+    "bahcivan": "Gardener",
+    "teknik": "Technician",
+    "diger": "Other"
+  },
+  "documentCategory": {
+    "contract": "Contract",
+    "license": "Permit",
+    "meeting_minutes": "Meeting minutes",
+    "invoice": "Invoice",
+    "maintenance_report": "Maintenance report",
+    "management_plan": "Management plan",
+    "insurance": "Insurance",
+    "legal": "Legal",
+    "kvkk": "Data protection",
+    "identity": "Identity",
+    "other": "Other"
+  },
+  "documentVisibility": {
+    "managers": "Management",
+    "residents": "Residents",
+    "owners": "Owners",
+    "public": "Public"
+  },
+  "legalStage": {
+    "warning_letter": "Formal notice",
+    "notice_served": "Notice served",
+    "lawsuit": "Lawsuit",
+    "judgment": "Judgment",
+    "enforcement": "Enforcement",
+    "seizure": "Seizure",
+    "collection": "Collection",
+    "closed": "Closed"
+  },
+  "quorumRule": {
+    "simple_majority": "Simple majority of attendees",
+    "absolute_majority": "Majority of all owners by number and land share",
+    "two_thirds": "Two-thirds of all owners",
+    "four_fifths": "Four-fifths of all owners",
+    "unanimous": "Unanimous"
+  },
+  "quorumExample": {
+    "simple_majority": "Routine agenda items · Decisions with no special threshold in the management plan",
+    "absolute_majority": "Electing the manager · Approving the operating budget · Electing the auditor",
+    "two_thirds": "Significant improvements to common areas · Changing the heating system",
+    "four_fifths": "Amending the management plan · Adding a floor to the building",
+    "unanimous": "Altering the building's architectural state · Disposing of a unit"
+  },
+  "pollWeight": {
+    "equal": "One vote per unit",
+    "land_share": "Weighted by land share"
+  },
+  "intent": {
+    "aidat_sorgu": "Dues/balance enquiry",
+    "odeme_talebi": "Payment request",
+    "odeme_bildirimi": "Payment notification",
+    "talep_ariza": "Fault/service request",
+    "duyuru_sorgu": "Announcement enquiry",
+    "yonetici_iletisim": "Manager contact",
+    "borcu_yoktur_belgesi": "Clearance certificate",
+    "toplanti_sorgu": "Meeting information",
+    "rezervasyon": "Reservation",
+    "anket_oy": "Poll/vote",
+    "kvkk_talebi": "Data protection request",
+    "iptal_optout": "Opt out of messages",
+    "yardim": "Help menu",
+    "selamlama": "Greeting",
+    "tesekkur": "Thanks",
+    "bilinmiyor": "Unclear"
+  },
+  "kvkkRequestType": {
+    "access": "Access to my data (art. 11/1-a,b)",
+    "rectification": "Rectification of my data (art. 11/1-d)",
+    "erasure": "Erasure/destruction of my data (art. 7, art. 11/1-e)",
+    "objection": "Objection to processing (art. 11/1-g)",
+    "portability": "Data portability"
+  },
+  "kvkkRequestStatus": {
+    "received": "Received",
+    "in_progress": "In progress",
+    "fulfilled": "Fulfilled",
+    "rejected": "Rejected",
+    "expired": "Expired"
+  },
+  "subscriptionStatus": {
+    "trialing": "Trialing",
+    "active": "Active",
+    "past_due": "Payment overdue",
+    "grace": "Grace period",
+    "suspended": "Suspended",
+    "cancelled": "Cancelled",
+    "archived": "Archived"
+  },
+  "migrationSource": {
+    "apsiyon": "Apsiyon",
+    "biyos": "Biyos",
+    "dijiyon": "Dijiyon",
+    "yonetimcell": "Yönetimcell",
+    "excel": "Excel / CSV"
+  },
+  "matchStatus": {
+    "unmatched": "Unmatched",
+    "auto": "Matched automatically",
+    "manual": "Matched manually",
+    "ignored": "Ignored"
+  },
+  "channel": {
+    "whatsapp": "WhatsApp",
+    "sms": "SMS",
+    "email": "Email",
+    "push": "Push notification",
+    "in_app": "In-app",
+    "voice": "Voice call"
+  },
+  "direction": {
+    "in": "Incoming",
+    "out": "Outgoing"
+  },
+  "billingPeriod": {
+    "yearly": "Annual, paid upfront",
+    "semiannual": "Every 6 months",
+    "quarterly": "Quarterly",
+    "monthly": "Monthly"
+  },
+  "audience": {
+    "all": "All residents",
+    "owners": "Owners",
+    "tenants": "Tenants",
+    "block": "Selected block",
+    "units": "Selected units",
+    "new_residents": "New residents"
+  },
+  "riskLevel": {
+    "dusuk": "Low",
+    "orta": "Medium",
+    "yuksek": "High",
+    "kritik": "Critical"
+  },
+  "scoreBand": {
+    "yuksek": "High",
+    "orta": "Medium",
+    "dusuk": "Low"
+  },
+  "resourceKind": {
+    "salon": "Function room",
+    "misafir_odasi": "Guest room",
+    "spor": "Gym",
+    "havuz": "Pool",
+    "otopark": "Car park",
+    "teras": "Terrace",
+    "bahce": "Garden",
+    "diger": "Other"
+  },
+  "feeUnit": {
+    "hour": "hour",
+    "day": "day"
+  },
+  "jobStatus": {
+    "pending": "Pending",
+    "running": "Running",
+    "completed": "Completed",
+    "failed": "Failed"
+  }
+}

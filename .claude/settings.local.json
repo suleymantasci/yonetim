@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm -v)",
+      "Bash(npm -v)",
+      "Bash(git --version)",
+      "Bash(corepack enable *)",
+      "Bash(psql --version)",
+      "Bash(brew services *)",
+      "Bash(lsof -nP -iTCP -sTCP:LISTEN)",
+      "Bash(psql -d postgres -c \"\\\\du\")",
+      "Bash(psql -d postgres -c \"\\\\l\")"
+    ]
+  }
+}

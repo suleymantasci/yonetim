@@ -1,0 +1,297 @@
+{
+  "equipment": {
+    "acil_aydinlatma": "Acil aydınlatma",
+    "asansor": "Asansör",
+    "baca": "Baca",
+    "cati": "Çatı",
+    "dis_cephe": "Dış cephe",
+    "dogalgaz": "Doğalgaz",
+    "elektrik_pano": "Elektrik panosu",
+    "gecis_kontrol": "Geçiş kontrol",
+    "havalandirma": "Havalandırma",
+    "havuz": "Havuz",
+    "hidrofor": "Hidrofor",
+    "ilaclama": "İlaçlama",
+    "interkom": "İnterkom",
+    "isi_payolcer": "Isı pay ölçer",
+    "isitma": "Isıtma",
+    "jenerator": "Jeneratör",
+    "kamera": "Güvenlik kamerası",
+    "kazan": "Kazan",
+    "klima": "Klima",
+    "otomatik_kapi": "Otomatik kapı",
+    "oyun_alani": "Oyun alanı",
+    "paratoner": "Paratoner",
+    "personel": "Personel",
+    "peyzaj": "Peyzaj",
+    "pissu": "Pissu tesisatı",
+    "sezonluk": "Sezonluk",
+    "sigorta": "Sigorta",
+    "sosyal_tesis": "Sosyal tesis",
+    "su_deposu": "Su deposu",
+    "temizlik": "Temizlik",
+    "topraklama": "Topraklama",
+    "ups": "UPS",
+    "yangin_algilama": "Yangın algılama",
+    "yangin_dolabi": "Yangın dolabı",
+    "yangin_pompasi": "Yangın pompası",
+    "yangin_sondurucu": "Yangın söndürücü",
+    "yangin_tahliye": "Yangın tahliye",
+    "yapi": "Yapı",
+    "yonetim": "Yönetim"
+  },
+  "template": {
+    "asansor_aylik": {
+      "name": "Asansör aylık bakım",
+      "checklist": "Kabin ve kapı kontrolü · Fren testi · Acil durum butonu ve telefonu · Yağlama · Kumanda panosu",
+      "ref": "Asansör İşletme ve Bakım Yönetmeliği md.7 (aylık bakım zorunlu)"
+    },
+    "asansor_yillik_muayene": {
+      "name": "Asansör yıllık periyodik kontrol (A tipi muayene)",
+      "checklist": "Muayene kuruluşu randevusu · Etiket renginin kontrolü (yeşil/mavi/sarı/kırmızı) · Rapor arşivleme",
+      "ref": "Asansör Periyodik Kontrol Yönetmeliği — yıllık A tipi muayene kuruluşu kontrolü"
+    },
+    "asansor_kurtarma_egitim": {
+      "name": "Asansörde mahsur kalma kurtarma tatbikatı",
+      "checklist": "Görevli personel eğitimi · Kurtarma anahtarı kontrolü"
+    },
+    "yangin_tup_dolum": {
+      "name": "Yangın söndürücü dolum",
+      "checklist": "Dolum tarihi etiketi · Basınç göstergesi · Hortum ve pim kontrolü",
+      "ref": "Binaların Yangından Korunması Hakkında Yönetmelik md.99 (4 yılda bir dolum)"
+    },
+    "yangin_tup_kontrol": {
+      "name": "Yangın söndürücü periyodik kontrol",
+      "checklist": "Yerinde mi · Mühür sağlam mı · Erişim engeli var mı",
+      "ref": "Binaların Yangından Korunması Hakkında Yönetmelik md.99 (6 ayda bir kontrol)"
+    },
+    "yangin_dolabi": {
+      "name": "Yangın dolabı ve hortum kontrolü",
+      "checklist": "Hortum basınç testi · Nozzle kontrolü · Dolap kilidi",
+      "ref": "Binaların Yangından Korunması Hakkında Yönetmelik"
+    },
+    "yangin_algilama": {
+      "name": "Yangın algılama ve alarm sistemi testi",
+      "checklist": "Duman dedektörü testi · Siren testi · Panel arıza kaydı · Yedek akü",
+      "ref": "Binaların Yangından Korunması Hakkında Yönetmelik md.96"
+    },
+    "yangin_pompa": {
+      "name": "Yangın pompası çalıştırma testi",
+      "checklist": "Otomatik devreye girme · Basınç değeri · Jokey pompa"
+    },
+    "acil_aydinlatma": {
+      "name": "Acil aydınlatma ve yönlendirme testi",
+      "checklist": "Batarya süresi testi · Armatür kontrolü",
+      "ref": "Binaların Yangından Korunması Hakkında Yönetmelik md.72"
+    },
+    "yangin_tahliye_plani": {
+      "name": "Tahliye planı ve tatbikatı",
+      "checklist": "Kat planları güncel mi · Toplanma alanı · Tatbikat tutanağı",
+      "ref": "Binaların Yangından Korunması Hakkında Yönetmelik md.129"
+    },
+    "kazan_yillik": {
+      "name": "Merkezi kazan yıllık bakım",
+      "checklist": "Brülör ayarı · Baca gazı analizi · Emniyet ventili · Su seviyesi",
+      "ref": "Binalarda Enerji Performansı Yönetmeliği"
+    },
+    "baca_temizlik": {
+      "name": "Baca temizliği ve kontrolü",
+      "checklist": "Kurum temizliği · Baca çekiş testi · Karbonmonoksit riski",
+      "ref": "Binaların Yangından Korunması Hakkında Yönetmelik md.58 (yılda en az bir kez)"
+    },
+    "dogalgaz_tesisat": {
+      "name": "Doğalgaz iç tesisat kontrolü",
+      "checklist": "Kaçak testi · Vana kontrolü · Havalandırma menfezleri",
+      "ref": "Doğal gaz dağıtım şirketi teknik şartnamesi"
+    },
+    "kalorifer_petek": {
+      "name": "Kalorifer tesisatı ve petek havası alma",
+      "checklist": "Sistem basıncı · Hava alma · Vana sızdırmazlık"
+    },
+    "isi_pay_olcer": {
+      "name": "Isı pay ölçer okuma ve kalibrasyon",
+      "checklist": "Okuma dökümü · Arızalı ölçer tespiti · Paylaşım raporu",
+      "ref": "Merkezi Isıtma Gider Paylaşım Yönetmeliği"
+    },
+    "hidrofor_bakim": {
+      "name": "Hidrofor bakımı",
+      "checklist": "Membran kontrolü · Basınç şalteri · Pompa yatakları · Kaçak kontrolü"
+    },
+    "su_deposu_temizlik": {
+      "name": "Su deposu temizliği ve dezenfeksiyon",
+      "checklist": "Boşaltma ve fırçalama · Klorlama · Kapak sızdırmazlık · Analiz numunesi",
+      "ref": "İnsani Tüketim Amaçlı Sular Hakkında Yönetmelik"
+    },
+    "su_analizi": {
+      "name": "Su numunesi laboratuvar analizi",
+      "checklist": "Numune alma · Laboratuvar raporu · Sonuç arşivi",
+      "ref": "İnsani Tüketim Amaçlı Sular Hakkında Yönetmelik"
+    },
+    "pissu_tesisat": {
+      "name": "Pissu ve rögar temizliği",
+      "checklist": "Rögar açma · Kanal temizliği · Koku sifonu"
+    },
+    "yagmur_olugu": {
+      "name": "Yağmur oluğu ve dere temizliği",
+      "checklist": "Yaprak/atık temizliği · İniş borusu akış testi"
+    },
+    "elektrik_pano": {
+      "name": "Elektrik panosu termal kontrol",
+      "checklist": "Termal kamera ölçümü · Sıkma kontrolü · Etiketleme",
+      "ref": "Elektrik Tesislerinde Topraklamalar Yönetmeliği"
+    },
+    "topraklama_olcum": {
+      "name": "Topraklama ölçümü",
+      "checklist": "Direnç ölçümü · Ölçüm raporu · Eksik bağlantı",
+      "ref": "Elektrik Tesislerinde Topraklamalar Yönetmeliği md.10 (yılda bir)"
+    },
+    "paratoner": {
+      "name": "Paratoner (yıldırımdan korunma) kontrolü",
+      "checklist": "İniş iletkeni · Topraklama direnci · Korozyon",
+      "ref": "TS EN 62305"
+    },
+    "jenerator_bakim": {
+      "name": "Jeneratör periyodik bakım",
+      "checklist": "Yağ ve filtre · Akü · Yakıt seviyesi · Yük testi"
+    },
+    "jenerator_calistirma": {
+      "name": "Jeneratör aylık çalıştırma testi",
+      "checklist": "Otomatik devreye girme · Çalışma süresi · Egzoz"
+    },
+    "ups_bakim": {
+      "name": "UPS/kesintisiz güç kaynağı bakımı",
+      "checklist": "Akü ölçümü · Fan temizliği"
+    },
+    "havalandirma_filtre": {
+      "name": "Havalandırma filtre değişimi",
+      "checklist": "Filtre değişimi · Kanal kontrolü · Fan yatakları"
+    },
+    "otopark_jet_fan": {
+      "name": "Kapalı otopark jet fan ve CO sensörü testi",
+      "checklist": "CO sensör kalibrasyonu · Jet fan çalışma testi · Duman tahliye senaryosu",
+      "ref": "Binaların Yangından Korunması Hakkında Yönetmelik md.53"
+    },
+    "klima_bakim": {
+      "name": "Ortak alan klima bakımı",
+      "checklist": "Gaz kontrolü · Filtre temizliği · Drenaj"
+    },
+    "kamera_bakim": {
+      "name": "Güvenlik kamera sistemi bakımı",
+      "checklist": "Görüntü netliği · Kayıt süresi (max 30 gün) · Disk sağlığı · Aydınlatma levhası",
+      "ref": "KVKK — kayıt süresi ve erişim yetkisi kontrolü"
+    },
+    "interkom_bakim": {
+      "name": "Diafon/interkom sistemi kontrolü",
+      "checklist": "Daire cihazları · Kapı açma · Merkezi ünite"
+    },
+    "otomatik_kapi": {
+      "name": "Otomatik bahçe/garaj kapısı bakımı",
+      "checklist": "Fotosel testi · Motor yağlama · Uzaktan kumanda"
+    },
+    "turnike_kartli_gecis": {
+      "name": "Kartlı geçiş sistemi bakımı",
+      "checklist": "Okuyucu temizliği · Yetki listesi güncelleme"
+    },
+    "cati_kontrol": {
+      "name": "Çatı ve izolasyon kontrolü",
+      "checklist": "Kiremit/membran · Su sızıntısı · Baca dibi"
+    },
+    "dis_cephe": {
+      "name": "Dış cephe ve mantolama kontrolü",
+      "checklist": "Çatlak taraması · Dökülme riski · Denizlik ve söve"
+    },
+    "deprem_kontrol": {
+      "name": "Yapı durum ve deprem risk değerlendirmesi",
+      "checklist": "Lisanslı kuruluş raporu · Taşıyıcı sistem gözlemi",
+      "ref": "6306 sayılı Afet Riski Altındaki Alanların Dönüştürülmesi Hakkında Kanun"
+    },
+    "sigorta_dask": {
+      "name": "DASK ve bina ortak alan sigortası yenileme",
+      "checklist": "Poliçe yenileme · Teminat güncelleme · Poliçe arşivi",
+      "ref": "6305 sayılı Afet Sigortaları Kanunu (DASK zorunlu)"
+    },
+    "asansor_sigorta": {
+      "name": "Asansör üçüncü şahıs mali mesuliyet sigortası",
+      "checklist": "Poliçe yenileme",
+      "ref": "Asansör İşletme ve Bakım Yönetmeliği md.6"
+    },
+    "haşere_ilaclama": {
+      "name": "Haşere ilaçlaması (ortak alan)",
+      "checklist": "Yetkili firma belgesi · Uygulama tutanağı · Sakin bilgilendirme",
+      "ref": "Biyosidal Ürünlerin Kullanım Usul ve Esasları Yönetmeliği"
+    },
+    "kemirgen_kontrol": {
+      "name": "Kemirgen kontrolü (rodent)",
+      "checklist": "İstasyon kontrolü · Yem yenileme"
+    },
+    "cop_konteyner": {
+      "name": "Çöp toplama alanı dezenfeksiyonu",
+      "checklist": "Yıkama · Dezenfeksiyon · Koku kontrolü"
+    },
+    "peyzaj_budama": {
+      "name": "Ağaç budama ve peyzaj bakımı",
+      "checklist": "Budama · Gübreleme · Sulama sistemi"
+    },
+    "sulama_sistemi": {
+      "name": "Otomatik sulama sistemi kontrolü",
+      "checklist": "Vana ve zamanlayıcı · Kış hazırlığı (boşaltma)"
+    },
+    "kar_buz_hazirlik": {
+      "name": "Kış hazırlığı (tuz, küreme, izolasyon)",
+      "checklist": "Tuz stoğu · Küreme ekipmanı · Dış musluk boşaltma"
+    },
+    "havuz_bakim": {
+      "name": "Yüzme havuzu su analizi ve bakımı",
+      "checklist": "Klor/pH ölçümü · Filtre geri yıkama · Kayıt defteri",
+      "ref": "Yüzme Havuzlarının Tabi Olacağı Sağlık Esasları Yönetmeliği"
+    },
+    "havuz_laboratuvar": {
+      "name": "Havuz suyu laboratuvar analizi",
+      "checklist": "Numune alma · Mikrobiyolojik analiz · Rapor asma",
+      "ref": "Yüzme Havuzları Yönetmeliği md.11"
+    },
+    "sauna_hamam": {
+      "name": "Sauna/hamam ekipman ve hijyen kontrolü",
+      "checklist": "Isıtıcı kontrolü · Hijyen · Havalandırma"
+    },
+    "spor_salonu": {
+      "name": "Spor salonu ekipman bakımı",
+      "checklist": "Kablo/kayış kontrolü · Yağlama · Emniyet pimleri"
+    },
+    "cocuk_oyun_alani": {
+      "name": "Çocuk oyun alanı güvenlik kontrolü",
+      "checklist": "Vida/bağlantı · Zemin darbe emiciliği · Keskin kenar",
+      "ref": "TS EN 1176 — oyun alanı güvenliği"
+    },
+    "kat_malikleri_toplantisi": {
+      "name": "Olağan kat malikleri toplantısı",
+      "checklist": "Çağrı (15 gün önce) · Gündem · Hazirun cetveli · Karar defteri",
+      "ref": "KMK md.29 (yılda en az bir kez)"
+    },
+    "isletme_projesi": {
+      "name": "İşletme projesi hazırlanması ve tebliği",
+      "checklist": "Gelir-gider tahmini · Kat maliklerine tebliğ · İtiraz süresi (7 gün)",
+      "ref": "KMK md.37"
+    },
+    "denetim_raporu": {
+      "name": "Denetçi raporu",
+      "checklist": "Defter incelemesi · Rapor karar defterine yazımı",
+      "ref": "KMK md.41"
+    },
+    "sgk_bildirge": {
+      "name": "Personel SGK bildirgesi ve prim ödemesi",
+      "checklist": "Aylık prim hizmet belgesi · Ödeme dekontu",
+      "ref": "5510 sayılı Kanun"
+    },
+    "vergi_muhtasar": {
+      "name": "Muhtasar beyanname (personel varsa)",
+      "checklist": "Stopaj hesabı · Beyanname · Ödeme",
+      "ref": "193 sayılı GVK md.98"
+    },
+    "kvkk_envanter": {
+      "name": "KVKK veri envanteri gözden geçirme",
+      "checklist": "Envanter güncelleme · Saklama süreleri · İmha politikası",
+      "ref": "KVKK md.12 / Veri Sorumluları Sicili Yönetmeliği"
+    }
+  }
+}

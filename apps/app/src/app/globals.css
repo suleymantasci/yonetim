@@ -1,0 +1,17 @@
+@import "tailwindcss";
+@import "@yonetim/ui/styles/tokens.css";
+
+/*
+ * Semantik token'lar ve temel katman `@yonetim/ui` paketindedir; her iki uygulama
+ * aynı dosyayı kullanır (SPEC Bölüm 11.3 — tek tasarım sistemi).
+ *
+ * Manuel tema seçimi `data-theme` niteliği ile yapılır. `dark:` varyantına
+ * neredeyse hiç ihtiyaç duyulmaz (renkler semantik token'lardan gelir); yine de
+ * istisnai durumlar için niteliğe bağlanır — `prefers-color-scheme`'e değil.
+ */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme {
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-heading), ui-sans-serif, system-ui, sans-serif;
+}

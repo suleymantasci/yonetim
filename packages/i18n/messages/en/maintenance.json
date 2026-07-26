@@ -1,0 +1,297 @@
+{
+  "equipment": {
+    "acil_aydinlatma": "Emergency lighting",
+    "asansor": "Elevator",
+    "baca": "Flue",
+    "cati": "Roof",
+    "dis_cephe": "Façade",
+    "dogalgaz": "Natural gas",
+    "elektrik_pano": "Electrical panel",
+    "gecis_kontrol": "Access control",
+    "havalandirma": "Ventilation",
+    "havuz": "Pool",
+    "hidrofor": "Booster pump",
+    "ilaclama": "Pest control",
+    "interkom": "Intercom",
+    "isi_payolcer": "Heat cost allocator",
+    "isitma": "Heating",
+    "jenerator": "Generator",
+    "kamera": "Security camera",
+    "kazan": "Boiler",
+    "klima": "Air conditioning",
+    "otomatik_kapi": "Automatic gate",
+    "oyun_alani": "Playground",
+    "paratoner": "Lightning protection",
+    "personel": "Staff",
+    "peyzaj": "Landscaping",
+    "pissu": "Sewage system",
+    "sezonluk": "Seasonal",
+    "sigorta": "Insurance",
+    "sosyal_tesis": "Amenities",
+    "su_deposu": "Water tank",
+    "temizlik": "Cleaning",
+    "topraklama": "Earthing",
+    "ups": "UPS",
+    "yangin_algilama": "Fire detection",
+    "yangin_dolabi": "Fire hose cabinet",
+    "yangin_pompasi": "Fire pump",
+    "yangin_sondurucu": "Fire extinguisher",
+    "yangin_tahliye": "Fire evacuation",
+    "yapi": "Structure",
+    "yonetim": "Administration"
+  },
+  "template": {
+    "asansor_aylik": {
+      "name": "Monthly elevator service",
+      "checklist": "Cabin and door check · Brake test · Emergency button and phone · Lubrication · Control panel",
+      "ref": "Elevator Operation and Maintenance Regulation art.7 (monthly service mandatory)"
+    },
+    "asansor_yillik_muayene": {
+      "name": "Annual elevator periodic inspection (type A)",
+      "checklist": "Inspection body appointment · Label colour check (green/blue/yellow/red) · Report archiving",
+      "ref": "Elevator Periodic Inspection Regulation — annual type A inspection body check"
+    },
+    "asansor_kurtarma_egitim": {
+      "name": "Elevator entrapment rescue drill",
+      "checklist": "Training for assigned staff · Rescue key check"
+    },
+    "yangin_tup_dolum": {
+      "name": "Fire extinguisher refill",
+      "checklist": "Refill date label · Pressure gauge · Hose and pin check",
+      "ref": "Regulation on Fire Protection of Buildings art.99 (refill every 4 years)"
+    },
+    "yangin_tup_kontrol": {
+      "name": "Fire extinguisher periodic check",
+      "checklist": "In place · Seal intact · Access unobstructed",
+      "ref": "Regulation on Fire Protection of Buildings art.99 (check every 6 months)"
+    },
+    "yangin_dolabi": {
+      "name": "Fire hose cabinet and hose check",
+      "checklist": "Hose pressure test · Nozzle check · Cabinet lock",
+      "ref": "Regulation on Fire Protection of Buildings"
+    },
+    "yangin_algilama": {
+      "name": "Fire detection and alarm system test",
+      "checklist": "Smoke detector test · Sounder test · Panel fault log · Backup battery",
+      "ref": "Regulation on Fire Protection of Buildings art.96"
+    },
+    "yangin_pompa": {
+      "name": "Fire pump run test",
+      "checklist": "Automatic start-up · Pressure reading · Jockey pump"
+    },
+    "acil_aydinlatma": {
+      "name": "Emergency lighting and exit sign test",
+      "checklist": "Battery duration test · Luminaire check",
+      "ref": "Regulation on Fire Protection of Buildings art.72"
+    },
+    "yangin_tahliye_plani": {
+      "name": "Evacuation plan and drill",
+      "checklist": "Floor plans up to date · Assembly point · Drill record",
+      "ref": "Regulation on Fire Protection of Buildings art.129"
+    },
+    "kazan_yillik": {
+      "name": "Annual central boiler service",
+      "checklist": "Burner adjustment · Flue gas analysis · Safety valve · Water level",
+      "ref": "Energy Performance of Buildings Regulation"
+    },
+    "baca_temizlik": {
+      "name": "Flue cleaning and inspection",
+      "checklist": "Soot removal · Flue draught test · Carbon monoxide risk",
+      "ref": "Regulation on Fire Protection of Buildings art.58 (at least once a year)"
+    },
+    "dogalgaz_tesisat": {
+      "name": "Internal natural gas installation check",
+      "checklist": "Leak test · Valve check · Ventilation grilles",
+      "ref": "Gas distribution company technical specification"
+    },
+    "kalorifer_petek": {
+      "name": "Heating circuit and radiator bleeding",
+      "checklist": "System pressure · Bleeding · Valve tightness"
+    },
+    "isi_pay_olcer": {
+      "name": "Heat cost allocator reading and calibration",
+      "checklist": "Reading report · Faulty allocator detection · Allocation report",
+      "ref": "Central Heating Cost Allocation Regulation"
+    },
+    "hidrofor_bakim": {
+      "name": "Booster pump service",
+      "checklist": "Diaphragm check · Pressure switch · Pump bearings · Leak check"
+    },
+    "su_deposu_temizlik": {
+      "name": "Water tank cleaning and disinfection",
+      "checklist": "Drain and scrub · Chlorination · Lid tightness · Analysis sample",
+      "ref": "Regulation on Water Intended for Human Consumption"
+    },
+    "su_analizi": {
+      "name": "Laboratory analysis of water sample",
+      "checklist": "Sampling · Laboratory report · Result archive",
+      "ref": "Regulation on Water Intended for Human Consumption"
+    },
+    "pissu_tesisat": {
+      "name": "Sewage and manhole cleaning",
+      "checklist": "Open manhole · Duct cleaning · Odour trap"
+    },
+    "yagmur_olugu": {
+      "name": "Gutter and valley cleaning",
+      "checklist": "Leaf/debris removal · Downpipe flow test"
+    },
+    "elektrik_pano": {
+      "name": "Electrical panel thermal inspection",
+      "checklist": "Thermal camera measurement · Torque check · Labelling",
+      "ref": "Regulation on Earthing in Electrical Installations"
+    },
+    "topraklama_olcum": {
+      "name": "Earthing measurement",
+      "checklist": "Resistance measurement · Measurement report · Missing bonds",
+      "ref": "Regulation on Earthing in Electrical Installations art.10 (annually)"
+    },
+    "paratoner": {
+      "name": "Lightning protection system check",
+      "checklist": "Down conductor · Earthing resistance · Corrosion",
+      "ref": "TS EN 62305"
+    },
+    "jenerator_bakim": {
+      "name": "Generator periodic service",
+      "checklist": "Oil and filters · Battery · Fuel level · Load test"
+    },
+    "jenerator_calistirma": {
+      "name": "Monthly generator run test",
+      "checklist": "Automatic start-up · Run time · Exhaust"
+    },
+    "ups_bakim": {
+      "name": "UPS service",
+      "checklist": "Battery measurement · Fan cleaning"
+    },
+    "havalandirma_filtre": {
+      "name": "Ventilation filter replacement",
+      "checklist": "Filter replacement · Duct check · Fan bearings"
+    },
+    "otopark_jet_fan": {
+      "name": "Enclosed car park jet fan and CO sensor test",
+      "checklist": "CO sensor calibration · Jet fan run test · Smoke extraction scenario",
+      "ref": "Regulation on Fire Protection of Buildings art.53"
+    },
+    "klima_bakim": {
+      "name": "Common area air conditioning service",
+      "checklist": "Refrigerant check · Filter cleaning · Drainage"
+    },
+    "kamera_bakim": {
+      "name": "Security camera system service",
+      "checklist": "Image clarity · Retention period (max 30 days) · Disk health · Signage",
+      "ref": "KVKK — retention period and access authorisation review"
+    },
+    "interkom_bakim": {
+      "name": "Door phone / intercom system check",
+      "checklist": "Unit handsets · Door release · Central unit"
+    },
+    "otomatik_kapi": {
+      "name": "Automatic garden/garage gate service",
+      "checklist": "Photocell test · Motor lubrication · Remote control"
+    },
+    "turnike_kartli_gecis": {
+      "name": "Card access system service",
+      "checklist": "Reader cleaning · Authorisation list update"
+    },
+    "cati_kontrol": {
+      "name": "Roof and insulation inspection",
+      "checklist": "Tiles/membrane · Water ingress · Chimney base"
+    },
+    "dis_cephe": {
+      "name": "Façade and cladding inspection",
+      "checklist": "Crack survey · Spalling risk · Sills and surrounds"
+    },
+    "deprem_kontrol": {
+      "name": "Structural condition and earthquake risk assessment",
+      "checklist": "Licensed body report · Load-bearing system survey",
+      "ref": "Law no. 6306 on the Transformation of Areas Under Disaster Risk"
+    },
+    "sigorta_dask": {
+      "name": "DASK and common area building insurance renewal",
+      "checklist": "Policy renewal · Coverage update · Policy archive",
+      "ref": "Law no. 6305 on Disaster Insurance (DASK mandatory)"
+    },
+    "asansor_sigorta": {
+      "name": "Elevator third-party liability insurance",
+      "checklist": "Policy renewal",
+      "ref": "Elevator Operation and Maintenance Regulation art.6"
+    },
+    "haşere_ilaclama": {
+      "name": "Common area pest control treatment",
+      "checklist": "Licensed contractor certificate · Application record · Resident notice",
+      "ref": "Regulation on the Use of Biocidal Products"
+    },
+    "kemirgen_kontrol": {
+      "name": "Rodent control",
+      "checklist": "Station check · Bait replacement"
+    },
+    "cop_konteyner": {
+      "name": "Waste collection area disinfection",
+      "checklist": "Washing · Disinfection · Odour control"
+    },
+    "peyzaj_budama": {
+      "name": "Tree pruning and landscaping",
+      "checklist": "Pruning · Fertilising · Irrigation system"
+    },
+    "sulama_sistemi": {
+      "name": "Automatic irrigation system check",
+      "checklist": "Valves and timer · Winterisation (draining)"
+    },
+    "kar_buz_hazirlik": {
+      "name": "Winter preparation (salt, snow clearing, insulation)",
+      "checklist": "Salt stock · Snow clearing equipment · Outdoor tap draining"
+    },
+    "havuz_bakim": {
+      "name": "Swimming pool water analysis and maintenance",
+      "checklist": "Chlorine/pH measurement · Filter backwash · Log book",
+      "ref": "Regulation on Health Requirements for Swimming Pools"
+    },
+    "havuz_laboratuvar": {
+      "name": "Laboratory analysis of pool water",
+      "checklist": "Sampling · Microbiological analysis · Posting the report",
+      "ref": "Swimming Pools Regulation art.11"
+    },
+    "sauna_hamam": {
+      "name": "Sauna/steam room equipment and hygiene check",
+      "checklist": "Heater check · Hygiene · Ventilation"
+    },
+    "spor_salonu": {
+      "name": "Gym equipment service",
+      "checklist": "Cable/belt check · Lubrication · Safety pins"
+    },
+    "cocuk_oyun_alani": {
+      "name": "Playground safety inspection",
+      "checklist": "Bolts/fixings · Surface impact attenuation · Sharp edges",
+      "ref": "TS EN 1176 — playground safety"
+    },
+    "kat_malikleri_toplantisi": {
+      "name": "Ordinary general meeting of owners",
+      "checklist": "Notice (15 days in advance) · Agenda · Attendance list · Decision book",
+      "ref": "KMK art.29 (at least once a year)"
+    },
+    "isletme_projesi": {
+      "name": "Preparation and service of the operating budget",
+      "checklist": "Income-expense forecast · Service on owners · Objection period (7 days)",
+      "ref": "KMK art.37"
+    },
+    "denetim_raporu": {
+      "name": "Auditor's report",
+      "checklist": "Ledger review · Report entered in the decision book",
+      "ref": "KMK art.41"
+    },
+    "sgk_bildirge": {
+      "name": "Staff social security declaration and premium payment",
+      "checklist": "Monthly premium and service document · Payment receipt",
+      "ref": "Law no. 5510"
+    },
+    "vergi_muhtasar": {
+      "name": "Withholding tax return (if staff employed)",
+      "checklist": "Withholding calculation · Return · Payment",
+      "ref": "Income Tax Law no. 193 art.98"
+    },
+    "kvkk_envanter": {
+      "name": "KVKK data inventory review",
+      "checklist": "Inventory update · Retention periods · Destruction policy",
+      "ref": "KVKK art.12 / Data Controllers Registry Regulation"
+    }
+  }
+}

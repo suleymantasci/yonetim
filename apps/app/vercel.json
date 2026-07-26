@@ -1,0 +1,81 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "crons": [
+    {
+      "path": "/api/cron/dues-generate-monthly",
+      "schedule": "0 3 1 * *"
+    },
+    {
+      "path": "/api/cron/dues-late-fee",
+      "schedule": "0 4 * * *"
+    },
+    {
+      "path": "/api/cron/dues-reminder",
+      "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/dues-late-warning",
+      "schedule": "30 10 * * *"
+    },
+    {
+      "path": "/api/cron/legal-escalate",
+      "schedule": "0 5 * * 1"
+    },
+    {
+      "path": "/api/cron/bank-sync",
+      "schedule": "*/30 * * * *"
+    },
+    {
+      "path": "/api/cron/bank-reconcile",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/maintenance-reminders",
+      "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/sla-breach-check",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/cron/billing-trial-expiry",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/billing-dunning",
+      "schedule": "0 11 * * *"
+    },
+    {
+      "path": "/api/cron/billing-renewal",
+      "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/cron/kvkk-retention",
+      "schedule": "0 3 * * 0"
+    },
+    {
+      "path": "/api/cron/kvkk-request-sla",
+      "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/nps-monthly-survey",
+      "schedule": "0 12 5 * *"
+    },
+    {
+      "path": "/api/cron/reports-monthly",
+      "schedule": "0 8 5 * *"
+    },
+    {
+      "path": "/api/cron/meetings-reminders",
+      "schedule": "0 10 * * *"
+    },
+    {
+      "path": "/api/cron/documents-expiry",
+      "schedule": "0 9 * * 1"
+    },
+    {
+      "path": "/api/cron/landing-revalidate",
+      "schedule": "0 4 * * *"
+    }
+  ]
+}

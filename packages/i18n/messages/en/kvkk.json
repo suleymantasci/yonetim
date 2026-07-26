@@ -1,0 +1,98 @@
+{
+  "risk": {
+    "no_privacy_notice": {
+      "title": "Privacy notice not published",
+      "action": "Publish the privacy notice shown to residents under Settings > KVKK (KVKK art.10)."
+    },
+    "low_consent": {
+      "title": "Explicit consent coverage is low ({pct}%)",
+      "action": "WhatsApp/SMS delivery requires explicit consent. Send a one-off consent request to residents without it (KVKK art.5)."
+    },
+    "overdue_requests": {
+      "title": "{count} data subject request(s) are past their deadline",
+      "action": "Close overdue requests immediately; delay can lead to a complaint to the Authority (KVKK art.13)."
+    },
+    "blocked_announcements": {
+      "title": "{count} announcement(s) were blocked for a KVKK breach",
+      "action": "Never name debtors or their units in announcements; publish aggregate figures anonymously instead."
+    },
+    "stale_residents": {
+      "title": "{count} former resident record(s) are still not anonymised",
+      "action": "Anonymise personal data of former residents once the retention period ends (KVKK art.7)."
+    },
+    "no_verbis": {
+      "title": "No VERBİS registration on file",
+      "action": "VERBİS registration is mandatory above the headcount and balance-sheet thresholds; verify your registration."
+    },
+    "no_dpo": {
+      "title": "No contact person assigned",
+      "action": "Define the data controller contact person and address under Settings."
+    },
+    "breaches": {
+      "title": "{count} data breach notification(s) in the last 12 months",
+      "action": "Review your incident response plan; breaches must be reported to the Authority within 72 hours."
+    },
+    "no_mfa": {
+      "title": "Two-factor authentication is off for the manager account",
+      "action": "Enable two-factor authentication for manager accounts (KVKK art.12 technical measure)."
+    },
+    "identity_docs": {
+      "title": "{count} copies of identity documents are stored",
+      "action": "Do not store ID copies unless strictly required; delete the unnecessary ones (data minimisation)."
+    }
+  },
+  "retention": {
+    "financialRecords": "Statutory bookkeeping retention (Tax Procedure Law art.253 — 5 years)",
+    "decisionBook": "Decision book records are kept indefinitely (KMK art.32)",
+    "auditLog": "Access and activity logs are kept as a security obligation (Law no. 5651)",
+    "until": {
+      "date": "until {value}",
+      "indefinite": "indefinitely",
+      "days": "{value} days"
+    }
+  },
+  "anonymize": {
+    "anonymizeName": "The name is replaced with \"Former resident\"",
+    "anonymizeContact": "Email and phone are irreversibly masked",
+    "anonymizeVote": "The vote is kept, the link to the voter is severed",
+    "anonymizeRequest": "The request is kept, the link to the requester is severed"
+  },
+  "finding": {
+    "unit_debt_disclosure": {
+      "message": "The debt status of a specific unit cannot be disclosed to the community.",
+      "suggestion": "Announce the aggregate amount anonymously instead of the unit number, and notify the debtor individually."
+    },
+    "name_debt_disclosure": {
+      "message": "A person's name cannot be published together with debt information (KVKK art.5).",
+      "suggestion": "Remove the name; send the payment reminder only to the person concerned."
+    },
+    "tckn": {
+      "message": "A national ID number must be protected like special category data and cannot appear in an announcement.",
+      "suggestion": "Remove the ID number from the text."
+    },
+    "iban": {
+      "message": "Sharing an IBAN carries a fraud risk and constitutes personal data.",
+      "suggestion": "Deliver payment details through the portal or an individual notification."
+    },
+    "phone": {
+      "message": "A phone number is personal data and should not be shared in a bulk announcement.",
+      "suggestion": "Remove the number, or list only the management contact number."
+    },
+    "plate": {
+      "message": "A vehicle plate makes the individual identifiable.",
+      "suggestion": "Partially mask the plate or notify the vehicle owner individually."
+    },
+    "health": {
+      "message": "Health information is special category personal data and cannot be shared without explicit consent (KVKK art.6).",
+      "suggestion": "Remove any statements about health conditions."
+    },
+    "religion_politics": {
+      "message": "Religion, belief and political opinion are special category data.",
+      "suggestion": "Rewrite the statement in neutral terms."
+    },
+    "legal_threat": {
+      "message": "Announcements containing threats or demeaning language create legal risk.",
+      "suggestion": "Describe the legal process objectively, citing the relevant statute."
+    }
+  }
+}

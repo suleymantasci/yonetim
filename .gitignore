@@ -1,0 +1,15 @@
+node_modules/
+.next/
+.turbo/
+dist/
+out/
+coverage/
+*.tsbuildinfo
+.env
+.env.local
+.env.*.local
+# Yerel/sunucu veritabanı kurulum notları ve betiği
+DB_KURULUM.md
+setup_db.py
+.DS_Store
+drizzle/meta/_journal.json.bak

@@ -1,0 +1,107 @@
+{
+  "brand": {
+    "tagline": "The Digital Home of Property Management",
+    "description": "Turkey's first AI-augmented, WhatsApp-native, multi-tenant property management platform. Dues, expenses, announcements, maintenance, polls, meetings and debt enforcement in one panel."
+  },
+  "action": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "undo": "Undo",
+    "export": "Export",
+    "filter": "Filter",
+    "search": "Search",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "continue": "Continue",
+    "confirm": "Confirm",
+    "send": "Send",
+    "upload": "Upload",
+    "download": "Download",
+    "print": "Print / save as PDF",
+    "detail": "Details",
+    "viewAll": "View all",
+    "calculate": "Calculate",
+    "verify": "Verify",
+    "apply": "Apply",
+    "logout": "Sign out",
+    "login": "Sign in"
+  },
+  "state": {
+    "saved": "Saved",
+    "deleted": "Deleted",
+    "loading": "Loading…",
+    "empty": "No records yet",
+    "error": "Something went wrong",
+    "notFound": "Record not found",
+    "sending": "Sending…",
+    "processing": "Processing…",
+    "none": "—",
+    "yes": "Yes",
+    "no": "No",
+    "active": "On",
+    "inactive": "Off",
+    "required": "Required",
+    "optional": "Optional"
+  },
+  "unit": {
+    "days": "{count, plural, one {# day} other {# days}}",
+    "months": "{count, plural, one {# month} other {# months}}",
+    "hours": "{count, plural, one {# hour} other {# hours}}",
+    "sms": "{count} SMS",
+    "perMonth": "/ month",
+    "perYear": "/ year",
+    "perHour": "hour",
+    "perDay": "day",
+    "squareMeters": "m²",
+    "record": "{count, plural, one {# record} other {# records}}",
+    "unitsCount": "{count, plural, one {# unit} other {# units}}"
+  },
+  "theme": {
+    "group": "Theme",
+    "light": "Light theme",
+    "dark": "Dark theme",
+    "system": "System preference"
+  },
+  "locale": {
+    "label": "Language",
+    "switchTo": "Switch to {name}"
+  },
+  "a11y": {
+    "skipToContent": "Skip to content",
+    "mainMenu": "Main menu",
+    "modules": "Modules",
+    "breadcrumb": "Breadcrumb"
+  },
+  "legal": {
+    "allRightsReserved": "All rights reserved.",
+    "complianceNote": "Built to comply with Turkish Data Protection Law (KVKK No. 6698) and the Condominium Act (No. 634).",
+    "kvkkRightsContact": "For your data protection rights: {email}",
+    "kvkkRightsNote": "For your rights regarding your personal data, see the <kvkk>Privacy Notice</kvkk>"
+  },
+  "validation": {
+    "required": "This field is required.",
+    "invalidEmail": "Enter a valid email address.",
+    "invalidPhone": "Enter a valid mobile number.",
+    "minLength": "Must be at least {count} characters.",
+    "maxLength": "Must be at most {count} characters.",
+    "invalidAmount": "Enter a valid amount.",
+    "invalidIban": "Enter a valid IBAN.",
+    "invalidTckn": "Enter a valid Turkish ID number."
+  },
+  "error": {
+    "unauthorized": "You need to sign in.",
+    "forbidden": "You don't have permission for this action.",
+    "forbiddenPermission": "You don't have permission for this action ({permission}).",
+    "forbiddenTenant": "You don't have access to this property.",
+    "notFound": "Record not found.",
+    "conflict": "A record conflict occurred.",
+    "rateLimited": "Too many requests, please wait.",
+    "tenantMismatch": "This record belongs to another property.",
+    "integrationUnavailable": "The {provider} integration is currently unavailable.",
+    "internal": "An unexpected error occurred."
+  }
+}
