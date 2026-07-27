@@ -23,11 +23,9 @@ export const positiveMoneyMinor = z.coerce.number().int().positive();
 export const uuid = z.string().uuid();
 
 /** `YYYY-MM` dönem anahtarı — `packages/core/date` `periodKey` ile aynı biçim. */
-export const periodKey = z
-  .string()
-  .regex(/^\d{4}-(0[1-9]|1[0-2])$/, {
-    message: "Dönem YYYY-AA biçiminde olmalı.",
-  });
+export const periodKey = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, {
+  message: "Dönem YYYY-AA biçiminde olmalı.",
+});
 
 /** ISO 8601 tarih (yalnız gün). */
 export const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
