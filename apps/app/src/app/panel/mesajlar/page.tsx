@@ -1,36 +1,40 @@
-import { desc } from "drizzle-orm";
 import { getTranslations } from "next-intl/server";
 
-import { messages, withTenant } from "@yonetim/db";
-import { Badge, Card, CardBody, CardHeader, EmptyState, Stat } from "@yonetim/ui";
+import { messageListResponse } from "@yonetim/contracts";
+import {
+  Badge,
+  Card,
+  CardBody,
+  CardHeader,
+  EmptyState,
+  Stat,
+} from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
+import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
 export default async function MessagesPage() {
-  const ctx = await requirePermission("message:read");
+  await requirePermission("message:read");
   const t = await getTranslations("app.messages");
   const tEnum = await getTranslations("enum");
   const f = await formatters();
 
-  const rows = await withTenant(ctx.tenantId, async (tx) =>
-    tx.select().from(messages).orderBy(desc(messages.createdAt)).limit(150),
+  const { rows, totals } = await apiGet(
+    "/v1/panel/communication/mesajlar",
+    messageListResponse,
   );
-
-  const inbound = rows.filter((m) => m.direction === "in");
-  const botHandled = inbound.filter((m) => m.handledByBot);
-  const needsHuman = inbound.filter((m) => !m.handledByBot);
-  const botRate = inbound.length ? botHandled.length / inbound.length : 0;
+  const botRate = totals.botRatePct / 100;
 
   return (
     <>
       <PageHeader title={t("title")} description={t("description")} />
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <Stat label={t("inbound")} value={String(inbound.length)} />
+        <Stat label={t("inbound")} value={String(totals.inbound)} />
         <Stat
           label={t("botRate")}
           value={f.percent(botRate)}
@@ -38,8 +42,8 @@ export default async function MessagesPage() {
         />
         <Stat
           label={t("needsHuman")}
-          value={String(needsHuman.length)}
-          tone={needsHuman.length ? "warning" : "success"}
+          value={String(totals.needsHuman)}
+          tone={totals.needsHuman ? "warning" : "success"}
         />
       </div>
 
@@ -62,11 +66,15 @@ export default async function MessagesPage() {
                     <Badge tone={m.direction === "in" ? "info" : "neutral"}>
                       {tEnum(`direction.${m.direction}`)}
                     </Badge>
-                    <Badge tone="neutral">{tEnum(`channel.${m.channel}`)}</Badge>
+                    <Badge tone="neutral">
+                      {tEnum(`channel.${m.channel}`)}
+                    </Badge>
                     {m.intent ? (
                       <Badge tone={m.handledByBot ? "success" : "warning"}>
                         {tEnum(`intent.${m.intent}`)}
-                        {m.intentConfidence ? ` · ${Number(m.intentConfidence).toFixed(2)}` : ""}
+                        {m.intentConfidence
+                          ? ` · ${Number(m.intentConfidence).toFixed(2)}`
+                          : ""}
                       </Badge>
                     ) : null}
                     <span className="ml-auto text-xs text-fg-subtle">
