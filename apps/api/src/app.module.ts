@@ -10,6 +10,7 @@ import { LoggerModule } from "nestjs-pino";
 import { FinanceModule } from "./finance/finance.module";
 import { AuditModule } from "./governance/audit/audit.module";
 import { IdentityModule } from "./identity/identity.module";
+import { InsightModule } from "./insight/insight.module";
 import { PermissionGuard } from "./identity/guards/permission.guard";
 import { RateLimitGuard } from "./identity/guards/rate-limit.guard";
 import { TenantContextGuard } from "./identity/guards/tenant-context.guard";
@@ -61,6 +62,7 @@ import { PropertyModule } from "./property/property.module";
     // Bağlam modülleri (§6). Sıra önemsiz; her biri kendi yüzeyini kaydediyor.
     PropertyModule,
     FinanceModule,
+    InsightModule,
   ],
   controllers: [HealthController],
   providers: [

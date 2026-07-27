@@ -1245,13 +1245,20 @@
     "title": "Audit log",
     "description": "Records cannot be modified or deleted. Retention is {days} days (Law No. 5651).",
     "appendOnlyNote": "This log is protected as append-only at database level: updates and deletes are blocked by triggers.",
-    "recordsTitle": "Latest {count} records",
+    "recordsTitle": "{count} records",
     "time": "Time",
     "action": "Action",
     "resource": "Resource",
     "ip": "IP",
     "note": "Note",
-    "noRecords": "No records."
+    "noRecords": "No records.",
+    "searchPlaceholder": "Search action, resource or note…",
+    "actor": "Who",
+    "systemActor": "System",
+    "impersonated": "On behalf",
+    "changedFields": "{count} fields",
+    "allActions": "All actions",
+    "allResources": "All resources"
   },
   "reports": {
     "title": "Reports",

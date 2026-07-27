@@ -9,3 +9,5 @@ export * from "./_shared/index";
 export * from "./property/index";
 export * from "./finance/index";
 export * from "./identity/index";
+export * from "./insight/index";
+export * from "./governance/index";

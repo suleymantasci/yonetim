@@ -1245,13 +1245,20 @@
     "title": "Denetim Kütüğü",
     "description": "Kayıtlar değiştirilemez ve silinemez. Saklama süresi {days} gündür (5651 sayılı Kanun).",
     "appendOnlyNote": "Bu kütük veritabanı seviyesinde append-only olarak korunur: güncelleme ve silme işlemleri trigger ile engellenir.",
-    "recordsTitle": "Son {count} kayıt",
+    "recordsTitle": "Toplam {count} kayıt",
     "time": "Zaman",
     "action": "Aksiyon",
     "resource": "Kaynak",
     "ip": "IP",
     "note": "Not",
-    "noRecords": "Kayıt yok."
+    "noRecords": "Kayıt yok.",
+    "searchPlaceholder": "Aksiyon, kaynak veya notta ara…",
+    "actor": "Kim",
+    "systemActor": "Sistem",
+    "impersonated": "Vekaleten",
+    "changedFields": "{count} alan",
+    "allActions": "Tüm aksiyonlar",
+    "allResources": "Tüm kaynaklar"
   },
   "reports": {
     "title": "Raporlar",

@@ -4,20 +4,34 @@ import { getTranslations } from "next-intl/server";
 
 import { hasPermission } from "@yonetim/auth";
 import { siteConfig } from "@yonetim/config";
-import { Alert, Card, CardBody, CardHeader, EmptyState, Stat } from "@yonetim/ui";
+import {
+  Alert,
+  Card,
+  CardBody,
+  CardHeader,
+  EmptyState,
+  Stat,
+} from "@yonetim/ui";
+
+import { dashboardResponse } from "@yonetim/contracts";
 
 import { PageHeader } from "@/components/app-shell";
+import { apiGet } from "@/lib/api/server";
 import { requireContext } from "@/lib/context";
 import { formatters } from "@/lib/format";
-import { getDashboardSummary } from "@/lib/queries";
-import { getDashboardCharts } from "@/lib/queries/dashboard-charts";
 import { DashboardCharts } from "./dashboard-charts";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const ctx = await requireContext();
-  const summary = await getDashboardSummary(ctx);
+  // MIMARI-PLAN §9a — bir ekran, bir çağrı: özet, grafikler ve aktivite akışı
+  // tek yanıtta geliyor. A4 öncesi bu sayfa üç ayrı sorgu fonksiyonu
+  // çağırıyordu; HTTP'ye çevrilince üç gidiş-dönüş olurdu.
+  const { summary, charts } = await apiGet(
+    "/v1/panel/dashboard",
+    dashboardResponse,
+  );
   const t = await getTranslations("app.dashboard");
   const tCommon = await getTranslations("common");
   const f = await formatters();
@@ -43,8 +57,7 @@ export default async function DashboardPage() {
     );
   }
 
-  const net = summary.collectedThisMonthKurus - summary.expenseThisMonthKurus;
-  const charts = await getDashboardCharts(ctx);
+  const net = summary.collectedThisMonthMinor - summary.expenseThisMonthMinor;
 
   // Hızlı işlemler yalnız yetkili olanlar için (GAP 4.3.4).
   const quickActions = [
@@ -99,7 +112,9 @@ export default async function DashboardPage() {
       {ctx.tenantStatus === "trial" ? (
         <div className="mb-6">
           <Alert tone="info" title={t("trialTitle")}>
-            {t("trialBody", { months: siteConfig.billing.trial.dataRetentionMonthsAfterTrial })}
+            {t("trialBody", {
+              months: siteConfig.billing.trial.dataRetentionMonthsAfterTrial,
+            })}
           </Alert>
         </div>
       ) : null}
@@ -107,20 +122,22 @@ export default async function DashboardPage() {
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Stat
           label={t("totalReceivable")}
-          value={f.money(summary.totalDebtKurus)}
+          value={f.money(summary.totalDebtMinor)}
           hint={ctx.tenantName}
-          tone={summary.totalDebtKurus > 0 ? "warning" : "success"}
+          tone={summary.totalDebtMinor > 0 ? "warning" : "success"}
         />
         <Stat
           label={t("overdueReceivable")}
-          value={f.money(summary.overdueDebtKurus)}
+          value={f.money(summary.overdueDebtMinor)}
           hint={t("overdueHint")}
-          tone={summary.overdueDebtKurus > 0 ? "danger" : "success"}
+          tone={summary.overdueDebtMinor > 0 ? "danger" : "success"}
         />
         <Stat
           label={t("collectedThisMonth")}
-          value={f.money(summary.collectedThisMonthKurus)}
-          hint={t("accruedHint", { amount: f.money(summary.accruedThisMonthKurus) })}
+          value={f.money(summary.collectedThisMonthMinor)}
+          hint={t("accruedHint", {
+            amount: f.money(summary.accruedThisMonthMinor),
+          })}
         />
         <Stat
           label={t("collectionRate")}
@@ -131,9 +148,16 @@ export default async function DashboardPage() {
 
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
         <Card>
-          <CardHeader title={t("operations")} description={t("operationsDescription")} />
+          <CardHeader
+            title={t("operations")}
+            description={t("operationsDescription")}
+          />
           <CardBody className="space-y-3 text-sm">
-            <Row label={t("openRequests")} value={String(summary.openRequests)} href="/panel/talepler" />
+            <Row
+              label={t("openRequests")}
+              value={String(summary.openRequests)}
+              href="/panel/talepler"
+            />
             <Row
               label={t("slaBreached")}
               value={String(summary.slaBreached)}
@@ -149,14 +173,19 @@ export default async function DashboardPage() {
         </Card>
 
         <Card>
-          <CardHeader title={t("expenseThisMonth")} description={t("expenseThisMonthDescription")} />
+          <CardHeader
+            title={t("expenseThisMonth")}
+            description={t("expenseThisMonthDescription")}
+          />
           <CardBody>
             <div className="text-2xl font-bold tabular-nums text-fg">
-              {f.money(summary.expenseThisMonthKurus)}
+              {f.money(summary.expenseThisMonthMinor)}
             </div>
             <p className="mt-2 text-sm text-fg-muted">
               {t("collectionExpenseGap")}{" "}
-              <strong className={net >= 0 ? "text-success-fg" : "text-danger-fg"}>
+              <strong
+                className={net >= 0 ? "text-success-fg" : "text-danger-fg"}
+              >
                 {f.money(net)}
               </strong>
             </p>
@@ -174,7 +203,9 @@ export default async function DashboardPage() {
           <CardBody>
             {summary.lastAnnouncement ? (
               <>
-                <div className="font-medium text-fg">{summary.lastAnnouncement.title}</div>
+                <div className="font-medium text-fg">
+                  {summary.lastAnnouncement.title}
+                </div>
                 <div className="mt-1 text-sm text-fg-subtle">
                   {summary.lastAnnouncement.publishedAt
                     ? f.date(summary.lastAnnouncement.publishedAt)
@@ -194,63 +225,73 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      <div className="mt-5">
-        <DashboardCharts
-          monthly={{
-            periods: charts.monthly.periods,
-            periodLabels: charts.monthly.periods.map((period) => f.period(period)),
-            accruedKurus: charts.monthly.accruedKurus,
-            collectedKurus: charts.monthly.collectedKurus,
-            expenseKurus: charts.monthly.expenseKurus,
-            collectionRatePct: charts.monthly.collectionRatePct,
-          }}
-          aging={charts.aging}
-          forecast={{
-            periodLabels: charts.forecast.periods.map((period) => f.period(period)),
-            netKurus: charts.forecast.netKurus,
-            forecastFrom: charts.forecast.forecastFrom,
-            assumedCollectionRate: charts.forecast.assumedCollectionRate,
-          }}
-          collectionSplit={charts.collectionSplit}
-          labels={{
-            incomeExpenseTitle: t("chartIncomeExpense"),
-            incomeExpenseHint: t("chartIncomeExpenseHint"),
-            accrued: t("chartAccrued"),
-            collected: t("chartCollected"),
-            expense: t("chartExpense"),
-            collectionRateTitle: t("chartCollectionRate"),
-            collectionRateHint: t("chartCollectionRateHint"),
-            rate: t("collectionRate"),
-            agingTitle: t("chartAging"),
-            agingHint: t("chartAgingHint"),
-            agingBuckets: {
-              d0: t("aging.d0"),
-              d30: t("aging.d30"),
-              d60: t("aging.d60"),
-              d90: t("aging.d90"),
-              d180: t("aging.d180"),
-            },
-            overdueAmount: t("overdueReceivable"),
-            forecastTitle: t("chartForecast"),
-            forecastHint: t("chartForecastHint", {
-              rate: f.percent(charts.forecast.assumedCollectionRate),
-            }),
-            net: t("chartNet"),
-            forecastNote: t("chartForecastNote"),
-            splitTitle: t("chartSplit"),
-            splitHint: t("chartSplitHint"),
-            paid: t("splitPaid"),
-            open: t("splitOpen"),
-            overdue: t("splitOverdue"),
-            month: t("chartMonth"),
-            bucket: t("chartBucket"),
-            asTable: tCommon("a11y.chartAsTable"),
-            asChart: tCommon("a11y.chartAsChart"),
-            empty: tCommon("state.empty"),
-            totalLabel: t("chartTotal"),
-          }}
-        />
-      </div>
+      {charts ? (
+        <div className="mt-5">
+          <DashboardCharts
+            monthly={{
+              periods: charts.monthly.periods,
+              periodLabels: charts.monthly.periods.map((period) =>
+                f.period(period),
+              ),
+              accruedKurus: charts.monthly.accruedMinor,
+              collectedKurus: charts.monthly.collectedMinor,
+              expenseKurus: charts.monthly.expenseMinor,
+              collectionRatePct: charts.monthly.collectionRatePct,
+            }}
+            aging={charts.aging}
+            forecast={{
+              periodLabels: charts.forecast.periods.map((period) =>
+                f.period(period),
+              ),
+              netKurus: charts.forecast.netMinor,
+              forecastFrom: charts.forecast.forecastFrom,
+              assumedCollectionRate: charts.forecast.assumedCollectionRate,
+            }}
+            collectionSplit={{
+              paidKurus: charts.collectionSplit.paidMinor,
+              openKurus: charts.collectionSplit.openMinor,
+              overdueKurus: charts.collectionSplit.overdueMinor,
+            }}
+            labels={{
+              incomeExpenseTitle: t("chartIncomeExpense"),
+              incomeExpenseHint: t("chartIncomeExpenseHint"),
+              accrued: t("chartAccrued"),
+              collected: t("chartCollected"),
+              expense: t("chartExpense"),
+              collectionRateTitle: t("chartCollectionRate"),
+              collectionRateHint: t("chartCollectionRateHint"),
+              rate: t("collectionRate"),
+              agingTitle: t("chartAging"),
+              agingHint: t("chartAgingHint"),
+              agingBuckets: {
+                d0: t("aging.d0"),
+                d30: t("aging.d30"),
+                d60: t("aging.d60"),
+                d90: t("aging.d90"),
+                d180: t("aging.d180"),
+              },
+              overdueAmount: t("overdueReceivable"),
+              forecastTitle: t("chartForecast"),
+              forecastHint: t("chartForecastHint", {
+                rate: f.percent(charts.forecast.assumedCollectionRate),
+              }),
+              net: t("chartNet"),
+              forecastNote: t("chartForecastNote"),
+              splitTitle: t("chartSplit"),
+              splitHint: t("chartSplitHint"),
+              paid: t("splitPaid"),
+              open: t("splitOpen"),
+              overdue: t("splitOverdue"),
+              month: t("chartMonth"),
+              bucket: t("chartBucket"),
+              asTable: tCommon("a11y.chartAsTable"),
+              asChart: tCommon("a11y.chartAsChart"),
+              empty: tCommon("state.empty"),
+              totalLabel: t("chartTotal"),
+            }}
+          />
+        </div>
+      ) : null}
     </>
   );
 }
@@ -267,9 +308,14 @@ function Row({
   danger?: boolean;
 }) {
   return (
-    <Link href={href} className="flex items-center justify-between hover:underline">
+    <Link
+      href={href}
+      className="flex items-center justify-between hover:underline"
+    >
       <span className="text-fg-muted">{label}</span>
-      <span className={`font-semibold tabular-nums ${danger ? "text-danger-fg" : "text-fg"}`}>
+      <span
+        className={`font-semibold tabular-nums ${danger ? "text-danger-fg" : "text-fg"}`}
+      >
         {value}
       </span>
     </Link>

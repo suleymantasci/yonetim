@@ -1,34 +1,50 @@
 import { getTranslations } from "next-intl/server";
 
 import { currentPeriod, periodKey } from "@yonetim/core";
-import { Card, CardBody, CardHeader, Stat, tableClasses as tc } from "@yonetim/ui";
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  Stat,
+  tableClasses as tc,
+} from "@yonetim/ui";
+
+import { dashboardResponse, unitDebtSummary } from "@yonetim/contracts";
 
 import { PageHeader } from "@/components/app-shell";
+import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
-import { getDashboardSummary, getUnitDebtSummary } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
 
 export default async function ReportsPage() {
-  const ctx = await requirePermission("report:read");
+  await requirePermission("report:read");
   const t = await getTranslations("app.reports");
   const f = await formatters();
-  const summary = await getDashboardSummary(ctx);
-  const unitDebts = await getUnitDebtSummary(ctx);
 
-  const paying = unitDebts.filter((u) => Number(u.outstanding) === 0).length;
-  const late = unitDebts.filter((u) => Number(u.overdue) > 0).length;
+  const [{ summary }, { rows: unitDebts }] = await Promise.all([
+    apiGet("/v1/panel/dashboard", dashboardResponse),
+    apiGet("/v1/panel/debts/daire-ozeti", unitDebtSummary),
+  ]);
+
+  const paying = unitDebts.filter((u) => u.outstandingMinor === 0).length;
+  const late = unitDebts.filter((u) => u.overdueMinor > 0).length;
 
   return (
     <>
       <PageHeader
         title={t("title")}
-        description={t("description", { period: f.period(periodKey(currentPeriod())) })}
+        description={t("description", {
+          period: f.period(periodKey(currentPeriod())),
+        })}
       />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat label={t("collectionRate")} value={f.percent(summary.collectionRate)} />
+        <Stat
+          label={t("collectionRate")}
+          value={f.percent(summary.collectionRate)}
+        />
         <Stat
           label={t("unitsWithoutDebt")}
           value={`${paying}/${unitDebts.length}`}
@@ -39,19 +55,36 @@ export default async function ReportsPage() {
           value={String(late)}
           tone={late ? "warning" : "success"}
         />
-        <Stat label={t("monthlyExpense")} value={f.money(summary.expenseThisMonthKurus)} />
+        <Stat
+          label={t("monthlyExpense")}
+          value={f.money(summary.expenseThisMonthMinor)}
+        />
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <Card>
-          <CardHeader title={t("balanceTitle")} description={t("balanceDescription")} />
+          <CardHeader
+            title={t("balanceTitle")}
+            description={t("balanceDescription")}
+          />
           <CardBody className="space-y-2 text-sm">
-            <Row label={t("accrued")} value={f.money(summary.accruedThisMonthKurus)} />
-            <Row label={t("collected")} value={f.money(summary.collectedThisMonthKurus)} />
-            <Row label={t("expense")} value={f.money(summary.expenseThisMonthKurus)} />
+            <Row
+              label={t("accrued")}
+              value={f.money(summary.accruedThisMonthMinor)}
+            />
+            <Row
+              label={t("collected")}
+              value={f.money(summary.collectedThisMonthMinor)}
+            />
+            <Row
+              label={t("expense")}
+              value={f.money(summary.expenseThisMonthMinor)}
+            />
             <Row
               label={t("net")}
-              value={f.money(summary.collectedThisMonthKurus - summary.expenseThisMonthKurus)}
+              value={f.money(
+                summary.collectedThisMonthMinor - summary.expenseThisMonthMinor,
+              )}
               strong
             />
           </CardBody>
@@ -63,9 +96,9 @@ export default async function ReportsPage() {
             <table className={tc.table}>
               <tbody>
                 {unitDebts.slice(0, 10).map((u) => (
-                  <tr key={u.unit_id} className={tc.tr}>
+                  <tr key={u.unitId} className={tc.tr}>
                     <td className={tc.td}>{u.number}</td>
-                    <td className={tc.tdNum}>{f.money(Number(u.outstanding))}</td>
+                    <td className={tc.tdNum}>{f.money(u.outstandingMinor)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -77,11 +110,21 @@ export default async function ReportsPage() {
   );
 }
 
-function Row({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
+function Row({
+  label,
+  value,
+  strong,
+}: {
+  label: string;
+  value: string;
+  strong?: boolean;
+}) {
   return (
     <div className="flex justify-between">
       <span className="text-fg-subtle">{label}</span>
-      <span className={strong ? "font-bold tabular-nums" : "tabular-nums"}>{value}</span>
+      <span className={strong ? "font-bold tabular-nums" : "tabular-nums"}>
+        {value}
+      </span>
     </div>
   );
 }
