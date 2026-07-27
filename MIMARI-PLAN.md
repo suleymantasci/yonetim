@@ -1011,7 +1011,28 @@ bundle analyzer, `dependency-cruiser` kuralları, testcontainers RLS testi.
 > (`pnpm lint` interaktif kurulum istiyor) ve §15'teki üç kapı ona bağlı —
 > Track D'yi beklerse göç boyunca hiçbir kapı çalışmaz.
 
-### Track E — Yeni özellikler (A ve C fazları bittikçe)
+### Track E — Yeni özellikler (A ve C fazları bittikçe) — **ÜRÜN KARARI BEKLİYOR**
+
+Altyapı hazır: `apps/api` veritabanının tek sahibi, `apps/worker` uzun iş ve
+kuyruk taşıyor, olay → bildirim haritası kurulu, ilerleme/iptal altyapısı var.
+Track E'nin **teknik** önkoşulları kapandı.
+
+Kalan engel teknik değil: her madde kod dışından bir karar gerektiriyor ve
+tahmin ederek yazmak, yanlış varsayımı koda gömmek olurdu.
+
+| Madde | Eksik olan **karar** | Kodda hazır olan |
+| --- | --- | --- |
+| **5.3** Borcu yoktur PDF + KEP | KEP sağlayıcısı (PTT/TNB?), PDF'in saklanıp saklanmayacağı, Türkçe kapsamlı font lisansı | Belge kaydı, seri no, doğrulama kodu ve halka açık doğrulama ucu çalışıyor |
+| **5.5 / 4.1.10** bakım hatırlatma | Hatırlatmanın kime gideceği (yönetici mi görevli mi), T-30/-15/-7 kanalları | `maintenance.due` olayı politikada tanımlı, gecikmeli job altyapısı hazır |
+| **4.1.16** sakin portalı | Portalın kapsamı: yalnız görüntüleme mi, talep açma ve oylama da mı | `/v1/panel/portal/me` ve ödeme akışı çalışıyor |
+| **4.1.17** göç sihirbazı | Kabul edilecek Excel şablonları, çakışma politikası (üzerine yaz / atla / sor) | `job_runs` ilerleme + iptal altyapısı (B3) hazır |
+| **4.1.11** bordro | SGK/vergi hesabının kapsamı — tam bordro mu, yalnız kayıt mı | `staff`, `staffAttendance`, `staffLeaves` şeması var |
+| **5.8** landing builder | Blok kütüphanesi ve yayınlama akışı | `tenants.landingPublished` ve halka açık NPS ucu var |
+
+**Kuyruktaki 16 iş** (`packages/jobs` tanımlı, gövdesi yok) bu maddelerle
+birlikte doldurulacak: her biri ilgili modülün işi ve `JobRegistry`'de tek
+satır. Bugün `skipped: no_handler` raporluyorlar — sessizce başarılı
+sayılmıyorlar.
 
 Sırası GAP-ANALYSIS §6 önceliklendirmesini izler; her biri artık **tek modül işi**:
 
