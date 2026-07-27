@@ -918,7 +918,8 @@
     "noTargetUnits": "No unit matches the filter.",
     "periodInvalid": "Select a valid period.",
     "formulaFellBack": "Data is missing for the chosen formula (land share / area / occupant count not entered). The distribution will fall back to equal shares.",
-    "distributedDescription": "{expense} — unit share"
+    "distributedDescription": "{expense} — unit share",
+    "distributedLabel": "unit share"
   },
   "bank": {
     "title": "Bank & reconciliation",

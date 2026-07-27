@@ -1,27 +1,34 @@
 import { getTranslations } from "next-intl/server";
 
+import { blockListResponse } from "@yonetim/contracts";
 import { addMonths, currentPeriod, periodKey } from "@yonetim/core";
 import { Card, CardBody } from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
+import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
-import { getBlockOptions } from "@/lib/queries/units";
 import { DuesPlanForm } from "../plan-form";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewDuesPlanPage() {
-  const ctx = await requirePermission("dues:write");
+  await requirePermission("dues:write");
   const t = await getTranslations("app.duesPlans");
   const tCommon = await getTranslations("common");
-  const blocks = await getBlockOptions(ctx);
+  const { rows: blocks } = await apiGet(
+    "/v1/panel/units/bloklar",
+    blockListResponse,
+  );
 
   return (
     <>
       <PageHeader
         title={t("newPlan")}
         description={t("newPlanDescription")}
-        breadcrumb={[{ label: t("title"), href: "/panel/aidat" }, { label: t("newPlan") }]}
+        breadcrumb={[
+          { label: t("title"), href: "/panel/aidat" },
+          { label: t("newPlan") },
+        ]}
       />
       <Card className="max-w-3xl">
         <CardBody>

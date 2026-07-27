@@ -40,7 +40,8 @@ const APP_FORBIDDEN_IMPORTS = {
   patterns: [
     {
       group: ["drizzle-orm/*", "@yonetim/db/*"],
-      message: "apps/app veritabanı katmanını import edemez (MIMARI-PLAN §8.3).",
+      message:
+        "apps/app veritabanı katmanını import edemez (MIMARI-PLAN §8.3).",
     },
   ],
 };
@@ -68,7 +69,29 @@ const PENDING_DB_MIGRATION = [
   "apps/app/src/lib/shell-data.ts",
   "apps/app/src/lib/form.ts",
   "apps/app/src/app/api/**",
-  "apps/app/src/app/panel/**",
+  // A1 · A2'de göç edenler listeden çıkarıldı; kalanlar A3–A5'te düşecek.
+  "apps/app/src/app/panel/anketler/**",
+  "apps/app/src/app/panel/ayarlar/**",
+  "apps/app/src/app/panel/bakim/**",
+  "apps/app/src/app/panel/banka/**",
+  "apps/app/src/app/panel/belgeler/**",
+  "apps/app/src/app/panel/borcu-yoktur/**",
+  "apps/app/src/app/panel/denetim/**",
+  "apps/app/src/app/panel/duyurular/**",
+  "apps/app/src/app/panel/gecis/**",
+  "apps/app/src/app/panel/hukuk/**",
+  "apps/app/src/app/panel/kvkk/**",
+  "apps/app/src/app/panel/mesajlar/**",
+  "apps/app/src/app/panel/personel/**",
+  "apps/app/src/app/panel/raporlar/**",
+  "apps/app/src/app/panel/rezervasyon/**",
+  "apps/app/src/app/panel/sakinler/**",
+  "apps/app/src/app/panel/sayaclar/**",
+  "apps/app/src/app/panel/simulator/**",
+  "apps/app/src/app/panel/talepler/**",
+  "apps/app/src/app/panel/toplantilar/**",
+  "apps/app/src/app/panel/page.tsx",
+  "apps/app/src/app/panel/layout.tsx",
   "apps/app/src/app/yonetim/**",
   "apps/app/src/app/sakin/**",
   "apps/app/src/app/giris/**",
@@ -106,7 +129,11 @@ export default tseslint.config(
       // Kullanılmayan değişkenler: `_` öneki bilinçli görmezden gelmedir.
       "@typescript-eslint/no-unused-vars": [
         "error",
-        { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrors: "none" },
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrors: "none",
+        },
       ],
       // `any` göçün ortasında geçici olarak kaçınılmaz; uyarı kalsın, kapı olmasın.
       "@typescript-eslint/no-explicit-any": "warn",
@@ -174,7 +201,12 @@ export default tseslint.config(
           paths: [
             {
               name: "@yonetim/db",
-              importNames: ["getDb", "getAdminDb", "getClient", "getAdminClient"],
+              importNames: [
+                "getDb",
+                "getAdminDb",
+                "getClient",
+                "getAdminClient",
+              ],
               message:
                 "Bare bağlantı yasak (MIMARI-PLAN §8.3 değişmez 1–2). " +
                 "Her sorgu bir transaction içinde olmalı: DbService.tx() / .platform() / .bypass().",
@@ -209,7 +241,12 @@ export default tseslint.config(
    * Test ve betikler
    * ---------------------------------------------------------------- */
   {
-    files: ["tests/**/*.ts", "**/*.test.ts", "**/*.spec.ts", "**/vitest.config.ts"],
+    files: [
+      "tests/**/*.ts",
+      "**/*.test.ts",
+      "**/*.spec.ts",
+      "**/vitest.config.ts",
+    ],
     rules: {
       "no-console": "off",
       "@typescript-eslint/no-explicit-any": "off",
@@ -218,7 +255,12 @@ export default tseslint.config(
     },
   },
   {
-    files: ["**/*.mjs", "**/*.cjs", "**/*.config.{js,mjs,ts}", "packages/db/src/{seed,migrate}.ts"],
+    files: [
+      "**/*.mjs",
+      "**/*.cjs",
+      "**/*.config.{js,mjs,ts}",
+      "packages/db/src/{seed,migrate}.ts",
+    ],
     rules: { "no-console": "off" },
   },
 );

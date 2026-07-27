@@ -5,8 +5,16 @@ import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 
 import {
-  Alert, CheckboxGroup, Drawer, Input, PeriodInput, RadioGroup, Spinner, Switch,
-  tableClasses as tc, kurusToDisplay,
+  Alert,
+  CheckboxGroup,
+  Drawer,
+  Input,
+  PeriodInput,
+  RadioGroup,
+  Spinner,
+  Switch,
+  tableClasses as tc,
+  kurusToDisplay,
 } from "@yonetim/ui";
 
 import { ActionForm, FormField } from "@/components/form/action-form";
@@ -79,7 +87,12 @@ export function DistributePanel({
 
   function runPreview() {
     startTransition(async () => {
-      const result = await previewDistribution({ expenseId, formula, blockIds, excludeVat });
+      const result = await previewDistribution({
+        expenseId,
+        formula,
+        blockIds,
+        excludeVat,
+      });
       setPreview(result);
     });
   }
@@ -117,7 +130,12 @@ export function DistributePanel({
           <div className="space-y-5">
             <Alert tone="warning">{labels.irreversible}</Alert>
 
-            <FormField name="formula" label={labels.formula} hint={labels.formulaHint} required>
+            <FormField
+              name="formula"
+              label={labels.formula}
+              hint={labels.formulaHint}
+              required
+            >
               <RadioGroup
                 name="formula"
                 columns={2}
@@ -131,10 +149,19 @@ export function DistributePanel({
             </FormField>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <FormField name="period" label={labels.period} hint={labels.periodHint}>
+              <FormField
+                name="period"
+                label={labels.period}
+                hint={labels.periodHint}
+              >
                 <PeriodInput name="period" defaultValue={defaultPeriod} />
               </FormField>
-              <FormField name="dueDay" label={labels.dueDay} hint={labels.dueDayHint} required>
+              <FormField
+                name="dueDay"
+                label={labels.dueDay}
+                hint={labels.dueDayHint}
+                required
+              >
                 <Input
                   name="dueDay"
                   type="number"
@@ -148,11 +175,18 @@ export function DistributePanel({
             </div>
 
             {blocks.length > 0 ? (
-              <FormField name="blockIds" label={labels.scope} hint={labels.scopeHint}>
+              <FormField
+                name="blockIds"
+                label={labels.scope}
+                hint={labels.scopeHint}
+              >
                 <CheckboxGroup
                   name="blockIds"
                   columns={3}
-                  options={blocks.map((block) => ({ value: block.id, label: block.name }))}
+                  options={blocks.map((block) => ({
+                    value: block.id,
+                    label: block.name,
+                  }))}
                 />
               </FormField>
             ) : null}
@@ -170,7 +204,9 @@ export function DistributePanel({
 
             <div className="rounded-lg border border-border bg-surface-sunken p-3">
               <div className="flex items-center justify-between gap-3">
-                <span className="text-sm text-fg-muted">{labels.previewTotal}</span>
+                <span className="text-sm text-fg-muted">
+                  {labels.previewTotal}
+                </span>
                 <span className="font-semibold tabular-nums text-fg">
                   {kurusToDisplay(poolKurus)} ₺
                 </span>
@@ -191,20 +227,30 @@ export function DistributePanel({
             </div>
 
             {preview === null ? (
-              <p className="text-center text-sm text-fg-subtle">{labels.previewEmpty}</p>
+              <p className="text-center text-sm text-fg-subtle">
+                {labels.previewEmpty}
+              </p>
             ) : (
               <>
-                {preview.error ? <Alert tone="warning">{preview.error}</Alert> : null}
+                {preview.error ? (
+                  <Alert tone="warning">{preview.error}</Alert>
+                ) : null}
                 <div>
                   <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-fg-subtle">
                     {labels.previewUnits}
                   </p>
-                  <div className={`${tc.wrapper} max-h-72 overflow-y-auto rounded-lg border border-border`}>
+                  <div
+                    className={`${tc.wrapper} max-h-72 overflow-y-auto rounded-lg border border-border`}
+                  >
                     <table className={tc.table}>
                       <thead className={`${tc.thead} sticky top-0 bg-surface`}>
                         <tr>
-                          <th scope="col" className={tc.th}>{labels.unit}</th>
-                          <th scope="col" className={`${tc.th} text-right`}>{labels.amount}</th>
+                          <th scope="col" className={tc.th}>
+                            {labels.unit}
+                          </th>
+                          <th scope="col" className={`${tc.th} text-right`}>
+                            {labels.amount}
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -221,7 +267,9 @@ export function DistributePanel({
                                 </span>
                               ) : null}
                             </td>
-                            <td className={tc.tdNum}>{kurusToDisplay(row.amountKurus)} ₺</td>
+                            <td className={tc.tdNum}>
+                              {kurusToDisplay(row.amountKurus)} ₺
+                            </td>
                           </tr>
                         ))}
                       </tbody>

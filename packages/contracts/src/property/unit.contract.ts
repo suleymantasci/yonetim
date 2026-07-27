@@ -323,6 +323,9 @@ export const unitOptionRow = z.object({
 
 export type UnitOptionRow = z.infer<typeof unitOptionRow>;
 
+/** `/v1/panel/units/secenekler` yanıtı — combobox besleyen düz liste. */
+export const unitOptionList = z.array(unitOptionRow);
+
 /** Dış `/v1/units` yüzeyi — donuk sözleşme (§9.1). Alan kümesi sabit. */
 export const publicUnit = z.object({
   id: uuid,

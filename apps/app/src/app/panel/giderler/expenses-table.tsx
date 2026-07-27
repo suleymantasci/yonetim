@@ -101,7 +101,11 @@ export function ExpensesTable({
   ];
 
   if (rows.length === 0) {
-    return <p className="px-4 py-10 text-center text-sm text-fg-subtle">{labels.empty}</p>;
+    return (
+      <p className="px-4 py-10 text-center text-sm text-fg-subtle">
+        {labels.empty}
+      </p>
+    );
   }
 
   return (
@@ -182,7 +186,10 @@ export function ExpensesTable({
                         </Link>
                         <span className="ml-1.5 inline-flex items-center gap-1 align-middle">
                           {row.hasAttachment ? (
-                            <span title={labels.attachmentTooltip} className="text-fg-subtle">
+                            <span
+                              title={labels.attachmentTooltip}
+                              className="text-fg-subtle"
+                            >
                               <Paperclip
                                 aria-label={labels.attachmentTooltip}
                                 className="h-3.5 w-3.5"
@@ -195,7 +202,11 @@ export function ExpensesTable({
                                 ? labels.distributedTooltip
                                 : labels.notDistributedTooltip
                             }
-                            className={row.distributed ? "text-success-fg" : "text-warning-fg"}
+                            className={
+                              row.distributed
+                                ? "text-success-fg"
+                                : "text-warning-fg"
+                            }
                           >
                             <Split
                               aria-label={
@@ -227,7 +238,9 @@ export function ExpensesTable({
                         )}
                       </td>
                       <td className={tc.tdMuted}>{row.vendorName ?? "—"}</td>
-                      <td className={`${tc.tdNum} font-medium`}>{row.amount}</td>
+                      <td className={`${tc.tdNum} font-medium`}>
+                        {row.amount}
+                      </td>
                       <td className={tc.tdNum}>{row.vat}</td>
                       <td className={tc.td}>
                         <Badge tone={row.statusTone}>{row.statusLabel}</Badge>

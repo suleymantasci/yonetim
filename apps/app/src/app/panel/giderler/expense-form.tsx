@@ -4,7 +4,15 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import {
-  Alert, DateInput, FileInput, FormSection, Input, MoneyInput, Select, Switch, kurusToDisplay,
+  Alert,
+  DateInput,
+  FileInput,
+  FormSection,
+  Input,
+  MoneyInput,
+  Select,
+  Switch,
+  kurusToDisplay,
 } from "@yonetim/ui";
 
 import { ActionForm, FormField } from "@/components/form/action-form";
@@ -67,7 +75,11 @@ export function ExpenseForm({
   const netKurus = amountKurus - vatKurus;
 
   return (
-    <ActionForm action={saveExpense} submitLabel={submitLabel} cancelHref={cancelHref}>
+    <ActionForm
+      action={saveExpense}
+      submitLabel={submitLabel}
+      cancelHref={cancelHref}
+    >
       {defaults ? <input type="hidden" name="id" value={defaults.id} /> : null}
 
       <FormSection title={t("sectionWhat")} description={t("sectionWhatHint")}>
@@ -84,7 +96,11 @@ export function ExpenseForm({
           </FormField>
         </div>
 
-        <FormField name="categoryId" label={t("category")} hint={t("categorySelectHint")}>
+        <FormField
+          name="categoryId"
+          label={t("category")}
+          hint={t("categorySelectHint")}
+        >
           <Select
             name="categoryId"
             value={categoryId}
@@ -92,7 +108,8 @@ export function ExpenseForm({
               const next = event.target.value;
               setCategoryId(next);
               const selected = categories.find((entry) => entry.id === next);
-              if (selected?.defaultVatRate) setVatRate(Number(selected.defaultVatRate));
+              if (selected?.defaultVatRate)
+                setVatRate(Number(selected.defaultVatRate));
             }}
           >
             <option value="">{t("categoryNone")}</option>
@@ -105,7 +122,11 @@ export function ExpenseForm({
         </FormField>
 
         <FormField name="vendorName" label={t("vendor")} hint={t("vendorHint")}>
-          <Input name="vendorName" defaultValue={defaults?.vendorName ?? ""} maxLength={160} />
+          <Input
+            name="vendorName"
+            defaultValue={defaults?.vendorName ?? ""}
+            maxLength={160}
+          />
         </FormField>
 
         {category ? (
@@ -119,8 +140,16 @@ export function ExpenseForm({
         ) : null}
       </FormSection>
 
-      <FormSection title={t("sectionAmount")} description={t("sectionAmountHint")}>
-        <FormField name="amountKurus" label={t("amountGross")} required hint={t("amountGrossHint")}>
+      <FormSection
+        title={t("sectionAmount")}
+        description={t("sectionAmountHint")}
+      >
+        <FormField
+          name="amountKurus"
+          label={t("amountGross")}
+          required
+          hint={t("amountGrossHint")}
+        >
           <MoneyInput
             name="amountKurus"
             defaultKurus={defaults?.amountKurus ?? 0}
@@ -129,7 +158,11 @@ export function ExpenseForm({
           />
         </FormField>
 
-        <FormField name="vatRate" label={t("vatRate")} hint={t("vatRateFormHint")}>
+        <FormField
+          name="vatRate"
+          label={t("vatRate")}
+          hint={t("vatRateFormHint")}
+        >
           <Select
             name="vatRate"
             value={String(vatRate)}
@@ -179,11 +212,18 @@ export function ExpenseForm({
         </FormField>
 
         <FormField name="invoiceNo" label={t("invoiceNo")}>
-          <Input name="invoiceNo" defaultValue={defaults?.invoiceNo ?? ""} maxLength={60} />
+          <Input
+            name="invoiceNo"
+            defaultValue={defaults?.invoiceNo ?? ""}
+            maxLength={60}
+          />
         </FormField>
       </FormSection>
 
-      <FormSection title={t("sectionPayment")} description={t("sectionPaymentHint")}>
+      <FormSection
+        title={t("sectionPayment")}
+        description={t("sectionPaymentHint")}
+      >
         <FormField name="expenseDate" label={t("expenseDate")} required>
           <DateInput
             name="expenseDate"
@@ -193,20 +233,30 @@ export function ExpenseForm({
         </FormField>
 
         <FormField name="paidVia" label={t("paidVia")} hint={t("paidViaHint")}>
-          <Input name="paidVia" defaultValue={defaults?.paidVia ?? ""} maxLength={40} />
+          <Input
+            name="paidVia"
+            defaultValue={defaults?.paidVia ?? ""}
+            maxLength={40}
+          />
         </FormField>
 
         <FormField name="status" label={t("status")} required>
           <Select
             name="status"
-            defaultValue={defaults?.status ?? (canApprove ? "approved" : "pending_approval")}
+            defaultValue={
+              defaults?.status ?? (canApprove ? "approved" : "pending_approval")
+            }
             required
           >
             <option value="draft">{tEnum("expenseStatus.draft")}</option>
-            <option value="pending_approval">{tEnum("expenseStatus.pending_approval")}</option>
+            <option value="pending_approval">
+              {tEnum("expenseStatus.pending_approval")}
+            </option>
             {canApprove ? (
               <>
-                <option value="approved">{tEnum("expenseStatus.approved")}</option>
+                <option value="approved">
+                  {tEnum("expenseStatus.approved")}
+                </option>
                 <option value="paid">{tEnum("expenseStatus.paid")}</option>
               </>
             ) : null}
@@ -223,8 +273,16 @@ export function ExpenseForm({
         </div>
       </FormSection>
 
-      <FormSection title={t("sectionDocument")} description={t("sectionDocumentHint")} columns={1}>
-        <FormField name="attachmentUrl" label={t("attachmentUrl")} hint={t("attachmentUrlHint")}>
+      <FormSection
+        title={t("sectionDocument")}
+        description={t("sectionDocumentHint")}
+        columns={1}
+      >
+        <FormField
+          name="attachmentUrl"
+          label={t("attachmentUrl")}
+          hint={t("attachmentUrlHint")}
+        >
           <Input
             name="attachmentUrl"
             type="url"

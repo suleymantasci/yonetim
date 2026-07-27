@@ -1,11 +1,12 @@
 import { getTranslations } from "next-intl/server";
 
 import { hasPermission } from "@yonetim/auth";
+import { categoryTree as categoryTreeSchema } from "@yonetim/contracts";
 import { Alert, Card, CardBody } from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
+import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
-import { getCategoryTree } from "@/lib/queries/expenses";
 import { ExpenseForm } from "../expense-form";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +16,10 @@ export default async function NewExpensePage() {
   const t = await getTranslations("app.expenses");
   const tCommon = await getTranslations("common");
 
-  const tree = await getCategoryTree(ctx);
+  const { roots: tree } = await apiGet(
+    "/v1/panel/expenses/kategoriler",
+    categoryTreeSchema,
+  );
   // Ağacı düzleştir: form tek seviyeli `<select>` kullanıyor, girinti ile hiyerarşi verilir.
   const categories = tree.flatMap((root) => [
     {
@@ -39,7 +43,10 @@ export default async function NewExpensePage() {
       <PageHeader
         title={t("newExpense")}
         description={t("newExpenseDescription")}
-        breadcrumb={[{ label: t("title"), href: "/panel/giderler" }, { label: t("newExpense") }]}
+        breadcrumb={[
+          { label: t("title"), href: "/panel/giderler" },
+          { label: t("newExpense") },
+        ]}
       />
 
       {categories.length === 0 ? (

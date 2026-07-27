@@ -7,6 +7,7 @@ import type { Request } from "express";
 import { ClsModule } from "nestjs-cls";
 import { LoggerModule } from "nestjs-pino";
 
+import { FinanceModule } from "./finance/finance.module";
 import { AuditModule } from "./governance/audit/audit.module";
 import { IdentityModule } from "./identity/identity.module";
 import { PermissionGuard } from "./identity/guards/permission.guard";
@@ -59,6 +60,7 @@ import { PropertyModule } from "./property/property.module";
 
     // Bağlam modülleri (§6). Sıra önemsiz; her biri kendi yüzeyini kaydediyor.
     PropertyModule,
+    FinanceModule,
   ],
   controllers: [HealthController],
   providers: [

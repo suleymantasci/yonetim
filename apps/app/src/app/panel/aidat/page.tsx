@@ -1,31 +1,35 @@
-import { isNull } from "drizzle-orm";
 import { Pencil, Plus } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
+import { duesPlanListResponse } from "@yonetim/contracts";
 import { currentPeriod, periodKey } from "@yonetim/core";
-import { duesPlans, duesRuns, withTenant } from "@yonetim/db";
 import type { DuesFormula } from "@yonetim/dues";
-import { Alert, Badge, Card, CardBody, CardHeader, EmptyState, tableClasses as tc } from "@yonetim/ui";
+import {
+  Alert,
+  Badge,
+  Card,
+  CardBody,
+  CardHeader,
+  EmptyState,
+  tableClasses as tc,
+} from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
+import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
 export default async function DuesPlansPage() {
-  const ctx = await requirePermission("dues:read");
+  await requirePermission("dues:read");
   const t = await getTranslations("app.duesPlans");
   const tEnum = await getTranslations("enum");
   const tCommon = await getTranslations("common");
   const f = await formatters();
 
-  const data = await withTenant(ctx.tenantId, async (tx) => {
-    const plans = await tx.select().from(duesPlans).where(isNull(duesPlans.deletedAt));
-    const runs = await tx.select().from(duesRuns).limit(50);
-    return { plans, runs };
-  });
+  const data = await apiGet("/v1/panel/dues-plans", duesPlanListResponse);
 
   const newPlanButton = (
     <Link
@@ -53,7 +57,11 @@ export default async function DuesPlansPage() {
 
   return (
     <>
-      <PageHeader title={t("title")} description={t("description")} action={newPlanButton} />
+      <PageHeader
+        title={t("title")}
+        description={t("description")}
+        action={newPlanButton}
+      />
 
       <div className="grid gap-4 lg:grid-cols-2">
         {data.plans.map((p) => (
@@ -93,12 +101,14 @@ export default async function DuesPlansPage() {
                   {p.formula === "equal" ? t("baseAmount") : t("poolAmount")}
                 </span>
                 <span className="font-semibold tabular-nums text-fg">
-                  {f.money(p.baseAmountKurus ?? p.totalAmountKurus ?? 0)}
+                  {f.money(p.baseAmountMinor || p.totalAmountMinor)}
                 </span>
               </div>
               <div className="flex justify-between gap-4">
                 <span className="text-fg-subtle">{t("lateFee")}</span>
-                <span className="text-fg">{t("lateFeeValue", { pct: p.lateFeeMonthlyPct })}</span>
+                <span className="text-fg">
+                  {t("lateFeeValue", { pct: p.lateFeeMonthlyPct })}
+                </span>
               </div>
               <div className="flex justify-between gap-4">
                 <span className="text-fg-subtle">{t("startPeriod")}</span>
@@ -112,7 +122,9 @@ export default async function DuesPlansPage() {
       <Card className="mt-4">
         <CardHeader
           title={t("accrualHistory")}
-          description={t("currentPeriod", { period: f.period(periodKey(currentPeriod())) })}
+          description={t("currentPeriod", {
+            period: f.period(periodKey(currentPeriod())),
+          })}
         />
         <CardBody className="p-0">
           {data.runs.length === 0 ? (
@@ -121,10 +133,18 @@ export default async function DuesPlansPage() {
             <table className={tc.table}>
               <thead className={tc.thead}>
                 <tr>
-                  <th scope="col" className={tc.th}>{t("period")}</th>
-                  <th scope="col" className={`${tc.th} text-right`}>{t("generatedDebts")}</th>
-                  <th scope="col" className={`${tc.th} text-right`}>{t("total")}</th>
-                  <th scope="col" className={tc.th}>{t("runStatus")}</th>
+                  <th scope="col" className={tc.th}>
+                    {t("period")}
+                  </th>
+                  <th scope="col" className={`${tc.th} text-right`}>
+                    {t("generatedDebts")}
+                  </th>
+                  <th scope="col" className={`${tc.th} text-right`}>
+                    {t("total")}
+                  </th>
+                  <th scope="col" className={tc.th}>
+                    {t("runStatus")}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -132,7 +152,7 @@ export default async function DuesPlansPage() {
                   <tr key={r.id} className={tc.tr}>
                     <td className={tc.td}>{f.period(r.period)}</td>
                     <td className={tc.tdNum}>{r.generatedCount}</td>
-                    <td className={tc.tdNum}>{f.money(r.totalKurus)}</td>
+                    <td className={tc.tdNum}>{f.money(r.totalMinor)}</td>
                     <td className={tc.td}>{r.status}</td>
                   </tr>
                 ))}

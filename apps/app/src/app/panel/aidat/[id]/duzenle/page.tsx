@@ -1,14 +1,13 @@
-import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
-import { addMonths, currentPeriod, periodKey } from "@yonetim/core";
-import { duesPlans, withTenant } from "@yonetim/db";
+import { blockListResponse, duesPlanRow } from "@yonetim/contracts";
+import { AppError, addMonths, currentPeriod, periodKey } from "@yonetim/core";
 import { Card, CardBody } from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
+import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
-import { getBlockOptions } from "@/lib/queries/units";
 import { DuesPlanForm } from "../../plan-form";
 
 export const dynamic = "force-dynamic";
@@ -19,18 +18,20 @@ export default async function EditDuesPlanPage({
   readonly params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const ctx = await requirePermission("dues:write");
+  await requirePermission("dues:write");
   const t = await getTranslations("app.duesPlans");
   const tCommon = await getTranslations("common");
 
-  const [plan, blocks] = await Promise.all([
-    withTenant(ctx.tenantId, async (tx) => {
-      const rows = await tx.select().from(duesPlans).where(eq(duesPlans.id, id)).limit(1);
-      return rows[0] ?? null;
-    }),
-    getBlockOptions(ctx),
+  const [plan, blockList] = await Promise.all([
+    apiGet(`/v1/panel/dues-plans/${id}`, duesPlanRow).catch(
+      (error: unknown) => {
+        if (error instanceof AppError && error.code === "not_found") notFound();
+        throw error;
+      },
+    ),
+    apiGet("/v1/panel/units/bloklar", blockListResponse),
   ]);
-  if (!plan) notFound();
+  const blocks = blockList.rows;
 
   // `appliesTo` ve `mixWeights` jsonb; şemasız geldikleri için okurken daraltılır.
   const appliesTo = (plan.appliesTo ?? {}) as {
@@ -62,8 +63,8 @@ export default async function EditDuesPlanPage({
               name: plan.name,
               period: plan.period,
               formula: plan.formula,
-              baseAmountKurus: plan.baseAmountKurus ?? 0,
-              totalAmountKurus: plan.totalAmountKurus ?? 0,
+              baseAmountKurus: plan.baseAmountMinor,
+              totalAmountKurus: plan.totalAmountMinor,
               mixEqualPct: mixWeights.equal ?? 50,
               dueDayOfMonth: plan.dueDayOfMonth,
               lateFeeMonthlyPct: plan.lateFeeMonthlyPct,

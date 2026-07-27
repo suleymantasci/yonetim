@@ -18,7 +18,9 @@ export function CategoryBreakdown({
   emptyText: string;
 }) {
   if (rows.length === 0) {
-    return <p className="py-6 text-center text-sm text-fg-subtle">{emptyText}</p>;
+    return (
+      <p className="py-6 text-center text-sm text-fg-subtle">{emptyText}</p>
+    );
   }
 
   const max = Math.max(...rows.map((row) => row.amountKurus), 1);
@@ -29,7 +31,9 @@ export function CategoryBreakdown({
         <li key={row.name}>
           <div className="flex items-baseline justify-between gap-2 text-sm">
             <span className="min-w-0 truncate text-fg">{row.name}</span>
-            <span className="shrink-0 font-medium tabular-nums text-fg">{row.amountLabel}</span>
+            <span className="shrink-0 font-medium tabular-nums text-fg">
+              {row.amountLabel}
+            </span>
           </div>
           <div className="mt-1 h-2 overflow-hidden rounded-full bg-surface-sunken">
             <div

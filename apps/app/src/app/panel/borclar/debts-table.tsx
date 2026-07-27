@@ -5,7 +5,13 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
-import { Badge, DataCard, SortableTh, tableClasses as tc, Textarea } from "@yonetim/ui";
+import {
+  Badge,
+  DataCard,
+  SortableTh,
+  tableClasses as tc,
+  Textarea,
+} from "@yonetim/ui";
 
 import { BulkSelection } from "@/components/list/bulk-selection";
 import { cancelDebts, setLateFeeExempt } from "./actions";
@@ -104,7 +110,11 @@ export function DebtsTable({
   ];
 
   if (rows.length === 0) {
-    return <p className="px-4 py-10 text-center text-sm text-fg-subtle">{labels.empty}</p>;
+    return (
+      <p className="px-4 py-10 text-center text-sm text-fg-subtle">
+        {labels.empty}
+      </p>
+    );
   }
 
   return (
@@ -187,18 +197,33 @@ export function DebtsTable({
                         </Link>
                       </td>
                       <td className={tc.td}>
-                        <Link href={`/panel/borclar/${row.id}`} className="hover:underline">
+                        <Link
+                          href={`/panel/borclar/${row.id}`}
+                          className="hover:underline"
+                        >
                           {row.description}
                         </Link>
                         <span className="ml-1.5 inline-flex items-center gap-1 align-middle">
                           {row.changeCount > 0 ? (
-                            <span title={labels.changedTooltip} className="text-warning-fg">
-                              <History aria-label={labels.changedTooltip} className="h-3.5 w-3.5" />
+                            <span
+                              title={labels.changedTooltip}
+                              className="text-warning-fg"
+                            >
+                              <History
+                                aria-label={labels.changedTooltip}
+                                className="h-3.5 w-3.5"
+                              />
                             </span>
                           ) : null}
                           {row.lateFeeExempt ? (
-                            <span title={labels.exemptTooltip} className="text-info-fg">
-                              <ShieldOff aria-label={labels.exemptTooltip} className="h-3.5 w-3.5" />
+                            <span
+                              title={labels.exemptTooltip}
+                              className="text-info-fg"
+                            >
+                              <ShieldOff
+                                aria-label={labels.exemptTooltip}
+                                className="h-3.5 w-3.5"
+                              />
                             </span>
                           ) : null}
                         </span>
@@ -216,7 +241,9 @@ export function DebtsTable({
                       >
                         {row.outstanding}
                       </td>
-                      <td className={`${tc.td} ${row.overdue ? "text-danger-fg" : ""}`}>
+                      <td
+                        className={`${tc.td} ${row.overdue ? "text-danger-fg" : ""}`}
+                      >
                         {row.dueDate}
                       </td>
                       <td className={tc.td}>
@@ -251,7 +278,10 @@ export function DebtsTable({
 
           {/* Gerekçe alanı: iptal aksiyonu bunu okur. Seçim varken görünür. */}
           <div className="border-t border-border bg-surface-sunken px-4 py-3">
-            <label className="block text-xs font-medium text-fg-muted" htmlFor="bulk-cancel-reason">
+            <label
+              className="block text-xs font-medium text-fg-muted"
+              htmlFor="bulk-cancel-reason"
+            >
               {labels.reasonLabel}
             </label>
             <Textarea

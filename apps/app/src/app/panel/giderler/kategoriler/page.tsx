@@ -1,28 +1,43 @@
 import { getTranslations } from "next-intl/server";
 
 import { siteConfig } from "@yonetim/config";
+import {
+  categoryTree as categoryTreeSchema,
+  type CategoryTreeNode,
+} from "@yonetim/contracts";
 
 import { PageHeader } from "@/components/app-shell";
+import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
-import { getCategoryTree, type CategoryTreeNode } from "@/lib/queries/expenses";
 import { CategoryManager, type CategoryNode } from "./category-manager";
 
 export const dynamic = "force-dynamic";
 
-const DISTRIBUTIONS = ["equal", "land_share", "area", "person_count", "meter", "custom"] as const;
+const DISTRIBUTIONS = [
+  "equal",
+  "land_share",
+  "area",
+  "person_count",
+  "meter",
+  "custom",
+] as const;
 
 export default async function ExpenseCategoriesPage() {
-  const ctx = await requirePermission("expense:write");
+  // Yetki kapısı: dönen bağlam bu sayfada kullanılmıyor, çağrının kendisi kapı.
+  await requirePermission("expense:write");
   const t = await getTranslations("app.expenses");
   const tEnum = await getTranslations("enum");
   const fmt = await formatters();
 
-  const tree = await getCategoryTree(ctx);
+  const { roots: tree } = await apiGet(
+    "/v1/panel/expenses/kategoriler",
+    categoryTreeSchema,
+  );
 
   const toView = (node: CategoryTreeNode): CategoryNode => ({
     ...node,
-    total: fmt.money(node.totalKurus),
+    total: fmt.money(node.totalMinor),
     children: node.children.map(toView),
   });
 

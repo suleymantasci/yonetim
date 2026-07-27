@@ -5,7 +5,14 @@ import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 
 import {
-  Alert, Badge, ConfirmDialog, Drawer, Input, Select, Switch, useToast,
+  Alert,
+  Badge,
+  ConfirmDialog,
+  Drawer,
+  Input,
+  Select,
+  Switch,
+  useToast,
 } from "@yonetim/ui";
 
 import { ActionForm, FormField } from "@/components/form/action-form";
@@ -81,7 +88,9 @@ export function CategoryManager({
 }) {
   const tCommon = useTranslations("common");
   const toast = useToast();
-  const [editing, setEditing] = useState<CategoryNode | { parentId: string | null } | null>(null);
+  const [editing, setEditing] = useState<
+    CategoryNode | { parentId: string | null } | null
+  >(null);
   const [archiving, setArchiving] = useState<CategoryNode | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -89,7 +98,10 @@ export function CategoryManager({
   const isExisting = (value: unknown): value is CategoryNode =>
     typeof value === "object" && value !== null && "id" in value;
   const current = editing && isExisting(editing) ? editing : undefined;
-  const presetParentId = editing && !isExisting(editing) ? editing.parentId : (current?.parentId ?? null);
+  const presetParentId =
+    editing && !isExisting(editing)
+      ? editing.parentId
+      : (current?.parentId ?? null);
 
   function confirmArchive() {
     if (!archiving) return;
@@ -120,7 +132,10 @@ export function CategoryManager({
       ) : (
         <ul className="space-y-3">
           {tree.map((root) => (
-            <li key={root.id} className="rounded-lg border border-border bg-surface">
+            <li
+              key={root.id}
+              className="rounded-lg border border-border bg-surface"
+            >
               <CategoryRow
                 node={root}
                 labels={labels}
@@ -151,7 +166,13 @@ export function CategoryManager({
       <Drawer
         open={editing !== null}
         onClose={() => setEditing(null)}
-        title={current ? labels.editTitle : presetParentId ? labels.newChild : labels.newRoot}
+        title={
+          current
+            ? labels.editTitle
+            : presetParentId
+              ? labels.newChild
+              : labels.newRoot
+        }
         description={labels.formHint}
         closeLabel={tCommon("action.close")}
       >
@@ -162,11 +183,19 @@ export function CategoryManager({
           onSuccess={() => setEditing(null)}
           footer={null}
         >
-          {current ? <input type="hidden" name="id" value={current.id} /> : null}
+          {current ? (
+            <input type="hidden" name="id" value={current.id} />
+          ) : null}
 
           <div className="space-y-4">
             <FormField name="name" label={labels.name} required>
-              <Input name="name" defaultValue={current?.name} required minLength={2} maxLength={120} />
+              <Input
+                name="name"
+                defaultValue={current?.name}
+                required
+                minLength={2}
+                maxLength={120}
+              />
             </FormField>
 
             <FormField name="parentId" label={labels.parent}>
@@ -188,18 +217,29 @@ export function CategoryManager({
               hint={labels.distributionHint}
               required
             >
-              <Select name="distribution" defaultValue={current?.distribution ?? "equal"} required>
-                {Object.entries(labels.distributionOptions).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
+              <Select
+                name="distribution"
+                defaultValue={current?.distribution ?? "equal"}
+                required
+              >
+                {Object.entries(labels.distributionOptions).map(
+                  ([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ),
+                )}
               </Select>
             </FormField>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField name="icon" label={labels.icon} hint={labels.iconHint}>
-                <Input name="icon" defaultValue={current?.icon ?? ""} maxLength={40} placeholder="Wrench" />
+                <Input
+                  name="icon"
+                  defaultValue={current?.icon ?? ""}
+                  maxLength={40}
+                  placeholder="Wrench"
+                />
               </FormField>
               <FormField name="color" label={labels.color}>
                 <Input
@@ -212,7 +252,11 @@ export function CategoryManager({
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <FormField name="defaultVatRate" label={labels.vatRate} hint={labels.vatRateHint}>
+              <FormField
+                name="defaultVatRate"
+                label={labels.vatRate}
+                hint={labels.vatRateHint}
+              >
                 <Input
                   name="defaultVatRate"
                   inputMode="decimal"
@@ -271,7 +315,9 @@ export function CategoryManager({
           onConfirm={confirmArchive}
           title={labels.archiveTitle}
           description={
-            archiving.expenseCount > 0 ? labels.archiveInUse : labels.archiveDescription
+            archiving.expenseCount > 0
+              ? labels.archiveInUse
+              : labels.archiveDescription
           }
           confirmLabel={tCommon("action.confirm")}
           cancelLabel={tCommon("action.cancel")}
@@ -307,7 +353,10 @@ function CategoryRow({
   return (
     <div className="flex flex-wrap items-center gap-3 p-3">
       {nested ? (
-        <ChevronRight aria-hidden className="h-3.5 w-3.5 shrink-0 text-fg-subtle" />
+        <ChevronRight
+          aria-hidden
+          className="h-3.5 w-3.5 shrink-0 text-fg-subtle"
+        />
       ) : null}
       <span
         aria-hidden
@@ -315,7 +364,11 @@ function CategoryRow({
         style={node.color ? { backgroundColor: node.color } : undefined}
       />
       <div className="min-w-0 flex-1">
-        <span className={nested ? "text-sm text-fg" : "text-sm font-semibold text-fg"}>
+        <span
+          className={
+            nested ? "text-sm text-fg" : "text-sm font-semibold text-fg"
+          }
+        >
           {node.name}
         </span>
         <span className="ml-2 text-xs text-fg-subtle">

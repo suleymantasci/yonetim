@@ -3,20 +3,41 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
 import { hasPermission } from "@yonetim/auth";
-import { Alert, Card, CardBody, CardHeader, EmptyState, Pagination, Stat } from "@yonetim/ui";
+import { EXPENSE_SORT_KEYS, expenseListResponse } from "@yonetim/contracts";
+import {
+  Alert,
+  Card,
+  CardBody,
+  CardHeader,
+  EmptyState,
+  Pagination,
+  Stat,
+} from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
 import { ListControls } from "@/components/list/list-controls";
+import { toListQuery } from "@/lib/api/list";
+import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
-import { buildListHref, pageRange, parseListParams, type SearchParamsInput } from "@/lib/list-params";
-import { EXPENSE_SORT_KEYS, listExpenses } from "@/lib/queries/expenses";
+import {
+  buildListHref,
+  pageRange,
+  parseListParams,
+  type SearchParamsInput,
+} from "@/lib/list-params";
 import { CategoryBreakdown } from "./category-breakdown";
 import { ExpensesTable, type ExpenseRowView } from "./expenses-table";
 
 export const dynamic = "force-dynamic";
 
-const STATUSES = ["draft", "pending_approval", "approved", "paid", "rejected"] as const;
+const STATUSES = [
+  "draft",
+  "pending_approval",
+  "approved",
+  "paid",
+  "rejected",
+] as const;
 
 export default async function ExpensesPage({
   searchParams,
@@ -39,8 +60,16 @@ export default async function ExpensesPage({
     filterKeys: ["kategori", "donem", "durum", "dagitim"],
   });
 
-  const data = await listExpenses(ctx, params);
-  const { from, to, pageCount } = pageRange(params, data.total);
+  const data = await apiGet(
+    `/v1/panel/expenses?${toListQuery(params, {
+      categoryId: params.filters.kategori,
+      period: params.filters.donem,
+      status: params.filters.durum,
+      distribution: params.filters.dagitim,
+    })}`,
+    expenseListResponse,
+  );
+  const { from, to, pageCount } = pageRange(params, data.meta.total);
 
   const actions = (
     <>
@@ -65,7 +94,11 @@ export default async function ExpensesPage({
     </>
   );
 
-  if (data.total === 0 && !params.query && Object.keys(params.filters).length === 0) {
+  if (
+    data.meta.total === 0 &&
+    !params.query &&
+    Object.keys(params.filters).length === 0
+  ) {
     return (
       <>
         <PageHeader title={t("title")} action={actions} />
@@ -82,7 +115,8 @@ export default async function ExpensesPage({
 
   const rows: ExpenseRowView[] = data.rows.map((row) => {
     let statusTone: ExpenseRowView["statusTone"] = "neutral";
-    if (row.status === "paid" || row.status === "approved") statusTone = "success";
+    if (row.status === "paid" || row.status === "approved")
+      statusTone = "success";
     else if (row.status === "pending_approval") statusTone = "warning";
     else if (row.status === "rejected") statusTone = "danger";
 
@@ -92,8 +126,8 @@ export default async function ExpensesPage({
       vendorName: row.vendorName,
       categoryName: row.categoryName,
       categoryColor: row.categoryColor,
-      amount: fmt.money(row.amountKurus),
-      vat: row.vatKurus > 0 ? fmt.money(row.vatKurus) : "—",
+      amount: fmt.money(row.amountMinor),
+      vat: row.vatMinor > 0 ? fmt.money(row.vatMinor) : "—",
       expenseDate: fmt.date(row.expenseDate),
       statusLabel: tEnum(`expenseStatus.${row.status}`),
       statusTone,
@@ -105,25 +139,36 @@ export default async function ExpensesPage({
 
   return (
     <>
-      <PageHeader title={t("title")} description={t("description")} action={actions} />
+      <PageHeader
+        title={t("title")}
+        description={t("description")}
+        action={actions}
+      />
 
       <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat label={t("statMonth")} value={fmt.money(data.totals.monthKurus)} />
-        <Stat label={t("statYear")} value={fmt.money(data.totals.yearKurus)} />
+        <Stat
+          label={t("statMonth")}
+          value={fmt.money(data.totals.monthMinor)}
+        />
+        <Stat label={t("statYear")} value={fmt.money(data.totals.yearMinor)} />
         <Stat
           label={t("statPending")}
-          value={fmt.money(data.totals.pendingKurus)}
-          tone={data.totals.pendingKurus > 0 ? "warning" : "neutral"}
+          value={fmt.money(data.totals.pendingMinor)}
+          tone={data.totals.pendingMinor > 0 ? "warning" : "neutral"}
         />
         <Stat
           label={t("statUndistributed")}
-          value={fmt.money(data.totals.undistributedKurus)}
-          tone={data.totals.undistributedKurus > 0 ? "warning" : "success"}
-          hint={data.totals.undistributedKurus > 0 ? t("statUndistributedHint") : undefined}
+          value={fmt.money(data.totals.undistributedMinor)}
+          tone={data.totals.undistributedMinor > 0 ? "warning" : "success"}
+          hint={
+            data.totals.undistributedMinor > 0
+              ? t("statUndistributedHint")
+              : undefined
+          }
         />
       </div>
 
-      {data.categories.length === 0 ? (
+      {data.facets.categories.length === 0 ? (
         <div className="mb-4">
           <Alert tone="warning" title={t("noCategoriesTitle")}>
             {t("noCategoriesBody")}
@@ -142,9 +187,10 @@ export default async function ExpensesPage({
                 value: params.filters.kategori ?? "",
                 options: [
                   { value: "", label: t("allCategories") },
-                  ...data.categories.map((category) => ({
+                  ...data.facets.categories.map((category) => ({
                     value: category.id,
-                    label: category.depth > 0 ? `— ${category.name}` : category.name,
+                    label:
+                      category.depth > 0 ? `— ${category.name}` : category.name,
                   })),
                 ],
               },
@@ -210,12 +256,18 @@ export default async function ExpensesPage({
               <Pagination
                 page={params.page}
                 pageCount={pageCount}
-                total={data.total}
-                hrefFor={(page) => buildListHref("/panel/giderler", params, { sayfa: page })}
+                total={data.meta.total}
+                hrefFor={(page) =>
+                  buildListHref("/panel/giderler", params, { sayfa: page })
+                }
                 labels={{
                   previous: tCommon("action.previous"),
                   next: tCommon("action.next"),
-                  summary: tCommon("state.showing", { from, to, total: data.total }),
+                  summary: tCommon("state.showing", {
+                    from,
+                    to,
+                    total: data.meta.total,
+                  }),
                 }}
                 linkComponent={Link as never}
               />
@@ -225,13 +277,16 @@ export default async function ExpensesPage({
 
         <div>
           <Card>
-            <CardHeader title={t("breakdownTitle")} description={t("breakdownHint")} />
+            <CardHeader
+              title={t("breakdownTitle")}
+              description={t("breakdownHint")}
+            />
             <CardBody>
               <CategoryBreakdown
                 rows={data.byCategory.map((row) => ({
                   name: row.name,
-                  amountKurus: row.amountKurus,
-                  amountLabel: fmt.money(row.amountKurus),
+                  amountKurus: row.amountMinor,
+                  amountLabel: fmt.money(row.amountMinor),
                 }))}
                 emptyText={tCommon("state.empty")}
               />

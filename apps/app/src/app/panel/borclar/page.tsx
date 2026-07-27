@@ -2,24 +2,47 @@ import { Layers, Plus } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
+import {
+  DEBT_SORT_KEYS,
+  debtListResponse,
+  unitDebtSummary,
+} from "@yonetim/contracts";
 import { siteConfig } from "@yonetim/config";
 import {
-  Alert, Card, CardBody, CardHeader, Pagination, Stat, Tabs, tableClasses as tc,
+  Alert,
+  Card,
+  CardBody,
+  CardHeader,
+  Pagination,
+  Stat,
+  Tabs,
+  tableClasses as tc,
 } from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
 import { ListControls } from "@/components/list/list-controls";
+import { toListQuery } from "@/lib/api/list";
+import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
-import { buildListHref, pageRange, parseListParams, type SearchParamsInput } from "@/lib/list-params";
-import { getUnitDebtSummary } from "@/lib/queries";
-import { DEBT_SORT_KEYS, listDebts } from "@/lib/queries/debts";
+import {
+  buildListHref,
+  pageRange,
+  parseListParams,
+  type SearchParamsInput,
+} from "@/lib/list-params";
 import { DebtsTable, type DebtRowView } from "./debts-table";
 
 export const dynamic = "force-dynamic";
 
 const DEBT_KINDS = [
-  "dues", "utility", "reservation", "penalty", "late_fee", "extra", "legal_cost",
+  "dues",
+  "utility",
+  "reservation",
+  "penalty",
+  "late_fee",
+  "extra",
+  "legal_cost",
 ] as const;
 
 /**
@@ -34,7 +57,9 @@ export default async function DebtsPage({
 }: {
   readonly searchParams: Promise<SearchParamsInput>;
 }) {
-  const ctx = await requirePermission("debt:read");
+  // Bağlayıcı yetki kararı API'de (`@RequirePermission`); buradaki erken
+  // kontrol yetkisiz kullanıcıya doğru hata sayfasını göstermek için.
+  await requirePermission("debt:read");
   const t = await getTranslations("app.debts");
   const tUnits = await getTranslations("app.units");
   const tCommon = await getTranslations("common");
@@ -42,7 +67,9 @@ export default async function DebtsPage({
   const fmt = await formatters();
 
   const query = await searchParams;
-  const rawView = Array.isArray(query.gorunum) ? query.gorunum[0] : query.gorunum;
+  const rawView = Array.isArray(query.gorunum)
+    ? query.gorunum[0]
+    : query.gorunum;
   const view = rawView === "daire" ? "daire" : "borc";
 
   const params = parseListParams(query, {
@@ -52,8 +79,16 @@ export default async function DebtsPage({
     filterKeys: ["blok", "donem", "tur", "durum"],
   });
 
-  const data = await listDebts(ctx, params);
-  const { from, to, pageCount } = pageRange(params, data.total);
+  const data = await apiGet(
+    `/v1/panel/debts?${toListQuery(params, {
+      blockId: params.filters.blok,
+      period: params.filters.donem,
+      kind: params.filters.tur,
+      status: params.filters.durum,
+    })}`,
+    debtListResponse,
+  );
+  const { from, to, pageCount } = pageRange(params, data.meta.total);
 
   const tabs = (
     <Tabs
@@ -62,7 +97,11 @@ export default async function DebtsPage({
       label={t("viewTabs")}
       items={[
         { key: "borc", label: t("viewDebts"), href: "/panel/borclar" },
-        { key: "daire", label: t("viewUnits"), href: "/panel/borclar?gorunum=daire" },
+        {
+          key: "daire",
+          label: t("viewUnits"),
+          href: "/panel/borclar?gorunum=daire",
+        },
       ]}
     />
   );
@@ -96,21 +135,30 @@ export default async function DebtsPage({
     <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <Stat
         label={t("statOutstanding")}
-        value={fmt.money(data.totals.outstandingKurus)}
-        tone={data.totals.outstandingKurus > 0 ? "danger" : "success"}
+        value={fmt.money(data.totals.outstandingMinor)}
+        tone={data.totals.outstandingMinor > 0 ? "danger" : "success"}
       />
       <Stat
         label={t("statOverdue")}
-        value={fmt.money(data.totals.overdueKurus)}
-        tone={data.totals.overdueKurus > 0 ? "danger" : "neutral"}
+        value={fmt.money(data.totals.overdueMinor)}
+        tone={data.totals.overdueMinor > 0 ? "danger" : "neutral"}
       />
-      <Stat label={t("statLateFee")} value={fmt.money(data.totals.lateFeeKurus)} />
-      <Stat label={t("statCollected")} value={fmt.money(data.totals.collectedKurus)} />
+      <Stat
+        label={t("statLateFee")}
+        value={fmt.money(data.totals.lateFeeMinor)}
+      />
+      <Stat
+        label={t("statCollected")}
+        value={fmt.money(data.totals.collectedMinor)}
+      />
     </div>
   );
 
   if (view === "daire") {
-    const unitRows = await getUnitDebtSummary(ctx);
+    const { rows: unitRows } = await apiGet(
+      "/v1/panel/debts/daire-ozeti",
+      unitDebtSummary,
+    );
     return (
       <>
         {header}
@@ -123,12 +171,24 @@ export default async function DebtsPage({
               <table className={tc.table} style={{ minWidth: 720 }}>
                 <thead className={tc.thead}>
                   <tr>
-                    <th scope="col" className={tc.th}>{tUnits("number")}</th>
-                    <th scope="col" className={tc.th}>{tUnits("block")}</th>
-                    <th scope="col" className={`${tc.th} text-right`}>{t("statOutstanding")}</th>
-                    <th scope="col" className={`${tc.th} text-right`}>{t("statOverdue")}</th>
-                    <th scope="col" className={`${tc.th} text-right`}>{t("openCount")}</th>
-                    <th scope="col" className={tc.th}>{t("oldestDue")}</th>
+                    <th scope="col" className={tc.th}>
+                      {tUnits("number")}
+                    </th>
+                    <th scope="col" className={tc.th}>
+                      {tUnits("block")}
+                    </th>
+                    <th scope="col" className={`${tc.th} text-right`}>
+                      {t("statOutstanding")}
+                    </th>
+                    <th scope="col" className={`${tc.th} text-right`}>
+                      {t("statOverdue")}
+                    </th>
+                    <th scope="col" className={`${tc.th} text-right`}>
+                      {t("openCount")}
+                    </th>
+                    <th scope="col" className={tc.th}>
+                      {t("oldestDue")}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -140,22 +200,27 @@ export default async function DebtsPage({
                     </tr>
                   ) : (
                     unitRows.map((row) => (
-                      <tr key={row.unit_id} className={tc.tr}>
+                      <tr key={row.unitId} className={tc.tr}>
                         <td className={`${tc.td} font-medium`}>
-                          <Link href={`/panel/birimler/${row.unit_id}`} className="hover:underline">
+                          <Link
+                            href={`/panel/birimler/${row.unitId}`}
+                            className="hover:underline"
+                          >
                             {row.number}
                           </Link>
                         </td>
-                        <td className={tc.tdMuted}>{row.block_name ?? "—"}</td>
-                        <td className={tc.tdNum}>{fmt.money(Number(row.outstanding))}</td>
-                        <td
-                          className={`${tc.tdNum} ${Number(row.overdue) > 0 ? "font-semibold text-danger-fg" : ""}`}
-                        >
-                          {fmt.money(Number(row.overdue))}
+                        <td className={tc.tdMuted}>{row.blockName ?? "—"}</td>
+                        <td className={tc.tdNum}>
+                          {fmt.money(row.outstandingMinor)}
                         </td>
-                        <td className={tc.tdNum}>{row.debt_count}</td>
+                        <td
+                          className={`${tc.tdNum} ${row.overdueMinor > 0 ? "font-semibold text-danger-fg" : ""}`}
+                        >
+                          {fmt.money(row.overdueMinor)}
+                        </td>
+                        <td className={tc.tdNum}>{row.debtCount}</td>
                         <td className={tc.tdMuted}>
-                          {row.oldest_due ? fmt.date(new Date(row.oldest_due)) : "—"}
+                          {row.oldestDue ? fmt.date(row.oldestDue) : "—"}
                         </td>
                       </tr>
                     ))
@@ -170,7 +235,7 @@ export default async function DebtsPage({
   }
 
   const rows: DebtRowView[] = data.rows.map((row) => {
-    const outstanding = row.outstandingKurus;
+    const outstanding = row.outstandingMinor;
     const overdue = row.status !== "paid" && row.dueDate.getTime() < Date.now();
     let statusTone: DebtRowView["statusTone"] = "neutral";
     if (row.status === "paid") statusTone = "success";
@@ -180,16 +245,18 @@ export default async function DebtsPage({
     return {
       id: row.id,
       unitId: row.unitId,
-      unitLabel: row.blockName ? `${row.blockName}/${row.unitNumber}` : row.unitNumber,
+      unitLabel: row.blockName
+        ? `${row.blockName}/${row.unitNumber}`
+        : row.unitNumber,
       debtorName: row.debtorName,
       description: row.description,
       kindLabel: tEnum(`debtKind.${row.kind}`),
       period: row.period ? fmt.period(row.period) : "—",
-      amount: fmt.money(row.amountKurus),
-      paid: fmt.money(row.paidKurus),
+      amount: fmt.money(row.amountMinor),
+      paid: fmt.money(row.paidMinor),
       outstanding: outstanding > 0 ? fmt.money(outstanding) : "—",
       hasOutstanding: outstanding > 0,
-      lateFee: row.lateFeeKurus > 0 ? fmt.money(row.lateFeeKurus) : null,
+      lateFee: row.lateFeeMinor > 0 ? fmt.money(row.lateFeeMinor) : null,
       dueDate: fmt.date(row.dueDate),
       overdue,
       statusLabel: tEnum(`debtStatus.${row.status}`),
@@ -225,7 +292,10 @@ export default async function DebtsPage({
             value: params.filters.blok ?? "",
             options: [
               { value: "", label: tUnits("allBlocks") },
-              ...data.blocks.map((block) => ({ value: block.id, label: block.name })),
+              ...data.facets.blocks.map((block) => ({
+                value: block.id,
+                label: block.label,
+              })),
             ],
           },
           {
@@ -234,7 +304,10 @@ export default async function DebtsPage({
             value: params.filters.donem ?? "",
             options: [
               { value: "", label: t("allPeriods") },
-              ...data.periods.map((period) => ({ value: period, label: fmt.period(period) })),
+              ...data.facets.periods.map((period) => ({
+                value: period,
+                label: fmt.period(period),
+              })),
             ],
           },
           {
@@ -243,7 +316,10 @@ export default async function DebtsPage({
             value: params.filters.tur ?? "",
             options: [
               { value: "", label: t("allKinds") },
-              ...DEBT_KINDS.map((kind) => ({ value: kind, label: tEnum(`debtKind.${kind}`) })),
+              ...DEBT_KINDS.map((kind) => ({
+                value: kind,
+                label: tEnum(`debtKind.${kind}`),
+              })),
             ],
           },
           {
@@ -268,7 +344,11 @@ export default async function DebtsPage({
             sort={params.sort}
             direction={params.direction}
             hrefFor={(key, direction) =>
-              buildListHref("/panel/borclar", params, { sirala: key, yon: direction, sayfa: 1 })
+              buildListHref("/panel/borclar", params, {
+                sirala: key,
+                yon: direction,
+                sayfa: 1,
+              })
             }
             labels={{
               unit: tUnits("number"),
@@ -293,12 +373,18 @@ export default async function DebtsPage({
           <Pagination
             page={params.page}
             pageCount={pageCount}
-            total={data.total}
-            hrefFor={(page) => buildListHref("/panel/borclar", params, { sayfa: page })}
+            total={data.meta.total}
+            hrefFor={(page) =>
+              buildListHref("/panel/borclar", params, { sayfa: page })
+            }
             labels={{
               previous: tCommon("action.previous"),
               next: tCommon("action.next"),
-              summary: tCommon("state.showing", { from, to, total: data.total }),
+              summary: tCommon("state.showing", {
+                from,
+                to,
+                total: data.meta.total,
+              }),
             }}
             linkComponent={Link as never}
           />

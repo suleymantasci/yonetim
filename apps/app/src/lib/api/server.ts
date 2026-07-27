@@ -25,12 +25,19 @@ const BASE = process.env.API_INTERNAL_URL ?? "http://localhost:3100";
 export interface ApiRequestOptions {
   /** `X-Change-Reason` — gerekçeli düzeltme (GAP-DURUM kararı 9). */
   reason?: string;
+  /**
+   * `X-Debt-Description` — API dile bağımsız (SPEC 4.2), ama ürettiği borç
+   * kayıtlarının açıklaması kullanıcının dilinde olmalı. Metni panel gönderiyor.
+   */
+  debtDescription?: string;
   /** Çoklu üyelikte site değiştirme. */
   tenantSlug?: string;
   signal?: AbortSignal;
 }
 
-async function buildHeaders(options: ApiRequestOptions = {}): Promise<Record<string, string>> {
+async function buildHeaders(
+  options: ApiRequestOptions = {},
+): Promise<Record<string, string>> {
   const [cookieStore, headerList] = await Promise.all([cookies(), headers()]);
 
   const result: Record<string, string> = {
@@ -39,7 +46,8 @@ async function buildHeaders(options: ApiRequestOptions = {}): Promise<Record<str
     "x-request-id": headerList.get("x-request-id") ?? crypto.randomUUID(),
   };
 
-  const clientIp = headerList.get("x-client-ip") ?? headerList.get("x-forwarded-for");
+  const clientIp =
+    headerList.get("x-client-ip") ?? headerList.get("x-forwarded-for");
   if (clientIp) result["x-client-ip"] = clientIp.split(",")[0]!.trim();
 
   const userAgent = headerList.get("user-agent");
@@ -50,7 +58,11 @@ async function buildHeaders(options: ApiRequestOptions = {}): Promise<Record<str
 
   // Başlıklar latin-1 taşır; Türkçe gerekçe metni encode edilerek gönderilir,
   // API tarafında tek yerde çözülüyor.
-  if (options.reason) result["x-change-reason"] = encodeURIComponent(options.reason);
+  if (options.reason)
+    result["x-change-reason"] = encodeURIComponent(options.reason);
+  if (options.debtDescription) {
+    result["x-debt-description"] = encodeURIComponent(options.debtDescription);
+  }
 
   return result;
 }
@@ -161,7 +173,12 @@ export function apiPost<T extends z.ZodTypeAny>(
   schema: T,
   options?: ApiRequestOptions,
 ): Promise<z.infer<T>>;
-export function apiPost(path: string, body: unknown, schema?: null, options?: ApiRequestOptions): Promise<unknown>;
+export function apiPost(
+  path: string,
+  body: unknown,
+  schema?: null,
+  options?: ApiRequestOptions,
+): Promise<unknown>;
 export function apiPost(
   path: string,
   body: unknown,
@@ -177,7 +194,12 @@ export function apiPatch<T extends z.ZodTypeAny>(
   schema: T,
   options?: ApiRequestOptions,
 ): Promise<z.infer<T>>;
-export function apiPatch(path: string, body: unknown, schema?: null, options?: ApiRequestOptions): Promise<unknown>;
+export function apiPatch(
+  path: string,
+  body: unknown,
+  schema?: null,
+  options?: ApiRequestOptions,
+): Promise<unknown>;
 export function apiPatch(
   path: string,
   body: unknown,
@@ -187,12 +209,17 @@ export function apiPatch(
   return request("PATCH", path, schema, body, options);
 }
 
-export function apiDelete(path: string, options?: ApiRequestOptions): Promise<unknown> {
+export function apiDelete(
+  path: string,
+  options?: ApiRequestOptions,
+): Promise<unknown> {
   return request("DELETE", path, null, undefined, options);
 }
 
 /** Nesneyi querystring'e çevirir; boş/undefined alanlar yazılmaz. */
-export function toQuery(params: Record<string, string | number | boolean | undefined | null>): string {
+export function toQuery(
+  params: Record<string, string | number | boolean | undefined | null>,
+): string {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     if (value === undefined || value === null || value === "") continue;

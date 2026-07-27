@@ -1,0 +1,35 @@
+import { Module } from "@nestjs/common";
+
+import { DebtWriteRepository } from "./debt/debt-write.repository";
+import { DuesPlanController } from "./dues-plan/dues-plan.controller";
+import { DuesPlanService } from "./dues-plan/dues-plan.service";
+import { ExpenseWriteRepository } from "./expense/expense-write.repository";
+import { ExpenseController } from "./expense/expense.controller";
+import { ExpenseRepository } from "./expense/expense.repository";
+import { ExpenseService } from "./expense/expense.service";
+import { DebtController } from "./debt/debt.controller";
+import { DebtRepository } from "./debt/debt.repository";
+import { DebtService } from "./debt/debt.service";
+
+/**
+ * `finance` bağlamı — MIMARI-PLAN §6.4: aidat planı, borç, tahsilat, gider,
+ * dağıtım, gecikme, banka mutabakat, borcu-yoktur.
+ *
+ * A2'de `debt` + `payment` + `expense`. Tahsilat borç modülünün içinde
+ * yaşıyor: mahsup borçlara yazdığı için ikisini ayırmak transaction sınırını
+ * bölerdi. `dues-plan` ve `bank` sonraki adımda.
+ */
+@Module({
+  controllers: [DebtController, ExpenseController, DuesPlanController],
+  providers: [
+    DebtService,
+    DebtRepository,
+    DebtWriteRepository,
+    ExpenseService,
+    ExpenseRepository,
+    ExpenseWriteRepository,
+    DuesPlanService,
+  ],
+  exports: [DebtService, DebtRepository, ExpenseService, DuesPlanService],
+})
+export class FinanceModule {}

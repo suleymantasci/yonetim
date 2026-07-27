@@ -918,7 +918,8 @@
     "noTargetUnits": "Filtreye uyan daire bulunamadı.",
     "periodInvalid": "Geçerli bir dönem seçin.",
     "formulaFellBack": "Seçilen formül için veri eksik (arsa payı / alan / kişi sayısı girilmemiş). Dağıtım eşit olarak yapılacak.",
-    "distributedDescription": "{expense} — daire payı"
+    "distributedDescription": "{expense} — daire payı",
+    "distributedLabel": "daire payı"
   },
   "bank": {
     "title": "Banka & Mutabakat",

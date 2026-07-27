@@ -4,21 +4,36 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { hasPermission } from "@yonetim/auth";
-import { currentPeriod, periodKey } from "@yonetim/core";
 import {
-  Alert, Badge, Card, CardBody, CardHeader, Stat, tableClasses as tc,
+  blockListResponse,
+  expenseDetail as expenseDetailSchema,
+} from "@yonetim/contracts";
+import { AppError, currentPeriod, periodKey } from "@yonetim/core";
+import {
+  Alert,
+  Badge,
+  Card,
+  CardBody,
+  CardHeader,
+  Stat,
+  tableClasses as tc,
 } from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
+import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
-import { getExpenseDetail } from "@/lib/queries/expenses";
-import { getBlockOptions } from "@/lib/queries/units";
 import { DistributePanel } from "./distribute-panel";
 
 export const dynamic = "force-dynamic";
 
-const DISTRIBUTIONS = ["equal", "land_share", "area", "person_count", "meter"] as const;
+const DISTRIBUTIONS = [
+  "equal",
+  "land_share",
+  "area",
+  "person_count",
+  "meter",
+] as const;
 
 export default async function ExpenseDetailPage({
   params,
@@ -32,19 +47,31 @@ export default async function ExpenseDetailPage({
   const tEnum = await getTranslations("enum");
   const fmt = await formatters();
 
-  const [detail, blocks] = await Promise.all([getExpenseDetail(ctx, id), getBlockOptions(ctx)]);
+  const [detail, blockList] = await Promise.all([
+    apiGet(`/v1/panel/expenses/${id}`, expenseDetailSchema).catch(
+      (error: unknown) => {
+        if (error instanceof AppError && error.code === "not_found") notFound();
+        throw error;
+      },
+    ),
+    apiGet("/v1/panel/units/bloklar", blockListResponse),
+  ]);
+  const blocks = blockList.rows;
   if (!detail) notFound();
 
   const expense = detail.expense;
-  const netKurus = expense.amountKurus - expense.vatKurus;
+  const netKurus = expense.amountMinor - expense.vatMinor;
   const canApprove = hasPermission(ctx.roles, "expense:approve");
   const canWrite = hasPermission(ctx.roles, "expense:write");
   const distributed = expense.distributedAt !== null;
   const distributable =
-    canApprove && !distributed && (expense.status === "approved" || expense.status === "paid");
+    canApprove &&
+    !distributed &&
+    (expense.status === "approved" || expense.status === "paid");
 
   let statusTone: "neutral" | "success" | "warning" | "danger" = "neutral";
-  if (expense.status === "paid" || expense.status === "approved") statusTone = "success";
+  if (expense.status === "paid" || expense.status === "approved")
+    statusTone = "success";
   else if (expense.status === "pending_approval") statusTone = "warning";
   else if (expense.status === "rejected") statusTone = "danger";
 
@@ -66,7 +93,9 @@ export default async function ExpenseDetailPage({
         ]}
         meta={
           <>
-            <Badge tone={statusTone}>{tEnum(`expenseStatus.${expense.status}`)}</Badge>
+            <Badge tone={statusTone}>
+              {tEnum(`expenseStatus.${expense.status}`)}
+            </Badge>
             {distributed ? (
               <Badge tone="success">{t("distributedBadge")}</Badge>
             ) : (
@@ -100,9 +129,12 @@ export default async function ExpenseDetailPage({
               <DistributePanel
                 expenseId={id}
                 categoryDistribution={detail.categoryDistribution}
-                amountKurus={expense.amountKurus}
-                vatKurus={expense.vatKurus}
-                blocks={blocks.map((block) => ({ id: block.id, name: block.name }))}
+                amountKurus={expense.amountMinor}
+                vatKurus={expense.vatMinor}
+                blocks={blocks.map((block) => ({
+                  id: block.id,
+                  name: block.name,
+                }))}
                 defaultPeriod={expense.period ?? periodKey(currentPeriod())}
                 labels={{
                   action: t("distributeAction"),
@@ -142,13 +174,13 @@ export default async function ExpenseDetailPage({
       />
 
       <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat label={t("amountGross")} value={fmt.money(expense.amountKurus)} />
+        <Stat label={t("amountGross")} value={fmt.money(expense.amountMinor)} />
         <Stat label={t("amountNet")} value={fmt.money(netKurus)} />
-        <Stat label={t("vatAmount")} value={fmt.money(expense.vatKurus)} />
+        <Stat label={t("vatAmount")} value={fmt.money(expense.vatMinor)} />
         <Stat
           label={t("withholding")}
-          value={fmt.money(expense.withholdingKurus)}
-          tone={expense.withholdingKurus > 0 ? "warning" : "neutral"}
+          value={fmt.money(expense.withholdingMinor)}
+          tone={expense.withholdingMinor > 0 ? "warning" : "neutral"}
         />
       </div>
 
@@ -174,20 +206,33 @@ export default async function ExpenseDetailPage({
               />
               <Row label={t("vendor")} value={expense.vendorName ?? "—"} />
               <Row label={t("invoiceNo")} value={expense.invoiceNo ?? "—"} />
-              <Row label={t("expenseDate")} value={fmt.date(expense.expenseDate)} />
+              <Row
+                label={t("expenseDate")}
+                value={fmt.date(expense.expenseDate)}
+              />
               <Row
                 label={t("paidAt")}
-                value={expense.paidAt ? fmt.date(expense.paidAt) : t("notPaidYet")}
+                value={
+                  expense.paidAt ? fmt.date(expense.paidAt) : t("notPaidYet")
+                }
               />
               <Row label={t("paidVia")} value={expense.paidVia ?? "—"} />
-              <Row label={t("period")} value={expense.period ? fmt.period(expense.period) : "—"} />
+              <Row
+                label={t("period")}
+                value={expense.period ? fmt.period(expense.period) : "—"}
+              />
               <Row
                 label={t("distributedAt")}
                 value={
-                  expense.distributedAt ? fmt.dateTime(expense.distributedAt) : t("notDistributedBadge")
+                  expense.distributedAt
+                    ? fmt.dateTime(expense.distributedAt)
+                    : t("notDistributedBadge")
                 }
               />
-              <Row label={t("vatRate")} value={`%${(Number(expense.vatRate) * 100).toFixed(0)}`} />
+              <Row
+                label={t("vatRate")}
+                value={`%${(Number(expense.vatRate) * 100).toFixed(0)}`}
+              />
             </dl>
           </CardBody>
         </Card>
@@ -199,24 +244,38 @@ export default async function ExpenseDetailPage({
           />
           <CardBody className="p-0">
             {detail.generatedDebts.length === 0 ? (
-              <p className="p-6 text-center text-sm text-fg-subtle">{t("noGeneratedDebts")}</p>
+              <p className="p-6 text-center text-sm text-fg-subtle">
+                {t("noGeneratedDebts")}
+              </p>
             ) : (
               <div className={`${tc.wrapper} max-h-96 overflow-y-auto`}>
                 <table className={tc.table}>
                   <thead className={`${tc.thead} sticky top-0 bg-surface`}>
                     <tr>
-                      <th scope="col" className={tc.th}>{t("unit")}</th>
-                      <th scope="col" className={`${tc.th} text-right`}>{t("amountGross")}</th>
-                      <th scope="col" className={tc.th}>{t("status")}</th>
+                      <th scope="col" className={tc.th}>
+                        {t("unit")}
+                      </th>
+                      <th scope="col" className={`${tc.th} text-right`}>
+                        {t("amountGross")}
+                      </th>
+                      <th scope="col" className={tc.th}>
+                        {t("status")}
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {detail.generatedDebts.map((debt) => (
                       <tr key={debt.unitNumber} className={tc.tr}>
                         <td className={tc.td}>{debt.unitNumber}</td>
-                        <td className={tc.tdNum}>{fmt.money(debt.amountKurus)}</td>
+                        <td className={tc.tdNum}>
+                          {fmt.money(debt.amountMinor)}
+                        </td>
                         <td className={tc.td}>
-                          <Badge tone={debt.status === "paid" ? "success" : "neutral"}>
+                          <Badge
+                            tone={
+                              debt.status === "paid" ? "success" : "neutral"
+                            }
+                          >
                             {tEnum(`debtStatus.${debt.status}`)}
                           </Badge>
                         </td>
@@ -233,7 +292,13 @@ export default async function ExpenseDetailPage({
   );
 }
 
-function Row({ label, value }: { readonly label: string; readonly value: string }) {
+function Row({
+  label,
+  value,
+}: {
+  readonly label: string;
+  readonly value: string;
+}) {
   return (
     <>
       <dt className="text-fg-subtle">{label}</dt>

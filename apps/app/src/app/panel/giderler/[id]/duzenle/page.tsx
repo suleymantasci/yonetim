@@ -2,11 +2,16 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { hasPermission } from "@yonetim/auth";
+import {
+  categoryTree as categoryTreeSchema,
+  expenseDetail as expenseDetailSchema,
+} from "@yonetim/contracts";
+import { AppError } from "@yonetim/core";
 import { Alert, Card, CardBody } from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
+import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
-import { getCategoryTree, getExpenseDetail } from "@/lib/queries/expenses";
 import { ExpenseForm } from "../../expense-form";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +26,16 @@ export default async function EditExpensePage({
   const t = await getTranslations("app.expenses");
   const tCommon = await getTranslations("common");
 
-  const [detail, tree] = await Promise.all([getExpenseDetail(ctx, id), getCategoryTree(ctx)]);
+  const [detail, categoryData] = await Promise.all([
+    apiGet(`/v1/panel/expenses/${id}`, expenseDetailSchema).catch(
+      (error: unknown) => {
+        if (error instanceof AppError && error.code === "not_found") notFound();
+        throw error;
+      },
+    ),
+    apiGet("/v1/panel/expenses/kategoriler", categoryTreeSchema),
+  ]);
+  const tree = categoryData.roots;
   if (!detail) notFound();
 
   const expense = detail.expense;
@@ -86,9 +100,11 @@ export default async function EditExpensePage({
               categoryId: expense.categoryId,
               vendorName: expense.vendorName,
               description: expense.description,
-              amountKurus: expense.amountKurus,
-              vatRate: expense.vatRate,
-              withholdingKurus: expense.withholdingKurus,
+              amountKurus: expense.amountMinor,
+              // Sözleşmede numeric alanlar metin olarak taşınıyor (kesir
+              // hassasiyeti korunsun diye); form boş değeri kabul ediyor.
+              vatRate: expense.vatRate ?? "",
+              withholdingKurus: expense.withholdingMinor,
               invoiceNo: expense.invoiceNo,
               expenseDate: expense.expenseDate.toISOString().slice(0, 10),
               paidVia: expense.paidVia,

@@ -5,7 +5,15 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import {
-  Alert, CheckboxGroup, DateInput, Drawer, Input, MoneyInput, Select, Switch, Textarea,
+  Alert,
+  CheckboxGroup,
+  DateInput,
+  Drawer,
+  Input,
+  MoneyInput,
+  Select,
+  Switch,
+  Textarea,
 } from "@yonetim/ui";
 
 import { ActionForm, FormField } from "@/components/form/action-form";
@@ -114,18 +122,39 @@ export function DebtActionPanels({
           <input type="hidden" name="id" value={debtId} />
 
           <div className="space-y-4">
-            {paidKurus > 0 ? <Alert tone="warning">{labels.paidWarning}</Alert> : null}
+            {paidKurus > 0 ? (
+              <Alert tone="warning">{labels.paidWarning}</Alert>
+            ) : null}
 
             <FormField name="amountKurus" label={labels.amount} required>
-              <MoneyInput name="amountKurus" defaultKurus={currentAmountKurus} required />
+              <MoneyInput
+                name="amountKurus"
+                defaultKurus={currentAmountKurus}
+                required
+              />
             </FormField>
 
             <FormField name="dueDate" label={labels.dueDate} required>
-              <DateInput name="dueDate" defaultValue={currentDueDate} required />
+              <DateInput
+                name="dueDate"
+                defaultValue={currentDueDate}
+                required
+              />
             </FormField>
 
-            <FormField name="reason" label={labels.reason} hint={labels.reasonHint} required>
-              <Textarea name="reason" rows={3} minLength={10} maxLength={500} required />
+            <FormField
+              name="reason"
+              label={labels.reason}
+              hint={labels.reasonHint}
+              required
+            >
+              <Textarea
+                name="reason"
+                rows={3}
+                minLength={10}
+                maxLength={500}
+                required
+              />
             </FormField>
 
             <Alert tone="info">{labels.reasonWarning}</Alert>
@@ -197,7 +226,11 @@ export function DebtActionPanels({
               </FormField>
             </div>
 
-            <FormField name="payerUserId" label={labels.payer} hint={labels.payerHint}>
+            <FormField
+              name="payerUserId"
+              label={labels.payer}
+              hint={labels.payerHint}
+            >
               <Select name="payerUserId" defaultValue="">
                 <option value="">—</option>
                 {residents.map((resident) => (
@@ -213,7 +246,11 @@ export function DebtActionPanels({
             </FormField>
 
             {openDebts.length > 1 ? (
-              <FormField name="debtIds" label={labels.targetDebts} hint={labels.targetDebtsHint}>
+              <FormField
+                name="debtIds"
+                label={labels.targetDebts}
+                hint={labels.targetDebtsHint}
+              >
                 <CheckboxGroup
                   name="debtIds"
                   columns={1}

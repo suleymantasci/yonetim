@@ -4,14 +4,28 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import {
-  Alert, Badge, Card, CardBody, CardHeader, ProgressBar, Stat, Timeline,
-  tableClasses as tc, type TimelineEntry,
+  Alert,
+  Badge,
+  Card,
+  CardBody,
+  CardHeader,
+  ProgressBar,
+  Stat,
+  Timeline,
+  tableClasses as tc,
+  type TimelineEntry,
 } from "@yonetim/ui";
 
+import {
+  debtDetail as debtDetailSchema,
+  openDebtList,
+} from "@yonetim/contracts";
+import { AppError } from "@yonetim/core";
+
 import { PageHeader } from "@/components/app-shell";
+import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
-import { getDebtDetail, getOpenDebtsForUnit } from "@/lib/queries/debts";
 import { getResidentOptions } from "@/lib/queries/residents";
 import { DebtActionPanels } from "./adjust-panel";
 
@@ -41,16 +55,21 @@ export default async function DebtDetailPage({
   const tEnum = await getTranslations("enum");
   const fmt = await formatters();
 
-  const detail = await getDebtDetail(ctx, id);
-  if (!detail) notFound();
+  const detail = await apiGet(`/v1/panel/debts/${id}`, debtDetailSchema).catch(
+    (error: unknown) => {
+      if (error instanceof AppError && error.code === "not_found") notFound();
+      throw error;
+    },
+  );
 
   const debt = detail.debt;
-  const total = debt.amountKurus + debt.lateFeeKurus;
-  const outstanding = total - debt.paidKurus;
+  const total = debt.amountMinor + debt.lateFeeMinor;
+  const outstanding = total - debt.paidMinor;
   const overdue = debt.status !== "paid" && debt.dueDate.getTime() < Date.now();
 
+  // `getResidentOptions` A3'te API'ye taşınacak; şu an hâlâ sorgu katmanından.
   const [openDebts, residents] = await Promise.all([
-    getOpenDebtsForUnit(ctx, debt.unitId),
+    apiGet(`/v1/panel/debts/acik/${debt.unitId}`, openDebtList),
     getResidentOptions(ctx),
   ]);
 
@@ -59,9 +78,9 @@ export default async function DebtDetailPage({
       const isAmount = change.changeType === "amount_changed";
       const increased =
         isAmount &&
-        change.oldAmountKurus !== null &&
-        change.newAmountKurus !== null &&
-        change.newAmountKurus > change.oldAmountKurus;
+        change.oldAmountMinor !== null &&
+        change.newAmountMinor !== null &&
+        change.newAmountMinor > change.oldAmountMinor;
 
       return {
         id: change.id,
@@ -69,14 +88,21 @@ export default async function DebtDetailPage({
         timestamp: fmt.dateTime(change.createdAt),
         actor: change.changedByName ?? t("changedBySystem"),
         // Artış uyarı tonunda: sakinin dikkatini çekmesi gereken değişiklik bu.
-        tone: increased ? ("warning" as const) : isAmount ? ("info" as const) : ("neutral" as const),
+        tone: increased
+          ? ("warning" as const)
+          : isAmount
+            ? ("info" as const)
+            : ("neutral" as const),
         delta: isAmount
           ? {
-              from: fmt.money(change.oldAmountKurus ?? 0),
-              to: fmt.money(change.newAmountKurus ?? 0),
+              from: fmt.money(change.oldAmountMinor ?? 0),
+              to: fmt.money(change.newAmountMinor ?? 0),
             }
           : change.oldDueDate && change.newDueDate
-            ? { from: fmt.date(change.oldDueDate), to: fmt.date(change.newDueDate) }
+            ? {
+                from: fmt.date(change.oldDueDate),
+                to: fmt.date(change.newDueDate),
+              }
             : undefined,
         reason: change.reason ?? undefined,
         meta: change.visibleToResident ? null : (
@@ -90,8 +116,10 @@ export default async function DebtDetailPage({
       title: t("changeType.created"),
       timestamp: fmt.dateTime(debt.createdAt),
       tone: "brand" as const,
-      delta: { from: "—", to: fmt.money(debt.amountKurus) },
-      reason: detail.planName ? t("createdByPlan", { plan: detail.planName }) : undefined,
+      delta: { from: "—", to: fmt.money(debt.amountMinor) },
+      reason: detail.planName
+        ? t("createdByPlan", { plan: detail.planName })
+        : undefined,
     },
   ];
 
@@ -139,18 +167,22 @@ export default async function DebtDetailPage({
           <DebtActionPanels
             debtId={id}
             unitId={debt.unitId}
-            currentAmountKurus={debt.amountKurus}
+            currentAmountKurus={debt.amountMinor}
             currentDueDate={debt.dueDate.toISOString().slice(0, 10)}
             lateFeeExempt={debt.lateFeeExempt}
-            paidKurus={debt.paidKurus}
-            openDebts={openDebts.map((row) => ({
+            paidKurus={debt.paidMinor}
+            openDebts={openDebts.rows.map((row) => ({
               id: row.id,
               label: `${row.description}${row.period ? ` · ${fmt.period(row.period)}` : ""}`,
-              remaining: fmt.money(row.amountKurus + row.lateFeeKurus - row.paidKurus),
+              remaining: fmt.money(
+                row.amountMinor + row.lateFeeMinor - row.paidMinor,
+              ),
             }))}
             residents={residents.map((person) => ({
               id: person.id,
-              label: [person.firstName, person.lastName].filter(Boolean).join(" ") || person.id,
+              label:
+                [person.firstName, person.lastName].filter(Boolean).join(" ") ||
+                person.id,
             }))}
             labels={{
               adjust: t("adjustAction"),
@@ -190,13 +222,17 @@ export default async function DebtDetailPage({
       />
 
       <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat label={tUnits("amount")} value={fmt.money(debt.amountKurus)} />
+        <Stat label={tUnits("amount")} value={fmt.money(debt.amountMinor)} />
         <Stat
           label={tUnits("lateFee")}
-          value={fmt.money(debt.lateFeeKurus)}
-          tone={debt.lateFeeKurus > 0 ? "warning" : "neutral"}
+          value={fmt.money(debt.lateFeeMinor)}
+          tone={debt.lateFeeMinor > 0 ? "warning" : "neutral"}
         />
-        <Stat label={tUnits("paid")} value={fmt.money(debt.paidKurus)} tone="success" />
+        <Stat
+          label={tUnits("paid")}
+          value={fmt.money(debt.paidMinor)}
+          tone="success"
+        />
         <Stat
           label={t("statOutstanding")}
           value={fmt.money(Math.max(0, outstanding))}
@@ -208,7 +244,9 @@ export default async function DebtDetailPage({
         <div className="mb-4">
           <Alert tone="danger">
             {t("overdueNotice", {
-              days: Math.floor((Date.now() - debt.dueDate.getTime()) / 86_400_000),
+              days: Math.floor(
+                (Date.now() - debt.dueDate.getTime()) / 86_400_000,
+              ),
             })}
           </Alert>
         </div>
@@ -220,14 +258,20 @@ export default async function DebtDetailPage({
             <div className="mb-1.5 flex items-baseline justify-between text-sm">
               <span className="text-fg-muted">{t("collectionProgress")}</span>
               <span className="font-semibold tabular-nums text-fg">
-                {total > 0 ? Math.round((debt.paidKurus / total) * 100) : 0}%
+                {total > 0 ? Math.round((debt.paidMinor / total) * 100) : 0}%
               </span>
             </div>
             <ProgressBar
-              value={debt.paidKurus}
+              value={debt.paidMinor}
               max={Math.max(1, total)}
               label={t("collectionProgress")}
-              tone={debt.paidKurus >= total ? "success" : overdue ? "danger" : "primary"}
+              tone={
+                debt.paidMinor >= total
+                  ? "success"
+                  : overdue
+                    ? "danger"
+                    : "primary"
+              }
             />
           </CardBody>
         </Card>
@@ -237,7 +281,10 @@ export default async function DebtDetailPage({
         {/* VURUCU: tarihçe kartı — ekranın en geniş sütunu. */}
         <div className="lg:col-span-2">
           <Card>
-            <CardHeader title={t("timelineTitle")} description={t("timelineHint")} />
+            <CardHeader
+              title={t("timelineTitle")}
+              description={t("timelineHint")}
+            />
             <CardBody>
               <Timeline
                 entries={timelineEntries}
@@ -254,12 +301,21 @@ export default async function DebtDetailPage({
             <CardHeader title={t("summaryTitle")} />
             <CardBody>
               <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-                <Row label={tUnits("period")} value={debt.period ? fmt.period(debt.period) : "—"} />
+                <Row
+                  label={tUnits("period")}
+                  value={debt.period ? fmt.period(debt.period) : "—"}
+                />
                 <Row label={tUnits("dueDate")} value={fmt.date(debt.dueDate)} />
                 <Row label={t("kind")} value={tEnum(`debtKind.${debt.kind}`)} />
-                <Row label={t("debtor")} value={detail.debtorName ?? t("debtorUnassigned")} />
+                <Row
+                  label={t("debtor")}
+                  value={detail.debtorName ?? t("debtorUnassigned")}
+                />
                 <Row label={t("plan")} value={detail.planName ?? "—"} />
-                <Row label={tUnits("createdAt")} value={fmt.date(debt.createdAt)} />
+                <Row
+                  label={tUnits("createdAt")}
+                  value={fmt.date(debt.createdAt)}
+                />
               </dl>
               {detail.debtorName === null ? (
                 <div className="mt-3">
@@ -273,23 +329,31 @@ export default async function DebtDetailPage({
             <CardHeader title={t("paymentsTitle")} />
             <CardBody className="p-0">
               {detail.allocations.length === 0 ? (
-                <p className="p-5 text-center text-sm text-fg-subtle">{tUnits("noPayments")}</p>
+                <p className="p-5 text-center text-sm text-fg-subtle">
+                  {tUnits("noPayments")}
+                </p>
               ) : (
                 <ul className="divide-y divide-border">
                   {detail.allocations.map((allocation) => (
                     <li key={allocation.paymentId} className="p-3 text-sm">
                       <div className="flex items-baseline justify-between gap-2">
                         <span className="font-semibold tabular-nums text-fg">
-                          {fmt.money(allocation.amountKurus)}
+                          {fmt.money(allocation.amountMinor)}
                         </span>
                         <span className="text-xs text-fg-subtle">
-                          {allocation.paidAt ? fmt.date(allocation.paidAt) : "—"}
+                          {allocation.paidAt
+                            ? fmt.date(allocation.paidAt)
+                            : "—"}
                         </span>
                       </div>
                       <p className="text-xs text-fg-muted">
                         {tEnum(`paymentMethod.${allocation.method}`)}
-                        {allocation.payerName ? ` · ${allocation.payerName}` : ""}
-                        {allocation.receiptNo ? ` · ${allocation.receiptNo}` : ""}
+                        {allocation.payerName
+                          ? ` · ${allocation.payerName}`
+                          : ""}
+                        {allocation.receiptNo
+                          ? ` · ${allocation.receiptNo}`
+                          : ""}
                       </p>
                     </li>
                   ))}
@@ -309,10 +373,18 @@ export default async function DebtDetailPage({
                   <table className={tc.table}>
                     <thead className={tc.thead}>
                       <tr>
-                        <th scope="col" className={tc.th}>#</th>
-                        <th scope="col" className={`${tc.th} text-right`}>{tUnits("amount")}</th>
-                        <th scope="col" className={tc.th}>{tUnits("dueDate")}</th>
-                        <th scope="col" className={tc.th}>{t("status")}</th>
+                        <th scope="col" className={tc.th}>
+                          #
+                        </th>
+                        <th scope="col" className={`${tc.th} text-right`}>
+                          {tUnits("amount")}
+                        </th>
+                        <th scope="col" className={tc.th}>
+                          {tUnits("dueDate")}
+                        </th>
+                        <th scope="col" className={tc.th}>
+                          {t("status")}
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -329,7 +401,9 @@ export default async function DebtDetailPage({
                               {sibling.installmentNo ?? "—"}
                             </Link>
                           </td>
-                          <td className={tc.tdNum}>{fmt.money(sibling.amountKurus)}</td>
+                          <td className={tc.tdNum}>
+                            {fmt.money(sibling.amountMinor)}
+                          </td>
                           <td className={tc.td}>{fmt.date(sibling.dueDate)}</td>
                           <td className={tc.td}>
                             <Badge tone={statusTone(sibling.status, false)}>
@@ -350,7 +424,13 @@ export default async function DebtDetailPage({
   );
 }
 
-function Row({ label, value }: { readonly label: string; readonly value: string }) {
+function Row({
+  label,
+  value,
+}: {
+  readonly label: string;
+  readonly value: string;
+}) {
   return (
     <>
       <dt className="text-fg-subtle">{label}</dt>

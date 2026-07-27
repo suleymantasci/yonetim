@@ -4,8 +4,16 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import {
-  Alert, CheckboxGroup, FormSection, Input, MoneyInput, PeriodInput, RadioGroup, Select,
-  Switch, Textarea,
+  Alert,
+  CheckboxGroup,
+  FormSection,
+  Input,
+  MoneyInput,
+  PeriodInput,
+  RadioGroup,
+  Select,
+  Switch,
+  Textarea,
 } from "@yonetim/ui";
 
 import { ActionForm, FormField } from "@/components/form/action-form";
@@ -58,29 +66,62 @@ export function DuesPlanForm({
   const isMixed = formula === "mixed";
 
   return (
-    <ActionForm action={saveDuesPlan} submitLabel={submitLabel} cancelHref={cancelHref}>
+    <ActionForm
+      action={saveDuesPlan}
+      submitLabel={submitLabel}
+      cancelHref={cancelHref}
+    >
       {defaults ? <input type="hidden" name="id" value={defaults.id} /> : null}
 
-      <FormSection title={t("sectionBasics")} description={t("sectionBasicsHint")}>
+      <FormSection
+        title={t("sectionBasics")}
+        description={t("sectionBasicsHint")}
+      >
         <div className="sm:col-span-2">
-          <FormField name="name" label={t("planName")} required hint={t("planNameHint")}>
-            <Input name="name" defaultValue={defaults?.name} required minLength={3} maxLength={120} />
+          <FormField
+            name="name"
+            label={t("planName")}
+            required
+            hint={t("planNameHint")}
+          >
+            <Input
+              name="name"
+              defaultValue={defaults?.name}
+              required
+              minLength={3}
+              maxLength={120}
+            />
           </FormField>
         </div>
 
         <FormField name="period" label={t("period")} required>
-          <Select name="period" defaultValue={defaults?.period ?? "monthly"} required>
-            {(["monthly", "quarterly", "semiannual", "yearly", "one_time"] as const).map(
-              (value) => (
-                <option key={value} value={value}>
-                  {tEnum(`duesPeriod.${value}`)}
-                </option>
-              ),
-            )}
+          <Select
+            name="period"
+            defaultValue={defaults?.period ?? "monthly"}
+            required
+          >
+            {(
+              [
+                "monthly",
+                "quarterly",
+                "semiannual",
+                "yearly",
+                "one_time",
+              ] as const
+            ).map((value) => (
+              <option key={value} value={value}>
+                {tEnum(`duesPeriod.${value}`)}
+              </option>
+            ))}
           </Select>
         </FormField>
 
-        <FormField name="dueDayOfMonth" label={t("dueDay")} hint={t("dueDayHint")} required>
+        <FormField
+          name="dueDayOfMonth"
+          label={t("dueDay")}
+          hint={t("dueDayHint")}
+          required
+        >
           <Input
             name="dueDayOfMonth"
             type="number"
@@ -100,32 +141,59 @@ export function DuesPlanForm({
           />
         </FormField>
 
-        <FormField name="endPeriod" label={t("endPeriod")} hint={t("endPeriodHint")}>
-          <PeriodInput name="endPeriod" defaultValue={defaults?.endPeriod ?? undefined} />
+        <FormField
+          name="endPeriod"
+          label={t("endPeriod")}
+          hint={t("endPeriodHint")}
+        >
+          <PeriodInput
+            name="endPeriod"
+            defaultValue={defaults?.endPeriod ?? undefined}
+          />
         </FormField>
       </FormSection>
 
-      <FormSection title={t("sectionFormula")} description={t("sectionFormulaHint")} columns={1}>
+      <FormSection
+        title={t("sectionFormula")}
+        description={t("sectionFormulaHint")}
+        columns={1}
+      >
         <RadioGroup
           name="formula"
           columns={2}
           defaultValue={formula}
           onChange={setFormula}
           options={[
-            { value: "equal", label: t("formulaEqual"), description: t("formulaEqualHint") },
+            {
+              value: "equal",
+              label: t("formulaEqual"),
+              description: t("formulaEqualHint"),
+            },
             {
               value: "land_share",
               label: t("formulaLandShare"),
               description: t("formulaLandShareHint"),
             },
-            { value: "area", label: t("formulaArea"), description: t("formulaAreaHint") },
+            {
+              value: "area",
+              label: t("formulaArea"),
+              description: t("formulaAreaHint"),
+            },
             {
               value: "person_count",
               label: t("formulaPerson"),
               description: t("formulaPersonHint"),
             },
-            { value: "meter", label: t("formulaMeter"), description: t("formulaMeterHint") },
-            { value: "mixed", label: t("formulaMixed"), description: t("formulaMixedHint") },
+            {
+              value: "meter",
+              label: t("formulaMeter"),
+              description: t("formulaMeterHint"),
+            },
+            {
+              value: "mixed",
+              label: t("formulaMixed"),
+              description: t("formulaMixedHint"),
+            },
           ]}
         />
 
@@ -158,7 +226,11 @@ export function DuesPlanForm({
         </div>
 
         {isMixed ? (
-          <FormField name="mixEqualPct" label={t("mixEqualPct")} hint={t("mixEqualPctHint")}>
+          <FormField
+            name="mixEqualPct"
+            label={t("mixEqualPct")}
+            hint={t("mixEqualPctHint")}
+          >
             <Input
               name="mixEqualPct"
               type="number"
@@ -169,13 +241,23 @@ export function DuesPlanForm({
             />
           </FormField>
         ) : (
-          <input type="hidden" name="mixEqualPct" value={defaults?.mixEqualPct ?? 50} />
+          <input
+            type="hidden"
+            name="mixEqualPct"
+            value={defaults?.mixEqualPct ?? 50}
+          />
         )}
 
-        {formula === "meter" ? <Alert tone="info">{t("meterNotice")}</Alert> : null}
+        {formula === "meter" ? (
+          <Alert tone="info">{t("meterNotice")}</Alert>
+        ) : null}
       </FormSection>
 
-      <FormSection title={t("sectionLateFee")} description={t("sectionLateFeeHint")} columns={1}>
+      <FormSection
+        title={t("sectionLateFee")}
+        description={t("sectionLateFeeHint")}
+        columns={1}
+      >
         <FormField
           name="lateFeeMonthlyPct"
           label={t("lateFeePct")}
@@ -197,26 +279,44 @@ export function DuesPlanForm({
         <Alert tone="warning">{t("lateFeeLegalNotice")}</Alert>
       </FormSection>
 
-      <FormSection title={t("sectionScope")} description={t("sectionScopeHint")} columns={1}>
+      <FormSection
+        title={t("sectionScope")}
+        description={t("sectionScopeHint")}
+        columns={1}
+      >
         {blocks.length > 0 ? (
-          <FormField name="blockIds" label={tUnits("block")} hint={t("blockScopeHint")}>
+          <FormField
+            name="blockIds"
+            label={tUnits("block")}
+            hint={t("blockScopeHint")}
+          >
             <CheckboxGroup
               name="blockIds"
               columns={3}
               defaultValues={defaults?.blockIds ?? []}
-              options={blocks.map((block) => ({ value: block.id, label: block.name }))}
+              options={blocks.map((block) => ({
+                value: block.id,
+                label: block.name,
+              }))}
             />
           </FormField>
         ) : null}
 
-        <FormField name="unitTypes" label={tUnits("type")} hint={t("unitTypeScopeHint")}>
+        <FormField
+          name="unitTypes"
+          label={tUnits("type")}
+          hint={t("unitTypeScopeHint")}
+        >
           <CheckboxGroup
             name="unitTypes"
             columns={3}
             defaultValues={defaults?.unitTypes ?? []}
-            options={(["flat", "shop", "office", "depot", "garage", "villa"] as const).map(
-              (type) => ({ value: type, label: tEnum(`unitType.${type}`) }),
-            )}
+            options={(
+              ["flat", "shop", "office", "depot", "garage", "villa"] as const
+            ).map((type) => ({
+              value: type,
+              label: tEnum(`unitType.${type}`),
+            }))}
           />
         </FormField>
 
@@ -228,7 +328,12 @@ export function DuesPlanForm({
         />
 
         <FormField name="notes" label={t("notes")} hint={t("notesHint")}>
-          <Textarea name="notes" rows={2} maxLength={1000} defaultValue={defaults?.notes ?? ""} />
+          <Textarea
+            name="notes"
+            rows={2}
+            maxLength={1000}
+            defaultValue={defaults?.notes ?? ""}
+          />
         </FormField>
       </FormSection>
     </ActionForm>

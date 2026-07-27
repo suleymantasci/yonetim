@@ -1,23 +1,58 @@
 import { z } from "zod";
 
-import {
-  changeReason,
-  dateTime,
-  moneyMinor,
-  periodKey,
-  uuid,
-} from "../_shared/fields";
+import { changeReason, dateTime, moneyMinor, uuid } from "../_shared/fields";
 import { listQuery, option, pageMeta } from "../_shared/list";
 
 /**
  * Borç sözleşmesi — MIMARI-PLAN §6.4 `debt`.
  *
- * İki kural burada protokol seviyesinde yaşıyor:
- *  - **gerekçesiz düzeltme yok** (GAP-DURUM kararı 9): tutar/vade değişikliği
- *    `X-Change-Reason` başlığı olmadan reddedilir;
- *  - **yıkıcı işlemde önizleme zorunlu** (karar 8): toplu borçlandırma
+ * İki ürün kuralı burada **protokol seviyesinde** yaşıyor:
+ *  - gerekçesiz düzeltme yok (GAP-DURUM kararı 9): `reason` en az 10 karakter,
+ *    ve `X-Change-Reason` başlığı da aynı metni taşıyor;
+ *  - yıkıcı işlemde önizleme zorunlu (karar 8): toplu borçlandırma
  *    `confirmed: false` ile yazmaz.
+ *
+ * Para her yerde **kuruş** (`moneyMinor`) — float yok.
  */
+
+export const DEBT_KINDS = [
+  "dues",
+  "utility",
+  "reservation",
+  "penalty",
+  "late_fee",
+  "extra",
+  "legal_cost",
+] as const;
+export const debtKind = z.enum(DEBT_KINDS);
+
+/**
+ * Borcun kime yazılacağı — GAP 4.1.3 "borç paylaşımı seçimi".
+ *
+ * `split` (yarı yarıya) ve `share` (hisseye göre) tek bir `debtorUserId`
+ * alanına sığmaz; bunlar **birden fazla borç kaydı** üretir. Tek kayıt üretip
+ * "yarısı şunun" demek cari hesapları ve tahsilat mahsubunu bozardı.
+ */
+export const SHARE_TARGETS = ["owner", "tenant", "split", "share"] as const;
+export const shareTarget = z.enum(SHARE_TARGETS);
+
+export const DUES_FORMULAS = [
+  "equal",
+  "land_share",
+  "area",
+  "person_count",
+  "custom",
+] as const;
+export const duesFormula = z.enum(DUES_FORMULAS);
+
+export const PAYMENT_METHODS = [
+  "cash",
+  "bank_transfer",
+  "card",
+  "credit_balance",
+  "offset",
+] as const;
+export const paymentMethod = z.enum(PAYMENT_METHODS);
 
 export const DEBT_SORT_KEYS = [
   "dueDate",
@@ -29,15 +64,9 @@ export const DEBT_SORT_KEYS = [
 ] as const;
 export const debtSort = z.enum(DEBT_SORT_KEYS);
 
-export const DEBT_KINDS = [
-  "dues",
-  "extra",
-  "penalty",
-  "damage",
-  "utility",
-  "opening_balance",
-] as const;
-export const debtKind = z.enum(DEBT_KINDS);
+/* ------------------------------------------------------------------ *
+ * Liste
+ * ------------------------------------------------------------------ */
 
 export const debtListQuery = listQuery.extend({
   sort: debtSort.default("dueDate"),
@@ -84,6 +113,7 @@ export const debtListResponse = z.object({
     blocks: z.array(option),
     periods: z.array(z.string()),
   }),
+  /** Özet toplamlar filtreden bağımsız: yönetici genel durumu görsün. */
   totals: z.object({
     outstandingMinor: moneyMinor,
     overdueMinor: moneyMinor,
@@ -128,7 +158,7 @@ export const debtDetail = z.object({
     lateFeeExempt: z.boolean(),
     installmentNo: z.number().int().nullable(),
     installmentCount: z.number().int().nullable(),
-    notes: z.string().nullable(),
+    metadata: z.record(z.unknown()).default({}),
     createdAt: dateTime,
     deletedAt: dateTime.nullable(),
   }),
@@ -139,7 +169,7 @@ export const debtDetail = z.object({
   }),
   debtorName: z.string().nullable(),
   planName: z.string().nullable(),
-  /** Append-only değişiklik tarihçesi — GAP 5.2 şeffaflık. */
+  /** Append-only değişiklik tarihçesi — SPEC 3.2 şeffaflık. */
   changes: z.array(debtChangeEntry),
   allocations: z.array(
     z.object({
@@ -167,104 +197,113 @@ export const debtDetail = z.object({
 export type DebtDetail = z.infer<typeof debtDetail>;
 
 /* ------------------------------------------------------------------ *
- * Yazma
+ * Yazma — tek borç
  * ------------------------------------------------------------------ */
 
 export const debtCreate = z.object({
   unitId: uuid,
-  debtorUserId: uuid.nullish(),
-  kind: debtKind.default("extra"),
-  description: z.string().trim().min(1).max(200),
-  period: z.string().max(7).nullish(),
+  kind: debtKind,
+  description: z.string().trim().min(3).max(200),
   amountMinor: z.coerce.number().int().positive(),
   dueDate: dateTime,
+  period: z
+    .string()
+    .regex(/^\d{4}-(0[1-9]|1[0-2])$/)
+    .optional(),
+  shareTarget,
   lateFeeExempt: z.coerce.boolean().default(false),
-  /** 1 ise tek borç; >1 ise taksitlendirilir ve tutar `distribute()` ile bölünür. */
+  /** 1 = tek seferlik; >1 taksitlendirir ve vadeler ay ay ileri kayar. */
   installmentCount: z.coerce.number().int().min(1).max(36).default(1),
-  notes: z.string().trim().max(1000).nullish(),
+  notes: z.string().trim().max(1000).optional(),
 });
 
 export type DebtCreate = z.infer<typeof debtCreate>;
 
-/** Toplu borçlandırma — önizleme zorunlu (karar 8). */
+export const debtCreateResult = z.object({
+  ids: z.array(uuid),
+  unitNumber: z.string(),
+});
+
+export type DebtCreateResult = z.infer<typeof debtCreateResult>;
+
+/* ------------------------------------------------------------------ *
+ * Yazma — toplu borçlandırma
+ * ------------------------------------------------------------------ */
+
 export const debtBulkCreate = z.object({
-  period: periodKey,
-  kind: debtKind.default("extra"),
-  description: z.string().trim().min(1).max(200),
+  description: z.string().trim().min(3).max(200),
+  kind: debtKind,
+  period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+  dueDay: z.coerce.number().int().min(1).max(28),
+  formula: duesFormula,
+  /** `equal`: birim başı tutar; diğerleri: dağıtılacak havuz. */
   amountMinor: z.coerce.number().int().positive(),
-  dueDate: dateTime,
-  /** Boş ise tüm bloklar. */
+  shareTarget,
+  /** Boş = tüm bloklar. */
   blockIds: z.array(uuid).default([]),
-  /** Aidat muafı birimler hariç tutulsun mu? */
-  skipExempt: z.coerce.boolean().default(true),
-  /** `equal` eşit · `area` m² · `landShare` arsa payı oranında. */
-  distribution: z.enum(["equal", "area", "landShare"]).default("equal"),
-  confirmed: z.coerce.boolean().default(false),
+  unitTypes: z.array(z.string()).default([]),
+  skipExisting: z.coerce.boolean().default(true),
+  lateFeeExempt: z.coerce.boolean().default(false),
 });
 
 export type DebtBulkCreate = z.infer<typeof debtBulkCreate>;
 
+export const debtBulkPreviewRow = z.object({
+  unitId: uuid,
+  unitNumber: z.string(),
+  blockName: z.string().nullable(),
+  amountMinor: moneyMinor,
+  exempt: z.boolean(),
+  alreadyExists: z.boolean(),
+});
+
 export const debtBulkPreview = z.object({
-  rows: z.array(
-    z.object({
-      unitId: uuid,
-      unitNumber: z.string(),
-      blockName: z.string().nullable(),
-      amountMinor: moneyMinor,
-      skipped: z.boolean(),
-      skipReason: z.string().nullable(),
-    }),
-  ),
+  rows: z.array(debtBulkPreviewRow),
+  /** Atlanacaklar düşülmüş net toplam. */
   totalMinor: moneyMinor,
-  unitCount: z.number().int(),
-  skippedCount: z.number().int(),
-  /** Zaten bu dönem+açıklama ile borcu olan birimler. */
-  duplicateCount: z.number().int(),
 });
 
 export type DebtBulkPreview = z.infer<typeof debtBulkPreview>;
 
 export const debtBulkResult = z.object({
-  created: z.number().int(),
+  createdCount: z.number().int(),
+  skippedCount: z.number().int(),
   totalMinor: moneyMinor,
-  skipped: z.number().int(),
 });
 
+export type DebtBulkResult = z.infer<typeof debtBulkResult>;
+
+/* ------------------------------------------------------------------ *
+ * Yazma — düzeltme, tahsilat, toplu işlem
+ * ------------------------------------------------------------------ */
+
 /**
- * Borç düzeltme — GAP-DURUM kararı 9.
+ * Borç tutarı/vadesi düzeltme — GAP-DURUM kararı 9.
  *
- * Gerekçe **gövdede de** taşınıyor (başlıkta da olacak): `audit_debt_changes`
- * tablosu sakine gösterilebilen bir metin saklıyor ve o metin denetim
- * kütüğündekiyle aynı olmalı. İki ayrı alan olsaydı ayrışabilirlerdi.
+ * Gerekçe **gövdede** taşınıyor (başlıkta da gidiyor): `audit_debt_changes`
+ * sakine gösterilebilen bir metin saklıyor ve o metin denetim kütüğündekiyle
+ * aynı olmalı. İki ayrı alan olsaydı ayrışabilirlerdi.
  */
 export const debtAdjust = z.object({
-  amountMinor: z.coerce.number().int().min(0).optional(),
-  dueDate: dateTime.optional(),
-  lateFeeMinor: z.coerce.number().int().min(0).optional(),
+  amountMinor: z.coerce.number().int().min(0),
+  dueDate: dateTime,
   reason: changeReason,
-  /** Sakin bu düzeltmeyi portalinde görsün mü? */
   visibleToResident: z.coerce.boolean().default(true),
+  lateFeeExempt: z.coerce.boolean().default(false),
 });
 
 export type DebtAdjust = z.infer<typeof debtAdjust>;
 
-/** Tahsilat — mahsup sırası sunucuda belirlenir (en eski borç önce). */
 export const paymentCollect = z.object({
   unitId: uuid,
-  payerUserId: uuid.nullish(),
   amountMinor: z.coerce.number().int().positive(),
-  method: z.enum([
-    "cash",
-    "bank_transfer",
-    "credit_card",
-    "auto_payment",
-    "other",
-  ]),
+  method: paymentMethod,
   paidAt: dateTime,
-  receiptNo: z.string().trim().max(40).nullish(),
-  notes: z.string().trim().max(500).nullish(),
-  /** Boş ise sunucu en eski vadeye göre mahsup eder. */
+  payerUserId: uuid.optional(),
+  receiptNo: z.string().trim().max(30).optional(),
+  /** Belirli borçlara öncelik; boşsa en eski vade önce. */
   debtIds: z.array(uuid).default([]),
+  note: z.string().trim().max(500).optional(),
 });
 
 export type PaymentCollect = z.infer<typeof paymentCollect>;
@@ -272,18 +311,32 @@ export type PaymentCollect = z.infer<typeof paymentCollect>;
 export const paymentCollectResult = z.object({
   paymentId: uuid,
   allocatedMinor: moneyMinor,
-  remainingMinor: moneyMinor,
+  /** Borcu aşan kısım — sessizce yutulmaz, yöneticiye bildirilir. */
+  creditBalanceMinor: moneyMinor,
   closedDebtCount: z.number().int(),
 });
 
-/** Toplu iptal / muafiyet — gerekçe başlıkta. */
-export const debtIds = z.object({ ids: z.array(uuid).min(1) });
-export const debtExemptPatch = z.object({
+export type PaymentCollectResult = z.infer<typeof paymentCollectResult>;
+
+/** Borç iptali — gerekçe zorunlu, ödenmiş borç iptal edilemez. */
+export const debtCancel = z.object({
   ids: z.array(uuid).min(1),
-  lateFeeExempt: z.coerce.boolean(),
+  reason: changeReason,
 });
 
-/** Açık borçlar (tahsilat formu için). */
+export const debtExemptPatch = z.object({
+  ids: z.array(uuid).min(1),
+  exempt: z.coerce.boolean(),
+});
+
+export const debtBulkResultSimple = z.object({
+  affected: z.number().int(),
+  requested: z.number().int(),
+});
+
+export type DebtBulkResultSimple = z.infer<typeof debtBulkResultSimple>;
+
+/** Bir birimin açık borçları — tahsilat formu için. */
 export const openDebtRow = z.object({
   id: uuid,
   description: z.string(),
@@ -295,8 +348,9 @@ export const openDebtRow = z.object({
 });
 
 export const openDebtList = z.object({ rows: z.array(openDebtRow) });
+export type OpenDebtList = z.infer<typeof openDebtList>;
 
-/** Son borç değişiklikleri — denetim ve dashboard şeffaflık göstergesi. */
+/** Son borç değişiklikleri — denetim ekranı ve dashboard şeffaflık göstergesi. */
 export const debtChangeFeedRow = z.object({
   id: uuid,
   debtId: uuid,
@@ -311,3 +365,22 @@ export const debtChangeFeedRow = z.object({
 });
 
 export const debtChangeFeed = z.object({ rows: z.array(debtChangeFeedRow) });
+export type DebtChangeFeed = z.infer<typeof debtChangeFeed>;
+
+/**
+ * Daire özeti görünümü — borçlar ekranının ikinci sekmesi (satır = daire).
+ * Liste ve özet ayrı sayfa olsaydı yönetici hangisinde olduğunu takip etmek
+ * zorunda kalırdı; sekme yeterli.
+ */
+export const unitDebtSummaryRow = z.object({
+  unitId: uuid,
+  number: z.string(),
+  blockName: z.string().nullable(),
+  outstandingMinor: moneyMinor,
+  overdueMinor: moneyMinor,
+  oldestDue: dateTime.nullable(),
+  debtCount: z.number().int(),
+});
+
+export const unitDebtSummary = z.object({ rows: z.array(unitDebtSummaryRow) });
+export type UnitDebtSummary = z.infer<typeof unitDebtSummary>;
