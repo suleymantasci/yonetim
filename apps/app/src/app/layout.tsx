@@ -10,6 +10,7 @@ import {
   a11yInitScript, parseThemePreference, serverThemeAttribute, themeInitScript, THEME_COOKIE,
 } from "@yonetim/ui";
 
+import { WebVitals } from "@/components/web-vitals";
 import { CLIENT_NAMESPACES } from "@/i18n/client-namespaces";
 
 import "./globals.css";
@@ -77,6 +78,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <NextIntlClientProvider locale={locale} messages={clientMessages}>
           {children}
         </NextIntlClientProvider>
+        {/* Ölçüm sayfanın altında: render'ı geciktirmemesi için (GAP 4.8.2). */}
+        <WebVitals />
       </body>
     </html>
   );

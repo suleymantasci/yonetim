@@ -1,5 +1,8 @@
 import "reflect-metadata";
 import "./bootstrap-env";
+// Sentry, Nest'ten **önce** kurulmalı: enstrümantasyon modül yüklemeye
+// bağlanıyor ve sonradan kurulan SDK ilk hataları kaçırır.
+import "./infra/observability/instrument";
 
 import { json } from "express";
 import { NestFactory } from "@nestjs/core";

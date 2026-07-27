@@ -9,6 +9,7 @@ import {
 } from "@yonetim/jobs";
 
 import { DbService } from "@api/infra/db/db.service";
+import { captureException } from "@api/infra/observability/capture";
 
 import { JobContext } from "./job-context";
 
@@ -76,6 +77,9 @@ export class JobRegistry {
           tenantId,
           error: error instanceof Error ? error.message : String(error),
         });
+        // Job hatası sessizce yutuluyor (diğer siteler koşmaya devam etsin)
+        // ama izlemeye gitmeli: yutulan hata, kimsenin bakmadığı hatadır.
+        captureException(error, { job: jobId });
         outcomes.push({
           tenantId,
           status: "failed",

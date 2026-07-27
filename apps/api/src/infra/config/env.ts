@@ -37,6 +37,15 @@ const envSchema = z.object({
   /** CORS: panel ve sakin portalı aynı origin'den gelir; mobil ayrı. */
   CORS_ORIGINS: z.string().default(""),
 
+  /**
+   * Hata izleme — GAP 4.8.1. Boşsa SDK hiç kurulmuyor: yapılandırılmamış bir
+   * SDK'yı yine de başlatmak, geliştirmede her hatayı ağa çıkarmaya çalışan
+   * bir kuyruk bırakırdı.
+   */
+  SENTRY_DSN: z.string().url().optional(),
+  /** İz örnekleme oranı. Üretimde 1.0 hem pahalı hem gereksiz. */
+  SENTRY_TRACES_SAMPLE_RATE: z.coerce.number().min(0).max(1).default(0.1),
+
   LOG_LEVEL: z
     .enum(["fatal", "error", "warn", "info", "debug", "trace"])
     .default("info"),

@@ -1,3 +1,4 @@
+import bundleAnalyzer from "@next/bundle-analyzer";
 import createNextIntlPlugin from "next-intl/plugin";
 
 import { loadRootEnv } from "../../env-loader.mjs";
@@ -8,15 +9,34 @@ loadRootEnv();
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
+/**
+ * Paket boyutu analizi — GAP 4.8.2 (MIMARI-PLAN §14 Track D).
+ * `ANALYZE=true pnpm --filter @yonetim/app build` ile rapor üretilir.
+ */
+const withAnalyzer = bundleAnalyzer({ enabled: process.env.ANALYZE === "true" });
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  /**
+   * Workspace paketleri kaynak TypeScript olarak yayınlanıyor; Next bunları
+   * kendisi derliyor.
+   *
+   * Liste A5'te **kısaldı**: `@yonetim/db`, `jobs`, `payment`, `whatsapp`,
+   * `sms`, `emails`, `notifications`, `bank` artık `apps/app`'in bağımlılığı
+   * değil (§8.3 değişmez 3); `seo`, `pricing`, `campaigns` ise hiç import
+   * edilmiyor. Burada bırakmak zararsız görünürdü ama yanıltıcı olurdu —
+   * yapılandırma dosyası, mimarinin bugünkü hâlini anlatmalı.
+   */
   transpilePackages: [
-    "@yonetim/ui", "@yonetim/config", "@yonetim/core", "@yonetim/seo", "@yonetim/i18n",
-    "@yonetim/pricing", "@yonetim/campaigns", "@yonetim/db", "@yonetim/auth", "@yonetim/dues",
-    "@yonetim/payment", "@yonetim/whatsapp", "@yonetim/sms", "@yonetim/emails",
-    "@yonetim/notifications", "@yonetim/kvkk", "@yonetim/bank", "@yonetim/jobs",
+    "@yonetim/ui",
+    "@yonetim/config",
+    "@yonetim/core",
+    "@yonetim/i18n",
+    "@yonetim/auth",
+    "@yonetim/dues",
+    "@yonetim/kvkk",
     "@yonetim/contracts",
   ],
   async headers() {
@@ -34,4 +54,4 @@ const nextConfig = {
     ];
   },
 };
-export default withNextIntl(nextConfig);
+export default withAnalyzer(withNextIntl(nextConfig));

@@ -22,6 +22,8 @@ const PUBLIC_PATHS = [
   "/api/webhooks",
   "/api/public",
   "/api/health",
+  // Web Vitals girişten önce de ölçülüyor: giriş sayfasının LCP'si de veri.
+  "/api/vitals",
   // Belge doğrulama: banka/kurum hesap açmadan belgenin gerçekliğini teyit eder
   // (SPEC Bölüm 3.6). Kişisel veri döndürmez. "/belge/dogrula",
 ];

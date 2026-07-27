@@ -19,6 +19,8 @@ import {
 } from "@yonetim/contracts";
 import { AppError } from "@yonetim/core";
 
+import { captureException } from "../observability/capture";
+
 import type { ClsStore } from "../cls/request-context";
 
 /**
@@ -56,6 +58,9 @@ export class ApiExceptionFilter implements ExceptionFilter {
         path: req.originalUrl,
         error: exception instanceof Error ? exception.stack : String(exception),
       });
+      // Yalnız 5xx Sentry'ye gidiyor. 4xx'ler kullanıcı hatası ve beklenen
+      // durum; onları da göndermek gerçek arızaları gürültüye gömerdi.
+      captureException(exception, { requestId, path: req.originalUrl });
     } else {
       this.logger.debug({
         event: "request.rejected",

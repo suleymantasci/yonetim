@@ -1,5 +1,7 @@
 import "reflect-metadata";
 import "@api/bootstrap-env";
+// Nest'ten önce: enstrümantasyon modül yüklemeye bağlanıyor (§14 Track D).
+import "./instrument";
 
 import { NestFactory } from "@nestjs/core";
 import { Logger } from "nestjs-pino";

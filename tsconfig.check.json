@@ -4,11 +4,25 @@
     "noEmit": true,
     "types": ["node"],
     "paths": {
+      /**
+       * `@/*` üç uygulamada da tanımlı ama farklı köklere işaret ediyor.
+       * Dizi olarak vermek doğru sonucu üretiyor: TypeScript sırayla deniyor
+       * ve dosya kümeleri ayrık olduğu için ilk eşleşen doğru olan.
+       *
+       * Bunu eklemeden `dependency-cruiser` uygulama içi kenarları hiç
+       * görmüyordu — grafik yalnız `@yonetim/*` importlarından oluşuyordu ve
+       * orphan tespiti tamamen yanlış çalışıyordu.
+       */
+      "@/*": ["./apps/app/src/*", "./apps/api/src/*", "./apps/worker/src/*"],
+      "@api/*": ["./apps/api/src/*"],
       "@yonetim/config": ["./packages/config/src/index.ts"],
       "@yonetim/core": ["./packages/core/src/index.ts"],
       "@yonetim/core/crypto": ["./packages/core/src/crypto.ts"],
       "@yonetim/db": ["./packages/db/src/index.ts"],
       "@yonetim/auth": ["./packages/auth/src/index.ts"],
+      "@yonetim/auth/guard": ["./packages/auth/src/guard.ts"],
+      "@yonetim/auth/cookie": ["./packages/auth/src/cookie.ts"],
+      "@yonetim/auth/rate-limit": ["./packages/auth/src/rate-limit.ts"],
       "@yonetim/dues": ["./packages/dues/src/index.ts"],
       "@yonetim/pricing": ["./packages/pricing/src/index.ts"],
       "@yonetim/campaigns": ["./packages/campaigns/src/index.ts"],

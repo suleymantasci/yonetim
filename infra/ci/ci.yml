@@ -60,6 +60,12 @@ jobs:
       - name: Tip kontrolü (paketler + testler)
         run: pnpm exec tsc --noEmit -p tsconfig.check.json
 
+      - name: Mimari değişmezler (§8.3 / §15)
+        # ESLint doğrudan importu görür, dolaylı olanı görmez:
+        # `apps/app → @yonetim/jobs → @yonetim/db` zinciri her adımı tek tek
+        # bakınca kurallara uygundu, zincirin tamamı değildi.
+        run: pnpm arch
+
       - name: Birim testleri
         run: pnpm test
 

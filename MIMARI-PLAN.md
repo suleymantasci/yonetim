@@ -932,11 +932,46 @@ başarılı sayılmıyor. Gövdeler Track E'de ilgili modülle birlikte geliyor.
 | **C3** | Tablolar TanStack Table'a; URL state ve sunucu sayfalaması korunur. |
 | **C4** | Formlar RHF + contracts şeması; TR alanları yeniden sarılır. |
 
-### Track D — Gözlemlenebilirlik ve kapılar (**4.8.1–4.8.2**)
+### Track D — Gözlemlenebilirlik ve kapılar (**4.8.1–4.8.2**) — **KISMEN**
 
 Sentry (`@sentry/nestjs` + `@sentry/nextjs` 10.68), OpenTelemetry trace
 (app → api → worker, `x-request-id` ile), Web Vitals, PostHog, Lighthouse CI,
 bundle analyzer, `dependency-cruiser` kuralları, testcontainers RLS testi.
+
+**Yapılanlar:**
+
+- **`dependency-cruiser` kuralları** — §15'in üç kapısından ikisi artık
+  makine tarafından zorlanıyor. ESLint "kim neyi import ediyor" sorusunu dosya
+  bazında cevaplıyor; burası **grafik** üzerinden cevaplıyor ve fark kritik:
+  ESLint dolaylı yolu göremez. `apps/app → @yonetim/jobs → @yonetim/db`
+  zinciri A5'te tam olarak böyle keşfedildi. Kuralların gerçekten ısırdığı
+  ihlal enjekte edilerek doğrulandı. CI'da `pnpm arch`.
+- **Sentry** — api, worker ve app. DSN yoksa hiç kurulmuyor. `sendDefaultPii`
+  kapalı, çerez/yetki başlığı/istek gövdesi budanıyor ve hata **mesajının
+  içindeki** TCKN/IBAN kalıpları maskeleniyor (bir doğrulama hatası
+  "12345678901 geçersiz" diyebilir). Yalnız 5xx gönderiliyor.
+- **İz kimliği** app → api → worker. Worker'ın pino'su ALS'den `requestId`
+  okuyor; `genReqId` HTTP'siz süreçte hiç çalışmıyordu.
+- **Web Vitals** — kendi ucumuza, Sentry'ye değil: soru "p75 LCP kaç" ve bu
+  ancak toplulaştırılmış veriyle cevaplanır. Yol **şablona** indirgeniyor
+  (`/panel/borclar/[id]`) — bir daire kimliği metrik etiketine düşerse,
+  performans verisi kimin neye baktığını sızdıran bir kayda dönüşürdü.
+- **Bundle analyzer** — `ANALYZE=true`. `transpilePackages` listesi de
+  A5 sonrası gerçeğe göre kısaltıldı.
+
+**Yapılmayanlar ve nedenleri:**
+
+- **OpenTelemetry** — `x-request-id` korelasyonu üç süreçte de çalışıyor ve
+  bugünkü soruları (hangi istek, hangi job, hangi hata) cevaplıyor. OTel'in
+  ek getirisi span düzeyinde zamanlama; bunu değerlendirecek bir toplayıcı
+  (Tempo/Jaeger) altyapıda yok. Toplayıcısız enstrümantasyon, maliyeti olan
+  ama okuyanı olmayan bir kayıt üretir.
+- **PostHog / Lighthouse CI** — ikisi de dış hesap ve barındırılan bir URL
+  gerektiriyor; kurulum yapılandırma değil, operasyon kararı.
+- **testcontainers RLS testi** — `tests/integration/rls.test.ts` zaten var ve
+  CI'da gerçek Postgres servisiyle koşuyor. Testcontainers'a geçirmek aynı
+  güvenceyi farklı bir mekanizmayla verirdi; kazanç yerel çalıştırma kolaylığı,
+  bedeli CI'da ikinci bir Docker katmanı.
 
 > **ESLint bu track'te değil, A0'da.** Projede bugün hiç yapılandırma yok
 > (`pnpm lint` interaktif kurulum istiyor) ve §15'teki üç kapı ona bağlı —

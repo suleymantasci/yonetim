@@ -36,7 +36,9 @@ import { SchedulerService } from "./scheduler/scheduler.service";
 @Module({
   imports: [
     ClsModule.forRoot({ global: true }),
-    LoggerModule.forRootAsync({ useFactory: () => pinoParams() }),
+    // `http: false` — worker'ın isteği yok; iz kimliği `JobContext` (ALS)
+    // üzerinden geliyor, `genReqId` üzerinden değil.
+    LoggerModule.forRootAsync({ useFactory: () => pinoParams({ http: false }) }),
     EventEmitterModule.forRoot({ global: true, wildcard: true, delimiter: "." }),
     BullModule.forRootAsync({
       useFactory: () => {
