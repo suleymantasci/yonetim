@@ -1,0 +1,60 @@
+import { randomUUID } from "node:crypto";
+
+import { Module } from "@nestjs/common";
+import { APP_FILTER, APP_GUARD } from "@nestjs/core";
+import { EventEmitterModule } from "@nestjs/event-emitter";
+import type { Request } from "express";
+import { ClsModule } from "nestjs-cls";
+import { LoggerModule } from "nestjs-pino";
+
+import { IdentityModule } from "./identity/identity.module";
+import { PermissionGuard } from "./identity/guards/permission.guard";
+import { RateLimitGuard } from "./identity/guards/rate-limit.guard";
+import { TenantContextGuard } from "./identity/guards/tenant-context.guard";
+import { DbModule } from "./infra/db/db.module";
+import { HealthController } from "./infra/health/health.controller";
+import { ApiExceptionFilter } from "./infra/logging/api-exception.filter";
+import { pinoParams } from "./infra/logging/pino.config";
+import { RedisModule } from "./infra/redis/redis.module";
+
+/**
+ * Kök modül — MIMARI-PLAN §5.
+ *
+ * Guard sırası bilinçli ve **global**: her uç varsayılan olarak korumalı.
+ * `@Public()` istisnayı açıkça bildirir. Tersini yapmak (opt-in koruma)
+ * unutulan bir dekoratörü sessiz bir güvenlik açığına çevirirdi.
+ *
+ *   1. `TenantContextGuard`  → kimlik çözülür, ALS'e yazılır
+ *   2. `RateLimitGuard`      → kimliğe bağlı sayaç
+ *   3. `PermissionGuard`     → `@RequirePermission` kontrolü
+ */
+@Module({
+  imports: [
+    // ALS: `RequestContext` istek boyunca her katmanda erişilebilir olsun.
+    ClsModule.forRoot({
+      global: true,
+      middleware: {
+        mount: true,
+        generateId: true,
+        idGenerator: (req: Request) =>
+          (typeof req.headers["x-request-id"] === "string" ? req.headers["x-request-id"] : null) ??
+          randomUUID(),
+      },
+    }),
+    // `forRootAsync`: ortam doğrulaması modül **yüklenirken** değil, uygulama
+    // kurulurken koşsun — hata mesajı Nest'in hata yoluna düşsün.
+    LoggerModule.forRootAsync({ useFactory: () => pinoParams() }),
+    EventEmitterModule.forRoot({ global: true, wildcard: true, delimiter: "." }),
+    RedisModule,
+    DbModule,
+    IdentityModule,
+  ],
+  controllers: [HealthController],
+  providers: [
+    { provide: APP_FILTER, useClass: ApiExceptionFilter },
+    { provide: APP_GUARD, useClass: TenantContextGuard },
+    { provide: APP_GUARD, useClass: RateLimitGuard },
+    { provide: APP_GUARD, useClass: PermissionGuard },
+  ],
+})
+export class AppModule {}

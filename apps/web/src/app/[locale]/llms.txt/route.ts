@@ -1,7 +1,6 @@
 import { getTranslations } from "next-intl/server";
 
 import { LOCALES, parseLocale } from "@yonetim/i18n";
-import { STANDARD_PLANS } from "@yonetim/pricing";
 import { llmsTxt } from "@yonetim/seo";
 
 import { getContent } from "@/content";

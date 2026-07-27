@@ -1,4 +1,9 @@
-# Yerel geliştirme altyapısı — SPEC Bölüm 4.2 (self-host alternatifi).
+# Yerel geliştirme altyapısı — MIMARI-PLAN §11.
+#
+# Bu dosya yalnız **bağımlılıkları** ayağa kaldırır (Postgres, Redis, MinIO);
+# api/app/web geliştiricinin makinesinde `pnpm dev` ile koşar. Üretim yığını
+# için `docker-compose.prod.yml`.
+#
 # Kullanım: docker compose -f infra/docker/docker-compose.yml up -d
 services:
   postgres:
@@ -35,6 +40,27 @@ services:
       timeout: 3s
       retries: 20
 
+  # S3 uyumlu depolama: belge, dekont, sertifika PDF'leri (§12.2).
+  # Geliştirmede Cloudflare R2 yerine MinIO — aynı SDK, aynı presigned PUT akışı.
+  minio:
+    image: minio/minio
+    container_name: yonetim-minio
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: yonetim
+      MINIO_ROOT_PASSWORD: yonetim123
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - yonetim_miniodata:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
 volumes:
   yonetim_pgdata:
   yonetim_redisdata:
+  yonetim_miniodata:

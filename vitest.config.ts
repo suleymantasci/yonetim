@@ -56,6 +56,8 @@ export default defineConfig({
       "@yonetim/i18n/routing": new URL("./packages/i18n/src/routing.ts", import.meta.url).pathname,
       "@yonetim/i18n": new URL("./packages/i18n/src/index.ts", import.meta.url).pathname,
       "@yonetim/ui": new URL("./packages/ui/src/index.ts", import.meta.url).pathname,
+      "@yonetim/contracts/shared": new URL("./packages/contracts/src/_shared/index.ts", import.meta.url).pathname,
+      "@yonetim/contracts": new URL("./packages/contracts/src/index.ts", import.meta.url).pathname,
     },
   },
 });

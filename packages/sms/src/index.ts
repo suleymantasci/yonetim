@@ -33,7 +33,11 @@ export interface SmsProvider {
 
 /** Türkçe karakter → SMS uzunluk hesabı (GSM-7 vs UCS-2). */
 export function smsSegments(body: string): { parts: number; unicode: boolean; chars: number } {
-  const unicode = /[ğĞıİşŞçÇöÖüÜ]/.test(body) === false ? /[^\x00-\x7F]/.test(body) : true;
+  // ASCII dışı karakter taraması — aralığın alt ucu bilinçli olarak kontrol
+  // karakterlerini içeriyor; operatör de segmenti böyle hesaplıyor.
+  // eslint-disable-next-line no-control-regex
+  const nonAscii = /[^\x00-\x7F]/;
+  const unicode = /[ğĞıİşŞçÇöÖüÜ]/.test(body) === false ? nonAscii.test(body) : true;
   const limit = unicode ? 70 : 160;
   const multi = unicode ? 67 : 153;
   const chars = body.length;

@@ -41,12 +41,12 @@ export function BulkDebtWizard({
   type DebtKind = "dues" | "utility" | "extra" | "penalty";
   const [description, setDescription] = useState("");
   const [kind, setKind] = useState<DebtKind>("dues");
-  const [period, setPeriod] = useState(defaultPeriod);
+  const [period] = useState(defaultPeriod);
   const [dueDay, setDueDay] = useState(10);
   const [formula, setFormula] = useState("equal");
   const [amountKurus, setAmountKurus] = useState(0);
   const [shareTarget, setShareTarget] = useState("owner");
-  const [blockIds, setBlockIds] = useState<string[]>([]);
+  const [blockIds] = useState<string[]>([]);
   const [skipExisting, setSkipExisting] = useState(true);
 
   const [preview, setPreview] = useState<{

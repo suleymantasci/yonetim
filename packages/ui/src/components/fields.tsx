@@ -674,6 +674,10 @@ export function Combobox({
         type="button"
         disabled={disabled}
         onClick={() => setOpen((o) => !o)}
+        // ARIA 1.2 combobox deseni: `aria-invalid` implicit `button` rolünde
+        // desteklenmiyor, `combobox` rolünde destekleniyor. Rol açıkça
+        // verilince hem doğrulama durumu okunuyor hem açılır ilişkisi doğru.
+        role="combobox"
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={open ? listId : undefined}
@@ -694,8 +698,7 @@ export function Combobox({
           <div className="flex items-center gap-2 border-b border-border px-3 py-2">
             <Search aria-hidden className="h-4 w-4 text-fg-subtle" />
             {/* eslint-disable-next-line jsx-a11y/no-autofocus -- listbox açılışında arama beklenen davranış */}
-            <input
-              autoFocus
+            <input autoFocus
               value={query}
               onChange={(event) => {
                 setQuery(event.target.value);

@@ -126,6 +126,10 @@ export function Overlay({
   if (!open) return null;
 
   return (
+    // Arkaplan fareyle kapatma kolaylığı; klavye yolu aşağıdaki panelin
+    // odak tuzağı ve Escape işleyicisi. Arkaplana interaktif rol vermek onu
+    // sekme sırasına sokardı — Track C1'de Radix Dialog tümünü devralıyor.
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions
     <div
       className={cn(
         "fixed inset-0 z-50 flex bg-overlay p-0 motion-safe:animate-[overlay-fade_120ms_ease-out]",

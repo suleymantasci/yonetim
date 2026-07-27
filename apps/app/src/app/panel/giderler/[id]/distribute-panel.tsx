@@ -68,7 +68,7 @@ export function DistributePanel({
   const tCommon = useTranslations("common");
   const [open, setOpen] = useState(false);
   const [formula, setFormula] = useState(categoryDistribution ?? "equal");
-  const [blockIds, setBlockIds] = useState<string[]>([]);
+  const [blockIds] = useState<string[]>([]);
   const [excludeVat, setExcludeVat] = useState(false);
   const [preview, setPreview] = useState<{
     rows: { unitNumber: string; amountKurus: number; exempt: boolean }[];

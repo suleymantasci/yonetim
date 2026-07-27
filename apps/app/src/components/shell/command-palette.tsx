@@ -111,6 +111,10 @@ export function CommandPalette({
       </button>
 
       {open ? (
+        // Arkaplan yalnız fareyle kapatma kolaylığı sağlıyor; klavye yolu
+        // panelin kendisindeki Escape işleyicisi. Bu yüzden arkaplana rol
+        // vermek doğru olmaz — Track C1'de Radix Dialog bunu tümden devralıyor.
+        // eslint-disable-next-line jsx-a11y/no-static-element-interactions
         <div
           className="fixed inset-0 z-[70] flex items-start justify-center bg-overlay p-4 pt-[12vh] motion-safe:animate-[overlay-fade_120ms_ease-out]"
           onMouseDown={(event) => {
@@ -126,8 +130,7 @@ export function CommandPalette({
             <div className="flex items-center gap-2 border-b border-border px-3">
               <Search aria-hidden className="h-4 w-4 shrink-0 text-fg-subtle" />
               {/* eslint-disable-next-line jsx-a11y/no-autofocus -- palet açılışında odak beklenen davranış */}
-              <input
-                autoFocus
+              <input autoFocus
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 onKeyDown={(event) => {

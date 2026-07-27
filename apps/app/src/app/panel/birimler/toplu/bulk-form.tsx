@@ -30,7 +30,7 @@ export function BulkUnitForm({
   const t = useTranslations("app.units");
   const tEnum = useTranslations("enum");
 
-  const [blockId, setBlockId] = useState("");
+  const [blockId] = useState("");
   const [newBlockName, setNewBlockName] = useState("");
   const [floorFrom, setFloorFrom] = useState(1);
   const [floorTo, setFloorTo] = useState(4);

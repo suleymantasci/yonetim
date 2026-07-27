@@ -78,7 +78,7 @@ function normalizeHeader(header: string): string {
 
 /** CSV içeriğini ayrıştırır (ayraç otomatik: ; veya ,). Alıntılı hücreleri destekler. */
 export function parseCsv(content: string): string[][] {
-  const text = content.replace(/^﻿/, "");
+  const text = content.replace(/^\uFEFF/, ""); // BOM
   const firstLine = text.split(/\r?\n/)[0] ?? "";
   const delimiter = (firstLine.match(/;/g)?.length ?? 0) >= (firstLine.match(/,/g)?.length ?? 0) ? ";" : ",";
 

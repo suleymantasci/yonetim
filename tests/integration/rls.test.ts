@@ -96,6 +96,16 @@ describe("multi-tenant izolasyon (SPEC 21.2)", () => {
     expect(rows).toHaveLength(0);
   });
 
+  // Simetrik yön de kanıtlanmalı: izolasyon tek taraflı olsaydı testler yeşil
+  // kalırken B'nin verisi A'ya sızıyor olurdu (MIMARI-PLAN §15 "RLS gerçekten
+  // çalışıyor" kapısı).
+  it("tenant A, B'nin birimini id ile bile okuyamaz", async () => {
+    const rows = await withTenant(A.id, async (tx) =>
+      tx.select().from(units).where(eq(units.id, bUnitId)),
+    );
+    expect(rows).toHaveLength(0);
+  });
+
   it("tenant B, A'nın kaydını güncelleyemez", async () => {
     await withTenant(B.id, async (tx) => {
       await tx.update(units).set({ notes: "sızma denemesi" }).where(eq(units.id, aUnitId));

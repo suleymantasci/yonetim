@@ -1,0 +1,56 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "outDir": "./dist",
+    "rootDir": "../..",
+    "baseUrl": "../..",
+    /**
+     * Workspace paketleri kaynak TypeScript olarak yayınlanıyor (`main:
+     * ./src/index.ts`). Next tarafında bunu `transpilePackages` çözüyordu;
+     * Nest tarafında `paths` + `tsc-alias` çözüyor: tsc paketleri programa dahil
+     * edip derliyor, tsc-alias da emit edilen JS'teki alias'ları göreli yola
+     * çeviriyor. Böylece paketlere ayrı bir derleme adımı eklemek gerekmiyor.
+     */
+    "paths": {
+      "@/*": ["apps/api/src/*"],
+      "@yonetim/config": ["packages/config/src/index.ts"],
+      "@yonetim/core": ["packages/core/src/index.ts"],
+      "@yonetim/core/crypto": ["packages/core/src/crypto.ts"],
+      "@yonetim/contracts": ["packages/contracts/src/index.ts"],
+      "@yonetim/contracts/shared": ["packages/contracts/src/_shared/index.ts"],
+      "@yonetim/db": ["packages/db/src/index.ts"],
+      "@yonetim/auth": ["packages/auth/src/index.ts"],
+      "@yonetim/dues": ["packages/dues/src/index.ts"],
+      "@yonetim/pricing": ["packages/pricing/src/index.ts"],
+      "@yonetim/campaigns": ["packages/campaigns/src/index.ts"],
+      "@yonetim/kvkk": ["packages/kvkk/src/index.ts"],
+      "@yonetim/bank": ["packages/bank/src/index.ts"],
+      "@yonetim/payment": ["packages/payment/src/index.ts"],
+      "@yonetim/notifications": ["packages/notifications/src/index.ts"],
+      "@yonetim/whatsapp": ["packages/whatsapp/src/index.ts"],
+      "@yonetim/sms": ["packages/sms/src/index.ts"],
+      "@yonetim/emails": ["packages/emails/src/index.ts"],
+      "@yonetim/i18n": ["packages/i18n/src/index.ts"]
+    },
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "sourceMap": true,
+    "declaration": false,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "strictPropertyInitialization": false,
+    "types": ["node"]
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "test"]
+}

@@ -1,0 +1,59 @@
+import {
+  BadRequestException,
+  createParamDecorator,
+  SetMetadata,
+  type ExecutionContext,
+} from "@nestjs/common";
+import type { Request } from "express";
+
+import type { Permission } from "@yonetim/core";
+
+export const PUBLIC_KEY = "yonetim:public";
+export const PERMISSION_KEY = "yonetim:permission";
+
+/** Kimlik gerektirmeyen uç — health, webhook, OpenAPI dokümanı. */
+export const Public = () => SetMetadata(PUBLIC_KEY, true);
+
+/**
+ * Yetki bildirimi. Rol yolu `hasPermission` ile, API anahtarı yolu `scopes`
+ * ile karşılanır: entegrasyona "yalnız borç okuma" verilebilmeli (§6.1).
+ */
+export const RequirePermission = (...permissions: Permission[]) =>
+  SetMetadata(PERMISSION_KEY, permissions);
+
+/**
+ * Gerekçe zorunluluğu — GAP-DURUM kararı 9.
+ * `X-Change-Reason` başlığı yoksa/kısaysa 400 `reason_required`; kural
+ * controller imzasında görünür olsun diye parametre dekoratörü.
+ */
+export const ChangeReason = createParamDecorator((_data: unknown, exec: ExecutionContext) => {
+  const req = exec.switchToHttp().getRequest<Request>();
+  const raw = req.headers["x-change-reason"];
+  const reason = (Array.isArray(raw) ? raw[0] : raw) ?? "";
+  const decoded = decodeHeader(reason);
+  if (decoded.trim().length < 10) throw new BadRequestException("reason_required");
+  return decoded.trim();
+});
+
+/** Zorunlu olmayan gerekçe (silme/geri alma gibi işlemlerde). */
+export const OptionalChangeReason = createParamDecorator(
+  (_data: unknown, exec: ExecutionContext) => {
+    const req = exec.switchToHttp().getRequest<Request>();
+    const raw = req.headers["x-change-reason"];
+    const reason = (Array.isArray(raw) ? raw[0] : raw) ?? "";
+    const decoded = decodeHeader(reason).trim();
+    return decoded.length >= 10 ? decoded : undefined;
+  },
+);
+
+/**
+ * Başlıklar latin-1 taşır; Türkçe gerekçe metni `apps/app` tarafında
+ * `encodeURIComponent` ile gönderiliyor. Çözme tek yerde.
+ */
+function decodeHeader(value: string): string {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+}

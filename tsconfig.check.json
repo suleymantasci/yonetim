@@ -22,7 +22,9 @@
       "@yonetim/seo": ["./packages/seo/src/index.ts"],
       "@yonetim/jobs": ["./packages/jobs/src/index.ts"],
       "@yonetim/i18n": ["./packages/i18n/src/index.ts"],
-      "@yonetim/ui": ["./packages/ui/src/index.ts"]
+      "@yonetim/ui": ["./packages/ui/src/index.ts"],
+      "@yonetim/contracts": ["./packages/contracts/src/index.ts"],
+      "@yonetim/contracts/shared": ["./packages/contracts/src/_shared/index.ts"]
     },
     "baseUrl": "."
   },

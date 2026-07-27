@@ -4,7 +4,7 @@ import { getTranslations } from "next-intl/server";
 
 import { siteConfig } from "@yonetim/config";
 import {
-  Alert, Badge, Card, CardBody, CardHeader, Pagination, Stat, Tabs, tableClasses as tc,
+  Alert, Card, CardBody, CardHeader, Pagination, Stat, Tabs, tableClasses as tc,
 } from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";

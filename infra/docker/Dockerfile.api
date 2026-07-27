@@ -1,0 +1,49 @@
+# syntax=docker/dockerfile:1.7
+#
+# apps/api — NestJS, veritabanının tek sahibi (MIMARI-PLAN §11).
+#
+# Çok aşamalı: derleme aşaması tüm monorepo'ya ihtiyaç duyar (workspace
+# paketleri kaynak TypeScript olarak yayınlanıyor), çalışma aşaması yalnız
+# `dist` + üretim bağımlılıkları taşır.
+
+FROM node:22-alpine AS base
+RUN corepack enable && apk add --no-cache libc6-compat
+WORKDIR /repo
+
+# ---- bağımlılıklar -----------------------------------------------------------
+FROM base AS deps
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json .npmrc ./
+COPY apps/api/package.json apps/api/
+COPY apps/app/package.json apps/app/
+COPY apps/web/package.json apps/web/
+COPY packages packages
+RUN pnpm install --frozen-lockfile --ignore-scripts
+
+# ---- derleme -----------------------------------------------------------------
+FROM deps AS build
+COPY tsconfig.base.json ./
+COPY apps/api apps/api
+RUN pnpm --filter @yonetim/api build
+
+# ---- çalışma -----------------------------------------------------------------
+FROM base AS runtime
+ENV NODE_ENV=production
+WORKDIR /repo
+
+COPY --from=build /repo/node_modules ./node_modules
+COPY --from=build /repo/apps/api/node_modules ./apps/api/node_modules
+COPY --from=build /repo/apps/api/dist ./apps/api/dist
+COPY --from=build /repo/apps/api/package.json ./apps/api/package.json
+# Migration dosyaları çalışma zamanında okunuyor (init aşaması).
+COPY packages/db/drizzle ./packages/db/drizzle
+COPY packages/db/sql ./packages/db/sql
+
+USER node
+EXPOSE 3000
+
+# Liveness probu bağımlılıklara bakmaz; readiness ayrı uçta (§11).
+HEALTHCHECK --interval=10s --timeout=3s --start-period=20s --retries=5 \
+  CMD node -e "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+
+# MIGRATION SAHİBİ: advisory lock'lu migrate, sonra sunucu (§11 / §17 kararı 4).
+CMD ["sh", "-c", "node apps/api/dist/apps/api/src/migrate.js && node apps/api/dist/apps/api/src/main.js"]
