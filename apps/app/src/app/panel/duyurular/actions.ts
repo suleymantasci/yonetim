@@ -4,10 +4,10 @@ import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
-import { announcements, withTenant } from "@yonetim/db";
-import { filterContent, requiresIndividualDelivery, type FindingSeverity } from "@yonetim/kvkk";
+import { announcementCreateResult } from "@yonetim/contracts";
+import { filterContent, type FindingSeverity } from "@yonetim/kvkk";
 
-import { audit } from "@/lib/audit";
+import { apiPost } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 
 /**
@@ -15,11 +15,21 @@ import { requirePermission } from "@/lib/context";
  *
  * Doğrulama hataları ve bulgular **anahtar** olarak döner; metne çevirme
  * sunucuda `getTranslations` ile yapılır, böylece kullanıcının dili korunur.
+ *
+ * KVKK filtresi artık `apps/api`'de **kapı**: engellenen duyuru hiç
+ * kaydedilmiyor. Buradaki şema yalnız formu doğruluyor.
  */
 const schema = z.object({
   title: z.string().min(3).max(200),
   body: z.string().min(10).max(4000),
-  audience: z.enum(["all", "owners", "tenants", "block", "units", "new_residents"]),
+  audience: z.enum([
+    "all",
+    "owners",
+    "tenants",
+    "block",
+    "units",
+    "new_residents",
+  ]),
   channels: z.array(z.enum(["whatsapp", "sms", "email", "in_app"])).min(1),
   isUrgent: z.boolean().default(false),
   publish: z.boolean().default(true),
@@ -49,7 +59,7 @@ export async function createAnnouncement(
   _prev: AnnouncementState,
   formData: FormData,
 ): Promise<AnnouncementState> {
-  const ctx = await requirePermission("announcement:write");
+  await requirePermission("announcement:write");
   const t = await getTranslations("app.announcements");
 
   const parsed = schema.safeParse({
@@ -72,67 +82,38 @@ export async function createAnnouncement(
 
   const data = parsed.data;
 
-  if (data.isUrgent) {
-    // Acil durum override tüm kanalları açar (Bölüm 6.4).
-    const set = new Set(data.channels);
-    for (const c of ["whatsapp", "sms", "email", "in_app"] as const) set.add(c);
-    data.channels = [...set] as typeof data.channels;
-  }
-
-  const filtered = filterContent(`${data.title}\n${data.body}`);
-  const kvkk = {
-    blocked: filtered.blocked,
-    score: filtered.score,
-    findings: filtered.findings.map((f) => ({
-      severity: f.severity,
-      code: f.code,
-      match: f.match,
-    })),
-    requiresIndividual: requiresIndividualDelivery(filtered),
-  };
-
-  if (filtered.blocked) {
-    await audit(ctx, {
-      action: "announcement_blocked_kvkk",
-      resource: "announcement",
-      reason: filtered.findings.map((f) => f.code).join(","),
-    });
-    return { ok: false, message: t("blockedMessage"), kvkk };
-  }
-
-  const [created] = await withTenant(
-    ctx.tenantId,
-    async (tx) =>
-      tx
-        .insert(announcements)
-        .values({
-          tenantId: ctx.tenantId,
-          title: data.title,
-          body: data.body,
-          audience: data.audience,
-          channels: data.channels,
-          isUrgent: data.isUrgent,
-          publishedAt: data.publish ? new Date() : null,
-          kvkkFlagged: filtered.findings.length > 0,
-          kvkkFindings: kvkk.findings,
-          createdBy: ctx.userId,
-        })
-        .returning({ id: announcements.id }),
-    { userId: ctx.userId },
+  const result = await apiPost(
+    "/v1/panel/communication/duyurular",
+    {
+      title: data.title,
+      body: data.body,
+      audience: data.audience,
+      channels: data.channels,
+      isUrgent: data.isUrgent,
+      publish: data.publish,
+    },
+    announcementCreateResult,
   );
 
-  await audit(ctx, {
-    action: data.publish ? "announcement_published" : "announcement_drafted",
-    resource: "announcement",
-    resourceId: created?.id,
-  });
+  const kvkk = {
+    blocked: result.kvkk.blocked,
+    score: result.kvkk.score,
+    findings: result.kvkk.findings as AnnouncementFinding[],
+    requiresIndividual: result.kvkk.requiresIndividual,
+  };
+
+  if (result.kvkk.blocked) {
+    return { ok: false, message: t("blockedMessage"), kvkk };
+  }
 
   revalidatePath("/panel/duyurular");
 
   return {
     ok: true,
-    message: data.publish
-      ? t("publishedMessage", { channels: data.channels.join(", ") })
+    message: result.published
+      ? // Nihai kanal listesi sunucudan: acil duyuruda override tüm kanalları
+        // açtığı için formda seçilenle gönderilen ayrışabiliyor.
+        t("publishedMessage", { channels: result.channels.join(", ") })
       : t("draftMessage"),
     kvkk,
   };

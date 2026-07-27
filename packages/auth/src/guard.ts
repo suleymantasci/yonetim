@@ -36,3 +36,16 @@ export function impersonationAudit(ctx: TenantContext) {
     reason: `Süper admin ${ctx.impersonatedBy}, ${ctx.userId} adına işlem yaptı.`,
   };
 }
+
+/*
+ * NOT — `@yonetim/auth/guard` ALT YOLU (MIMARI-PLAN §8.3):
+ *
+ * Bu dosyadaki her şey **saf**: yalnız `@yonetim/core`'daki RBAC matrisini
+ * okuyor, veritabanına dokunmuyor. Paketin barrel'ı (`index.ts`) ise
+ * `session.ts` üzerinden `@yonetim/db`'yi çekiyor.
+ *
+ * `apps/app` yetki kontrolü yapabilmeli ama veritabanını görmemeli; bu yüzden
+ * `@yonetim/auth` yerine `@yonetim/auth/guard` alt yolundan import ediyor.
+ * Barrel'dan almak, tek bir `hasPermission` çağrısı için render sürecine
+ * bütün veri katmanını yüklemek olurdu.
+ */

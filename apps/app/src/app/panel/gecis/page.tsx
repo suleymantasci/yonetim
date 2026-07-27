@@ -1,11 +1,11 @@
-import { desc } from "drizzle-orm";
 import { getTranslations } from "next-intl/server";
 
-import { migrationJobs, withTenant } from "@yonetim/db";
+import { migrationListResponse } from "@yonetim/contracts";
 import { Badge, Card, CardBody, CardHeader } from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
 import { MigrationWizard } from "@/components/migration-wizard";
+import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
 
@@ -13,13 +13,14 @@ import { formatters } from "@/lib/format";
 export const dynamic = "force-dynamic";
 
 export default async function MigrationPage() {
-  const ctx = await requirePermission("unit:write");
+  await requirePermission("unit:write");
   const t = await getTranslations("app.migration");
   const tEnum = await getTranslations("enum");
   const f = await formatters();
 
-  const jobs = await withTenant(ctx.tenantId, async (tx) =>
-    tx.select().from(migrationJobs).orderBy(desc(migrationJobs.createdAt)).limit(20),
+  const { rows: jobs } = await apiGet(
+    "/v1/panel/migrations",
+    migrationListResponse,
   );
 
   return (
@@ -54,9 +55,14 @@ export default async function MigrationPage() {
                     </Badge>
                   </div>
                   <div className="mt-1 text-xs text-fg-subtle">
-                    {t("importedRows", { imported: j.importedRows, total: j.totalRows })}
-                    {j.skippedRows > 0 ? ` · ${t("skippedRows", { count: j.skippedRows })}` : ""} ·{" "}
-                    {f.dateTime(j.createdAt)}
+                    {t("importedRows", {
+                      imported: j.importedRows,
+                      total: j.totalRows,
+                    })}
+                    {j.skippedRows > 0
+                      ? ` · ${t("skippedRows", { count: j.skippedRows })}`
+                      : ""}{" "}
+                    · {f.dateTime(j.createdAt)}
                   </div>
                 </div>
               ))

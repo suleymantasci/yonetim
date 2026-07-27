@@ -1,48 +1,48 @@
-import { desc, isNull } from "drizzle-orm";
 import { getTranslations } from "next-intl/server";
 
-import { daysBetween } from "@yonetim/core";
-import { documents, withTenant } from "@yonetim/db";
-import { Alert, Badge, Card, CardBody, CardHeader, EmptyState } from "@yonetim/ui";
+import { documentListResponse } from "@yonetim/contracts";
+import {
+  Alert,
+  Badge,
+  Card,
+  CardBody,
+  CardHeader,
+  EmptyState,
+} from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
+import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
 export default async function DocumentsPage() {
-  const ctx = await requirePermission("document:read");
+  await requirePermission("document:read");
   const t = await getTranslations("app.documents");
   const tEnum = await getTranslations("enum");
   const f = await formatters();
-  const now = new Date();
 
-  const rows = await withTenant(ctx.tenantId, async (tx) =>
-    tx
-      .select()
-      .from(documents)
-      .where(isNull(documents.deletedAt))
-      .orderBy(desc(documents.createdAt))
-      .limit(200),
+  // "Süresi doluyor" sunucu saatine göre hesaplanıyor (MIMARI-PLAN §9a).
+  const { rows, totals } = await apiGet(
+    "/v1/panel/documents",
+    documentListResponse,
   );
-
-  const expiring = rows.filter((d) => d.expiresAt && daysBetween(now, d.expiresAt) <= 30);
 
   return (
     <>
       <PageHeader title={t("title")} description={t("description")} />
 
-      {expiring.length > 0 ? (
+      {totals.expiringSoon > 0 ? (
         <div className="mb-4">
           <Alert tone="warning" title={t("expiringTitle")}>
-            {t("expiringBody", { count: expiring.length })}
+            {t("expiringBody", { count: totals.expiringSoon })}
           </Alert>
         </div>
       ) : null}
 
       <Card>
-        <CardHeader title={t("countTitle", { count: rows.length })} />
+        <CardHeader title={t("countTitle", { count: totals.total })} />
         <CardBody className="p-0">
           {rows.length === 0 ? (
             <div className="p-4">
@@ -62,13 +62,24 @@ export default async function DocumentsPage() {
                   <div>
                     <div className="font-medium text-fg">{d.title}</div>
                     <div className="text-xs text-fg-subtle">
-                      {tEnum(`documentCategory.${d.category}`)} · v{d.version} · {f.date(d.createdAt)}
+                      {tEnum(`documentCategory.${d.category}`)} · v{d.version} ·{" "}
+                      {f.date(d.createdAt)}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge tone="neutral">{tEnum(`documentVisibility.${d.visibility}`)}</Badge>
+                    <Badge tone="neutral">
+                      {tEnum(`documentVisibility.${d.visibility}`)}
+                    </Badge>
                     {d.expiresAt ? (
-                      <Badge tone={daysBetween(now, d.expiresAt) <= 30 ? "warning" : "neutral"}>
+                      <Badge
+                        tone={
+                          d.expiringSoon
+                            ? "warning"
+                            : d.expired
+                              ? "danger"
+                              : "neutral"
+                        }
+                      >
                         {t("validUntil", { date: f.date(d.expiresAt) })}
                       </Badge>
                     ) : null}

@@ -79,59 +79,60 @@ export class UnitRepository {
 
       // Ekran bugün 5 ayrı sorgu yapıyor; burada hepsi tek transaction ve
       // tek turda. Panel tarafında karşılığı tek HTTP çağrısı (§9.2a).
-      const [rows, total, blockRows, blockCounts, aggregate, trashed] = await Promise.all([
-        tx
-          .select(this.rowProjection())
-          .from(units)
-          .leftJoin(blocks, eq(blocks.id, units.blockId))
-          .where(where)
-          .orderBy(orderBy, asc(units.id))
-          .limit(q.perPage)
-          .offset((q.page - 1) * q.perPage),
+      const [rows, total, blockRows, blockCounts, aggregate, trashed] =
+        await Promise.all([
+          tx
+            .select(this.rowProjection())
+            .from(units)
+            .leftJoin(blocks, eq(blocks.id, units.blockId))
+            .where(where)
+            .orderBy(orderBy, asc(units.id))
+            .limit(q.perPage)
+            .offset((q.page - 1) * q.perPage),
 
-        tx
-          .select({ value: sql<number>`COUNT(*)` })
-          .from(units)
-          .leftJoin(blocks, eq(blocks.id, units.blockId))
-          .where(where),
+          tx
+            .select({ value: sql<number>`COUNT(*)` })
+            .from(units)
+            .leftJoin(blocks, eq(blocks.id, units.blockId))
+            .where(where),
 
-        tx
-          .select({ id: blocks.id, name: blocks.name })
-          .from(blocks)
-          .where(isNull(blocks.deletedAt))
-          .orderBy(asc(blocks.sortOrder), asc(blocks.name)),
+          tx
+            .select({ id: blocks.id, name: blocks.name })
+            .from(blocks)
+            .where(isNull(blocks.deletedAt))
+            .orderBy(asc(blocks.sortOrder), asc(blocks.name)),
 
-        /**
-         * Blok başına birim sayısı **ayrı gruplu sorgu** olarak alınıyor,
-         * blok listesinin içine gömülü bir alt sorgu olarak değil.
-         *
-         * Nedeni ince ama önemli: Drizzle, tek tablolu bir sorguda sütun
-         * referanslarını niteliksiz üretiyor (`"id"`). Ham SQL parçasının
-         * içindeki alt sorguda bu ad alt sorgunun kendi tablosuna bağlanır
-         * (`units u` → `u.id`) ve koşul sessizce her zaman yanlış olur — hata
-         * vermez, yalnız hep 0 döner. Gruplu sorgu bu tuzağa hiç girmiyor.
-         */
-        tx
-          .select({ blockId: units.blockId, value: sql<number>`COUNT(*)` })
-          .from(units)
-          .where(isNull(units.deletedAt))
-          .groupBy(units.blockId),
+          /**
+           * Blok başına birim sayısı **ayrı gruplu sorgu** olarak alınıyor,
+           * blok listesinin içine gömülü bir alt sorgu olarak değil.
+           *
+           * Nedeni ince ama önemli: Drizzle, tek tablolu bir sorguda sütun
+           * referanslarını niteliksiz üretiyor (`"id"`). Ham SQL parçasının
+           * içindeki alt sorguda bu ad alt sorgunun kendi tablosuna bağlanır
+           * (`units u` → `u.id`) ve koşul sessizce her zaman yanlış olur — hata
+           * vermez, yalnız hep 0 döner. Gruplu sorgu bu tuzağa hiç girmiyor.
+           */
+          tx
+            .select({ blockId: units.blockId, value: sql<number>`COUNT(*)` })
+            .from(units)
+            .where(isNull(units.deletedAt))
+            .groupBy(units.blockId),
 
-        // Toplamlar filtreden bağımsız: arsa payı uyarısı tüm siteyi kapsamalı.
-        tx
-          .select({
-            landShareTotal: sql<number>`COALESCE(SUM(${units.landShare}), 0)`,
-            areaTotal: sql<number>`COALESCE(SUM(${units.areaM2}), 0)`,
-            unitTotal: sql<number>`COUNT(*)`,
-          })
-          .from(units)
-          .where(isNull(units.deletedAt)),
+          // Toplamlar filtreden bağımsız: arsa payı uyarısı tüm siteyi kapsamalı.
+          tx
+            .select({
+              landShareTotal: sql<number>`COALESCE(SUM(${units.landShare}), 0)`,
+              areaTotal: sql<number>`COALESCE(SUM(${units.areaM2}), 0)`,
+              unitTotal: sql<number>`COUNT(*)`,
+            })
+            .from(units)
+            .where(isNull(units.deletedAt)),
 
-        tx
-          .select({ value: sql<number>`COUNT(*)` })
-          .from(units)
-          .where(isNotNull(units.deletedAt)),
-      ]);
+          tx
+            .select({ value: sql<number>`COUNT(*)` })
+            .from(units)
+            .where(isNotNull(units.deletedAt)),
+        ]);
 
       return {
         rows: rows.map(toUnitRow),
@@ -140,7 +141,9 @@ export class UnitRepository {
           blocks: blockRows.map((b) => ({
             id: b.id,
             label: b.name,
-            count: Number(blockCounts.find((c) => c.blockId === b.id)?.value ?? 0),
+            count: Number(
+              blockCounts.find((c) => c.blockId === b.id)?.value ?? 0,
+            ),
           })),
           trashedCount: Number(trashed[0]?.value ?? 0),
         },

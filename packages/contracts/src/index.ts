@@ -13,3 +13,5 @@ export * from "./insight/index";
 export * from "./governance/index";
 export * from "./operations/index";
 export * from "./communication/index";
+export * from "./tenancy/index";
+export * from "./integration/index";

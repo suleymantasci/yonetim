@@ -12,6 +12,8 @@ import { AuditModule } from "./governance/audit/audit.module";
 import { IdentityModule } from "./identity/identity.module";
 import { InsightModule } from "./insight/insight.module";
 import { CommunicationModule } from "./communication/communication.module";
+import { IntegrationModule } from "./integration/integration.module";
+import { TenancyModule } from "./tenancy/tenancy.module";
 import { OperationsModule } from "./operations/operations.module";
 import { PermissionGuard } from "./identity/guards/permission.guard";
 import { RateLimitGuard } from "./identity/guards/rate-limit.guard";
@@ -67,6 +69,8 @@ import { PropertyModule } from "./property/property.module";
     InsightModule,
     OperationsModule,
     CommunicationModule,
+    TenancyModule,
+    IntegrationModule,
   ],
   controllers: [HealthController],
   providers: [

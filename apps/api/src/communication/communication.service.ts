@@ -1,18 +1,85 @@
 import { Injectable } from "@nestjs/common";
 
 import type {
+  AnnouncementCreate,
+  AnnouncementCreateResult,
   AnnouncementListResponse,
   MeetingListResponse,
   MessageListResponse,
   PollListResponse,
 } from "@yonetim/contracts";
 
+import { filterContent, requiresIndividualDelivery } from "@yonetim/kvkk";
+
+import { AuditService } from "../governance/audit/audit.service";
 import { CommunicationRepository } from "./communication.repository";
 
 /** `communication` iş akışı — MIMARI-PLAN §8.5, §9a. */
 @Injectable()
 export class CommunicationService {
-  constructor(private readonly repo: CommunicationRepository) {}
+  constructor(
+    private readonly repo: CommunicationRepository,
+    private readonly audit: AuditService,
+  ) {}
+
+  /**
+   * Duyuru oluşturur — KVKK filtresi **kapı** olarak (SPEC 6.4).
+   *
+   * Tarama burada yapılıyor ve engellenen duyuru hiç kaydedilmiyor. Filtreyi
+   * istemcide bırakıp sonucuna güvenseydik, kapı diye bir şey kalmazdı:
+   * doğrudan API'ye istek atan bir istemci filtreyi atlardı. Panelin yazarken
+   * gösterdiği canlı kontrol aynı saf fonksiyonu çağırıyor ama o önizleme.
+   */
+  async createAnnouncement(
+    dto: AnnouncementCreate,
+  ): Promise<AnnouncementCreateResult> {
+    // Acil durum override'ı tüm kanalları açar (SPEC 6.4): yangın/su baskını
+    // duyurusunun kanal tercihine takılması kabul edilebilir değil.
+    const channels = dto.isUrgent
+      ? [...new Set([...dto.channels, "whatsapp", "sms", "email", "in_app"])]
+      : dto.channels;
+
+    const filtered = filterContent(`${dto.title}\n${dto.body}`);
+    const kvkk = {
+      blocked: filtered.blocked,
+      score: filtered.score,
+      findings: filtered.findings.map((f) => ({
+        severity: f.severity,
+        code: f.code,
+        match: f.match,
+      })),
+      requiresIndividual: requiresIndividualDelivery(filtered),
+    };
+
+    if (filtered.blocked) {
+      // Engelleme de bir olaydır: kimin neyi göndermeye çalıştığı kütükte kalır.
+      await this.audit.record({
+        action: "announcement_blocked_kvkk",
+        resource: "announcement",
+        reason: filtered.findings.map((f) => f.code).join(","),
+      });
+      return { id: null, published: false, kvkk, channels };
+    }
+
+    const id = await this.repo.createAnnouncement({
+      title: dto.title,
+      body: dto.body,
+      audience: dto.audience,
+      channels,
+      isUrgent: dto.isUrgent,
+      publishedAt: dto.publish ? new Date() : null,
+      kvkkFlagged: filtered.findings.length > 0,
+      kvkkFindings: kvkk.findings,
+    });
+
+    await this.audit.record({
+      action: dto.publish ? "announcement_published" : "announcement_drafted",
+      resource: "announcement",
+      resourceId: id,
+    });
+
+    return { id, published: dto.publish, kvkk, channels };
+  }
 
   async announcements(): Promise<AnnouncementListResponse> {
     const rows = await this.repo.announcements();

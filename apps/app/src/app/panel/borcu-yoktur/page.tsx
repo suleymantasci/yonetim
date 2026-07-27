@@ -1,12 +1,19 @@
-import { desc } from "drizzle-orm";
 import { getTranslations } from "next-intl/server";
 
 import { siteConfig } from "@yonetim/config";
-import { debtCertificates, withTenant } from "@yonetim/db";
-import { Alert, Badge, Card, CardBody, CardHeader, EmptyState } from "@yonetim/ui";
+import { debtCertificateListResponse } from "@yonetim/contracts";
+import {
+  Alert,
+  Badge,
+  Card,
+  CardBody,
+  CardHeader,
+  EmptyState,
+} from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
 import { CertificateRequestForm } from "@/components/certificate-form";
+import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
 
@@ -18,13 +25,14 @@ import { formatters } from "@/lib/format";
 export const dynamic = "force-dynamic";
 
 export default async function DebtCertificatePage() {
-  const ctx = await requirePermission("debt:read");
+  await requirePermission("debt:read");
   const t = await getTranslations("app.certificate");
   const tCommon = await getTranslations("common");
   const f = await formatters();
 
-  const rows = await withTenant(ctx.tenantId, async (tx) =>
-    tx.select().from(debtCertificates).orderBy(desc(debtCertificates.createdAt)).limit(50),
+  const { rows } = await apiGet(
+    "/v1/panel/certificates",
+    debtCertificateListResponse,
   );
 
   return (
@@ -56,17 +64,27 @@ export default async function DebtCertificatePage() {
                     className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm"
                   >
                     <div>
-                      <div className="font-mono text-xs text-fg">{c.serialNo}</div>
+                      <div className="font-mono text-xs text-fg">
+                        {c.serialNo}
+                      </div>
                       <div className="text-xs text-fg-subtle">
                         {f.date(c.asOfDate)} ·{" "}
-                        {t("verificationCodeLabel", { code: c.verificationCode })}
+                        {t("verificationCodeLabel", {
+                          code: c.verificationCode,
+                        })}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge tone={c.result === "clear" ? "success" : "warning"}>
-                        {c.result === "clear" ? t("clear") : f.money(c.outstandingKurus)}
+                      <Badge
+                        tone={c.result === "clear" ? "success" : "warning"}
+                      >
+                        {c.result === "clear"
+                          ? t("clear")
+                          : f.money(c.outstandingMinor)}
                       </Badge>
-                      {c.kepSentAt ? <Badge tone="info">{t("kepSent")}</Badge> : null}
+                      {c.kepSentAt ? (
+                        <Badge tone="info">{t("kepSent")}</Badge>
+                      ) : null}
                     </div>
                   </li>
                 ))}
@@ -78,7 +96,9 @@ export default async function DebtCertificatePage() {
 
       <div className="mt-4">
         <Alert tone="info" title={t("verifyHintTitle")}>
-          {t("verifyHintBody", { url: `${siteConfig.env.baseUrl}/belge/dogrula` })}
+          {t("verifyHintBody", {
+            url: `${siteConfig.env.baseUrl}/belge/dogrula`,
+          })}
         </Alert>
       </div>
     </>

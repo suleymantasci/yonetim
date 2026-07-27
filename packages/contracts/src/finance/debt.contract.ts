@@ -384,3 +384,61 @@ export const unitDebtSummaryRow = z.object({
 
 export const unitDebtSummary = z.object({ rows: z.array(unitDebtSummaryRow) });
 export type UnitDebtSummary = z.infer<typeof unitDebtSummary>;
+
+/* ------------------------------------------------------------------ *
+ * Borcu yoktur belgesi — GAP 4.1.9
+ * ------------------------------------------------------------------ */
+
+/**
+ * Belge, verildiği **an**ın fotoğrafıdır: `asOfDate` ve `outstandingMinor`
+ * kaydediliyor ki sonradan borç doğsa bile belgenin ne söylediği tartışmalı
+ * olmasın. `verificationCode` ile üçüncü taraf (tapu, banka) belgenin
+ * gerçekliğini `/belge/dogrula` üzerinden sınayabiliyor.
+ */
+export const debtCertificateRow = z.object({
+  id: uuid,
+  unitId: uuid,
+  unitNumber: z.string().nullable(),
+  result: z.string(),
+  outstandingMinor: moneyMinor,
+  asOfDate: dateTime,
+  serialNo: z.string(),
+  pdfUrl: z.string().nullable(),
+  kepRecipient: z.string().nullable(),
+  kepSentAt: dateTime.nullable(),
+  verificationCode: z.string(),
+  createdAt: dateTime,
+});
+
+export const debtCertificateListResponse = z.object({
+  rows: z.array(debtCertificateRow),
+  totals: z.object({
+    clean: z.number().int(),
+    withDebt: z.number().int(),
+    kepSent: z.number().int(),
+  }),
+});
+
+export type DebtCertificateListResponse = z.infer<
+  typeof debtCertificateListResponse
+>;
+
+export const debtCertificateIssue = z.object({
+  unitNumber: z.string().trim().min(1).max(20),
+  kepRecipient: z.string().trim().max(160).nullish(),
+});
+
+export type DebtCertificateIssue = z.infer<typeof debtCertificateIssue>;
+
+export const debtCertificateIssueResult = z.object({
+  serialNo: z.string(),
+  verificationCode: z.string(),
+  result: z.enum(["clear", "outstanding"]),
+  outstandingMinor: moneyMinor,
+  unitLabel: z.string(),
+  asOfDate: dateTime,
+});
+
+export type DebtCertificateIssueResult = z.infer<
+  typeof debtCertificateIssueResult
+>;

@@ -1,7 +1,13 @@
-import { Controller, Get } from "@nestjs/common";
-import { ApiTags } from "@nestjs/swagger";
+import { Body, Controller, Get, Post } from "@nestjs/common";
+import { ApiOperation, ApiTags } from "@nestjs/swagger";
+
+import {
+  announcementCreate,
+  type AnnouncementCreate,
+} from "@yonetim/contracts";
 
 import { RequirePermission } from "../identity/decorators";
+import { ZodBodyPipe } from "../infra/zod/zod-dto";
 import { CommunicationService } from "./communication.service";
 
 /** Panel iç BFF yüzeyi — `/v1/panel/communication/*`. */
@@ -14,6 +20,20 @@ export class CommunicationController {
   @RequirePermission("announcement:read")
   announcements() {
     return this.service.announcements();
+  }
+
+  @Post("duyurular")
+  @RequirePermission("announcement:write")
+  @ApiOperation({
+    summary: "Duyuru oluştur — KVKK filtresi kapı olarak",
+    description:
+      "Filtre engellerse duyuru **kaydedilmez** ve `id: null` döner. Karar " +
+      "sunucuda verilir; istemcinin bayrağına güvenmek kapıyı işlevsiz kılardı.",
+  })
+  createAnnouncement(
+    @Body(new ZodBodyPipe(announcementCreate)) dto: AnnouncementCreate,
+  ) {
+    return this.service.createAnnouncement(dto);
   }
 
   @Get("anketler")

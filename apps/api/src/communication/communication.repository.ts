@@ -78,6 +78,38 @@ export class CommunicationRepository {
     });
   }
 
+  /** Duyuru kaydı. Filtre kararı serviste verilir; burada yalnız yazma var. */
+  async createAnnouncement(values: {
+    title: string;
+    body: string;
+    audience: string;
+    channels: string[];
+    isUrgent: boolean;
+    publishedAt: Date | null;
+    kvkkFlagged: boolean;
+    kvkkFindings: unknown;
+  }): Promise<string> {
+    const ctx = this.db.ctx();
+    return this.db.tx(async (tx) => {
+      const [row] = await tx
+        .insert(announcements)
+        .values({
+          tenantId: ctx.tenantId,
+          title: values.title,
+          body: values.body,
+          audience: values.audience,
+          channels: values.channels,
+          isUrgent: values.isUrgent,
+          publishedAt: values.publishedAt,
+          kvkkFlagged: values.kvkkFlagged,
+          kvkkFindings: values.kvkkFindings,
+          createdBy: ctx.userId,
+        })
+        .returning({ id: announcements.id });
+      return row!.id;
+    });
+  }
+
   /** Duyuru KVKK bulguları — yalnız detayda gösteriliyor. */
   async announcementFindings(id: string) {
     return this.db.tx(async (tx) => {

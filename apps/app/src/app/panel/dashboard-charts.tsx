@@ -38,7 +38,11 @@ export function DashboardCharts({
     forecastFrom: number;
     assumedCollectionRate: number;
   };
-  collectionSplit: { paidKurus: number; openKurus: number; overdueKurus: number };
+  collectionSplit: {
+    paidKurus: number;
+    openKurus: number;
+    overdueKurus: number;
+  };
   labels: {
     incomeExpenseTitle: string;
     incomeExpenseHint: string;
@@ -75,8 +79,10 @@ export function DashboardCharts({
   const shortMoney = (kurus: number): string => {
     const lira = kurus / 100;
     const abs = Math.abs(lira);
-    if (abs >= 1_000_000) return `${(lira / 1_000_000).toLocaleString("tr-TR", { maximumFractionDigits: 1 })} M`;
-    if (abs >= 1000) return `${Math.round(lira / 1000).toLocaleString("tr-TR")} B`;
+    if (abs >= 1_000_000)
+      return `${(lira / 1_000_000).toLocaleString("tr-TR", { maximumFractionDigits: 1 })} M`;
+    if (abs >= 1000)
+      return `${Math.round(lira / 1000).toLocaleString("tr-TR")} B`;
     return lira.toLocaleString("tr-TR", { maximumFractionDigits: 0 });
   };
 
@@ -85,7 +91,8 @@ export function DashboardCharts({
 
   const pct = (value: number): string => `%${value}`;
 
-  const hasData = monthly.accruedKurus.some((value) => value > 0) ||
+  const hasData =
+    monthly.accruedKurus.some((value) => value > 0) ||
     monthly.collectedKurus.some((value) => value > 0) ||
     monthly.expenseKurus.some((value) => value > 0);
 
@@ -99,9 +106,21 @@ export function DashboardCharts({
           labels={monthly.periodLabels}
           labelsHeader={labels.month}
           series={[
-            { key: "accrued", label: labels.accrued, values: monthly.accruedKurus },
-            { key: "collected", label: labels.collected, values: monthly.collectedKurus },
-            { key: "expense", label: labels.expense, values: monthly.expenseKurus },
+            {
+              key: "accrued",
+              label: labels.accrued,
+              values: monthly.accruedKurus,
+            },
+            {
+              key: "collected",
+              label: labels.collected,
+              values: monthly.collectedKurus,
+            },
+            {
+              key: "expense",
+              label: labels.expense,
+              values: monthly.expenseKurus,
+            },
           ]}
           formatValue={fullMoney}
           tableToggleLabel={labels.asTable}
@@ -111,9 +130,21 @@ export function DashboardCharts({
           <BarChart
             labels={monthly.periodLabels}
             series={[
-              { key: "accrued", label: labels.accrued, values: monthly.accruedKurus },
-              { key: "collected", label: labels.collected, values: monthly.collectedKurus },
-              { key: "expense", label: labels.expense, values: monthly.expenseKurus },
+              {
+                key: "accrued",
+                label: labels.accrued,
+                values: monthly.accruedKurus,
+              },
+              {
+                key: "collected",
+                label: labels.collected,
+                values: monthly.collectedKurus,
+              },
+              {
+                key: "expense",
+                label: labels.expense,
+                values: monthly.expenseKurus,
+              },
             ]}
             formatValue={shortMoney}
             height={240}
@@ -127,7 +158,13 @@ export function DashboardCharts({
         description={labels.collectionRateHint}
         labels={monthly.periodLabels}
         labelsHeader={labels.month}
-        series={[{ key: "rate", label: labels.rate, values: monthly.collectionRatePct }]}
+        series={[
+          {
+            key: "rate",
+            label: labels.rate,
+            values: monthly.collectionRatePct,
+          },
+        ]}
         formatValue={pct}
         tableToggleLabel={labels.asTable}
         chartToggleLabel={labels.asChart}
@@ -135,7 +172,13 @@ export function DashboardCharts({
       >
         <LineChart
           labels={monthly.periodLabels}
-          series={[{ key: "rate", label: labels.rate, values: monthly.collectionRatePct }]}
+          series={[
+            {
+              key: "rate",
+              label: labels.rate,
+              values: monthly.collectionRatePct,
+            },
+          ]}
           formatValue={pct}
           height={200}
           area
@@ -147,7 +190,13 @@ export function DashboardCharts({
         description={labels.agingHint}
         labels={aging.labels.map((key) => labels.agingBuckets[key] ?? key)}
         labelsHeader={labels.bucket}
-        series={[{ key: "overdue", label: labels.overdueAmount, values: aging.amounts }]}
+        series={[
+          {
+            key: "overdue",
+            label: labels.overdueAmount,
+            values: aging.amounts,
+          },
+        ]}
         formatValue={fullMoney}
         tableToggleLabel={labels.asTable}
         chartToggleLabel={labels.asChart}
@@ -155,7 +204,13 @@ export function DashboardCharts({
       >
         <BarChart
           labels={aging.labels.map((key) => labels.agingBuckets[key] ?? key)}
-          series={[{ key: "overdue", label: labels.overdueAmount, values: aging.amounts }]}
+          series={[
+            {
+              key: "overdue",
+              label: labels.overdueAmount,
+              values: aging.amounts,
+            },
+          ]}
           formatValue={shortMoney}
           height={200}
           horizontal
@@ -168,7 +223,9 @@ export function DashboardCharts({
           description={labels.forecastHint}
           labels={forecast.periodLabels}
           labelsHeader={labels.month}
-          series={[{ key: "net", label: labels.net, values: forecast.netKurus }]}
+          series={[
+            { key: "net", label: labels.net, values: forecast.netKurus },
+          ]}
           formatValue={fullMoney}
           tableToggleLabel={labels.asTable}
           chartToggleLabel={labels.asChart}
@@ -176,7 +233,9 @@ export function DashboardCharts({
         >
           <LineChart
             labels={forecast.periodLabels}
-            series={[{ key: "net", label: labels.net, values: forecast.netKurus }]}
+            series={[
+              { key: "net", label: labels.net, values: forecast.netKurus },
+            ]}
             formatValue={shortMoney}
             height={220}
             area
@@ -210,9 +269,21 @@ export function DashboardCharts({
         >
           <DonutChart
             slices={[
-              { key: "paid", label: labels.paid, value: collectionSplit.paidKurus },
-              { key: "open", label: labels.open, value: collectionSplit.openKurus },
-              { key: "overdue", label: labels.overdue, value: collectionSplit.overdueKurus },
+              {
+                key: "paid",
+                label: labels.paid,
+                value: collectionSplit.paidKurus,
+              },
+              {
+                key: "open",
+                label: labels.open,
+                value: collectionSplit.openKurus,
+              },
+              {
+                key: "overdue",
+                label: labels.overdue,
+                value: collectionSplit.overdueKurus,
+              },
             ]}
             formatValue={fullMoney}
             centerLabel={labels.totalLabel}

@@ -1,44 +1,54 @@
-import { desc } from "drizzle-orm";
 import { getTranslations } from "next-intl/server";
 
-import { siteConfig } from "@yonetim/config";
-import { legalCases, withTenant } from "@yonetim/db";
-import { findLegalActionCandidates } from "@yonetim/jobs";
+import { legalCaseListResponse } from "@yonetim/contracts";
 import {
-  Alert, Badge, Card, CardBody, CardHeader, EmptyState, Stat, tableClasses as tc,
+  Alert,
+  Badge,
+  Card,
+  CardBody,
+  CardHeader,
+  EmptyState,
+  Stat,
+  tableClasses as tc,
 } from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
+import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
 export default async function LegalPage() {
-  const ctx = await requirePermission("legal:read");
+  await requirePermission("legal:read");
   const t = await getTranslations("app.legal");
   const tEnum = await getTranslations("enum");
   const f = await formatters();
 
-  const cases = await withTenant(ctx.tenantId, async (tx) =>
-    tx.select().from(legalCases).orderBy(desc(legalCases.openedAt)).limit(100),
-  );
-  const candidates = await findLegalActionCandidates(ctx.tenantId);
-
-  const collected = cases.reduce((a, c) => a + c.collectedKurus, 0);
-  const principal = cases.reduce((a, c) => a + c.principalKurus, 0);
+  // İcra adayları da bu uçtan geliyor: eskiden `@yonetim/jobs` üzerinden
+  // doğrudan veritabanına gidiliyordu, bu da §8.3'ü dolaylı olarak deliyordu.
+  const {
+    rows: cases,
+    candidates,
+    thresholdDays,
+    totals,
+  } = await apiGet("/v1/panel/legal", legalCaseListResponse);
 
   return (
     <>
       <PageHeader
         title={t("title")}
-        description={t("description", { days: siteConfig.dues.legalActionThresholdDays })}
+        description={t("description", { days: thresholdDays })}
       />
 
       <div className="grid gap-4 sm:grid-cols-4">
-        <Stat label={t("openCases")} value={String(cases.filter((c) => !c.closedAt).length)} />
-        <Stat label={t("principal")} value={f.money(principal)} />
-        <Stat label={t("collected")} value={f.money(collected)} tone="success" />
+        <Stat label={t("openCases")} value={String(totals.open)} />
+        <Stat label={t("principal")} value={f.money(totals.principalMinor)} />
+        <Stat
+          label={t("collected")}
+          value={f.money(totals.collectedMinor)}
+          tone="success"
+        />
         <Stat
           label={t("candidates")}
           value={String(candidates.length)}
@@ -48,27 +58,44 @@ export default async function LegalPage() {
 
       {candidates.length > 0 ? (
         <Card className="mt-4">
-          <CardHeader title={t("candidatesTitle")} description={t("candidatesDescription")} />
+          <CardHeader
+            title={t("candidatesTitle")}
+            description={t("candidatesDescription")}
+          />
           <CardBody className="p-0">
             <div className={tc.wrapper}>
               <table className={tc.table} style={{ minWidth: 560 }}>
                 <thead className={tc.thead}>
                   <tr>
-                    <th scope="col" className={tc.th}>{t("unit")}</th>
-                    <th scope="col" className={`${tc.th} text-right`}>{t("totalDebt")}</th>
-                    <th scope="col" className={tc.th}>{t("oldestDue")}</th>
-                    <th scope="col" className={`${tc.th} text-right`}>{t("recordCount")}</th>
+                    <th scope="col" className={tc.th}>
+                      {t("unit")}
+                    </th>
+                    <th scope="col" className={`${tc.th} text-right`}>
+                      {t("totalDebt")}
+                    </th>
+                    <th scope="col" className={tc.th}>
+                      {t("oldestDue")}
+                    </th>
+                    <th scope="col" className={`${tc.th} text-right`}>
+                      {t("recordCount")}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {candidates.map((c) => (
-                    <tr key={c.unit_id} className={tc.tr}>
-                      <td className={`${tc.td} font-mono text-xs`}>{c.unit_id.slice(0, 8)}</td>
-                      <td className={tc.tdNum}>{f.money(Number(c.total_kurus))}</td>
+                    <tr key={c.unitId} className={tc.tr}>
+                      {/* Birim numarası artık sunucudan geliyor; eski ekran
+                          id'nin ilk 8 karakterini göstermek zorundaydı. */}
                       <td className={tc.td}>
-                        {c.oldest_due ? f.date(new Date(c.oldest_due)) : "—"}
+                        {c.blockName
+                          ? `${c.blockName} / ${c.unitNumber}`
+                          : c.unitNumber}
                       </td>
-                      <td className={tc.tdNum}>{c.debt_count}</td>
+                      <td className={tc.tdNum}>{f.money(c.totalMinor)}</td>
+                      <td className={tc.td}>
+                        {c.oldestDue ? f.date(c.oldestDue) : "—"}
+                      </td>
+                      <td className={tc.tdNum}>{c.debtCount}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -124,7 +151,10 @@ export default async function LegalPage() {
                     ) : null}
                     <span className="font-semibold tabular-nums">
                       {f.money(
-                        c.principalKurus + c.interestKurus + c.costsKurus - c.collectedKurus,
+                        c.principalMinor +
+                          c.interestMinor +
+                          c.costsMinor -
+                          c.collectedMinor,
                       )}
                     </span>
                   </div>

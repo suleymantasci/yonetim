@@ -1,11 +1,11 @@
-import { eq } from "drizzle-orm";
 import { getTranslations } from "next-intl/server";
 
 import { siteConfig } from "@yonetim/config";
-import { tenants, withTenant } from "@yonetim/db";
+import { tenantSettingsResponse } from "@yonetim/contracts";
 import { Alert, Badge, Card, CardBody, CardHeader } from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
+import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
 
@@ -21,17 +21,14 @@ const INTEGRATIONS = [
 ] as const;
 
 export default async function SettingsPage() {
-  const ctx = await requirePermission("settings:read");
+  await requirePermission("settings:read");
   const t = await getTranslations("app.settings");
   const tCommon = await getTranslations("common");
   const tEnum = await getTranslations("enum");
   const f = await formatters();
 
-  const [tenant] = await withTenant(ctx.tenantId, async (tx) =>
-    tx.select().from(tenants).where(eq(tenants.id, ctx.tenantId)).limit(1),
-  );
-
-  const settings = (tenant?.settings ?? {}) as Record<string, unknown>;
+  const tenant = await apiGet("/v1/panel/settings", tenantSettingsResponse);
+  const settings = tenant.settings;
   const none = tCommon("state.none");
 
   return (
@@ -48,10 +45,16 @@ export default async function SettingsPage() {
               label={t("type")}
               value={tenant ? tEnum(`tenantType.${tenant.type}`) : none}
             />
-            <Row label={t("unitCount")} value={String(tenant?.unitCount ?? 0)} />
+            <Row
+              label={t("unitCount")}
+              value={String(tenant?.unitCount ?? 0)}
+            />
             <Row
               label={t("cityDistrict")}
-              value={[tenant?.city, tenant?.district].filter(Boolean).join(" / ") || none}
+              value={
+                [tenant?.city, tenant?.district].filter(Boolean).join(" / ") ||
+                none
+              }
             />
             <Row
               label={t("landingPage")}
@@ -67,20 +70,28 @@ export default async function SettingsPage() {
         <Card>
           <CardHeader title={t("duesRules")} />
           <CardBody className="space-y-2 text-sm">
-            <Row label={t("dueDay")} value={String(settings.duesDueDayOfMonth ?? 10)} />
+            <Row
+              label={t("dueDay")}
+              value={String(settings.duesDueDayOfMonth ?? 10)}
+            />
             <Row
               label={t("lateFee")}
               value={
                 settings.lateFeeEnabled === false
                   ? t("lateFeeDisabled")
                   : t("lateFeeValue", {
-                      pct: String(settings.lateFeeMonthlyPct ?? siteConfig.dues.monthlyLateFeePct),
+                      pct: String(
+                        settings.lateFeeMonthlyPct ??
+                          siteConfig.dues.monthlyLateFeePct,
+                      ),
                     })
               }
             />
             <Row
               label={t("legalThreshold")}
-              value={tCommon("unit.days", { count: siteConfig.dues.legalActionThresholdDays })}
+              value={tCommon("unit.days", {
+                count: siteConfig.dues.legalActionThresholdDays,
+              })}
             />
             <Row
               label={t("earlyPaymentDiscount")}
@@ -93,10 +104,15 @@ export default async function SettingsPage() {
           <CardHeader title={t("integrations")} />
           <CardBody className="space-y-2">
             {INTEGRATIONS.map((i) => (
-              <div key={i.key} className="flex items-center justify-between text-sm">
+              <div
+                key={i.key}
+                className="flex items-center justify-between text-sm"
+              >
                 <span className="text-fg">{t(`integration.${i.key}`)}</span>
                 <Badge tone={i.enabled ? "success" : "neutral"}>
-                  {i.enabled ? tCommon("state.active") : tCommon("state.inactive")}
+                  {i.enabled
+                    ? tCommon("state.active")
+                    : tCommon("state.inactive")}
                 </Badge>
               </div>
             ))}
@@ -112,11 +128,19 @@ export default async function SettingsPage() {
             />
             <Row
               label={t("trialEndsAt")}
-              value={tenant?.trialEndsAt ? f.date(new Date(tenant.trialEndsAt)) : none}
+              value={
+                tenant?.trialEndsAt
+                  ? f.date(new Date(tenant.trialEndsAt))
+                  : none
+              }
             />
             <Row
               label={t("periodEnd")}
-              value={tenant?.currentPeriodEnd ? f.date(new Date(tenant.currentPeriodEnd)) : none}
+              value={
+                tenant?.currentPeriodEnd
+                  ? f.date(new Date(tenant.currentPeriodEnd))
+                  : none
+              }
             />
             <Alert tone="info">
               {t("priceCapNote", {

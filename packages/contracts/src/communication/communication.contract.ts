@@ -155,3 +155,66 @@ export const meetingListResponse = z.object({
 });
 
 export type MeetingListResponse = z.infer<typeof meetingListResponse>;
+
+/* ------------------------------------------------------------------ *
+ * Duyuru oluşturma
+ * ------------------------------------------------------------------ */
+
+export const ANNOUNCEMENT_AUDIENCES = [
+  "all",
+  "owners",
+  "tenants",
+  "block",
+  "units",
+  "new_residents",
+] as const;
+
+export const ANNOUNCEMENT_CHANNELS = [
+  "whatsapp",
+  "sms",
+  "email",
+  "in_app",
+] as const;
+
+export const announcementCreate = z.object({
+  title: z.string().trim().min(3).max(200),
+  body: z.string().trim().min(10).max(4000),
+  audience: z.enum(ANNOUNCEMENT_AUDIENCES).default("all"),
+  channels: z.array(z.enum(ANNOUNCEMENT_CHANNELS)).min(1),
+  isUrgent: z.coerce.boolean().default(false),
+  publish: z.coerce.boolean().default(true),
+});
+
+export type AnnouncementCreate = z.infer<typeof announcementCreate>;
+
+export const kvkkFinding = z.object({
+  severity: z.string(),
+  /** `kvkk.finding.<code>` altındaki mesaj/öneri çiftinin kodu. */
+  code: z.string(),
+  match: z.string(),
+});
+
+/**
+ * KVKK tarama sonucu.
+ *
+ * Tarama **sunucuda** yapılıyor ve `blocked` bir uyarı değil **karar**:
+ * engellenen duyuru hiç kaydedilmiyor. İstemcinin gönderdiği bir bayrağa
+ * güvenseydik, filtreyi atlatmak isteyen bir istemci için kapı diye bir şey
+ * kalmazdı. Panelde yazarken çalışan canlı kontrol aynı saf fonksiyonu
+ * kullanıyor ama o yalnız önizleme.
+ */
+export const announcementCreateResult = z.object({
+  id: uuid.nullable(),
+  published: z.boolean(),
+  kvkk: z.object({
+    blocked: z.boolean(),
+    score: z.number(),
+    findings: z.array(kvkkFinding),
+    /** Bireysel gönderim gerektiriyor mu (toplu kanal kapatılmalı). */
+    requiresIndividual: z.boolean(),
+  }),
+  /** Acil durum override'ı kanalları genişlettiyse nihai liste. */
+  channels: z.array(z.string()),
+});
+
+export type AnnouncementCreateResult = z.infer<typeof announcementCreateResult>;
