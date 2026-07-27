@@ -57,3 +57,13 @@ export function scheduleEntries(): ScheduleEntry[] {
     definition,
   }));
 }
+
+/**
+ * Olay kuyruğu — GAP 4.6.5 (MIMARI-PLAN §10).
+ *
+ * Zamanlanmış işlerden **ayrı** bir kuyruk, çünkü ikisinin doğası farklı:
+ * zamanlanmış iş dakikalarca sürebilir ve eşzamanlılığı 1'dir; olay işleme
+ * kısa ve paralelleşebilir. Aynı kuyruğa koymak, aylık borç üretimi koşarken
+ * bir ödeme makbuzunun 15 dakika beklemesi demekti.
+ */
+export const QUEUE_EVENTS = "events";

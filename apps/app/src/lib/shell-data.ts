@@ -48,6 +48,10 @@ export function notificationHref(
   switch (resourceType) {
     case "debt":
       return `/panel/borclar/${resourceId}`;
+    // Tahsilatın kendi detay ekranı yok; borç listesi mahsubun sonucunu
+    // zaten gösteriyor.
+    case "payment":
+      return "/panel/borclar";
     case "request":
       return `/panel/talepler/${resourceId}`;
     case "announcement":
@@ -60,6 +64,12 @@ export function notificationHref(
       return "/panel/kvkk";
     case "maintenance":
       return "/panel/bakim";
+    case "poll":
+      return "/panel/anketler";
+    case "meeting":
+      return "/panel/toplantilar";
+    case "debt_certificate":
+      return "/panel/borcu-yoktur";
     default:
       return null;
   }

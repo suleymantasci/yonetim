@@ -120,8 +120,14 @@ export class DebtService {
       resourceId: created.ids[0],
       reason: `${created.ids.length} kalem · ${dto.description}`,
     });
-    // §10: olay → bildirim üretimi buradan besleniyor (Track B2).
-    this.events.emit("debt.created", { ids: created.ids, unitId: dto.unitId });
+    // §10 / B2: olay → bildirim. Gövde `DomainEventPayload` sözleşmesinde —
+    // alıcıyı olayı yayan değil, politika + worker çözüyor.
+    this.events.emit("debt.created", {
+      event: "debt.created",
+      resourceId: created.ids[0],
+      unitId: dto.unitId,
+      params: { description: dto.description },
+    });
     return created;
   }
 
@@ -151,7 +157,11 @@ export class DebtService {
       resourceId: id,
       reason: dto.reason,
     });
-    this.events.emit("debt.adjusted", { id, reason: dto.reason });
+    this.events.emit("debt.corrected", {
+      event: "debt.corrected",
+      resourceId: id,
+      params: { reason: dto.reason },
+    });
     return { id };
   }
 
@@ -164,9 +174,12 @@ export class DebtService {
       reason: `${result.closedDebtCount} borç kapandı`,
     });
     this.events.emit("payment.received", {
-      paymentId: result.paymentId,
+      event: "payment.received",
+      resourceId: result.paymentId,
       unitId: dto.unitId,
-      amountMinor: dto.amountMinor,
+      // Makbuz bildiriminde tutar gösteriliyor; biçimlendirme alıcının
+      // diline göre gönderim anında yapılıyor (SPEC 4.2).
+      params: { amountMinor: dto.amountMinor },
     });
     return result;
   }

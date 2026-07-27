@@ -893,7 +893,7 @@ A5'te ayrıca beklenenden fazlası taşındı, çünkü hepsi aynı değişmezin
 | Belge doğrulama, NPS widget'ı, platform paneli | `PublicModule`, `tenancy/platform` | Halka açık ya da tenant sınırı dışı sorgular. |
 | Denetim kütüğü yazımı (`lib/audit.ts`) | `governance/audit` (silindi) | §8.4: kayıt **gerçekten değişen** veriyle, servis içinde yazılır. |
 
-### Track B — Worker ve kuyruk
+### Track B — Worker ve kuyruk — **TAMAMLANDI**
 
 | Faz | İş |
 | --- | --- |
@@ -901,6 +901,26 @@ A5'te ayrıca beklenenden fazlası taşındı, çünkü hepsi aynı değişmezin
 | **B1** | 19 cron → repeatable job. `vercel.json` ve `/api/cron/[job]` silinir. |
 | **B2** | Olay kuyruğu + `NotificationPolicy` → **4.6.5** kapanır. |
 | **B3** | Uzun iş altyapısı (progress + iptal) → **4.1.17** göç sihirbazının önkoşulu. |
+
+**Track B durumu: B0–B3 tamamlandı.**
+
+- **B0/B1** — `apps/worker` NestJS standalone; zamanlamayı açılışta Redis'e
+  **uzlaştırarak** yazıyor (eksik ekle, değişen yeniden kur, tanımdan çıkanı
+  **sil**). `vercel.json` ve `gen-vercel.ts` silindi. `CRON_SECRET` de düştü:
+  elle tetikleme artık `POST /v1/panel/platform/jobs/:job/run`, platform
+  yöneticisi kimliğiyle. Dağıtılmayan sır sızmaz.
+- **B2** — `packages/notifications/src/policy.ts`: "hangi olay hangi bildirimi
+  doğurur" sorusunun **tek** cevabı. Üç karar bilinçli olarak ayrı yerde:
+  olay oldu mu (domain servisi), bildirim doğar mı ve kime (politika), hangi
+  kanaldan ve ne zaman (`router.ts`). Api olayı kuyruğa köprülüyor
+  (`EventEmitter2` süreç içi), worker gönderiyor.
+- **B3** — `job_runs` tablosu + `JobRunService`. İptal bir **bayrak**
+  (`cancelling`), kuyruktan silme değil: silinen job yarısını yazmış olabilir
+  ve o hâlde durdurmak veriyi tutarsız bırakır. İş kendi döngüsünde bayrağı
+  okuyup temiz bir noktada duruyor.
+
+Gövdesi henüz yazılmamış 16 iş `skipped: no_handler` raporluyor — sessizce
+başarılı sayılmıyor. Gövdeler Track E'de ilgili modülle birlikte geliyor.
 
 ### Track C — Design system (A'dan bağımsız)
 

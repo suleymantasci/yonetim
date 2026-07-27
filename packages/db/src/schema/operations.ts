@@ -301,3 +301,49 @@ export const staffLeaves = pgTable(
   },
   (t) => [index("idx_staff_leaves_staff").on(t.staffId)],
 );
+
+/**
+ * Uzun süren iş koşusu — MIMARI-PLAN §10 B3, GAP 4.1.17'nin önkoşulu.
+ *
+ * NEDEN VERİTABANINDA, KUYRUKTA DEĞİL: BullMQ job'ının kendi ilerleme alanı
+ * var ama o Redis'te ve `removeOnComplete` ile siliniyor. "Geçen hafta yapılan
+ * göçte hangi satırlar hatalıydı" sorusu haftalar sonra sorulabiliyor;
+ * cevabın kalıcı olması gerek. Kuyruk çalıştırmanın aracı, kaydın yeri değil.
+ *
+ * İPTAL BİR **BAYRAK**: `status = 'cancelling'`. İş kendi döngüsünde bu alanı
+ * okuyup temiz bir noktada duruyor. Job'ı kuyruktan silmek, yarısı yazılmış
+ * bir göçü geri alınamaz halde bırakırdı.
+ */
+export const jobRuns = pgTable(
+  "job_runs",
+  {
+    id: idCol(),
+    tenantId: tenantId().references(() => tenants.id, { onDelete: "cascade" }),
+    /** `import.units`, `debt.bulk`, `report.monthly` … */
+    kind: varchar("kind", { length: 60 }).notNull(),
+    status: varchar("status", { length: 20 }).notNull().default("queued"),
+    /** Kuyruktaki job kimliği — iptal ve izleme için. */
+    queueJobId: varchar("queue_job_id", { length: 80 }),
+    startedByUserId: uuid("started_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    processed: integer("processed").notNull().default(0),
+    /** Bilinmiyorsa NULL — 0 yazmak "%0 tamamlandı" gibi okunurdu. */
+    total: integer("total"),
+    step: varchar("step", { length: 80 }),
+    succeeded: integer("succeeded").notNull().default(0),
+    failed: integer("failed").notNull().default(0),
+    /** Satır bazlı hatalar; ekranda ilk 50'si gösterilir. */
+    errors: jsonb("errors").notNull().default([]),
+    /** İşin girdisi (dosya anahtarı, filtre…) — yeniden koşturmak için. */
+    input: jsonb("input").notNull().default({}),
+    result: jsonb("result"),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    index("idx_job_runs_tenant_created").on(t.tenantId, t.createdAt),
+    index("idx_job_runs_status").on(t.status),
+  ],
+);

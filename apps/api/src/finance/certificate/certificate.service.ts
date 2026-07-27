@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { and, count, desc, eq, isNull, sql } from "drizzle-orm";
 
 import type {
@@ -27,6 +28,7 @@ export class CertificateService {
   constructor(
     private readonly db: DbService,
     private readonly audit: AuditService,
+    private readonly events: EventEmitter2,
   ) {}
 
   async list(): Promise<DebtCertificateListResponse> {
@@ -139,6 +141,15 @@ export class CertificateService {
       resource: "debt_certificate",
       resourceId: result.serialNo,
       reason: `${result.unitLabel} · ${result.result}`,
+    });
+
+    // Belgeyi talep eden kişiye doğrulama kodu gidiyor: belgeyi ibraz edecek
+    // olan o ve kodu elle yazması gerekiyor.
+    this.events.emit("certificate.issued", {
+      event: "certificate.issued",
+      resourceId: result.serialNo,
+      subjectUserId: ctx.userId,
+      params: { serialNo: result.serialNo, code: result.verificationCode },
     });
 
     return result;

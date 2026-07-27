@@ -6,7 +6,7 @@ import { APP_FILTER, APP_GUARD } from "@nestjs/core";
 import { EventEmitterModule } from "@nestjs/event-emitter";
 import type { Request } from "express";
 
-import { QUEUE_SCHEDULED } from "@yonetim/jobs";
+import { QUEUE_EVENTS, QUEUE_SCHEDULED } from "@yonetim/jobs";
 import { ClsModule } from "nestjs-cls";
 import { LoggerModule } from "nestjs-pino";
 
@@ -26,6 +26,7 @@ import { HealthController } from "./infra/health/health.controller";
 import { ApiExceptionFilter } from "./infra/logging/api-exception.filter";
 import { pinoParams } from "./infra/logging/pino.config";
 import { RedisModule } from "./infra/redis/redis.module";
+import { DomainEventsBridge } from "./infra/events/domain-events.service";
 import { JobTriggerController } from "./infra/scheduler/job-trigger.controller";
 import { env } from "./infra/config/env";
 import { PropertyModule } from "./property/property.module";
@@ -77,7 +78,7 @@ import { PublicModule } from "./public/public.module";
         connection: { url: env().REDIS_URL ?? "redis://127.0.0.1:6379" },
       }),
     }),
-    BullModule.registerQueue({ name: QUEUE_SCHEDULED }),
+    BullModule.registerQueue({ name: QUEUE_SCHEDULED }, { name: QUEUE_EVENTS }),
     RedisModule,
     DbModule,
     AuditModule,
@@ -97,6 +98,7 @@ import { PublicModule } from "./public/public.module";
   ],
   controllers: [HealthController, JobTriggerController],
   providers: [
+    DomainEventsBridge,
     { provide: APP_FILTER, useClass: ApiExceptionFilter },
     { provide: APP_GUARD, useClass: TenantContextGuard },
     { provide: APP_GUARD, useClass: RateLimitGuard },

@@ -28,6 +28,7 @@
     "@yonetim/jobs": "workspace:*",
     "@yonetim/kvkk": "workspace:*",
     "@yonetim/notifications": "workspace:*",
+    "@yonetim/payment": "workspace:*",
     "@yonetim/sms": "workspace:*",
     "@yonetim/whatsapp": "workspace:*",
     "bullmq": "^5.81.2",

@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 
 import type {
   AnnouncementCreate,
@@ -20,6 +21,7 @@ export class CommunicationService {
   constructor(
     private readonly repo: CommunicationRepository,
     private readonly audit: AuditService,
+    private readonly events: EventEmitter2,
   ) {}
 
   /**
@@ -77,6 +79,16 @@ export class CommunicationService {
       resource: "announcement",
       resourceId: id,
     });
+
+    // Yalnız **yayımlanmış** duyuru bildirim doğuruyor: taslak henüz bir
+    // karar değil ve sakine haber vermek onu karara çevirirdi (B2 / §10).
+    if (dto.publish) {
+      this.events.emit("announcement.published", {
+        event: "announcement.published",
+        resourceId: id,
+        params: { title: dto.title },
+      });
+    }
 
     return { id, published: dto.publish, kvkk, channels };
   }

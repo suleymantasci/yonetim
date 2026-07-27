@@ -3,7 +3,7 @@ import { Module } from "@nestjs/common";
 import { EventEmitterModule } from "@nestjs/event-emitter";
 import { ClsModule } from "nestjs-cls";
 
-import { QUEUE_SCHEDULED } from "@yonetim/jobs";
+import { QUEUE_EVENTS, QUEUE_SCHEDULED } from "@yonetim/jobs";
 import { LoggerModule } from "nestjs-pino";
 
 import { env } from "@api/infra/config/env";
@@ -11,6 +11,7 @@ import { DbModule } from "@api/infra/db/db.module";
 import { pinoParams } from "@api/infra/logging/pino.config";
 
 import { JobContext } from "./queue/job-context";
+import { EventProcessor } from "./queue/event.processor";
 import { JobRegistry } from "./queue/job-registry";
 import { ScheduledProcessor } from "./queue/scheduled.processor";
 import { SchedulerService } from "./scheduler/scheduler.service";
@@ -51,9 +52,15 @@ import { SchedulerService } from "./scheduler/scheduler.service";
         return { connection: { url } };
       },
     }),
-    BullModule.registerQueue({ name: QUEUE_SCHEDULED }),
+    BullModule.registerQueue({ name: QUEUE_SCHEDULED }, { name: QUEUE_EVENTS }),
     DbModule,
   ],
-  providers: [JobContext, JobRegistry, ScheduledProcessor, SchedulerService],
+  providers: [
+    JobContext,
+    JobRegistry,
+    ScheduledProcessor,
+    EventProcessor,
+    SchedulerService,
+  ],
 })
 export class WorkerModule {}

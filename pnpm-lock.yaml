@@ -398,6 +398,9 @@ importers:
       '@yonetim/notifications':
         specifier: workspace:*
         version: link:../../packages/notifications
+      '@yonetim/payment':
+        specifier: workspace:*
+        version: link:../../packages/payment
       '@yonetim/sms':
         specifier: workspace:*
         version: link:../../packages/sms
