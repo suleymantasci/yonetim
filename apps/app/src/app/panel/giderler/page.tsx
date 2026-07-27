@@ -225,14 +225,9 @@ export default async function ExpensesPage({
                 rows={rows}
                 sort={params.sort}
                 direction={params.direction}
+                basePath="/panel/giderler"
+                params={params}
                 canApprove={canApprove}
-                hrefFor={(key, direction) =>
-                  buildListHref("/panel/giderler", params, {
-                    sirala: key,
-                    yon: direction,
-                    sayfa: 1,
-                  })
-                }
                 labels={{
                   description: t("description2"),
                   category: t("category"),

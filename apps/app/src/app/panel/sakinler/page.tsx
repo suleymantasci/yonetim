@@ -208,13 +208,8 @@ export default async function ResidentsPage({
             rows={rows}
             sort={params.sort}
             direction={params.direction}
-            hrefFor={(key, direction) =>
-              buildListHref("/panel/sakinler", params, {
-                sirala: key,
-                yon: direction,
-                sayfa: 1,
-              })
-            }
+            basePath="/panel/sakinler"
+            params={params}
             labels={{
               fullName: t("fullName"),
               units: t("units"),

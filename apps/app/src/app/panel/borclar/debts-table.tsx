@@ -14,6 +14,7 @@ import {
 } from "@yonetim/ui";
 
 import { BulkSelection } from "@/components/list/bulk-selection";
+import { buildListHref, type ListParams } from "@/lib/list-params";
 import { cancelDebts, setLateFeeExempt } from "./actions";
 
 /**
@@ -54,13 +55,15 @@ export function DebtsTable({
   rows,
   sort,
   direction,
-  hrefFor,
+  basePath,
+  params,
   labels,
 }: {
   rows: DebtRowView[];
   sort: string;
   direction: "asc" | "desc";
-  hrefFor: (key: string, direction: "asc" | "desc") => string;
+  basePath: string;
+  params: ListParams;
   labels: {
     unit: string;
     debtor: string;
@@ -83,6 +86,9 @@ export function DebtsTable({
 }) {
   const t = useTranslations("common");
   const [reason, setReason] = useState("");
+
+  const hrefFor = (key: string, direction: "asc" | "desc") =>
+    buildListHref(basePath, params, { sirala: key, yon: direction, sayfa: 1 });
 
   const actions = [
     {

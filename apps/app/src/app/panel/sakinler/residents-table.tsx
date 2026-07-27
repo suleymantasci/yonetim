@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { Badge, DataCard, SortableTh, tableClasses as tc } from "@yonetim/ui";
 
 import { BulkSelection } from "@/components/list/bulk-selection";
+import { buildListHref, type ListParams } from "@/lib/list-params";
 import { removeResidents, setWhatsappOptIn } from "./actions";
 
 /**
@@ -38,13 +39,15 @@ export function ResidentsTable({
   rows,
   sort,
   direction,
-  hrefFor,
+  basePath,
+  params,
   labels,
 }: {
   rows: ResidentRowView[];
   sort: string;
   direction: "asc" | "desc";
-  hrefFor: (key: string, direction: "asc" | "desc") => string;
+  basePath: string;
+  params: ListParams;
   labels: {
     fullName: string;
     units: string;
@@ -61,6 +64,9 @@ export function ResidentsTable({
   };
 }) {
   const t = useTranslations("common");
+
+  const hrefFor = (key: string, direction: "asc" | "desc") =>
+    buildListHref(basePath, params, { sirala: key, yon: direction, sayfa: 1 });
 
   const actions = [
     {

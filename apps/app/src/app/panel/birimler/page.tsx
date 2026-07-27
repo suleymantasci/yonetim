@@ -282,13 +282,8 @@ export default async function UnitsPage({
             rows={rows}
             sort={params.sort}
             direction={params.direction}
-            hrefFor={(key, direction) =>
-              buildListHref("/panel/birimler", params, {
-                sirala: key,
-                yon: direction,
-                sayfa: 1,
-              })
-            }
+            basePath="/panel/birimler"
+            params={params}
             trashed={params.trashed}
             labels={{
               number: t("number"),

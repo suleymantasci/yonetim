@@ -343,13 +343,8 @@ export default async function DebtsPage({
             rows={rows}
             sort={params.sort}
             direction={params.direction}
-            hrefFor={(key, direction) =>
-              buildListHref("/panel/borclar", params, {
-                sirala: key,
-                yon: direction,
-                sayfa: 1,
-              })
-            }
+            basePath="/panel/borclar"
+            params={params}
             labels={{
               unit: tUnits("number"),
               debtor: t("debtor"),

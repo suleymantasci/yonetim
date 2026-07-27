@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { Badge, DataCard, SortableTh, tableClasses as tc } from "@yonetim/ui";
 
 import { BulkSelection } from "@/components/list/bulk-selection";
+import { buildListHref, type ListParams } from "@/lib/list-params";
 import { bulkPatchUnits, restoreUnits, softDeleteUnits } from "./actions";
 
 /**
@@ -42,14 +43,16 @@ export function UnitsTable({
   rows,
   sort,
   direction,
-  hrefFor,
+  basePath,
+  params,
   trashed,
   labels,
 }: {
   rows: UnitRowView[];
   sort: string;
   direction: "asc" | "desc";
-  hrefFor: (key: string, direction: "asc" | "desc") => string;
+  basePath: string;
+  params: ListParams;
   trashed: boolean;
   labels: {
     number: string;
@@ -69,6 +72,9 @@ export function UnitsTable({
   };
 }) {
   const t = useTranslations("common");
+
+  const hrefFor = (key: string, direction: "asc" | "desc") =>
+    buildListHref(basePath, params, { sirala: key, yon: direction, sayfa: 1 });
 
   const actions = trashed
     ? [
