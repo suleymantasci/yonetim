@@ -922,7 +922,7 @@ A5'te ayrıca beklenenden fazlası taşındı, çünkü hepsi aynı değişmezin
 Gövdesi henüz yazılmamış 16 iş `skipped: no_handler` raporluyor — sessizce
 başarılı sayılmıyor. Gövdeler Track E'de ilgili modülle birlikte geliyor.
 
-### Track C — Design system (A'dan bağımsız)
+### Track C — Design system (A'dan bağımsız) — **KISMEN / GÖZDEN GEÇİRİLDİ**
 
 | Faz | İş |
 | --- | --- |
@@ -931,6 +931,40 @@ başarılı sayılmıyor. Gövdeler Track E'de ilgili modülle birlikte geliyor.
 | **C2** | `ChartFrame` içi ECharts'a döner; API sabit, 24 kullanım yeri değişmez. |
 | **C3** | Tablolar TanStack Table'a; URL state ve sunucu sayfalaması korunur. |
 | **C4** | Formlar RHF + contracts şeması; TR alanları yeniden sarılır. |
+
+**C0 — karşılandı, ek iş gerekmedi.** Çıkış ölçütü `design-tokens.test.ts`
+yeşil ve öyle: semantik token disiplini zaten kurulu, `dark:` varyantı hiçbir
+dosyada yok, ham Tailwind paleti kullanılmıyor. shadcn kurmak bu disiplini
+**getirmezdi**; shadcn kendi renk değişkenlerini dayatır ve bugünkü tek
+kaynağı ikiye bölerdi.
+
+**C1 — `Overlay` ailesi Radix Dialog'a taşındı.** Elle yazılmış hâli Tab
+döngüsünü, ESC'i ve odak dönüşünü doğru yapıyordu ama üç somut açığı vardı:
+arka plan ekran okuyucudan gizlenmiyordu (odak tuzağı yalnız Tab'ı yakalar,
+sanal imleç arkayı okumaya devam ediyordu), portal'a çıkan içerik tuzağın
+dışında kalıyordu, ve kaydırma kilidi çubuk genişliğini telafi etmediği için
+açılışta sayfa sıçrıyordu. Dış API aynı kaldı. Kalan primitifler (tabs,
+select, tooltip, dropdown) bugün **mevcut değil** — kullanıldıkları yerde
+Radix ile yazılmaları doğru olur, şimdi boş kabuk üretmek değil.
+
+**C2 ve C4 — bilinçli olarak YAPILMADI.** Bu iki faz, kod tabanında zaten
+verilmiş ve gerekçesi hâlâ geçerli olan iki kararı tersine çeviriyor:
+
+| Faz | Mevcut karar (kodda yazılı) | Neden hâlâ geçerli |
+| --- | --- | --- |
+| **C2** ECharts | `chart.tsx`: "harici grafik kütüphanesi yok" — dört form düz SVG ile ~400 satırda, sunucuda render edilebiliyor | ECharts ~340 kB (gzip ~100 kB) ve **istemci-only**; sunucuda render edilemediği için ilk boyamada grafik yeri boş kalır. Kazanç: daha zengin etkileşim. Bedel: bundle + SSR kaybı + `ChartFrame`'in zorunlu kıldığı tablo görünümünün yeniden kurulması |
+| **C4** react-hook-form | `form.ts`: "RHF kullanılmıyor" — React 19 `useActionState` ile doğrulama tek yerde (sunucuda, Zod ile), JS kapalıyken de çalışıyor | RHF aynı kuralları istemcide **ikinci kez** yazmayı, ~14 kB bundle'ı ve JS kapalıyken çalışmayan bir formu geri getirir. Kazanç: anlık alan doğrulaması — ki `packages/ui` alanlarında (TCKN/IBAN/telefon) zaten var |
+
+İkisi de yapılabilir işler; yapılmamalarının nedeni zorluk değil, **karşılığın
+bedelden küçük olması**. Bir ürün kararı bunları isterse (örneğin gerçek
+zamanlı grafik etkileşimi bir gereksinim hâline gelirse) tersine çevrilebilir
+— ama o zaman `chart.tsx` ve `form.ts`'teki gerekçe blokları da güncellenmeli,
+sessizce geçersiz bırakılmamalı.
+
+**C3 — sıraya alındı.** TanStack Table'ın asıl kazancı sütun görünürlüğü,
+sanallaştırma ve karmaşık sıralama. Bugünkü tablolar sunucu sayfalamalı ve
+sayfa başına ≤50 satır; sanallaştırmanın çözeceği bir sorun henüz yok.
+Sütun seçici (GAP 4.4.x) gerçek bir talep olduğunda birlikte yapılmalı.
 
 ### Track D — Gözlemlenebilirlik ve kapılar (**4.8.1–4.8.2**) — **KISMEN**
 

@@ -13,12 +13,13 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.23",
     "@yonetim/config": "workspace:*",
-    "clsx": "^2.1.1",
-    "tailwind-merge": "^2.6.0",
-    "lucide-react": "^0.469.0",
+    "@yonetim/core": "workspace:*",
     "class-variance-authority": "^0.7.1",
-    "@yonetim/core": "workspace:*"
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.469.0",
+    "tailwind-merge": "^2.6.0"
   },
   "peerDependencies": {
     "react": "^19.0.0",

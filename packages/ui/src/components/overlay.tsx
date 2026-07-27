@@ -1,30 +1,39 @@
 "use client";
 
+import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
-import {
-  useCallback, useEffect, useId, useRef, type KeyboardEvent, type ReactNode,
-} from "react";
+import type { ReactNode } from "react";
 
 import { cn } from "../cn";
 
 /**
- * Overlay ailesi — SPEC Bölüm 11.4, GAP 4.4.5.
+ * Overlay ailesi — SPEC Bölüm 11.4, GAP 4.4.5, MIMARI-PLAN §14 Track C1.
  *
  * Modal / Drawer / Sheet üçlüsü tek bir ilkelden türer: aynı odak tuzağı,
- * aynı ESC davranışı, aynı backdrop. Radix yerine elle yazıldı; tek ihtiyacımız
- * olan davranışlar bunlar ve bundle politikası (GAP 7.2) harici lib istemiyor.
+ * aynı ESC davranışı, aynı backdrop. Değişen yalnız panelin nereden geldiği.
  *
- * Erişilebilirlik:
- * - `role="dialog"` + `aria-modal` + başlığa `aria-labelledby`
- * - Odak açılışta panele girer, kapanışta tetikleyen öğeye döner
- * - Tab/Shift+Tab panel içinde döner (focus trap)
- * - ESC ve backdrop tıklaması kapatır (`dismissible={false}` ile kilitlenir)
- * - `prefers-reduced-motion` altında animasyon devre dışı (globals.css)
+ * NEDEN ELLE YAZILMIŞ HÂLİNDEN VAZGEÇİLDİ (C1): önceki sürüm Tab döngüsünü,
+ * ESC'i ve odak dönüşünü doğru yapıyordu — ama bir modalı erişilebilir kılan
+ * şey bunlarla bitmiyor. Üç somut açık vardı:
+ *
+ *  1. **Arka plan ekran okuyucudan gizlenmiyordu.** Odak tuzağı yalnız Tab'ı
+ *     yakalar; VoiceOver/NVDA sanal imleci sekme sırasını hiç kullanmadan
+ *     arkadaki içeriği okumaya devam ediyordu. Modalın "modal" olmasının
+ *     anlamı tam da bu değil.
+ *  2. **Portal'a çıkan içerik tuzağın dışında kalıyordu.** Panel içindeki bir
+ *     açılır liste `document.body`'ye render edilirse `panelRef.querySelectorAll`
+ *     onu göremez ve Tab kullanıcıyı sessizce dışarı atar.
+ *  3. **Kaydırma kilidi kaydırma çubuğu genişliğini telafi etmiyordu**; modal
+ *     açılınca arkadaki sayfa yatay olarak sıçrıyordu.
+ *
+ * Üçünü de doğru yazmak mümkün ama üçü de "yazdıktan sonra bir daha
+ * bakılmayan" türden kod. Radix Dialog bunları zaten çözüyor ve ~9 kB gzip
+ * getiriyor. Bundle politikası (GAP 7.2) harici kütüphaneye kapalı değil,
+ * **karşılıksız** harici kütüphaneye kapalı.
+ *
+ * DIŞ API DEĞİŞMEDİ: `open`/`onClose`/`title`/`variant` aynı. Çağıran taraf
+ * için bu değişiklik görünmez — görünür olan tek şey davranışın düzelmesi.
  */
-
-const FOCUSABLE =
-  'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),' +
-  'textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
 
 export type OverlayVariant = "modal" | "drawer" | "sheet";
 
@@ -38,6 +47,7 @@ export interface OverlayProps {
   /** modal = ortada, drawer = sağdan, sheet = alttan. */
   variant?: OverlayVariant;
   size?: "sm" | "md" | "lg" | "xl";
+  /** `false` ise ESC ve backdrop kapatmaz — yalnız açık bir eylem kapatır. */
   dismissible?: boolean;
   closeLabel?: string;
   className?: string;
@@ -45,14 +55,16 @@ export interface OverlayProps {
 
 const PANEL: Record<OverlayVariant, string> = {
   modal:
-    "relative m-auto w-full rounded-xl border border-border bg-surface shadow-xl " +
+    "fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 " +
+    "rounded-xl border border-border bg-surface shadow-xl " +
     "motion-safe:animate-[overlay-zoom_150ms_ease-out]",
   drawer:
-    "relative ml-auto flex h-full w-full flex-col border-l border-border bg-surface shadow-xl " +
-    "motion-safe:animate-[overlay-slide-right_180ms_ease-out]",
+    "fixed inset-y-0 right-0 z-50 flex h-full w-full flex-col border-l border-border " +
+    "bg-surface shadow-xl motion-safe:animate-[overlay-slide-right_180ms_ease-out]",
   sheet:
-    "relative mt-auto flex max-h-[90dvh] w-full flex-col rounded-t-2xl border-t border-border " +
-    "bg-surface shadow-xl motion-safe:animate-[overlay-slide-up_180ms_ease-out]",
+    "fixed inset-x-0 bottom-0 z-50 flex max-h-[90dvh] w-full flex-col rounded-t-2xl " +
+    "border-t border-border bg-surface shadow-xl " +
+    "motion-safe:animate-[overlay-slide-up_180ms_ease-out]",
 };
 
 const SIZE: Record<NonNullable<OverlayProps["size"]>, string> = {
@@ -75,126 +87,89 @@ export function Overlay({
   closeLabel = "Kapat",
   className,
 }: OverlayProps) {
-  const panelRef = useRef<HTMLDivElement>(null);
-  const returnFocusRef = useRef<HTMLElement | null>(null);
-  const titleId = useId();
-  const descId = useId();
-
-  // Açılışta odağı panele taşı, kapanışta tetikleyene geri ver.
-  useEffect(() => {
-    if (!open) return;
-    returnFocusRef.current = document.activeElement as HTMLElement | null;
-    const panel = panelRef.current;
-    const first = panel?.querySelector<HTMLElement>(FOCUSABLE);
-    (first ?? panel)?.focus();
-    return () => returnFocusRef.current?.focus?.();
-  }, [open]);
-
-  // Arka plan kaydırmasını kilitle.
-  useEffect(() => {
-    if (!open) return;
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previous;
-    };
-  }, [open]);
-
-  const onKeyDown = useCallback(
-    (event: KeyboardEvent<HTMLDivElement>) => {
-      if (event.key === "Escape" && dismissible) {
-        event.stopPropagation();
-        onClose();
-        return;
-      }
-      if (event.key !== "Tab") return;
-      const nodes = panelRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE);
-      if (!nodes || nodes.length === 0) return;
-      const first = nodes[0]!;
-      const last = nodes[nodes.length - 1]!;
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    },
-    [dismissible, onClose],
-  );
-
-  if (!open) return null;
-
   return (
-    // Arkaplan fareyle kapatma kolaylığı; klavye yolu aşağıdaki panelin
-    // odak tuzağı ve Escape işleyicisi. Arkaplana interaktif rol vermek onu
-    // sekme sırasına sokardı — Track C1'de Radix Dialog tümünü devralıyor.
-    // eslint-disable-next-line jsx-a11y/no-static-element-interactions
-    <div
-      className={cn(
-        "fixed inset-0 z-50 flex bg-overlay p-0 motion-safe:animate-[overlay-fade_120ms_ease-out]",
-        variant === "modal" && "items-center justify-center p-4",
-      )}
-      onMouseDown={(event) => {
-        if (dismissible && event.target === event.currentTarget) onClose();
+    <Dialog.Root
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) onClose();
       }}
-      onKeyDown={onKeyDown}
     >
-      <div
-        ref={panelRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        aria-describedby={description ? descId : undefined}
-        tabIndex={-1}
-        className={cn(
-          PANEL[variant],
-          variant === "modal" && SIZE[size],
-          variant === "drawer" && (size === "xl" ? "max-w-2xl" : SIZE[size]),
-          "outline-none",
-          className,
-        )}
-      >
-        <div className="flex items-start justify-between gap-4 border-b border-border p-4">
-          <div className="min-w-0">
-            <h2 id={titleId} className="text-base font-semibold text-fg">
-              {title}
-            </h2>
-            {description ? (
-              <p id={descId} className="mt-1 text-sm text-fg-muted">
-                {description}
-              </p>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-overlay motion-safe:animate-[overlay-fade_120ms_ease-out]" />
+        <Dialog.Content
+          className={cn(
+            PANEL[variant],
+            variant === "modal" && SIZE[size],
+            variant === "drawer" && (size === "xl" ? "max-w-2xl" : SIZE[size]),
+            "outline-none",
+            className,
+          )}
+          // `dismissible={false}`: geri dönüşü olmayan bir işlemin ortasında
+          // yanlışlıkla ESC'e basmak, işlemi yarıda bırakmamalı.
+          onEscapeKeyDown={(event) => {
+            if (!dismissible) event.preventDefault();
+          }}
+          onPointerDownOutside={(event) => {
+            if (!dismissible) event.preventDefault();
+          }}
+          onInteractOutside={(event) => {
+            if (!dismissible) event.preventDefault();
+          }}
+        >
+          <div className="flex items-start justify-between gap-4 border-b border-border p-4">
+            <div className="min-w-0">
+              <Dialog.Title className="text-base font-semibold text-fg">
+                {title}
+              </Dialog.Title>
+              {description ? (
+                <Dialog.Description className="mt-1 text-sm text-fg-muted">
+                  {description}
+                </Dialog.Description>
+              ) : (
+                /**
+                 * Radix açıklama yoksa konsola uyarı basıyor. Boş bir
+                 * `Description` koymak yerine bağlantıyı açıkça kesiyoruz:
+                 * ekran okuyucuya boş bir metin okutmak, hiç okutmamaktan
+                 * daha kötü.
+                 */
+                <VisuallyHiddenDescriptionOff />
+              )}
+            </div>
+            {dismissible ? (
+              <Dialog.Close
+                aria-label={closeLabel}
+                className="-m-1 rounded-lg p-1 text-fg-subtle hover:bg-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <X aria-hidden className="h-5 w-5" />
+              </Dialog.Close>
             ) : null}
           </div>
-          {dismissible ? (
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label={closeLabel}
-              className="-m-1 rounded-lg p-1 text-fg-subtle hover:bg-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <X aria-hidden className="h-5 w-5" />
-            </button>
-          ) : null}
-        </div>
 
-        <div
-          className={cn(
-            "p-4",
-            variant === "modal" ? "max-h-[70dvh] overflow-y-auto" : "flex-1 overflow-y-auto",
-          )}
-        >
-          {children}
-        </div>
-
-        {footer ? (
-          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border bg-surface-sunken p-4">
-            {footer}
+          <div
+            className={cn(
+              "p-4",
+              variant === "modal"
+                ? "max-h-[70dvh] overflow-y-auto"
+                : "flex-1 overflow-y-auto",
+            )}
+          >
+            {children}
           </div>
-        ) : null}
-      </div>
-    </div>
+
+          {footer ? (
+            <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border bg-surface-sunken p-4">
+              {footer}
+            </div>
+          ) : null}
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
+}
+
+/** `aria-describedby`'ı açıkça kaldırır — Radix'in uyarısını da susturur. */
+function VisuallyHiddenDescriptionOff() {
+  return <Dialog.Description className="sr-only" />;
 }
 
 export function Modal(props: Omit<OverlayProps, "variant">) {
@@ -210,8 +185,12 @@ export function Sheet(props: Omit<OverlayProps, "variant">) {
 }
 
 /**
- * Yıkıcı işlem onayı. Silme/iptal gibi geri dönüşü zor akışlarda
- * doğrudan `Modal` kurmak yerine bu kullanılır ki metin/ton tutarlı kalsın.
+ * Yıkıcı işlem onayı — GAP-DURUM kararı 8.
+ *
+ * Silme/iptal gibi geri dönüşü zor akışlarda doğrudan `Modal` kurmak yerine
+ * bu kullanılır ki metin ve ton tutarlı kalsın. `dismissible` açık: onay
+ * istenen kullanıcı **vazgeçebilmeli**; kapatmayı zorlaştırmak, yanlış
+ * tıklamayı azaltmaz, sadece sinir bozar.
  */
 export function ConfirmDialog({
   open,
@@ -239,6 +218,7 @@ export function ConfirmDialog({
       open={open}
       onClose={onClose}
       title={title}
+      description={description}
       size="sm"
       closeLabel={cancelLabel}
       footer={

@@ -177,7 +177,7 @@ describe("/api/v1 OpenAPI açıklaması", () => {
   });
 
   it("sunucu tabanı `/api/v1` — taşıma adresi değiştirmedi", () => {
-    expect(OPENAPI_V1_DOCUMENT.servers[0].url).toBe("/api/v1");
+    expect(OPENAPI_V1_DOCUMENT.servers[0]?.url).toBe("/api/v1");
   });
 
   it("sakin şeması ham telefon taşımıyor (KVKK veri minimizasyonu)", () => {
