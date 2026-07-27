@@ -117,13 +117,21 @@ Kod içindeki hesaplamalar ilgili mevzuata referansla yazılmıştır:
 ## Zamanlanmış işler
 
 19 iş `packages/jobs/src/definitions.ts` içinde tanımlıdır (tek doğruluk kaynağı).
-`apps/app/vercel.json` bu listeden üretilir:
+Zamanlamayı `apps/worker` açılışta Redis'e yazar: tanımdaki her iş bir BullMQ
+repeatable job'a karşılık gelir, tanımdan çıkan iş Redis'ten de silinir.
+İkinci bir liste yoktur — `vercel.json` kaldırıldı.
 
-```bash
-pnpm --filter @yonetim/jobs exec tsx gen-vercel.ts
+Cron ifadeleri **Europe/Istanbul**'a göredir; sunucunun `TZ`'sine güvenilmez.
+
+Elle yeniden koşturma (platform yöneticisi yetkisiyle):
+
+```
+POST /v1/panel/platform/jobs/<iş-slug>/run[?tenantId=…]
 ```
 
-Çalıştırma: `POST /api/cron/<iş-slug>` + `Authorization: Bearer $CRON_SECRET`.
+Yanıt `202`: iş kuyruğa alındı, bitmedi. Bir HTTP isteğinin arkasında 15
+dakikalık borç üretimi koşturmak, istek zaman aşımına uğradığında işi yarıda
+bırakırdı — kuyruğun var olma nedeni bu.
 
 ## Yapay zekâ kullanımı
 

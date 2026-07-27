@@ -33,14 +33,6 @@
 		reverse_proxy api:3000
 	}
 
-	# Zamanlanmış işler — dış zamanlayıcı bu adresi çağırıyor, api'nin iç
-	# ucuna yeniden yazılıyor. Kimlik `CRON_SECRET` (Authorization başlığı
-	# olduğu gibi geçiyor); yetkisiz çağrı api tarafında 401 alıyor.
-	handle /api/cron/* {
-		uri replace /api/cron/ /internal/cron/
-		reverse_proxy api:3000
-	}
-
 	# Sağlık probu dışarıya açılmaz; yalnız iç ağdan.
 	handle /health* {
 		respond 404

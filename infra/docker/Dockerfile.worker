@@ -1,0 +1,54 @@
+# syntax=docker/dockerfile:1.7
+#
+# apps/worker — zamanlanmış ve kuyruklu işler (MIMARI-PLAN §10 / §11).
+#
+# `Dockerfile.api` ile neredeyse aynı, iki bilinçli fark var:
+#
+#  1. **Migration KOŞMUYOR.** Şemayı hazır buluyor. Migration'ın tek sahibi
+#     `api`; iki servis birden koşarsa advisory lock'a rağmen deploy sırası
+#     belirsizleşir ve "hangi sürüm ayakta" sorusu cevapsız kalır.
+#  2. **Port açmıyor.** Hiçbir istek beklemeyen bir sürece dinleyen bir soket
+#     eklemek, karşılığı olmayan bir saldırı yüzeyi olurdu. Canlılık kontrolü
+#     process'in kendisi (`restart: unless-stopped`).
+#
+# `apps/api` kaynağı derleme aşamasına kopyalanıyor çünkü worker api'nin
+# servislerini **doğrudan import ediyor** (§10) — HTTP ile değil.
+
+FROM node:22-alpine AS base
+RUN corepack enable && apk add --no-cache libc6-compat
+WORKDIR /repo
+
+# ---- bağımlılıklar -----------------------------------------------------------
+FROM base AS deps
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json .npmrc ./
+COPY apps/api/package.json apps/api/
+COPY apps/worker/package.json apps/worker/
+COPY apps/app/package.json apps/app/
+COPY apps/web/package.json apps/web/
+COPY packages packages
+RUN pnpm install --frozen-lockfile --ignore-scripts
+
+# ---- derleme -----------------------------------------------------------------
+FROM deps AS build
+COPY tsconfig.base.json ./
+COPY apps/api apps/api
+COPY apps/worker apps/worker
+RUN pnpm --filter @yonetim/worker build
+
+# ---- çalışma -----------------------------------------------------------------
+FROM base AS runtime
+ENV NODE_ENV=production
+WORKDIR /repo
+
+COPY --from=build /repo/node_modules ./node_modules
+COPY --from=build /repo/apps/worker/node_modules ./apps/worker/node_modules
+COPY --from=build /repo/apps/worker/dist ./apps/worker/dist
+COPY --from=build /repo/apps/worker/package.json ./apps/worker/package.json
+
+USER node
+
+# SIGTERM'de işlemekte olan job bitsin: yarıda kesilen bir borç üretimi,
+# yarısı yazılmış bir ay demek. Nest'in shutdown hook'u bunu bekliyor.
+STOPSIGNAL SIGTERM
+
+CMD ["node", "apps/worker/dist/apps/worker/src/main.js"]

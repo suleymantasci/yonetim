@@ -1,0 +1,49 @@
+{
+  "name": "@yonetim/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "main": "dist/apps/worker/src/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json && tsc-alias -p tsconfig.json",
+    "dev": "tsx watch src/main.ts",
+    "start": "node dist/apps/worker/src/main.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@nestjs/bullmq": "^11.0.3",
+    "@nestjs/common": "^11.1.28",
+    "@nestjs/core": "^11.1.28",
+    "@nestjs/event-emitter": "^3.1.0",
+    "@yonetim/api": "workspace:*",
+    "@yonetim/auth": "workspace:*",
+    "@yonetim/bank": "workspace:*",
+    "@yonetim/config": "workspace:*",
+    "@yonetim/contracts": "workspace:*",
+    "@yonetim/core": "workspace:*",
+    "@yonetim/db": "workspace:*",
+    "@yonetim/dues": "workspace:*",
+    "@yonetim/emails": "workspace:*",
+    "@yonetim/i18n": "workspace:*",
+    "@yonetim/jobs": "workspace:*",
+    "@yonetim/kvkk": "workspace:*",
+    "@yonetim/notifications": "workspace:*",
+    "@yonetim/sms": "workspace:*",
+    "@yonetim/whatsapp": "workspace:*",
+    "bullmq": "^5.81.2",
+    "dotenv": "^17.4.2",
+    "drizzle-orm": "^0.38.3",
+    "ioredis": "^5.11.1",
+    "nestjs-cls": "^6.2.1",
+    "nestjs-pino": "^4.6.1",
+    "pino": "^10.3.1",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "tsc-alias": "^1.8.10",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

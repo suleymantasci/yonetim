@@ -1,7 +1,8 @@
 /**
  * Zamanlanmış işler — SPEC Bölüm 6.1 / 8 / 15.3.
  * Cron ifadeleri Europe/Istanbul saatine göredir.
- * Çalıştırıcı: Trigger.dev v3 / Inngest / Vercel Cron — `runner` alanı ile eşlenir.
+ * Çalıştırıcı: `apps/worker` (BullMQ repeatable job). Bu liste **tek kaynak** —
+ * `queue.ts` zamanlama tablosunu buradan türetiyor, ikinci bir liste yok.
  */
 export interface JobDefinition {
   id: string;
@@ -204,22 +205,4 @@ export function jobSlug(id: string): string {
 
 export function jobBySlug(slug: string): JobDefinition | undefined {
   return JOBS.find((j) => jobSlug(j.id) === slug);
-}
-
-/** Vercel cron yapılandırması üretir (vercel.json). */
-/**
- * Vercel cron tanımları.
- *
- * Adres `/api/cron/...` olarak kalıyor ama artık Next'te bir route handler
- * yok: bu yol `apps/api`'nin `POST /internal/cron/:job` ucuna ters vekil
- * (Caddy) üzerinden gidiyor. Adresi değiştirmemek bilinçli — zamanlayıcı
- * tanımı dış bir sistemde duruyor ve orayı değiştirmek ayrı bir operasyon.
- *
- * Kimlik `CRON_SECRET` ile; iç token'dan ayrı, çünkü cron **tüm** tenant'ları
- * dolaşıyor (§8.1 dördüncü kimlik yolu tek tenant kapsamında çalışır).
- */
-export function vercelCronConfig(): { crons: { path: string; schedule: string }[] } {
-  return {
-    crons: JOBS.map((j) => ({ path: `/api/cron/${jobSlug(j.id)}`, schedule: j.cron })),
-  };
 }

@@ -1,9 +1,12 @@
 import { randomUUID } from "node:crypto";
 
+import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
 import { APP_FILTER, APP_GUARD } from "@nestjs/core";
 import { EventEmitterModule } from "@nestjs/event-emitter";
 import type { Request } from "express";
+
+import { QUEUE_SCHEDULED } from "@yonetim/jobs";
 import { ClsModule } from "nestjs-cls";
 import { LoggerModule } from "nestjs-pino";
 
@@ -23,7 +26,8 @@ import { HealthController } from "./infra/health/health.controller";
 import { ApiExceptionFilter } from "./infra/logging/api-exception.filter";
 import { pinoParams } from "./infra/logging/pino.config";
 import { RedisModule } from "./infra/redis/redis.module";
-import { CronController } from "./infra/scheduler/cron.controller";
+import { JobTriggerController } from "./infra/scheduler/job-trigger.controller";
+import { env } from "./infra/config/env";
 import { PropertyModule } from "./property/property.module";
 import { PublicModule } from "./public/public.module";
 
@@ -60,6 +64,20 @@ import { PublicModule } from "./public/public.module";
       wildcard: true,
       delimiter: ".",
     }),
+    /**
+     * Kuyruk — api yalnız **üretici** (§10). İşleri `apps/worker` tüketiyor.
+     *
+     * `REDIS_URL` yoksa kuyruk kurulmuyor ve elle tetikleme ucu 500 veriyor;
+     * api'nin tamamını Redis'e bağımlı yapmak, geliştirme kurulumunu gereksiz
+     * yere ağırlaştırırdı. Worker'da ise aynı eksiklik açılışta hata —
+     * kuyruğu olmayan bir worker'ın yapacağı iş yok.
+     */
+    BullModule.forRootAsync({
+      useFactory: () => ({
+        connection: { url: env().REDIS_URL ?? "redis://127.0.0.1:6379" },
+      }),
+    }),
+    BullModule.registerQueue({ name: QUEUE_SCHEDULED }),
     RedisModule,
     DbModule,
     AuditModule,
@@ -77,7 +95,7 @@ import { PublicModule } from "./public/public.module";
     // Dış sözleşme (§9.1) — bağlam değil, istemci ayrımı.
     PublicModule,
   ],
-  controllers: [HealthController, CronController],
+  controllers: [HealthController, JobTriggerController],
   providers: [
     { provide: APP_FILTER, useClass: ApiExceptionFilter },
     { provide: APP_GUARD, useClass: TenantContextGuard },
