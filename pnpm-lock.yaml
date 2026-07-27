@@ -192,6 +192,9 @@ importers:
       '@yonetim/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@yonetim/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       '@yonetim/core':
         specifier: workspace:*
         version: link:../../packages/core

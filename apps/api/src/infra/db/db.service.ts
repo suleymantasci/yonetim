@@ -1,8 +1,18 @@
-import { BadRequestException, ForbiddenException, Injectable, Logger } from "@nestjs/common";
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  Logger,
+} from "@nestjs/common";
 import { sql } from "drizzle-orm";
 import { ClsService } from "nestjs-cls";
 
-import { withBypassRls, withPlatform, withTenant, type Database } from "@yonetim/db";
+import {
+  withBypassRls,
+  withPlatform,
+  withTenant,
+  type Database,
+} from "@yonetim/db";
 
 import type { ClsStore } from "../cls/request-context";
 
@@ -35,7 +45,10 @@ export class DbService {
   async tx<T>(fn: (tx: Database) => Promise<T>): Promise<T> {
     const ctx = this.cls.get("ctx");
     if (!ctx?.tenantId) throw new ForbiddenException("tenant_context_missing");
-    return withTenant(ctx.tenantId, fn, { userId: ctx.userId, role: ctx.roles[0] });
+    return withTenant(ctx.tenantId, fn, {
+      userId: ctx.userId,
+      role: ctx.roles[0],
+    });
   }
 
   /**
@@ -45,10 +58,16 @@ export class DbService {
    * onu okuyup kütüğe geçirir. 10 karakter eşiği `packages/contracts`
    * `changeReason` alanıyla aynı — iki taraf da aynı kuralı zorluyor.
    */
-  async txWithReason<T>(reason: string, fn: (tx: Database) => Promise<T>): Promise<T> {
-    if ((reason ?? "").trim().length < 10) throw new BadRequestException("reason_required");
+  async txWithReason<T>(
+    reason: string,
+    fn: (tx: Database) => Promise<T>,
+  ): Promise<T> {
+    if ((reason ?? "").trim().length < 10)
+      throw new BadRequestException("reason_required");
     return this.tx(async (tx) => {
-      await tx.execute(sql`SELECT set_config('app.change_reason', ${reason}, true)`);
+      await tx.execute(
+        sql`SELECT set_config('app.change_reason', ${reason}, true)`,
+      );
       return fn(tx);
     });
   }

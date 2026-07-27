@@ -31,7 +31,10 @@ function b64url(input: Buffer | string): string {
 
 function fromB64url(input: string): Buffer {
   const pad = input.length % 4 === 0 ? "" : "=".repeat(4 - (input.length % 4));
-  return Buffer.from(input.replace(/-/g, "+").replace(/_/g, "/") + pad, "base64");
+  return Buffer.from(
+    input.replace(/-/g, "+").replace(/_/g, "/") + pad,
+    "base64",
+  );
 }
 
 function sign(data: string, secret: string): string {
@@ -63,8 +66,11 @@ export function verifyJwt(token: string, secret: string): JwtPayload | null {
   if (a.length !== b.length || !timingSafeEqual(a, b)) return null;
 
   try {
-    const payload = JSON.parse(fromB64url(claims).toString("utf8")) as JwtPayload;
-    if (typeof payload.exp !== "number" || payload.exp * 1000 < Date.now()) return null;
+    const payload = JSON.parse(
+      fromB64url(claims).toString("utf8"),
+    ) as JwtPayload;
+    if (typeof payload.exp !== "number" || payload.exp * 1000 < Date.now())
+      return null;
     if (payload.typ !== "access" && payload.typ !== "refresh") return null;
     if (!payload.sub || !payload.tid) return null;
     return payload;

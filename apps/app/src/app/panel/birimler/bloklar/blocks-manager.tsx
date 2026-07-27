@@ -5,7 +5,13 @@ import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 
 import {
-  Badge, ConfirmDialog, Drawer, Input, Switch, tableClasses as tc, useToast,
+  Badge,
+  ConfirmDialog,
+  Drawer,
+  Input,
+  Switch,
+  tableClasses as tc,
+  useToast,
 } from "@yonetim/ui";
 
 import { ActionForm, FormField } from "@/components/form/action-form";
@@ -66,11 +72,21 @@ export function BlocksManager({ blocks }: { blocks: BlockRow[] }) {
           <table className={tc.table}>
             <thead className={tc.thead}>
               <tr>
-                <th scope="col" className={tc.th}>{t("blockName")}</th>
-                <th scope="col" className={`${tc.th} text-right`}>{t("floorCount")}</th>
-                <th scope="col" className={`${tc.th} text-right`}>{t("unitCount")}</th>
-                <th scope="col" className={tc.th}>{t("elevator")}</th>
-                <th scope="col" className={`${tc.th} text-right`}>{t("sortOrder")}</th>
+                <th scope="col" className={tc.th}>
+                  {t("blockName")}
+                </th>
+                <th scope="col" className={`${tc.th} text-right`}>
+                  {t("floorCount")}
+                </th>
+                <th scope="col" className={`${tc.th} text-right`}>
+                  {t("unitCount")}
+                </th>
+                <th scope="col" className={tc.th}>
+                  {t("elevator")}
+                </th>
+                <th scope="col" className={`${tc.th} text-right`}>
+                  {t("sortOrder")}
+                </th>
                 <th scope="col" className="w-20 px-4 py-2">
                   <span className="sr-only">{tCommon("action.edit")}</span>
                 </th>
@@ -141,11 +157,18 @@ export function BlocksManager({ blocks }: { blocks: BlockRow[] }) {
           onSuccess={() => setEditing(null)}
           footer={null}
         >
-          {current ? <input type="hidden" name="id" value={current.id} /> : null}
+          {current ? (
+            <input type="hidden" name="id" value={current.id} />
+          ) : null}
 
           <div className="space-y-4">
             <FormField name="name" label={t("blockName")} required>
-              <Input name="name" defaultValue={current?.name} required maxLength={60} />
+              <Input
+                name="name"
+                defaultValue={current?.name}
+                required
+                maxLength={60}
+              />
             </FormField>
             <FormField name="floorCount" label={t("floorCount")} required>
               <Input
@@ -158,7 +181,11 @@ export function BlocksManager({ blocks }: { blocks: BlockRow[] }) {
                 required
               />
             </FormField>
-            <FormField name="sortOrder" label={t("sortOrder")} hint={t("sortOrderHint")}>
+            <FormField
+              name="sortOrder"
+              label={t("sortOrder")}
+              hint={t("sortOrderHint")}
+            >
               <Input
                 name="sortOrder"
                 type="number"

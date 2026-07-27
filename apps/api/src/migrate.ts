@@ -46,7 +46,9 @@ async function main(): Promise<void> {
   // Şema değişikliği ve rol oluşturma sahip/süper kullanıcı yetkisi ister;
   // uygulama rolü (RLS'e tabi) bunu yapamaz — bilinçli.
   const url =
-    process.env.DATABASE_OWNER_URL ?? process.env.DATABASE_ADMIN_URL ?? process.env.DATABASE_URL;
+    process.env.DATABASE_OWNER_URL ??
+    process.env.DATABASE_ADMIN_URL ??
+    process.env.DATABASE_URL;
   if (!url) throw new Error("[migrate] DATABASE_URL tanımlı değil.");
 
   const root = migrationsRoot();

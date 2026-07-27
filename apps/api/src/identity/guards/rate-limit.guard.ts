@@ -31,7 +31,10 @@ export class RateLimitGuard implements CanActivate {
 
   async canActivate(exec: ExecutionContext): Promise<boolean> {
     if (
-      this.reflector.getAllAndOverride<boolean>(PUBLIC_KEY, [exec.getHandler(), exec.getClass()])
+      this.reflector.getAllAndOverride<boolean>(PUBLIC_KEY, [
+        exec.getHandler(),
+        exec.getClass(),
+      ])
     ) {
       return true;
     }
@@ -42,7 +45,9 @@ export class RateLimitGuard implements CanActivate {
     if (ctx.source === "internal") return true;
 
     const identifier = ctx.apiKeyId ?? `${ctx.userId}:${ctx.tenantId}`;
-    const limit = ctx.apiKeyId ? API_KEY_DEFAULT_LIMIT : SESSION_LIMIT_PER_MINUTE;
+    const limit = ctx.apiKeyId
+      ? API_KEY_DEFAULT_LIMIT
+      : SESSION_LIMIT_PER_MINUTE;
 
     const count = await this.redis.incrWindow(`rl:${identifier}`, 60);
     if (count === null) return true;

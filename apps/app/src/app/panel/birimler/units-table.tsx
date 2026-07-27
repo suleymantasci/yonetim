@@ -28,7 +28,10 @@ export interface UnitRowView {
   typeLabel: string;
   area: string;
   landShare: string;
-  statusBadge: { label: string; tone: "neutral" | "warning" | "success" | "danger" };
+  statusBadge: {
+    label: string;
+    tone: "neutral" | "warning" | "success" | "danger";
+  };
   outstanding: string;
   hasOutstanding: boolean;
   occupantCount: number;
@@ -80,7 +83,8 @@ export function UnitsTable({
           key: "raise",
           label: labels.raise,
           // %10 zam: en sık istenen toplu işlem (GAP 4.1.1). Oransal uygulanır.
-          run: (ids: string[]) => bulkPatchUnits({ ids, multiplierFactor: 1.1 }),
+          run: (ids: string[]) =>
+            bulkPatchUnits({ ids, multiplierFactor: 1.1 }),
         },
         {
           key: "exempt",
@@ -101,7 +105,11 @@ export function UnitsTable({
       ];
 
   if (rows.length === 0) {
-    return <p className="px-4 py-10 text-center text-sm text-fg-subtle">{labels.empty}</p>;
+    return (
+      <p className="px-4 py-10 text-center text-sm text-fg-subtle">
+        {labels.empty}
+      </p>
+    );
   }
 
   return (
@@ -199,7 +207,9 @@ export function UnitsTable({
                         {row.outstanding}
                       </td>
                       <td className={tc.td}>
-                        <Badge tone={row.statusBadge.tone}>{row.statusBadge.label}</Badge>
+                        <Badge tone={row.statusBadge.tone}>
+                          {row.statusBadge.label}
+                        </Badge>
                       </td>
                       <td className="px-4 py-2.5">
                         <Link
@@ -227,7 +237,11 @@ export function UnitsTable({
                 href={`/panel/birimler/${row.id}`}
                 linkComponent={Link as never}
                 leading={rowCheckbox(row.id)}
-                badge={<Badge tone={row.statusBadge.tone}>{row.statusBadge.label}</Badge>}
+                badge={
+                  <Badge tone={row.statusBadge.tone}>
+                    {row.statusBadge.label}
+                  </Badge>
+                }
                 rows={[
                   { label: labels.floor, value: String(row.floor) },
                   { label: labels.type, value: row.typeLabel },

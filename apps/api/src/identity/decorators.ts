@@ -26,14 +26,17 @@ export const RequirePermission = (...permissions: Permission[]) =>
  * `X-Change-Reason` başlığı yoksa/kısaysa 400 `reason_required`; kural
  * controller imzasında görünür olsun diye parametre dekoratörü.
  */
-export const ChangeReason = createParamDecorator((_data: unknown, exec: ExecutionContext) => {
-  const req = exec.switchToHttp().getRequest<Request>();
-  const raw = req.headers["x-change-reason"];
-  const reason = (Array.isArray(raw) ? raw[0] : raw) ?? "";
-  const decoded = decodeHeader(reason);
-  if (decoded.trim().length < 10) throw new BadRequestException("reason_required");
-  return decoded.trim();
-});
+export const ChangeReason = createParamDecorator(
+  (_data: unknown, exec: ExecutionContext) => {
+    const req = exec.switchToHttp().getRequest<Request>();
+    const raw = req.headers["x-change-reason"];
+    const reason = (Array.isArray(raw) ? raw[0] : raw) ?? "";
+    const decoded = decodeHeader(reason);
+    if (decoded.trim().length < 10)
+      throw new BadRequestException("reason_required");
+    return decoded.trim();
+  },
+);
 
 /** Zorunlu olmayan gerekçe (silme/geri alma gibi işlemlerde). */
 export const OptionalChangeReason = createParamDecorator(

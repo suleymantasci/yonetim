@@ -17,6 +17,7 @@ const nextConfig = {
     "@yonetim/pricing", "@yonetim/campaigns", "@yonetim/db", "@yonetim/auth", "@yonetim/dues",
     "@yonetim/payment", "@yonetim/whatsapp", "@yonetim/sms", "@yonetim/emails",
     "@yonetim/notifications", "@yonetim/kvkk", "@yonetim/bank", "@yonetim/jobs",
+    "@yonetim/contracts",
   ],
   async headers() {
     return [

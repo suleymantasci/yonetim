@@ -1,4 +1,9 @@
-import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from "@nestjs/common";
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+} from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { ClsService } from "nestjs-cls";
 
@@ -27,15 +32,18 @@ export class PermissionGuard implements CanActivate {
 
   canActivate(exec: ExecutionContext): boolean {
     if (
-      this.reflector.getAllAndOverride<boolean>(PUBLIC_KEY, [exec.getHandler(), exec.getClass()])
+      this.reflector.getAllAndOverride<boolean>(PUBLIC_KEY, [
+        exec.getHandler(),
+        exec.getClass(),
+      ])
     ) {
       return true;
     }
 
-    const required = this.reflector.getAllAndOverride<Permission[]>(PERMISSION_KEY, [
-      exec.getHandler(),
-      exec.getClass(),
-    ]);
+    const required = this.reflector.getAllAndOverride<Permission[]>(
+      PERMISSION_KEY,
+      [exec.getHandler(), exec.getClass()],
+    );
     if (!required || required.length === 0) return true;
 
     const ctx = this.cls.get("ctx");
@@ -47,7 +55,8 @@ export class PermissionGuard implements CanActivate {
         : hasPermission(ctx.roles, permission),
     );
 
-    if (!granted) throw new ForbiddenException(`forbidden:${required.join(",")}`);
+    if (!granted)
+      throw new ForbiddenException(`forbidden:${required.join(",")}`);
     return true;
   }
 }

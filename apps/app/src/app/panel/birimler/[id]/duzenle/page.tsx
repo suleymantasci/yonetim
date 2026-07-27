@@ -3,9 +3,12 @@ import { getTranslations } from "next-intl/server";
 
 import { Card, CardBody } from "@yonetim/ui";
 
+import { blockListResponse, unitDetail } from "@yonetim/contracts";
+import { AppError } from "@yonetim/core";
+
 import { PageHeader } from "@/components/app-shell";
+import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
-import { getBlockOptions, getUnitDetail } from "@/lib/queries/units";
 import { updateUnit } from "../../actions";
 import { UnitForm } from "../../unit-form";
 
@@ -17,13 +20,19 @@ export default async function EditUnitPage({
   readonly params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const ctx = await requirePermission("unit:write");
+  await requirePermission("unit:write");
   const t = await getTranslations("app.units");
   const tCommon = await getTranslations("common");
 
-  const [detail, blocks] = await Promise.all([getUnitDetail(ctx, id), getBlockOptions(ctx)]);
-  if (!detail) notFound();
+  const [detail, blockList] = await Promise.all([
+    apiGet(`/v1/panel/units/${id}`, unitDetail).catch((error: unknown) => {
+      if (error instanceof AppError && error.code === "not_found") notFound();
+      throw error;
+    }),
+    apiGet("/v1/panel/units/bloklar", blockListResponse),
+  ]);
 
+  const blocks = blockList.rows;
   const unit = detail.unit;
 
   return (

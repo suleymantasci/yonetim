@@ -1,23 +1,31 @@
 import { getTranslations } from "next-intl/server";
 
+import { blockListResponse } from "@yonetim/contracts";
+
 import { PageHeader } from "@/components/app-shell";
+import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
-import { getBlockOptions } from "@/lib/queries/units";
 import { BlocksManager } from "./blocks-manager";
 
 export const dynamic = "force-dynamic";
 
 export default async function BlocksPage() {
-  const ctx = await requirePermission("unit:write");
+  await requirePermission("unit:write");
   const t = await getTranslations("app.units");
-  const blocks = await getBlockOptions(ctx);
+  const { rows: blocks } = await apiGet(
+    "/v1/panel/units/bloklar",
+    blockListResponse,
+  );
 
   return (
     <>
       <PageHeader
         title={t("manageBlocks")}
         description={t("manageBlocksDescription")}
-        breadcrumb={[{ label: t("title"), href: "/panel/birimler" }, { label: t("manageBlocks") }]}
+        breadcrumb={[
+          { label: t("title"), href: "/panel/birimler" },
+          { label: t("manageBlocks") },
+        ]}
       />
       <BlocksManager blocks={blocks} />
     </>

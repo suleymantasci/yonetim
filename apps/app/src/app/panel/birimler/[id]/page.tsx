@@ -3,21 +3,34 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
-import { maskPhone } from "@yonetim/core";
+import { unitDetail } from "@yonetim/contracts";
+import { AppError } from "@yonetim/core";
 import {
-  Badge, Card, CardBody, CardHeader, Stat, Tabs, tableClasses as tc,
+  Badge,
+  Card,
+  CardBody,
+  CardHeader,
+  Stat,
+  Tabs,
+  tableClasses as tc,
 } from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
-import { logDataAccess } from "@/lib/access";
+import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
-import { getUnitDetail } from "@/lib/queries/units";
 import type { SearchParamsInput } from "@/lib/list-params";
 
 export const dynamic = "force-dynamic";
 
-const TAB_KEYS = ["ozet", "sakinler", "borclar", "odemeler", "sayaclar", "belgeler"] as const;
+const TAB_KEYS = [
+  "ozet",
+  "sakinler",
+  "borclar",
+  "odemeler",
+  "sayaclar",
+  "belgeler",
+] as const;
 type TabKey = (typeof TAB_KEYS)[number];
 
 /**
@@ -25,7 +38,12 @@ type TabKey = (typeof TAB_KEYS)[number];
  * sayaçları, geçmişi, dökümanları tek ekranda sekmeli görünüm").
  *
  * Sekme durumu URL'de (`?sekme=borclar`): paylaşılabilir ve geri tuşuyla
- * gezilebilir. Tüm veri tek sorgu turunda geldiği için sekme geçişi anlık.
+ * gezilebilir. Tüm veri **tek API çağrısında** geldiği için sekme geçişi anlık
+ * (MIMARI-PLAN §9.2a).
+ *
+ * KVKK md.12 erişim kaydı artık burada değil, `UnitService.detail()` içinde
+ * yazılıyor — kayıt yanıtta **dönen** kişi kümesiyle birebir örtüşsün diye
+ * (§8.4). Render katmanında yazılırken bu garanti yoktu.
  */
 export default async function UnitDetailPage({
   params,
@@ -36,37 +54,31 @@ export default async function UnitDetailPage({
 }) {
   const { id } = await params;
   const query = await searchParams;
-  const ctx = await requirePermission("unit:read");
+  await requirePermission("unit:read");
   const t = await getTranslations("app.units");
   const tCommon = await getTranslations("common");
   const tEnum = await getTranslations("enum");
   const fmt = await formatters();
 
-  const detail = await getUnitDetail(ctx, id);
-  if (!detail) notFound();
+  const detail = await apiGet(`/v1/panel/units/${id}`, unitDetail).catch(
+    (error: unknown) => {
+      if (error instanceof AppError && error.code === "not_found") notFound();
+      throw error;
+    },
+  );
 
   const rawTab = Array.isArray(query.sekme) ? query.sekme[0] : query.sekme;
   const tab: TabKey = (TAB_KEYS as readonly string[]).includes(rawTab ?? "")
     ? (rawTab as TabKey)
     : "ozet";
 
-  // KVKK md.12: sakin bilgisi içeren sekme açıldığında erişim kaydı.
-  if (tab === "sakinler" || tab === "ozet") {
-    for (const occupant of detail.occupants.filter((o) => o.endDate === null)) {
-      await logDataAccess(ctx, {
-        subjectUserId: occupant.userId,
-        dataCategory: "iletisim_bilgisi",
-        action: "view",
-        purpose: "unit_detail_view",
-      });
-    }
-  }
-
   const unit = detail.unit;
   const activeOccupants = detail.occupants.filter((o) => o.endDate === null);
   const pastOccupants = detail.occupants.filter((o) => o.endDate !== null);
   const tabHref = (key: TabKey) =>
-    key === "ozet" ? `/panel/birimler/${id}` : `/panel/birimler/${id}?sekme=${key}`;
+    key === "ozet"
+      ? `/panel/birimler/${id}`
+      : `/panel/birimler/${id}?sekme=${key}`;
 
   const share =
     unit.landShareNumerator && unit.landShareDenominator
@@ -84,16 +96,28 @@ export default async function UnitDetailPage({
         title={unit.number}
         description={
           detail.block
-            ? t("detailSubtitleWithBlock", { block: detail.block.name, floor: unit.floor })
+            ? t("detailSubtitleWithBlock", {
+                block: detail.block.name,
+                floor: unit.floor,
+              })
             : t("detailSubtitle", { floor: unit.floor })
         }
-        breadcrumb={[{ label: t("title"), href: "/panel/birimler" }, { label: unit.number }]}
+        breadcrumb={[
+          { label: t("title"), href: "/panel/birimler" },
+          { label: unit.number },
+        ]}
         meta={
           <>
             <Badge tone="neutral">{tEnum(`unitType.${unit.type}`)}</Badge>
-            {unit.duesExempt ? <Badge tone="warning">{t("duesExempt")}</Badge> : null}
-            {unit.lateFeeExempt ? <Badge tone="info">{t("lateFeeExempt")}</Badge> : null}
-            {unit.deletedAt ? <Badge tone="danger">{t("trashed")}</Badge> : null}
+            {unit.duesExempt ? (
+              <Badge tone="warning">{t("duesExempt")}</Badge>
+            ) : null}
+            {unit.lateFeeExempt ? (
+              <Badge tone="info">{t("lateFeeExempt")}</Badge>
+            ) : null}
+            {unit.deletedAt ? (
+              <Badge tone="danger">{t("trashed")}</Badge>
+            ) : null}
           </>
         }
         action={
@@ -126,16 +150,22 @@ export default async function UnitDetailPage({
       <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Stat
           label={t("outstanding")}
-          value={fmt.money(detail.debtSummary.outstandingKurus)}
-          tone={detail.debtSummary.outstandingKurus > 0 ? "danger" : "success"}
+          value={fmt.money(detail.debtSummary.outstandingMinor)}
+          tone={detail.debtSummary.outstandingMinor > 0 ? "danger" : "success"}
         />
         <Stat
           label={t("overdue")}
-          value={fmt.money(detail.debtSummary.overdueKurus)}
-          tone={detail.debtSummary.overdueKurus > 0 ? "danger" : "neutral"}
+          value={fmt.money(detail.debtSummary.overdueMinor)}
+          tone={detail.debtSummary.overdueMinor > 0 ? "danger" : "neutral"}
         />
-        <Stat label={t("paidThisYear")} value={fmt.money(detail.debtSummary.paidThisYearKurus)} />
-        <Stat label={t("openDebtCount")} value={String(detail.debtSummary.openCount)} />
+        <Stat
+          label={t("paidThisYear")}
+          value={fmt.money(detail.debtSummary.paidThisYearMinor)}
+        />
+        <Stat
+          label={t("openDebtCount")}
+          value={String(detail.debtSummary.openCount)}
+        />
       </div>
 
       <div className="mb-4">
@@ -190,11 +220,18 @@ export default async function UnitDetailPage({
                 <Row label={t("type")} value={tEnum(`unitType.${unit.type}`)} />
                 <Row
                   label={t("area")}
-                  value={unit.areaM2 ? `${Number(unit.areaM2).toLocaleString(fmt.locale)} m²` : "—"}
+                  value={
+                    unit.areaM2
+                      ? `${Number(unit.areaM2).toLocaleString(fmt.locale)} m²`
+                      : "—"
+                  }
                 />
                 <Row label={t("landShare")} value={share} />
                 <Row label={t("roomCount")} value={unit.roomCount ?? "—"} />
-                <Row label={t("residentCount")} value={String(unit.residentCount)} />
+                <Row
+                  label={t("residentCount")}
+                  value={String(unit.residentCount)}
+                />
                 <Row label={t("duesMultiplier")} value={unit.duesMultiplier} />
                 <Row
                   label={t("ownershipType")}
@@ -224,21 +261,27 @@ export default async function UnitDetailPage({
             />
             <CardBody className="p-0">
               {activeOccupants.length === 0 ? (
-                <p className="p-6 text-center text-sm text-fg-subtle">{t("noOccupants")}</p>
+                <p className="p-6 text-center text-sm text-fg-subtle">
+                  {t("noOccupants")}
+                </p>
               ) : (
                 <ul className="divide-y divide-border">
                   {activeOccupants.map((occupant) => (
-                    <li key={occupant.occupancyId} className="flex items-start gap-3 p-4">
+                    <li
+                      key={occupant.occupancyId}
+                      className="flex items-start gap-3 p-4"
+                    >
                       <div className="min-w-0 flex-1">
                         <Link
                           href={`/panel/sakinler/${occupant.userId}`}
                           className="text-sm font-medium text-fg hover:underline"
                         >
-                          {[occupant.firstName, occupant.lastName].filter(Boolean).join(" ") ||
-                            t("unnamed")}
+                          {[occupant.firstName, occupant.lastName]
+                            .filter(Boolean)
+                            .join(" ") || t("unnamed")}
                         </Link>
                         <p className="text-xs tabular-nums text-fg-muted">
-                          {occupant.phone ? maskPhone(occupant.phone) : "—"}
+                          {occupant.phoneMasked ?? "—"}
                         </p>
                         <p className="mt-0.5 text-xs text-fg-subtle">
                           {t("since", { date: fmt.date(occupant.startDate) })}
@@ -247,7 +290,9 @@ export default async function UnitDetailPage({
                             : ""}
                         </p>
                       </div>
-                      <Badge tone={occupant.relation === "owner" ? "brand" : "info"}>
+                      <Badge
+                        tone={occupant.relation === "owner" ? "brand" : "info"}
+                      >
                         {tEnum(`occupancy.${occupant.relation}`)}
                       </Badge>
                     </li>
@@ -279,12 +324,24 @@ export default async function UnitDetailPage({
               <table className={tc.table} style={{ minWidth: 720 }}>
                 <thead className={tc.thead}>
                   <tr>
-                    <th scope="col" className={tc.th}>{t("fullName")}</th>
-                    <th scope="col" className={tc.th}>{t("relation")}</th>
-                    <th scope="col" className={`${tc.th} text-right`}>{t("sharePct")}</th>
-                    <th scope="col" className={tc.th}>{t("startDate")}</th>
-                    <th scope="col" className={tc.th}>{t("endDate")}</th>
-                    <th scope="col" className={tc.th}>{t("debtTransferPolicy")}</th>
+                    <th scope="col" className={tc.th}>
+                      {t("fullName")}
+                    </th>
+                    <th scope="col" className={tc.th}>
+                      {t("relation")}
+                    </th>
+                    <th scope="col" className={`${tc.th} text-right`}>
+                      {t("sharePct")}
+                    </th>
+                    <th scope="col" className={tc.th}>
+                      {t("startDate")}
+                    </th>
+                    <th scope="col" className={tc.th}>
+                      {t("endDate")}
+                    </th>
+                    <th scope="col" className={tc.th}>
+                      {t("debtTransferPolicy")}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -302,19 +359,30 @@ export default async function UnitDetailPage({
                             href={`/panel/sakinler/${occupant.userId}`}
                             className="hover:underline"
                           >
-                            {[occupant.firstName, occupant.lastName].filter(Boolean).join(" ") ||
-                              t("unnamed")}
+                            {[occupant.firstName, occupant.lastName]
+                              .filter(Boolean)
+                              .join(" ") || t("unnamed")}
                           </Link>
                         </td>
                         <td className={tc.td}>
-                          <Badge tone={occupant.relation === "owner" ? "brand" : "info"}>
+                          <Badge
+                            tone={
+                              occupant.relation === "owner" ? "brand" : "info"
+                            }
+                          >
                             {tEnum(`occupancy.${occupant.relation}`)}
                           </Badge>
                         </td>
-                        <td className={tc.tdNum}>{Number(occupant.ownershipPct).toFixed(2)}</td>
-                        <td className={tc.td}>{fmt.date(occupant.startDate)}</td>
+                        <td className={tc.tdNum}>
+                          {Number(occupant.ownershipPct).toFixed(2)}
+                        </td>
+                        <td className={tc.td}>
+                          {fmt.date(occupant.startDate)}
+                        </td>
                         <td className={tc.tdMuted}>
-                          {occupant.endDate ? fmt.date(occupant.endDate) : t("ongoing")}
+                          {occupant.endDate
+                            ? fmt.date(occupant.endDate)
+                            : t("ongoing")}
                         </td>
                         <td className={tc.tdMuted}>
                           {t(`transferPolicy.${occupant.debtTransferPolicy}`)}
@@ -353,13 +421,27 @@ export default async function UnitDetailPage({
               <table className={tc.table} style={{ minWidth: 720 }}>
                 <thead className={tc.thead}>
                   <tr>
-                    <th scope="col" className={tc.th}>{t("debtDescription")}</th>
-                    <th scope="col" className={tc.th}>{t("period")}</th>
-                    <th scope="col" className={`${tc.th} text-right`}>{t("amount")}</th>
-                    <th scope="col" className={`${tc.th} text-right`}>{t("paid")}</th>
-                    <th scope="col" className={`${tc.th} text-right`}>{t("lateFee")}</th>
-                    <th scope="col" className={tc.th}>{t("dueDate")}</th>
-                    <th scope="col" className={tc.th}>{t("status")}</th>
+                    <th scope="col" className={tc.th}>
+                      {t("debtDescription")}
+                    </th>
+                    <th scope="col" className={tc.th}>
+                      {t("period")}
+                    </th>
+                    <th scope="col" className={`${tc.th} text-right`}>
+                      {t("amount")}
+                    </th>
+                    <th scope="col" className={`${tc.th} text-right`}>
+                      {t("paid")}
+                    </th>
+                    <th scope="col" className={`${tc.th} text-right`}>
+                      {t("lateFee")}
+                    </th>
+                    <th scope="col" className={tc.th}>
+                      {t("dueDate")}
+                    </th>
+                    <th scope="col" className={tc.th}>
+                      {t("status")}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -373,17 +455,26 @@ export default async function UnitDetailPage({
                     detail.recentDebts.map((debt) => (
                       <tr key={debt.id} className={tc.tr}>
                         <td className={`${tc.td} font-medium`}>
-                          <Link href={`/panel/borclar/${debt.id}`} className="hover:underline">
+                          <Link
+                            href={`/panel/borclar/${debt.id}`}
+                            className="hover:underline"
+                          >
                             {debt.description}
                           </Link>
                         </td>
                         <td className={tc.tdMuted}>
                           {debt.period ? fmt.period(debt.period) : "—"}
                         </td>
-                        <td className={tc.tdNum}>{fmt.money(debt.amountKurus)}</td>
-                        <td className={tc.tdNum}>{fmt.money(debt.paidKurus)}</td>
                         <td className={tc.tdNum}>
-                          {debt.lateFeeKurus > 0 ? fmt.money(debt.lateFeeKurus) : "—"}
+                          {fmt.money(debt.amountMinor)}
+                        </td>
+                        <td className={tc.tdNum}>
+                          {fmt.money(debt.paidMinor)}
+                        </td>
+                        <td className={tc.tdNum}>
+                          {debt.lateFeeMinor > 0
+                            ? fmt.money(debt.lateFeeMinor)
+                            : "—"}
                         </td>
                         <td className={tc.td}>{fmt.date(debt.dueDate)}</td>
                         <td className={tc.td}>
@@ -409,11 +500,21 @@ export default async function UnitDetailPage({
               <table className={tc.table} style={{ minWidth: 640 }}>
                 <thead className={tc.thead}>
                   <tr>
-                    <th scope="col" className={tc.th}>{t("paidAt")}</th>
-                    <th scope="col" className={`${tc.th} text-right`}>{t("amount")}</th>
-                    <th scope="col" className={tc.th}>{t("method")}</th>
-                    <th scope="col" className={tc.th}>{t("status")}</th>
-                    <th scope="col" className={tc.th}>{t("receiptNo")}</th>
+                    <th scope="col" className={tc.th}>
+                      {t("paidAt")}
+                    </th>
+                    <th scope="col" className={`${tc.th} text-right`}>
+                      {t("amount")}
+                    </th>
+                    <th scope="col" className={tc.th}>
+                      {t("method")}
+                    </th>
+                    <th scope="col" className={tc.th}>
+                      {t("status")}
+                    </th>
+                    <th scope="col" className={tc.th}>
+                      {t("receiptNo")}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -429,14 +530,26 @@ export default async function UnitDetailPage({
                         <td className={tc.td}>
                           {payment.paidAt ? fmt.dateTime(payment.paidAt) : "—"}
                         </td>
-                        <td className={tc.tdNum}>{fmt.money(payment.amountKurus)}</td>
-                        <td className={tc.td}>{tEnum(`paymentMethod.${payment.method}`)}</td>
+                        <td className={tc.tdNum}>
+                          {fmt.money(payment.amountMinor)}
+                        </td>
                         <td className={tc.td}>
-                          <Badge tone={payment.status === "completed" ? "success" : "neutral"}>
+                          {tEnum(`paymentMethod.${payment.method}`)}
+                        </td>
+                        <td className={tc.td}>
+                          <Badge
+                            tone={
+                              payment.status === "completed"
+                                ? "success"
+                                : "neutral"
+                            }
+                          >
                             {tEnum(`paymentStatus.${payment.status}`)}
                           </Badge>
                         </td>
-                        <td className={tc.tdMuted}>{payment.receiptNo ?? "—"}</td>
+                        <td className={tc.tdMuted}>
+                          {payment.receiptNo ?? "—"}
+                        </td>
                       </tr>
                     ))
                   )}
@@ -455,10 +568,18 @@ export default async function UnitDetailPage({
               <table className={tc.table} style={{ minWidth: 560 }}>
                 <thead className={tc.thead}>
                   <tr>
-                    <th scope="col" className={tc.th}>{t("meterType")}</th>
-                    <th scope="col" className={tc.th}>{t("serialNo")}</th>
-                    <th scope="col" className={`${tc.th} text-right`}>{t("lastReading")}</th>
-                    <th scope="col" className={tc.th}>{t("lastReadAt")}</th>
+                    <th scope="col" className={tc.th}>
+                      {t("meterType")}
+                    </th>
+                    <th scope="col" className={tc.th}>
+                      {t("serialNo")}
+                    </th>
+                    <th scope="col" className={`${tc.th} text-right`}>
+                      {t("lastReading")}
+                    </th>
+                    <th scope="col" className={tc.th}>
+                      {t("lastReadAt")}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -471,11 +592,15 @@ export default async function UnitDetailPage({
                   ) : (
                     detail.meters.map((meter) => (
                       <tr key={meter.id} className={tc.tr}>
-                        <td className={tc.td}>{tEnum(`meterType.${meter.type}`)}</td>
+                        <td className={tc.td}>
+                          {tEnum(`meterType.${meter.type}`)}
+                        </td>
                         <td className={tc.tdMuted}>{meter.serialNo ?? "—"}</td>
                         <td className={tc.tdNum}>{meter.lastReading ?? "—"}</td>
                         <td className={tc.tdMuted}>
-                          {meter.lastReadAt ? fmt.date(new Date(meter.lastReadAt)) : "—"}
+                          {meter.lastReadAt
+                            ? fmt.date(new Date(meter.lastReadAt))
+                            : "—"}
                         </td>
                       </tr>
                     ))
@@ -492,12 +617,19 @@ export default async function UnitDetailPage({
           <CardHeader title={t("tabDocuments")} />
           <CardBody className="p-0">
             {detail.documents.length === 0 ? (
-              <p className="p-6 text-center text-sm text-fg-subtle">{t("noDocuments")}</p>
+              <p className="p-6 text-center text-sm text-fg-subtle">
+                {t("noDocuments")}
+              </p>
             ) : (
               <ul className="divide-y divide-border">
                 {detail.documents.map((document) => (
-                  <li key={document.id} className="flex items-center justify-between gap-3 p-4">
-                    <span className="min-w-0 truncate text-sm text-fg">{document.title}</span>
+                  <li
+                    key={document.id}
+                    className="flex items-center justify-between gap-3 p-4"
+                  >
+                    <span className="min-w-0 truncate text-sm text-fg">
+                      {document.title}
+                    </span>
                     <span className="shrink-0 text-xs text-fg-subtle">
                       {tEnum(`documentCategory.${document.category}`)} ·{" "}
                       {fmt.date(document.createdAt)}
@@ -513,7 +645,13 @@ export default async function UnitDetailPage({
   );
 }
 
-function Row({ label, value }: { readonly label: string; readonly value: string }) {
+function Row({
+  label,
+  value,
+}: {
+  readonly label: string;
+  readonly value: string;
+}) {
   return (
     <>
       <dt className="text-fg-subtle">{label}</dt>
@@ -522,7 +660,9 @@ function Row({ label, value }: { readonly label: string; readonly value: string 
   );
 }
 
-function debtTone(status: string): "success" | "danger" | "warning" | "neutral" {
+function debtTone(
+  status: string,
+): "success" | "danger" | "warning" | "neutral" {
   if (status === "paid") return "success";
   if (status === "overdue" || status === "in_legal") return "danger";
   if (status === "partial") return "warning";

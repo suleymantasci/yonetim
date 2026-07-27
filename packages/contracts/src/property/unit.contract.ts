@@ -26,7 +26,14 @@ export const unitType = z.enum(UNIT_TYPES);
 export const ownershipType = z.enum(OWNERSHIP_TYPES);
 
 /** Sıralanabilir alanlar — URL'den gelen değer asla doğrudan SQL'e girmez. */
-export const UNIT_SORT_KEYS = ["number", "floor", "area", "landShare", "type", "createdAt"] as const;
+export const UNIT_SORT_KEYS = [
+  "number",
+  "floor",
+  "area",
+  "landShare",
+  "type",
+  "createdAt",
+] as const;
 export const unitSort = z.enum(UNIT_SORT_KEYS);
 
 /* ------------------------------------------------------------------ *
@@ -201,38 +208,78 @@ export type UnitCreate = z.infer<typeof unitCreate>;
 export const unitUpdate = unitCreate.partial();
 export type UnitUpdate = z.infer<typeof unitUpdate>;
 
-/** Toplu birim üretimi — blok başına kat × daire matrisi. */
+/**
+ * Toplu birim üretimi — GAP 4.1.1 ("tüm A blok otomatik").
+ *
+ * `preview: true` ile çağrıldığında hiçbir şey yazılmaz, yalnız üretilecek
+ * numaralar ve çakışmalar döner. Yazma isteği `preview: false` ise API
+ * `preview_required` döndürür — GAP-DURUM kararı 8 protokol seviyesinde.
+ */
 export const unitBulkCreate = z.object({
   blockId: uuid.nullish(),
-  floorFrom: z.coerce.number().int().min(-10).max(200),
-  floorTo: z.coerce.number().int().min(-10).max(200),
-  perFloor: z.coerce.number().int().min(1).max(50),
-  startNumber: z.coerce.number().int().min(0),
-  numberPattern: z.string().trim().max(40).default("{n}"),
+  /** `blockId` boşsa bu isimle yeni blok açılır. */
+  newBlockName: z.string().trim().max(60).nullish(),
+  floorFrom: z.coerce.number().int().min(-5).max(200),
+  floorTo: z.coerce.number().int().min(-5).max(200),
+  perFloor: z.coerce.number().int().min(1).max(40),
+  /** `{blok}`, `{kat}`, `{no}` yer tutucuları desteklenir. */
+  pattern: z.string().trim().min(1).max(40),
+  numbering: z.enum(["sequential", "floorPrefixed"]),
   type: unitType.default("flat"),
   areaM2: z.coerce.number().min(1).max(100_000).nullish(),
-  /**
-   * GAP-DURUM kararı 8: yıkıcı/toplu işlemde **önizleme zorunlu**.
-   * `false` gelirse API üretimi yapmaz, `preview_required` döner.
-   */
+  landShareDenominator: z.coerce.number().int().min(1).nullish(),
+  /** Önizleme onayı; `false` iken yazma reddedilir (`preview_required`). */
   confirmed: z.coerce.boolean().default(false),
 });
 
 export type UnitBulkCreate = z.infer<typeof unitBulkCreate>;
 
 export const unitBulkPreview = z.object({
+  /** Üretilecek numaralar — ekranda birebir gösterilen küme. */
   numbers: z.array(z.string()),
+  /** Zaten var olduğu için atlanacaklar. Hata değil: sihirbaz tekrar koşabilir. */
+  skipped: z.array(z.string()),
   total: z.number().int(),
-  conflicts: z.array(z.string()),
+  blockName: z.string(),
 });
 
 export type UnitBulkPreview = z.infer<typeof unitBulkPreview>;
 
-/** Soft-delete / geri alma — GAP-DURUM kararı 12: kalıcı silme arayüzde yok. */
-export const unitTrashAction = z.object({
-  id: uuid,
-  reason: changeReason.optional(),
+export const unitBulkCreateResult = z.object({
+  created: z.number().int(),
+  skipped: z.array(z.string()),
 });
+
+export type UnitBulkCreateResult = z.infer<typeof unitBulkCreateResult>;
+
+/**
+ * Toplu alan güncellemesi — "tüm birimlere %10 zam".
+ * Zam `duesMultiplier` üzerinden **oransal**; tutar doğrudan yazılmaz.
+ */
+export const unitBulkPatch = z.object({
+  ids: z.array(uuid).min(1),
+  multiplierFactor: z.coerce.number().min(0.1).max(10).optional(),
+  duesExempt: z.coerce.boolean().optional(),
+  lateFeeExempt: z.coerce.boolean().optional(),
+  blockId: uuid.nullable().optional(),
+});
+
+export type UnitBulkPatch = z.infer<typeof unitBulkPatch>;
+
+/** Soft-delete / geri alma — GAP-DURUM kararı 12: kalıcı silme arayüzde yok. */
+export const unitIds = z.object({
+  ids: z.array(uuid).min(1),
+});
+
+export const bulkResult = z.object({
+  affected: z.number().int(),
+  requested: z.number().int(),
+});
+
+export type BulkResult = z.infer<typeof bulkResult>;
+
+/** Gerekçe gövdede değil `X-Change-Reason` başlığında taşınır (§8.5). */
+export type UnitChangeReason = z.infer<typeof changeReason>;
 
 /* ------------------------------------------------------------------ *
  * Blok
@@ -253,12 +300,18 @@ export const blockCreate = z.object({
   name: z.string().trim().min(1).max(60),
   floorCount: z.coerce.number().int().min(1).max(200).default(1),
   hasElevator: z.coerce.boolean().default(false),
-  sortOrder: z.coerce.number().int().min(0).default(0),
+  sortOrder: z.coerce.number().int().min(0).max(999).default(0),
 });
 
 export type BlockCreate = z.infer<typeof blockCreate>;
 export const blockUpdate = blockCreate.partial();
 export type BlockUpdate = z.infer<typeof blockUpdate>;
+
+export const blockListResponse = z.object({
+  rows: z.array(blockRow),
+});
+
+export type BlockListResponse = z.infer<typeof blockListResponse>;
 
 /** Combobox: borç/gider ekranlarının birim seçicisi. */
 export const unitOptionRow = z.object({

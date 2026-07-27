@@ -56,7 +56,11 @@ export class ContextResolver {
     const session = await resolveSession(token);
     if (!session) return null;
 
-    const resolved = await this.resolveTenantForUser(session.user.id, session.activeTenantId, slug);
+    const resolved = await this.resolveTenantForUser(
+      session.user.id,
+      session.activeTenantId,
+      slug,
+    );
     if (!resolved) return null;
 
     const roles = [...resolved.roles];
@@ -73,7 +77,11 @@ export class ContextResolver {
       locale: session.user.locale || "tr",
     };
 
-    await this.redis.setEx(cacheKey, env().SESSION_CACHE_TTL, JSON.stringify(identity));
+    await this.redis.setEx(
+      cacheKey,
+      env().SESSION_CACHE_TTL,
+      JSON.stringify(identity),
+    );
     return this.finish(req, { ...identity, source: "session" });
   }
 
@@ -102,7 +110,11 @@ export class ContextResolver {
     const payload = verifyJwt(bearer, env().AUTH_SECRET);
     if (!payload || payload.typ !== "access") return null;
 
-    const resolved = await this.resolveTenantForUser(payload.sub, payload.tid, null);
+    const resolved = await this.resolveTenantForUser(
+      payload.sub,
+      payload.tid,
+      null,
+    );
     if (!resolved) return null;
 
     const platformRole = await this.platformRoleOf(payload.sub);
@@ -148,7 +160,8 @@ export class ContextResolver {
 
     if (!record) return null;
     if (record.revokedAt) return null;
-    if (record.expiresAt && record.expiresAt.getTime() < Date.now()) return null;
+    if (record.expiresAt && record.expiresAt.getTime() < Date.now())
+      return null;
 
     // Site askıya alınmışsa API de kapanır; yoksa ödemesi durmuş bir site
     // entegrasyon üzerinden çalışmaya devam ederdi.
@@ -168,7 +181,10 @@ export class ContextResolver {
       .bypass("api:key-touch", async (tx) => {
         await tx
           .update(apiKeys)
-          .set({ lastUsedAt: new Date(), requestCount: sql`${apiKeys.requestCount} + 1` })
+          .set({
+            lastUsedAt: new Date(),
+            requestCount: sql`${apiKeys.requestCount} + 1`,
+          })
           .where(eq(apiKeys.id, record.id));
       })
       .catch(() => undefined);
@@ -178,7 +194,9 @@ export class ContextResolver {
       tenantSlug: tenant.slug,
       apiKeyId: record.id,
       roles: [],
-      scopes: Array.isArray(record.scopes) ? (record.scopes as Permission[]) : [],
+      scopes: Array.isArray(record.scopes)
+        ? (record.scopes as Permission[])
+        : [],
       locale: "tr",
       source: "api_key",
       rateLimitPerMinute: record.rateLimitPerMinute,
@@ -248,7 +266,9 @@ export class ContextResolver {
         const rows = await tx
           .select({ tenantId: memberships.tenantId })
           .from(memberships)
-          .where(and(eq(memberships.userId, userId), isNull(memberships.deletedAt)))
+          .where(
+            and(eq(memberships.userId, userId), isNull(memberships.deletedAt)),
+          )
           .limit(1);
         tenantId = rows[0]?.tenantId ?? null;
       }

@@ -23,7 +23,9 @@ import { env } from "./infra/config/env";
 async function bootstrap(): Promise<void> {
   const e = env();
 
-  const app = await NestFactory.create<NestExpressApplication>(AppModule, { bufferLogs: true });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bufferLogs: true,
+  });
   app.useLogger(app.get(Logger));
 
   // Ters vekil (Caddy) arkasında gerçek istemci IP'si için.

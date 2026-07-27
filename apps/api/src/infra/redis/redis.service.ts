@@ -27,7 +27,10 @@ export class RedisService implements OnModuleDestroy {
       }
       return null;
     }
-    this.client ??= new Redis(url, { maxRetriesPerRequest: 2, lazyConnect: false });
+    this.client ??= new Redis(url, {
+      maxRetriesPerRequest: 2,
+      lazyConnect: false,
+    });
     return this.client;
   }
 
@@ -43,7 +46,11 @@ export class RedisService implements OnModuleDestroy {
       return await c.get(key);
     } catch (error) {
       // Önbellek kritik yol değil: hata halinde kaynağa düşülür.
-      this.logger.warn({ event: "redis.get_failed", key, error: String(error) });
+      this.logger.warn({
+        event: "redis.get_failed",
+        key,
+        error: String(error),
+      });
       return null;
     }
   }
@@ -54,7 +61,11 @@ export class RedisService implements OnModuleDestroy {
     try {
       await c.set(key, value, "EX", ttlSeconds);
     } catch (error) {
-      this.logger.warn({ event: "redis.set_failed", key, error: String(error) });
+      this.logger.warn({
+        event: "redis.set_failed",
+        key,
+        error: String(error),
+      });
     }
   }
 
@@ -77,7 +88,11 @@ export class RedisService implements OnModuleDestroy {
       if (count === 1) await c.expire(key, windowSeconds);
       return count;
     } catch (error) {
-      this.logger.warn({ event: "redis.incr_failed", key, error: String(error) });
+      this.logger.warn({
+        event: "redis.incr_failed",
+        key,
+        error: String(error),
+      });
       return null;
     }
   }

@@ -2,27 +2,55 @@ import { Building2, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
+import {
+  UNIT_SORT_KEYS,
+  UNIT_TYPES,
+  unitListResponse,
+} from "@yonetim/contracts";
 import { landShareTotalLooksWrong } from "@yonetim/dues";
-import { Alert, Card, CardBody, EmptyState, Pagination, Stat } from "@yonetim/ui";
+import {
+  Alert,
+  Card,
+  CardBody,
+  EmptyState,
+  Pagination,
+  Stat,
+} from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
 import { ListControls } from "@/components/list/list-controls";
+import { toListQuery } from "@/lib/api/list";
+import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
-import { buildListHref, pageRange, parseListParams, type SearchParamsInput } from "@/lib/list-params";
-import { listUnits, UNIT_SORT_KEYS } from "@/lib/queries/units";
+import {
+  buildListHref,
+  pageRange,
+  parseListParams,
+  type SearchParamsInput,
+} from "@/lib/list-params";
 import { UnitsTable, type UnitRowView } from "./units-table";
 
 export const dynamic = "force-dynamic";
 
-const UNIT_TYPES = ["flat", "shop", "office", "depot", "garage", "villa", "common_area"] as const;
-
+/**
+ * Birim listesi — MIMARI-PLAN §8.5 / A1 dikey dilimi.
+ *
+ * Bu dosya artık **sunum**: yetki kontrolü ve tek bir API çağrısı. Önceden
+ * burada 5 ayrı SQL sorgusu vardı (satırlar, toplam, blok listesi, site
+ * toplamları, çöp sayacı); hepsi `/v1/panel/units` içinde tek turda birleşti
+ * (§9.2a "bir ekran = bir çağrı").
+ */
 export default async function UnitsPage({
   searchParams,
 }: {
   readonly searchParams: Promise<SearchParamsInput>;
 }) {
-  const ctx = await requirePermission("unit:read");
+  // Yetki iki kez kontrol ediliyor ve bu bilinçli: burada **erken** kontrol,
+  // yetkisiz kullanıcıya boş bir iskelet yerine doğru hata sayfasını göstermek
+  // için. Bağlayıcı karar API'de (`@RequirePermission`) — panel yalnızca kendi
+  // gördüğü yetkiye göre arayüz çiziyor, veriye erişimi o karar belirlemiyor.
+  await requirePermission("unit:read");
   const t = await getTranslations("app.units");
   const tCommon = await getTranslations("common");
   const tEnum = await getTranslations("enum");
@@ -34,11 +62,22 @@ export default async function UnitsPage({
     filterKeys: ["blok", "tip", "durum"],
   });
 
-  const data = await listUnits(ctx, params);
-  const { from, to, pageCount } = pageRange(params, data.total);
+  const data = await apiGet(
+    `/v1/panel/units?${toListQuery(params, {
+      blockId: params.filters.blok,
+      type: params.filters.tip,
+      status: params.filters.durum,
+    })}`,
+    unitListResponse,
+  );
+  const { from, to, pageCount } = pageRange(params, data.meta.total);
 
   // Hiç birim yoksa (çöp kutusu dahil) eğitici boş durum göster (SPEC 11.2).
-  if (data.unitTotal === 0 && data.trashedCount === 0 && !params.query) {
+  if (
+    data.totals.unitTotal === 0 &&
+    data.facets.trashedCount === 0 &&
+    !params.query
+  ) {
     return (
       <>
         <PageHeader
@@ -80,7 +119,7 @@ export default async function UnitsPage({
   }
 
   // Arsa payı toplamı 1.0 ya da 1000 olmalı; sapma varsa yönetici uyarılır.
-  const shareLooksWrong = landShareTotalLooksWrong(data.landShareTotal);
+  const shareLooksWrong = landShareTotalLooksWrong(data.totals.landShareTotal);
 
   const rows: UnitRowView[] = data.rows.map((row) => {
     const share =
@@ -98,7 +137,10 @@ export default async function UnitsPage({
     } else if (row.ownershipType === "vacant") {
       statusBadge = { label: tEnum("occupancy.vacant"), tone: "neutral" };
     } else {
-      statusBadge = { label: tEnum(`occupancy.${row.ownershipType}`), tone: "success" };
+      statusBadge = {
+        label: tEnum(`occupancy.${row.ownershipType}`),
+        tone: "success",
+      };
     }
 
     return {
@@ -107,11 +149,14 @@ export default async function UnitsPage({
       blockName: row.blockName,
       floor: row.floor,
       typeLabel: tEnum(`unitType.${row.type}`),
-      area: row.areaM2 ? `${Number(row.areaM2).toLocaleString(fmt.locale)} m²` : "—",
+      area: row.areaM2
+        ? `${Number(row.areaM2).toLocaleString(fmt.locale)} m²`
+        : "—",
       landShare: share,
       statusBadge,
-      outstanding: row.outstandingKurus > 0 ? fmt.money(row.outstandingKurus) : "—",
-      hasOutstanding: row.outstandingKurus > 0,
+      outstanding:
+        row.outstandingMinor > 0 ? fmt.money(row.outstandingMinor) : "—",
+      hasOutstanding: row.outstandingMinor > 0,
       occupantCount: row.occupantCount,
       multiplier: row.duesMultiplier === "1.000" ? null : row.duesMultiplier,
     };
@@ -122,10 +167,10 @@ export default async function UnitsPage({
       <PageHeader
         title={t("title")}
         description={t("summary", {
-          units: data.unitTotal,
-          blocks: data.blocks.length,
-          area: data.areaTotal.toLocaleString(fmt.locale),
-          share: data.landShareTotal.toFixed(4),
+          units: data.totals.unitTotal,
+          blocks: data.facets.blocks.length,
+          area: data.totals.areaTotal.toLocaleString(fmt.locale),
+          share: data.totals.landShareTotal.toFixed(4),
         })}
         action={
           <>
@@ -159,13 +204,19 @@ export default async function UnitsPage({
       ) : null}
 
       <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat label={t("statUnits")} value={String(data.unitTotal)} />
-        <Stat label={t("statBlocks")} value={String(data.blocks.length)} />
+        <Stat label={t("statUnits")} value={String(data.totals.unitTotal)} />
+        <Stat
+          label={t("statBlocks")}
+          value={String(data.facets.blocks.length)}
+        />
         <Stat
           label={t("statArea")}
-          value={`${data.areaTotal.toLocaleString(fmt.locale)} m²`}
+          value={`${data.totals.areaTotal.toLocaleString(fmt.locale)} m²`}
         />
-        <Stat label={t("statLandShare")} value={data.landShareTotal.toFixed(4)} />
+        <Stat
+          label={t("statLandShare")}
+          value={data.totals.landShareTotal.toFixed(4)}
+        />
       </div>
 
       <ListControls
@@ -177,7 +228,10 @@ export default async function UnitsPage({
             value: params.filters.blok ?? "",
             options: [
               { value: "", label: t("allBlocks") },
-              ...data.blocks.map((block) => ({ value: block.id, label: block.name })),
+              ...data.facets.blocks.map((block) => ({
+                value: block.id,
+                label: block.label,
+              })),
             ],
           },
           {
@@ -186,7 +240,10 @@ export default async function UnitsPage({
             value: params.filters.tip ?? "",
             options: [
               { value: "", label: t("allTypes") },
-              ...UNIT_TYPES.map((type) => ({ value: type, label: tEnum(`unitType.${type}`) })),
+              ...UNIT_TYPES.map((type) => ({
+                value: type,
+                label: tEnum(`unitType.${type}`),
+              })),
             ],
           },
           {
@@ -214,7 +271,7 @@ export default async function UnitsPage({
             }`}
           >
             <Trash2 aria-hidden className="h-3.5 w-3.5" />
-            {t("trash", { count: data.trashedCount })}
+            {t("trash", { count: data.facets.trashedCount })}
           </Link>
         }
       />
@@ -226,7 +283,11 @@ export default async function UnitsPage({
             sort={params.sort}
             direction={params.direction}
             hrefFor={(key, direction) =>
-              buildListHref("/panel/birimler", params, { sirala: key, yon: direction, sayfa: 1 })
+              buildListHref("/panel/birimler", params, {
+                sirala: key,
+                yon: direction,
+                sayfa: 1,
+              })
             }
             trashed={params.trashed}
             labels={{
@@ -249,12 +310,18 @@ export default async function UnitsPage({
           <Pagination
             page={params.page}
             pageCount={pageCount}
-            total={data.total}
-            hrefFor={(page) => buildListHref("/panel/birimler", params, { sayfa: page })}
+            total={data.meta.total}
+            hrefFor={(page) =>
+              buildListHref("/panel/birimler", params, { sayfa: page })
+            }
             labels={{
               previous: tCommon("action.previous"),
               next: tCommon("action.next"),
-              summary: tCommon("state.showing", { from, to, total: data.total }),
+              summary: tCommon("state.showing", {
+                from,
+                to,
+                total: data.meta.total,
+              }),
             }}
             linkComponent={Link as never}
           />

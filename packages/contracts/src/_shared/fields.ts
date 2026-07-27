@@ -1,4 +1,9 @@
-import { isValidIban, isValidTckn, isValidVkn, normalizePhone } from "@yonetim/core";
+import {
+  isValidIban,
+  isValidTckn,
+  isValidVkn,
+  normalizePhone,
+} from "@yonetim/core";
 import { z } from "zod";
 
 /**
@@ -20,7 +25,9 @@ export const uuid = z.string().uuid();
 /** `YYYY-MM` dönem anahtarı — `packages/core/date` `periodKey` ile aynı biçim. */
 export const periodKey = z
   .string()
-  .regex(/^\d{4}-(0[1-9]|1[0-2])$/, { message: "Dönem YYYY-AA biçiminde olmalı." });
+  .regex(/^\d{4}-(0[1-9]|1[0-2])$/, {
+    message: "Dönem YYYY-AA biçiminde olmalı.",
+  });
 
 /** ISO 8601 tarih (yalnız gün). */
 export const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -54,7 +61,9 @@ export const phoneInput = z
   .string()
   .trim()
   .transform((v) => normalizePhone(v))
-  .refine((v): v is string => v !== null, { message: "Geçerli bir telefon numarası girin." });
+  .refine((v): v is string => v !== null, {
+    message: "Geçerli bir telefon numarası girin.",
+  });
 
 /** Maskeli telefon çıktısı — `/v1/residents` gibi dış okuma uçlarında. */
 export const maskedPhone = z.string().nullable();

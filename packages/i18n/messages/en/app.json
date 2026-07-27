@@ -345,7 +345,13 @@
     "blockDeleted": "Block deleted.",
     "blockNotEmpty": "This block still has {count} units. Move or delete them first.",
     "deleteBlockTitle": "Delete block {name}?",
-    "deleteBlockDescription": "Deletion is blocked while the block still contains units."
+    "deleteBlockDescription": "Deletion is blocked while the block still contains units.",
+    "bulkPreviewReady": "Preview ready: {count} units will be created. Review the list and confirm.",
+    "bulkPreviewTitle": "Numbers to be created",
+    "bulkPreviewSkipped": "Skipped because they already exist: {list}",
+    "bulkConfirm": "Confirm and create {count} units",
+    "bulkEdit": "Back to settings",
+    "bulkPreviewHint": "This list was generated on the server; these are exactly the numbers that will be saved."
   },
   "residents": {
     "title": "Residents",

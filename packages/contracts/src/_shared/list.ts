@@ -17,7 +17,12 @@ export const MAX_PAGE_SIZE = 200;
 
 export const listQuery = z.object({
   page: z.coerce.number().int().min(1).default(1),
-  perPage: z.coerce.number().int().min(1).max(MAX_PAGE_SIZE).default(DEFAULT_PAGE_SIZE),
+  perPage: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(MAX_PAGE_SIZE)
+    .default(DEFAULT_PAGE_SIZE),
   search: z.string().trim().max(100).default(""),
   sort: z.string().max(40).optional(),
   dir: z.enum(["asc", "desc"]).default("asc"),
@@ -44,8 +49,17 @@ export function paginated<T extends z.ZodTypeAny>(row: T) {
   });
 }
 
-export function toPageMeta(page: number, perPage: number, total: number): PageMeta {
-  return { page, perPage, total, pageCount: Math.max(1, Math.ceil(total / perPage)) };
+export function toPageMeta(
+  page: number,
+  perPage: number,
+  total: number,
+): PageMeta {
+  return {
+    page,
+    perPage,
+    total,
+    pageCount: Math.max(1, Math.ceil(total / perPage)),
+  };
 }
 
 /**

@@ -54,13 +54,18 @@ export function ActionForm<T = undefined>({
   className,
 }: {
   action: ServerAction<T>;
-  children: ReactNode;
+  /**
+   * Fonksiyon verilirse aksiyonun son durumunu alır. Çok adımlı sihirbazlar
+   * (toplu birim üretimi gibi) sunucudan dönen önizlemeyi böyle çiziyor —
+   * ayrı bir istemci state'i tutmadan, tek doğruluk kaynağı yine sunucu.
+   */
+  children: ReactNode | ((state: ActionState<T>) => ReactNode);
   submitLabel: string;
   cancelHref?: string;
   onSuccess?: (state: ActionState<T>) => void;
   resetOnSuccess?: boolean;
   inlineSuccess?: boolean;
-  footer?: ReactNode;
+  footer?: ReactNode | ((state: ActionState<T>) => ReactNode);
   className?: string;
 }) {
   const [state, formAction] = useActionState(action, { status: "idle" } as ActionState<T>);
@@ -116,9 +121,9 @@ export function ActionForm<T = undefined>({
           </div>
         ) : null}
 
-        {children}
+        {typeof children === "function" ? children(state) : children}
 
-        {footer ?? (
+        {(typeof footer === "function" ? footer(state) : footer) ?? (
           <div className="sticky bottom-0 z-10 -mx-4 mt-6 flex flex-wrap items-center justify-end gap-2 border-t border-border bg-surface/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
             {cancelHref ? (
               <a

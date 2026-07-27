@@ -32,7 +32,8 @@ export function pinoParams(): PinoParams {
       level: e.LOG_LEVEL,
       genReqId: (req, res) => {
         const incoming = req.headers["x-request-id"];
-        const id = (Array.isArray(incoming) ? incoming[0] : incoming) ?? randomUUID();
+        const id =
+          (Array.isArray(incoming) ? incoming[0] : incoming) ?? randomUUID();
         res.setHeader("x-request-id", id);
         return id;
       },
@@ -46,7 +47,10 @@ export function pinoParams(): PinoParams {
         ignore: (req) => req.url === "/health" || req.url === "/health/ready",
       },
       transport: isDev
-        ? { target: "pino-pretty", options: { singleLine: true, translateTime: "HH:MM:ss" } }
+        ? {
+            target: "pino-pretty",
+            options: { singleLine: true, translateTime: "HH:MM:ss" },
+          }
         : undefined,
     },
   };

@@ -30,9 +30,10 @@ function findWorkspaceRoot(start: string): string | null {
 
 export function loadRootEnv(): void {
   const root = findWorkspaceRoot(__dirname) ?? findWorkspaceRoot(process.cwd());
-  const candidates = [root ? join(root, ".env") : null, join(process.cwd(), ".env")].filter(
-    (c): c is string => Boolean(c),
-  );
+  const candidates = [
+    root ? join(root, ".env") : null,
+    join(process.cwd(), ".env"),
+  ].filter((c): c is string => Boolean(c));
 
   for (const path of candidates) {
     if (existsSync(path)) {

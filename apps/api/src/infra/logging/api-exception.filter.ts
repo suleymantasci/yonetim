@@ -42,7 +42,9 @@ export class ApiExceptionFilter implements ExceptionFilter {
 
     const requestId =
       this.cls.get("ctx")?.requestId ??
-      (typeof req.headers["x-request-id"] === "string" ? req.headers["x-request-id"] : null) ??
+      (typeof req.headers["x-request-id"] === "string"
+        ? req.headers["x-request-id"]
+        : null) ??
       randomUUID();
 
     const { status, code, message, details } = translate(exception);
@@ -55,7 +57,12 @@ export class ApiExceptionFilter implements ExceptionFilter {
         error: exception instanceof Error ? exception.stack : String(exception),
       });
     } else {
-      this.logger.debug({ event: "request.rejected", requestId, code, path: req.originalUrl });
+      this.logger.debug({
+        event: "request.rejected",
+        requestId,
+        code,
+        path: req.originalUrl,
+      });
     }
 
     res.setHeader("x-request-id", requestId);
@@ -98,11 +105,22 @@ function translate(exception: unknown): Translated {
     // olduğu gibi yayınlanır; değilse HTTP durumundan türetilir.
     const raw = typeof payload === "string" ? payload : messageOf(payload);
     const known = knownCode(raw);
+    const payloadDetails =
+      typeof payload === "object"
+        ? (payload as Record<string, unknown>).details
+        : undefined;
+
+    // Servisler `conflict:block_not_empty:5` gibi **eklentili** kodlar
+    // fırlatabiliyor. Kodun kendisi sözleşmede sabit kalmalı (istemci ona göre
+    // dallanıyor), ama eklenti bilgi taşıyor — `details.hint` ile korunuyor.
+    // Aksi halde "5 birim var" bilgisi "Kayıt çakışması." mesajında kaybolurdu.
+    const hint = known && raw !== known ? { hint: raw } : undefined;
+
     return {
       status,
       code: known ?? codeForStatus(status),
       message: known ? humanize(known) : raw,
-      details: typeof payload === "object" ? (payload as Record<string, unknown>).details : undefined,
+      details: payloadDetails ?? hint,
     };
   }
 

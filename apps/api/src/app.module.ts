@@ -7,6 +7,7 @@ import type { Request } from "express";
 import { ClsModule } from "nestjs-cls";
 import { LoggerModule } from "nestjs-pino";
 
+import { AuditModule } from "./governance/audit/audit.module";
 import { IdentityModule } from "./identity/identity.module";
 import { PermissionGuard } from "./identity/guards/permission.guard";
 import { RateLimitGuard } from "./identity/guards/rate-limit.guard";
@@ -16,6 +17,7 @@ import { HealthController } from "./infra/health/health.controller";
 import { ApiExceptionFilter } from "./infra/logging/api-exception.filter";
 import { pinoParams } from "./infra/logging/pino.config";
 import { RedisModule } from "./infra/redis/redis.module";
+import { PropertyModule } from "./property/property.module";
 
 /**
  * Kök modül — MIMARI-PLAN §5.
@@ -37,17 +39,26 @@ import { RedisModule } from "./infra/redis/redis.module";
         mount: true,
         generateId: true,
         idGenerator: (req: Request) =>
-          (typeof req.headers["x-request-id"] === "string" ? req.headers["x-request-id"] : null) ??
-          randomUUID(),
+          (typeof req.headers["x-request-id"] === "string"
+            ? req.headers["x-request-id"]
+            : null) ?? randomUUID(),
       },
     }),
     // `forRootAsync`: ortam doğrulaması modül **yüklenirken** değil, uygulama
     // kurulurken koşsun — hata mesajı Nest'in hata yoluna düşsün.
     LoggerModule.forRootAsync({ useFactory: () => pinoParams() }),
-    EventEmitterModule.forRoot({ global: true, wildcard: true, delimiter: "." }),
+    EventEmitterModule.forRoot({
+      global: true,
+      wildcard: true,
+      delimiter: ".",
+    }),
     RedisModule,
     DbModule,
+    AuditModule,
     IdentityModule,
+
+    // Bağlam modülleri (§6). Sıra önemsiz; her biri kendi yüzeyini kaydediyor.
+    PropertyModule,
   ],
   controllers: [HealthController],
   providers: [

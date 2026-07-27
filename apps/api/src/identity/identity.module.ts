@@ -11,7 +11,17 @@ import { TenantContextGuard } from "./guards/tenant-context.guard";
  */
 @Global()
 @Module({
-  providers: [ContextResolver, TenantContextGuard, PermissionGuard, RateLimitGuard],
-  exports: [ContextResolver, TenantContextGuard, PermissionGuard, RateLimitGuard],
+  providers: [
+    ContextResolver,
+    TenantContextGuard,
+    PermissionGuard,
+    RateLimitGuard,
+  ],
+  exports: [
+    ContextResolver,
+    TenantContextGuard,
+    PermissionGuard,
+    RateLimitGuard,
+  ],
 })
 export class IdentityModule {}

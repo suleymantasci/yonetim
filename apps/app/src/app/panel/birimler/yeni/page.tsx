@@ -2,19 +2,24 @@ import { getTranslations } from "next-intl/server";
 
 import { Card, CardBody } from "@yonetim/ui";
 
+import { blockListResponse } from "@yonetim/contracts";
+
 import { PageHeader } from "@/components/app-shell";
+import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
-import { getBlockOptions } from "@/lib/queries/units";
 import { createUnit } from "../actions";
 import { UnitForm } from "../unit-form";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewUnitPage() {
-  const ctx = await requirePermission("unit:write");
+  await requirePermission("unit:write");
   const t = await getTranslations("app.units");
   const tCommon = await getTranslations("common");
-  const blocks = await getBlockOptions(ctx);
+  const { rows: blocks } = await apiGet(
+    "/v1/panel/units/bloklar",
+    blockListResponse,
+  );
 
   return (
     <>

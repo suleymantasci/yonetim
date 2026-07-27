@@ -8,7 +8,9 @@ import { z } from "zod";
  * görmez; compose dosyasında da verilmez.
  */
 const envSchema = z.object({
-  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  NODE_ENV: z
+    .enum(["development", "test", "production"])
+    .default("development"),
   PORT: z.coerce.number().int().default(3000),
 
   DATABASE_URL: z.string().min(1),
@@ -34,7 +36,9 @@ const envSchema = z.object({
   /** CORS: panel ve sakin portalı aynı origin'den gelir; mobil ayrı. */
   CORS_ORIGINS: z.string().default(""),
 
-  LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace"]).default("info"),
+  LOG_LEVEL: z
+    .enum(["fatal", "error", "warn", "info", "debug", "trace"])
+    .default("info"),
   MIGRATIONS_FOLDER: z.string().default("packages/db/drizzle"),
 });
 

@@ -345,7 +345,13 @@
     "blockDeleted": "Blok silindi.",
     "blockNotEmpty": "Bu blokta {count} bağımsız bölüm var. Önce daireleri başka bloğa taşıyın veya silin.",
     "deleteBlockTitle": "{name} bloğu silinsin mi?",
-    "deleteBlockDescription": "İçinde bağımsız bölüm varsa silme işlemi engellenir."
+    "deleteBlockDescription": "İçinde bağımsız bölüm varsa silme işlemi engellenir.",
+    "bulkPreviewReady": "Önizleme hazır: {count} bağımsız bölüm oluşturulacak. Listeyi kontrol edip onaylayın.",
+    "bulkPreviewTitle": "Oluşturulacak numaralar",
+    "bulkPreviewSkipped": "Zaten var olduğu için atlanacak: {list}",
+    "bulkConfirm": "Onayla ve {count} bölümü oluştur",
+    "bulkEdit": "Ayarlara dön",
+    "bulkPreviewHint": "Bu liste sunucuda üretildi; kaydedilecek numaralar birebir bunlar."
   },
   "residents": {
     "title": "Sakinler",

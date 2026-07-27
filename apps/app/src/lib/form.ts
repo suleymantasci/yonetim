@@ -1,7 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
-import { isValidIban, isValidTckn, normalizePhone } from "@yonetim/core";
+import { AppError, isValidIban, isValidTckn, normalizePhone } from "@yonetim/core";
 import type { Permission } from "@yonetim/core";
 
 import { audit } from "./audit";
@@ -245,7 +245,17 @@ export const optionalUuidField = z.preprocess(
 );
 
 /** Onay kutusu: HTML "on"/eksik → boolean. */
-export const checkboxField = z.preprocess((value) => value === "on" || value === "true", z.boolean());
+/**
+ * Onay kutusu ve onay butonu.
+ *
+ * `"on"` tarayıcının işaretli checkbox için gönderdiği değer. `"1"`/`"true"`
+ * ise `name`/`value` taşıyan gönder butonlarından geliyor (iki adımlı
+ * sihirbazlarda onay adımı böyle işaretleniyor).
+ */
+export const checkboxField = z.preprocess(
+  (value) => value === "on" || value === "true" || value === "1",
+  z.boolean(),
+);
 
 /* ------------------------------------------------------------------ *
  * FormData → düz nesne
@@ -284,6 +294,15 @@ export interface ActionMeta {
   /** Denetim kütüğü aksiyon adı (`unit_created` gibi). */
   action: string;
   resource: string;
+  /**
+   * Denetim kaydını **kim** yazıyor?
+   *
+   * Göç ettikten sonra kütüğü `apps/api` yazıyor (MIMARI-PLAN §8.4) — çünkü
+   * hangi kaydın gerçekten değiştiğini yalnız servis biliyor. Böyle aksiyonlar
+   * `audit: "api"` der ve buradaki ikinci kayıt atlanır; yoksa her işlem kütükte
+   * iki satır bırakırdı.
+   */
+  audit?: "app" | "api";
 }
 
 /**
@@ -350,7 +369,7 @@ export async function runAction<TSchema extends z.ZodTypeAny, TData = undefined>
       },
     });
 
-    if (state.status === "ok") {
+    if (state.status === "ok" && (options.meta.audit ?? "app") === "app") {
       await audit(ctx, {
         action: options.meta.action,
         resource: options.meta.resource,
@@ -362,8 +381,31 @@ export async function runAction<TSchema extends z.ZodTypeAny, TData = undefined>
     if (error instanceof ActionError) {
       return errorState(error.message, error.fieldErrors);
     }
+    // API'den gelen hata zarfı `AppError`'a indirgeniyor (lib/api/server.ts).
+    // Mesajı kullanıcıya gösterilebilir: sunucu onu zaten kullanıcı için üretti
+    // ve veritabanı ayrıntısı içermiyor.
+    if (error instanceof AppError) {
+      return errorState(error.message, toFieldErrors(error.details));
+    }
     // Beklenmeyen hata: sunucuya yaz, kullanıcıya sızdırma.
     console.error(`[action:${options.meta.action}]`, error);
     return errorState(tError("internal"));
   }
+}
+
+/**
+ * API'nin `validation_failed` ayrıntısı Zod `flatten()` çıktısıdır; alan bazlı
+ * hataları formun beklediği şekle çevirir. Tanınmayan biçimde `undefined` döner
+ * ve yalnız özet mesaj gösterilir.
+ */
+function toFieldErrors(details: unknown): Record<string, string[]> | undefined {
+  if (!details || typeof details !== "object") return undefined;
+  const flat = (details as { fieldErrors?: Record<string, string[] | undefined> }).fieldErrors;
+  if (!flat) return undefined;
+
+  const result: Record<string, string[]> = {};
+  for (const [key, value] of Object.entries(flat)) {
+    if (Array.isArray(value) && value.length > 0) result[key] = value;
+  }
+  return Object.keys(result).length > 0 ? result : undefined;
 }
