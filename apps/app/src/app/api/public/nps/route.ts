@@ -1,49 +1,41 @@
-import { and, eq, isNull } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { getTranslations } from "next-intl/server";
 
-import { RATE_LIMITS, rateLimit } from "@yonetim/auth";
-import { currentPeriod, periodKey } from "@yonetim/core";
-import { npsResponses, tenants, withBypassRls } from "@yonetim/db";
+import { AppError } from "@yonetim/core";
 
-/** Public NPS widget — SPEC Bölüm 3.8 / 6.14. Kimlik bilgisi toplamaz. */
+import { apiPost } from "@/lib/api/server";
+
+/**
+ * Halka açık NPS widget'ı — SPEC Bölüm 3.8 / 6.14.
+ *
+ * Kayıt ve hız sınırı `apps/api`'de (`POST /v1/public/nps`); burası formu
+ * karşılayıp yanıtı **kullanıcının dilinde** üretiyor. Adres değişmedi çünkü
+ * widget'ı gömen landing sayfaları bu adrese post ediyor.
+ *
+ * Teşekkür metninin burada olması bilinçli: API dile bağımsız (SPEC 4.2),
+ * çeviri sözlüğü render katmanında.
+ */
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   const form = await request.formData();
-  const slug = String(form.get("tenantSlug") ?? "");
+  const tenantSlug = String(form.get("tenantSlug") ?? "");
   const score = Number(form.get("score"));
 
-  if (!slug || !Number.isInteger(score) || score < 0 || score > 10) {
+  if (!tenantSlug || !Number.isInteger(score) || score < 0 || score > 10) {
     return NextResponse.json({ error: "invalid_request" }, { status: 400 });
   }
 
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anon";
-  const limit = await rateLimit(RATE_LIMITS.publicForm, `${slug}:${ip}`);
-  if (!limit.allowed) {
-    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  try {
+    await apiPost("/v1/public/nps", { tenantSlug, score });
+  } catch (error) {
+    if (error instanceof AppError) {
+      // Kod olduğu gibi geçiyor: widget'ı gömen sayfa "rate_limited" ile
+      // "tenant_not_found" arasında ayrım yapabilmeli.
+      return NextResponse.json({ error: error.code }, { status: error.status });
+    }
+    throw error;
   }
-
-  const tenant = await withBypassRls("nps:tenant", async (tx) => {
-    const rows = await tx
-      .select({ id: tenants.id })
-      .from(tenants)
-      .where(and(eq(tenants.slug, slug), eq(tenants.landingPublished, true), isNull(tenants.deletedAt)))
-      .limit(1);
-    return rows[0] ?? null;
-  });
-
-  if (!tenant) return NextResponse.json({ error: "tenant_not_found" }, { status: 404 });
-
-  await withBypassRls("nps:insert", async (tx) => {
-    await tx.insert(npsResponses).values({
-      tenantId: tenant.id,
-      userId: null,
-      period: periodKey(currentPeriod()),
-      score,
-      channel: "in_app",
-    });
-  });
 
   const t = await getTranslations("app.nps");
   return NextResponse.json({ ok: true, message: t("thanks") });

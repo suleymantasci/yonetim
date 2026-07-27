@@ -105,3 +105,27 @@ export const dashboardResponse = z.object({
 });
 
 export type DashboardResponse = z.infer<typeof dashboardResponse>;
+
+/* ------------------------------------------------------------------ *
+ * Kabuk rozetleri
+ * ------------------------------------------------------------------ */
+
+/**
+ * `GET /v1/panel/shell/badges` — sidebar sayaçları.
+ *
+ * Beş sayaç **tek sorgu turunda** toplanıyor: her menü öğesi için ayrı uç
+ * çağırmak panelin her sayfasında beş gereksiz hop demekti.
+ *
+ * `slaBreached` ve `overdueMaintenance` sunucuda `now()` ile hesaplanıyor.
+ * Saati yanlış kurulmuş bir tarayıcı, "SLA aşıldı mı" sorusunu tam da yanlış
+ * cevaplayacak taraftır.
+ */
+export const navBadges = z.object({
+  openRequests: z.number().int(),
+  slaBreached: z.number().int(),
+  kvkkPending: z.number().int(),
+  unmatchedBankTx: z.number().int(),
+  overdueMaintenance: z.number().int(),
+});
+
+export type NavBadgesResponse = z.infer<typeof navBadges>;

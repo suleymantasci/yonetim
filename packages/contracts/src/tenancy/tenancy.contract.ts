@@ -86,3 +86,67 @@ export const staffListResponse = z.object({
 });
 
 export type StaffListResponse = z.infer<typeof staffListResponse>;
+
+/* ------------------------------------------------------------------ *
+ * Platform paneli (süper-admin)
+ * ------------------------------------------------------------------ */
+
+/**
+ * `GET /v1/panel/platform/overview` — süper-admin özeti (SPEC Bölüm 18).
+ *
+ * "BİR EKRAN = BİR ÇAĞRI" (§9a): eskiden aynı sayfada yedi ayrı sorgu vardı.
+ * Yedi uca bölmek, tek bir açılışı yedi gidiş-dönüşe çıkarırdı.
+ *
+ * Bu uç **tenant sınırının dışında** çalışıyor: platform genelinin sayıları
+ * tanımı gereği tek bir siteye ait değil. Bu yüzden yetki kontrolü rol
+ * bazlı ve dar — yalnız platform rolleri.
+ */
+export const platformOverview = z.object({
+  tenants: z.object({
+    total: z.number().int(),
+    trial: z.number().int(),
+    active: z.number().int(),
+    pastDue: z.number().int(),
+    suspended: z.number().int(),
+  }),
+  revenue: z.object({ mrrMinor: moneyMinor, arrMinor: moneyMinor }),
+  notifications: z.object({
+    sent: z.number().int(),
+    failed: z.number().int(),
+    /** Oran sunucuda: sıfıra bölme kararı tek yerde verilsin. */
+    failureRate: z.number(),
+    costMinor: moneyMinor,
+  }),
+  overdueKvkkCount: z.number().int(),
+  recentTenants: z.array(
+    z.object({
+      id: uuid,
+      name: z.string(),
+      slug: z.string(),
+      status: z.string(),
+      unitCount: z.number().int(),
+      createdAt: dateTime,
+    }),
+  ),
+  campaigns: z.array(
+    z.object({
+      name: z.string(),
+      status: z.string(),
+      usageCount: z.number().int(),
+      usageLimit: z.number().int().nullable(),
+    }),
+  ),
+  featureFlags: z.array(
+    z.object({
+      id: uuid,
+      key: z.string(),
+      enabled: z.boolean(),
+      rolloutPct: z.number().int(),
+    }),
+  ),
+  plans: z.array(
+    z.object({ id: uuid, name: z.string(), yearlyPriceMinor: moneyMinor }),
+  ),
+});
+
+export type PlatformOverview = z.infer<typeof platformOverview>;

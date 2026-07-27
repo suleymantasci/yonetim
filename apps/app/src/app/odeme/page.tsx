@@ -1,17 +1,21 @@
-import { and, desc, eq, isNull } from "drizzle-orm";
 import { getTranslations } from "next-intl/server";
 
-import { debts, unitOccupancies, units, withTenant } from "@yonetim/db";
-import { calculateFees } from "@yonetim/payment";
+import { portalPaymentSummary } from "@yonetim/contracts";
 import { Alert, Card, CardBody, CardFooter, CardHeader } from "@yonetim/ui";
 
-import { requireContext } from "@/lib/context";
+import { apiGet } from "@/lib/api/server";
 import { formatters } from "@/lib/format";
 import { startCheckout } from "./actions";
 
 /**
  * Ödeme ekranı — SPEC Bölüm 1.2 (şeffaf komisyon göstergesi) + 7.1.
- * Platform ücreti ve banka komisyonu ayrı satırlarda gösterilir.
+ *
+ * Komisyon kırılımı sunucudan geliyor, burada hesaplanmıyor: ekranda gösterilen
+ * ile tahsil edilen tutar arasındaki bir kuruş fark, şeffaflık vaadini bozardı
+ * ve iki yerde hesaplamak o farkın en kolay yolu.
+ *
+ * Formda tutar alanı **yok**: ödenecek miktarı sunucu açık borçlardan yeniden
+ * türetiyor. Gizli bir `amountKurus` alanı, tutarı istemciye belirletmekti.
  */
 export const dynamic = "force-dynamic";
 
@@ -21,30 +25,12 @@ export async function generateMetadata() {
 }
 
 export default async function PaymentPage() {
-  const ctx = await requireContext();
   const t = await getTranslations("app.payment");
   const f = await formatters();
 
-  const data = await withTenant(ctx.tenantId, async (tx) => {
-    const occ = await tx
-      .select({ unitId: unitOccupancies.unitId, number: units.number })
-      .from(unitOccupancies)
-      .innerJoin(units, eq(units.id, unitOccupancies.unitId))
-      .where(and(eq(unitOccupancies.userId, ctx.userId), isNull(unitOccupancies.endDate)))
-      .limit(1);
-    const unit = occ[0];
-    if (!unit) return null;
+  const data = await apiGet("/v1/panel/portal/payment", portalPaymentSummary);
 
-    const open = await tx
-      .select()
-      .from(debts)
-      .where(and(eq(debts.unitId, unit.unitId), isNull(debts.deletedAt)))
-      .orderBy(desc(debts.dueDate));
-
-    return { unit, open: open.filter((d) => d.amountKurus + d.lateFeeKurus - d.paidKurus > 0) };
-  });
-
-  if (!data || data.open.length === 0) {
+  if (!data.unit || data.items.length === 0) {
     return (
       <div className="mx-auto max-w-lg p-6">
         <Alert tone="success" title={t("noDebtTitle")}>
@@ -54,33 +40,30 @@ export default async function PaymentPage() {
     );
   }
 
-  const total = data.open.reduce((a, d) => a + (d.amountKurus + d.lateFeeKurus - d.paidKurus), 0);
-  const fees = calculateFees({ amountKurus: total, paidBy: "management" });
+  const { fees } = data;
 
   return (
     <div className="mx-auto max-w-lg p-4 lg:p-6">
       <Card>
         <CardHeader
           title={t("summaryTitle")}
-          description={`${data.unit.number} · ${ctx.tenantName}`}
+          description={`${data.unit.number} · ${data.tenantName}`}
         />
         <CardBody className="space-y-3 text-sm">
           <ul className="space-y-1">
-            {data.open.map((d) => (
+            {data.items.map((d) => (
               <li key={d.id} className="flex justify-between">
                 <span className="text-fg-muted">{d.description}</span>
-                <span className="tabular-nums">
-                  {f.money(d.amountKurus + d.lateFeeKurus - d.paidKurus)}
-                </span>
+                <span className="tabular-nums">{f.money(d.outstandingMinor)}</span>
               </li>
             ))}
           </ul>
 
           <div className="border-t border-border pt-3">
-            <Row label={t("debtAmount")} value={f.money(fees.amountKurus)} />
-            <Row label={t("platformFee")} value={f.money(fees.platformFeeKurus)} />
-            <Row label={t("processorFee")} value={f.money(fees.processorFeeKurus)} />
-            <Row label={t("payableAmount")} value={f.money(fees.totalKurus)} strong />
+            <Row label={t("debtAmount")} value={f.money(fees.amountMinor)} />
+            <Row label={t("platformFee")} value={f.money(fees.platformFeeMinor)} />
+            <Row label={t("processorFee")} value={f.money(fees.processorFeeMinor)} />
+            <Row label={t("payableAmount")} value={f.money(fees.totalMinor)} strong />
           </div>
 
           <Alert tone="info">
@@ -90,10 +73,8 @@ export default async function PaymentPage() {
         </CardBody>
         <CardFooter>
           <form action={startCheckout}>
-            <input type="hidden" name="amountKurus" value={total} />
-            <input type="hidden" name="unitId" value={data.unit.unitId} />
             <button className="w-full rounded-lg bg-primary px-5 py-3 font-semibold text-primary-fg hover:bg-primary-hover">
-              {t("payButton", { amount: f.money(fees.totalKurus) })}
+              {t("payButton", { amount: f.money(fees.totalMinor) })}
             </button>
           </form>
         </CardFooter>

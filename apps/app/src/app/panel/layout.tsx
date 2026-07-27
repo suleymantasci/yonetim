@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 
-import { hasPermission } from "@yonetim/auth";
+import { hasPermission } from "@yonetim/auth/guard";
 import {
   A11Y_COOKIE,
   parseA11y,
@@ -25,25 +25,18 @@ export default async function PanelLayout({
     hasPermission(ctx.roles, item.permission),
   ).map((i) => i.href);
 
-  const userName =
-    [ctx.session.user.firstName, ctx.session.user.lastName]
-      .filter(Boolean)
-      .join(" ") ||
-    ctx.session.user.email ||
-    "";
-
   // Rozetler ve bildirimler paralel çekilir: kabuk her sayfada render edildiği
   // için sıralı beklemek tüm panele gecikme bindirirdi.
   const [badges, notifications] = await Promise.all([
-    getNavBadges(ctx),
-    getInAppNotifications(ctx),
+    getNavBadges(),
+    getInAppNotifications(),
   ]);
 
   return (
     <AppShell
       tenantName={ctx.tenantName}
       tenantStatus={ctx.tenantStatus}
-      userName={userName}
+      userName={ctx.userName}
       roles={ctx.roles}
       allowedHrefs={allowedHrefs}
       impersonated={Boolean(ctx.impersonatedBy)}

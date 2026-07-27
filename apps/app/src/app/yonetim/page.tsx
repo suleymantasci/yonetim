@@ -1,20 +1,24 @@
-import { desc, sql } from "drizzle-orm";
 import { getTranslations } from "next-intl/server";
 
-import { assertPlatformAdmin } from "@yonetim/auth";
 import { siteConfig } from "@yonetim/config";
+import { platformOverview } from "@yonetim/contracts";
 import type { TenantStatus } from "@yonetim/core";
-import { campaigns, featureFlags, getDb, plans, tenants } from "@yonetim/db";
 import {
   Alert, Badge, Card, CardBody, CardHeader, Stat, tableClasses as tc,
 } from "@yonetim/ui";
 
-import { requireSession } from "@/lib/context";
+import { apiGet } from "@/lib/api/server";
+import { requireContext } from "@/lib/context";
 import { formatters } from "@/lib/format";
 
 /**
  * Süper-admin paneli — SPEC Bölüm 18.
- * Yalnızca platform rolleri (super_admin / support_agent) erişebilir.
+ *
+ * Yalnızca platform rolleri (super_admin / support_agent) erişebilir ve bu
+ * kontrol **uçta**: `/v1/panel/platform/overview` yetkisiz çağrıyı 403 ile
+ * kesiyor. Buradaki `requireContext()` yalnız oturum ve kullanıcı adı için —
+ * ekranın kapısı olduğunu sanmak, veriyi çeken sorguyu korumasız bırakmak
+ * olurdu.
  */
 export const dynamic = "force-dynamic";
 
@@ -24,74 +28,21 @@ export async function generateMetadata() {
 }
 
 export default async function AdminPage() {
-  const session = await requireSession();
-  assertPlatformAdmin(session.roles);
-
+  const ctx = await requireContext();
   const t = await getTranslations("app.admin");
   const tCommon = await getTranslations("common");
   const tEnum = await getTranslations("enum");
   const f = await formatters();
-  const db = getDb();
-
-  const [tenantStats] = (await db.execute(sql`
-    SELECT COUNT(*)::int AS total,
-           COUNT(*) FILTER (WHERE status = 'trial')::int AS trial,
-           COUNT(*) FILTER (WHERE status = 'active')::int AS active,
-           COUNT(*) FILTER (WHERE status = 'past_due')::int AS past_due,
-           COUNT(*) FILTER (WHERE status = 'suspended')::int AS suspended
-    FROM tenants WHERE deleted_at IS NULL
-  `)) as unknown as {
-    total: number; trial: number; active: number; past_due: number; suspended: number;
-  }[];
-
-  const [revenue] = (await db.execute(sql`
-    SELECT COALESCE(SUM(price_kurus) / 12, 0)::bigint AS mrr,
-           COALESCE(SUM(price_kurus), 0)::bigint AS arr
-    FROM subscriptions WHERE status IN ('active','trialing')
-  `)) as unknown as { mrr: number; arr: number }[];
-
-  const [notifyStats] = (await db.execute(sql`
-    SELECT COUNT(*) FILTER (WHERE status IN ('sent','delivered','read'))::int AS sent,
-           COUNT(*) FILTER (WHERE status = 'failed')::int AS failed,
-           COALESCE(SUM(cost_kurus), 0)::bigint AS cost
-    FROM notifications WHERE created_at > now() - interval '30 days'
-  `)) as unknown as { sent: number; failed: number; cost: number }[];
-
-  const recentTenants = await db
-    .select({
-      id: tenants.id,
-      name: tenants.name,
-      slug: tenants.slug,
-      status: tenants.status,
-      unitCount: tenants.unitCount,
-      createdAt: tenants.createdAt,
-    })
-    .from(tenants)
-    .orderBy(desc(tenants.createdAt))
-    .limit(20);
-
-  const overdueKvkk = (await db.execute(sql`
-    SELECT COUNT(*)::int AS value FROM kvkk_requests
-    WHERE status <> 'fulfilled' AND due_at < now()
-  `)) as unknown as { value: number }[];
-
-  const campaignRows = await db
-    .select({
-      name: campaigns.name,
-      status: campaigns.status,
-      usageCount: campaigns.usageCount,
-      usageLimit: campaigns.usageLimit,
-    })
-    .from(campaigns)
-    .orderBy(desc(campaigns.usageCount))
-    .limit(10);
-
-  const flags = await db.select().from(featureFlags).limit(20);
-  const planRows = await db.select().from(plans).limit(20);
-
-  const sent = notifyStats?.sent ?? 0;
-  const failed = notifyStats?.failed ?? 0;
-  const failureRate = sent + failed > 0 ? failed / (sent + failed) : 0;
+  const data = await apiGet("/v1/panel/platform/overview", platformOverview);
+  const {
+    tenants: tenantStats,
+    revenue,
+    notifications: notify,
+    recentTenants,
+    campaigns: campaignRows,
+    featureFlags: flags,
+    plans: planRows,
+  } = data;
 
   return (
     <div className="mx-auto max-w-6xl space-y-4 p-4 lg:p-6">
@@ -99,7 +50,7 @@ export default async function AdminPage() {
         <div>
           <h1 className="font-heading text-2xl font-extrabold text-fg">{t("title")}</h1>
           <p className="text-sm text-fg-subtle">
-            {siteConfig.brand.name} · {session.user.email}
+            {siteConfig.brand.name} · {ctx.userName}
           </p>
         </div>
         <form action="/api/oturum/cikis" method="post">
@@ -110,32 +61,32 @@ export default async function AdminPage() {
       </header>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat label={t("totalTenants")} value={String(tenantStats?.total ?? 0)} />
+        <Stat label={t("totalTenants")} value={String(tenantStats.total)} />
         <Stat
           label={t("activeSubscriptions")}
-          value={String(tenantStats?.active ?? 0)}
+          value={String(tenantStats.active)}
           tone="success"
         />
-        <Stat label={t("inTrial")} value={String(tenantStats?.trial ?? 0)} />
+        <Stat label={t("inTrial")} value={String(tenantStats.trial)} />
         <Stat
           label={t("pastDue")}
-          value={String(tenantStats?.past_due ?? 0)}
-          tone={(tenantStats?.past_due ?? 0) > 0 ? "warning" : "neutral"}
+          value={String(tenantStats.pastDue)}
+          tone={tenantStats.pastDue > 0 ? "warning" : "neutral"}
         />
-        <Stat label={t("mrr")} value={f.money(Number(revenue?.mrr ?? 0))} />
-        <Stat label={t("arr")} value={f.money(Number(revenue?.arr ?? 0))} />
+        <Stat label={t("mrr")} value={f.money(revenue.mrrMinor)} />
+        <Stat label={t("arr")} value={f.money(revenue.arrMinor)} />
         <Stat
           label={t("notificationFailureRate")}
-          value={f.percent(failureRate, 1)}
-          tone={failureRate > 0.01 ? "danger" : "success"}
-          hint={t("notificationsSent", { count: sent })}
+          value={f.percent(notify.failureRate, 1)}
+          tone={notify.failureRate > 0.01 ? "danger" : "success"}
+          hint={t("notificationsSent", { count: notify.sent })}
         />
-        <Stat label={t("notificationCost")} value={f.money(Number(notifyStats?.cost ?? 0))} />
+        <Stat label={t("notificationCost")} value={f.money(notify.costMinor)} />
       </div>
 
-      {(overdueKvkk[0]?.value ?? 0) > 0 ? (
+      {data.overdueKvkkCount > 0 ? (
         <Alert tone="danger" title={t("overdueKvkkTitle")}>
-          {t("overdueKvkkBody", { count: overdueKvkk[0]!.value })}
+          {t("overdueKvkkBody", { count: data.overdueKvkkCount })}
         </Alert>
       ) : null}
 
@@ -244,7 +195,7 @@ export default async function AdminPage() {
               {planRows.slice(0, 8).map((p) => (
                 <div key={p.id} className="flex justify-between">
                   <span className="text-fg">{p.name}</span>
-                  <span className="tabular-nums">{f.money(Number(p.yearlyPriceKurus))}</span>
+                  <span className="tabular-nums">{f.money(p.yearlyPriceMinor)}</span>
                 </div>
               ))}
             </CardBody>

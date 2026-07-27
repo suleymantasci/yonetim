@@ -100,10 +100,10 @@ export async function createDebt(
     {
       permission: "debt:write",
       schema: debtSchema,
-      meta: { action: "debt_created", resource: "debt", audit: "api" },
+      meta: { action: "debt_created", resource: "debt" },
     },
     formData,
-    async ({ input, setResourceId }) => {
+    async ({ input }) => {
       const t = await getTranslations("app.debts");
 
       const created = await apiPost(
@@ -123,7 +123,6 @@ export async function createDebt(
         debtCreateResult,
       );
 
-      if (created.ids[0]) setResourceId(created.ids[0]);
       revalidatePath("/panel/borclar");
       revalidatePath(`/panel/birimler/${input.unitId}`);
 
@@ -259,7 +258,7 @@ export async function createBulkDebts(
     {
       permission: "debt:write",
       schema: bulkDebtSchema,
-      meta: { action: "debt_bulk_created", resource: "debt", audit: "api" },
+      meta: { action: "debt_bulk_created", resource: "debt" },
     },
     formData,
     async ({ input }) => {
@@ -322,12 +321,11 @@ export async function adjustDebt(
     {
       permission: "debt:write",
       schema: adjustSchema,
-      meta: { action: "debt_adjusted", resource: "debt", audit: "api" },
+      meta: { action: "debt_adjusted", resource: "debt" },
     },
     formData,
-    async ({ input, setResourceId }) => {
+    async ({ input }) => {
       const t = await getTranslations("app.debts");
-      setResourceId(input.id);
 
       await apiPatch(
         `/v1/panel/debts/${input.id}`,
@@ -397,10 +395,10 @@ export async function collectPayment(
     {
       permission: "payment:create",
       schema: collectSchema,
-      meta: { action: "payment_collected", resource: "payment", audit: "api" },
+      meta: { action: "payment_collected", resource: "payment" },
     },
     formData,
-    async ({ input, setResourceId }) => {
+    async ({ input }) => {
       const t = await getTranslations("app.debts");
 
       const result = await apiPost(
@@ -418,7 +416,6 @@ export async function collectPayment(
         paymentCollectResult,
       );
 
-      setResourceId(result.paymentId);
       revalidatePath("/panel/borclar");
       revalidatePath(`/panel/birimler/${input.unitId}`);
       revalidatePath("/panel");

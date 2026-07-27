@@ -3,11 +3,22 @@ import { Module } from "@nestjs/common";
 import { CommunicationController } from "./communication.controller";
 import { CommunicationRepository } from "./communication.repository";
 import { CommunicationService } from "./communication.service";
+import { NotificationController } from "./notification.controller";
+import { WhatsappBotService } from "./whatsapp/whatsapp-bot.service";
+import { WhatsappWebhookController } from "./whatsapp/whatsapp-webhook.controller";
 
-/** `communication` bağlamı — duyuru, anket, mesaj, toplantı (MIMARI-PLAN §6.3). */
+/**
+ * `communication` bağlamı — duyuru, anket, mesaj, toplantı (MIMARI-PLAN §6.3).
+ * Uygulama içi bildirim merkezi de burada: kabuktaki zil, bu bağlamın
+ * ürettiği kayıtları gösteriyor.
+ */
 @Module({
-  controllers: [CommunicationController],
-  providers: [CommunicationService, CommunicationRepository],
+  controllers: [
+    CommunicationController,
+    NotificationController,
+    WhatsappWebhookController,
+  ],
+  providers: [CommunicationService, CommunicationRepository, WhatsappBotService],
   exports: [CommunicationService],
 })
 export class CommunicationModule {}

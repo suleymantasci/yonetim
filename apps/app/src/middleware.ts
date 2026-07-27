@@ -1,13 +1,27 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { SESSION_COOKIE } from "@yonetim/auth/cookie";
 import { siteConfig } from "@yonetim/config";
 
 /**
  * Tenant tespiti — SPEC Bölüm 13.1.
  * `[slug].app.domain` alt alan adı okunur ve `x-tenant-slug` başlığına yazılır.
- * Ayrıca oturum çerezi yoksa korumalı rotalar /giris'e yönlendirilir.
+ *
+ * Oturum çerezi yoksa korumalı rotalar /giris'e yönlendirilir. Bu kontrol
+ * çerezin **varlığına** bakıyor, geçerliliğine değil: geçerlilik kararı
+ * `apps/api`'nin ve middleware edge'de çalıştığı için oraya bir tur atmak her
+ * gezinmeye gecikme bindirirdi. Geçersiz çerezle giren kullanıcı sayfada
+ * `requireContext()` üzerinden yine girişe düşüyor — burası kolaylık katmanı,
+ * güvenlik sınırı değil.
  */
-const PUBLIC_PATHS = [ "/giris", "/kayit", "/kayit-talebi", "/sifre-sifirla", "/api/webhooks", "/api/public", "/api/cron", "/api/health",
+const PUBLIC_PATHS = [
+  "/giris",
+  "/kayit",
+  "/kayit-talebi",
+  "/sifre-sifirla",
+  "/api/webhooks",
+  "/api/public",
+  "/api/health",
   // Belge doğrulama: banka/kurum hesap açmadan belgenin gerçekliğini teyit eder
   // (SPEC Bölüm 3.6). Kişisel veri döndürmez. "/belge/dogrula",
 ];
@@ -24,7 +38,7 @@ export function middleware(request: NextRequest) {
   if (forwardedFor) headers.set("x-client-ip", forwardedFor.split(",")[0]!.trim());
 
   const isPublic = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
-  const hasSession = request.cookies.has("yonetim_session");
+  const hasSession = request.cookies.has(SESSION_COOKIE);
 
   if (!isPublic && !hasSession && pathname !== "/") {
     const url = request.nextUrl.clone();

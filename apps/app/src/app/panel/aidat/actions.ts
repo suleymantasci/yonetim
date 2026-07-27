@@ -119,10 +119,10 @@ export async function saveDuesPlan(
     {
       permission: "dues:write",
       schema: planSchema,
-      meta: { action: "dues_plan_saved", resource: "dues_plan", audit: "api" },
+      meta: { action: "dues_plan_saved", resource: "dues_plan" },
     },
     formData,
-    async ({ input, setResourceId }) => {
+    async ({ input }) => {
       const t = await getTranslations("app.duesPlans");
 
       if (input.endPeriod && input.endPeriod < input.startPeriod) {
@@ -154,7 +154,6 @@ export async function saveDuesPlan(
         z.object({ id: z.string().uuid() }),
       );
 
-      setResourceId(id);
       revalidatePath("/panel/aidat");
 
       return okState(t("saved", { name: input.name }), {

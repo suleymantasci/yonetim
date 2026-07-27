@@ -1,13 +1,19 @@
-import { eq } from "drizzle-orm";
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
-import { consumeVerificationToken, createSession, SESSION_COOKIE } from "@yonetim/auth";
-import { users, withBypassRls } from "@yonetim/db";
+import { webLoginSession } from "@yonetim/contracts";
+import { AppError } from "@yonetim/core";
 import { Alert, Card, CardBody } from "@yonetim/ui";
 
-/** Magic link doğrulama — SPEC Bölüm 14.2 (tek kullanımlık, 15 dk geçerli). */
+import { apiPost } from "@/lib/api/server";
+import { setSessionCookie } from "@/lib/session-cookie";
+
+/**
+ * Magic link doğrulama — SPEC Bölüm 14.2 (tek kullanımlık, 15 dk geçerli).
+ *
+ * Doğrulama ve oturum açma `apps/api`'de; burada kalan iş çerezi yazmak ve
+ * başarısızlıkta anlaşılır bir sayfa göstermek.
+ */
 export const dynamic = "force-dynamic";
 
 export default async function VerifyPage({
@@ -20,32 +26,42 @@ export default async function VerifyPage({
 
   if (!e || !linkToken) return <Failure message={t("invalidLink")} />;
 
-  const result = await consumeVerificationToken({
-    identifier: e,
-    token: linkToken,
-    purpose: "magic_link",
-  });
+  let session;
+  try {
+    session = await apiPost(
+      "/v1/auth/web/verify",
+      { identifier: e, token: linkToken },
+      webLoginSession,
+    );
+  } catch (error) {
+    if (error instanceof AppError) {
+      const reason = reasonOf(error.details);
+      if (error.code === "rate_limited") {
+        return <Failure message={t("tooManyCodeAttempts")} />;
+      }
+      if (reason) {
+        return (
+          <Failure
+            message={
+              reason === "userNotFound"
+                ? t("userNotFound")
+                : t(`tokenError.${reason}`)
+            }
+          />
+        );
+      }
+    }
+    throw error;
+  }
 
-  if (!result.ok) return <Failure message={t(`tokenError.${result.reason}`)} />;
-
-  const userId = String((result.metadata as { userId?: string }).userId ?? "");
-  if (!userId) return <Failure message={t("userNotFound")} />;
-
-  const { token, expiresAt } = await createSession({ userId, rememberMe: true });
-  const store = await cookies();
-  store.set(SESSION_COOKIE, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    expires: expiresAt,
-  });
-
-  await withBypassRls("auth:magic-login", async (tx) => {
-    await tx.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, userId));
-  });
-
+  await setSessionCookie(session.sessionToken, session.expiresAt);
   redirect("/panel");
+}
+
+function reasonOf(details: unknown): string | null {
+  if (!details || typeof details !== "object") return null;
+  const reason = (details as { reason?: unknown }).reason;
+  return typeof reason === "string" ? reason : null;
 }
 
 async function Failure({ message }: { message: string }) {

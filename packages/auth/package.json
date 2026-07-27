@@ -8,6 +8,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./guard": "./src/guard.ts",
+    "./cookie": "./src/cookie.ts",
     "./rate-limit": "./src/rate-limit.ts"
   },
   "scripts": {

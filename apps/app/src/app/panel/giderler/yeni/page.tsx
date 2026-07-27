@@ -1,6 +1,6 @@
 import { getTranslations } from "next-intl/server";
 
-import { hasPermission } from "@yonetim/auth";
+import { hasPermission } from "@yonetim/auth/guard";
 import { categoryTree as categoryTreeSchema } from "@yonetim/contracts";
 import { Alert, Card, CardBody } from "@yonetim/ui";
 

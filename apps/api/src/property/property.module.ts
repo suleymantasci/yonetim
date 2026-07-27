@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 
 import { BlockService } from "./block/block.service";
 import { PiiService } from "./resident/pii.service";
+import { PortalController } from "./resident/portal.controller";
 import { ResidentWriteRepository } from "./resident/resident-write.repository";
 import { ResidentController } from "./resident/resident.controller";
 import { ResidentRepository } from "./resident/resident.repository";
@@ -16,7 +17,7 @@ import { UnitService } from "./unit/unit.service";
  * A1'de blok + birim, A3'te sakin; sayaç Track E'de eklenir.
  */
 @Module({
-  controllers: [UnitController, ResidentController],
+  controllers: [UnitController, ResidentController, PortalController],
   providers: [
     UnitService,
     UnitRepository,

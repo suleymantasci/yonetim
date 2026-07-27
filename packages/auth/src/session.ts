@@ -5,15 +5,14 @@ import { addDays, addHours, errors, type Role, type TenantContext } from "@yonet
 import { randomToken } from "@yonetim/core/crypto";
 import { getDb, memberships, sessions, users, verificationTokens, withBypassRls } from "@yonetim/db";
 
+import { SESSION_COOKIE, SESSION_IDLE_MINUTES, SESSION_MAX_DAYS } from "./cookie";
 import { hashToken } from "./otp";
 
 /**
  * Oturum yönetimi — SPEC Bölüm 14.2.
  * Cookie: HttpOnly + Secure + SameSite=Lax, 30 dk idle, 30 gün mutlak süre.
  */
-export const SESSION_COOKIE = "yonetim_session";
-export const SESSION_IDLE_MINUTES = 30;
-export const SESSION_MAX_DAYS = 30;
+export { SESSION_COOKIE, SESSION_IDLE_MINUTES, SESSION_MAX_DAYS };
 
 export interface SessionUser {
   id: string;

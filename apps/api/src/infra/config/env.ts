@@ -25,6 +25,17 @@ const envSchema = z.object({
   /** Worker → api iç çağrıları için paylaşılan sır (§8.1 dördüncü kimlik yolu). */
   INTERNAL_API_TOKEN: z.string().min(16).optional(),
 
+  /**
+   * Zamanlanmış iş tetikleyicisinin sırrı.
+   *
+   * `INTERNAL_API_TOKEN`'dan ayrı çünkü kapsamları farklı: iç token tek bir
+   * tenant bağlamında çalışır, cron **tüm** tenant'ları dolaşır. Aynı sırrı
+   * paylaşmak, bir tenant için verilmiş erişimi platform geneline açardı.
+   * Tanımlı değilse uç kapalı: sırsız bir cron ucu herkese açık bir cron
+   * ucudur.
+   */
+  CRON_SECRET: z.string().min(16).optional(),
+
   REDIS_URL: z.string().optional(),
   /** Oturum önbelleği TTL'i, saniye — §17 kararı 5: 60 sn, invalidation'lı. */
   SESSION_CACHE_TTL: z.coerce.number().int().min(0).max(600).default(60),

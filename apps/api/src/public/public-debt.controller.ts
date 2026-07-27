@@ -1,39 +1,47 @@
+import { Body, Controller, Get, HttpCode, Post, Query, UseFilters, UseInterceptors } from "@nestjs/common";
+import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { and, asc, desc, eq, ilike, isNull, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { errors } from "@yonetim/core";
-import { blocks, debts, units, withTenant } from "@yonetim/db";
+import { blocks, debts, units } from "@yonetim/db";
 
+import { RequirePermission } from "../identity/decorators";
+import { DbService } from "../infra/db/db.service";
 import {
-  apiError, apiList, apiOk, authenticateApi, parseJsonBody, parsePagination,
-} from "@/lib/api";
+  PublicV1ExceptionFilter,
+  PublicV1Interceptor,
+  PublicV1Raw,
+} from "./public-v1.envelope";
+import { parsePagination, toListEnvelope } from "./public-v1.pagination";
 
 /**
- * `/api/v1/debts` — borç listesi ve oluşturma.
+ * `/api/v1/debts` — borç listesi ve oluşturma (DIŞ SÖZLEŞME).
  *
  * Muhasebe entegrasyonunun asıl ihtiyacı bu uç: dönem bazında borç ve tahsilat
  * durumu. `outstandingKurus` hesaplanmış olarak döner — istemcinin
  * `amount + lateFee - paid` aritmetiğini tekrar yazması, yuvarlama farkı
  * üretmenin en kolay yolu olurdu.
+ *
+ * Alan adları `*Kurus` olarak kaldı: panel sözleşmesindeki `*Minor`'a çevirmek
+ * yayınlanmış bir sözleşmeyi kırardı (§9.1).
  */
-export const dynamic = "force-dynamic";
+@ApiTags("v1/debts")
+@Controller("api/v1/debts")
+@UseFilters(PublicV1ExceptionFilter)
+@UseInterceptors(PublicV1Interceptor)
+export class PublicDebtController {
+  constructor(private readonly db: DbService) {}
 
-const SORTS = {
-  dueDate: debts.dueDate,
-  amount: debts.amountKurus,
-  createdAt: debts.createdAt,
-} as const;
+  @Get()
+  @RequirePermission("debt:read")
+  @PublicV1Raw()
+  @ApiOperation({ summary: "Borçları listele" })
+  async list(@Query() query: Record<string, string>) {
+    const page = parsePagination(query);
+    const { unitId, period, status } = query;
 
-export async function GET(request: Request) {
-  try {
-    const ctx = await authenticateApi(request, "debt:read");
-    const url = new URL(request.url);
-    const page = parsePagination(url);
-    const unitId = url.searchParams.get("unitId");
-    const period = url.searchParams.get("period");
-    const status = url.searchParams.get("status");
-
-    const result = await withTenant(ctx.tenantId, async (tx) => {
+    const result = await this.db.tx(async (tx) => {
       const conditions = [isNull(debts.deletedAt)];
       if (page.q) {
         const needle = `%${page.q}%`;
@@ -74,6 +82,8 @@ export async function GET(request: Request) {
         .innerJoin(units, eq(units.id, debts.unitId))
         .leftJoin(blocks, eq(blocks.id, units.blockId))
         .where(where)
+        // İkincil `id` sıralaması: eşit vadeli kayıtlar sayfalar arasında yer
+        // değiştirirse aynı borç iki sayfada birden görünürdü.
         .orderBy(order, asc(debts.id))
         .limit(page.pageSize)
         .offset((page.page - 1) * page.pageSize);
@@ -90,15 +100,61 @@ export async function GET(request: Request) {
       };
     });
 
-    return apiList(result.rows, {
+    return toListEnvelope(result.rows, {
       page: page.page,
       pageSize: page.pageSize,
       total: result.total,
     });
-  } catch (error) {
-    return apiError(error);
+  }
+
+  @Post()
+  @HttpCode(201)
+  @RequirePermission("debt:write")
+  @ApiOperation({ summary: "Borç oluştur" })
+  async create(@Body() body: unknown) {
+    const input = createSchema.parse(body ?? {});
+    const ctx = this.db.ctx();
+
+    // "2026-07-15" biçimi İstanbul gününün başına sabitlenir; tam ISO ise olduğu gibi.
+    const dueDate = /^\d{4}-\d{2}-\d{2}$/.test(input.dueDate)
+      ? new Date(`${input.dueDate}T00:00:00+03:00`)
+      : new Date(input.dueDate);
+    if (Number.isNaN(dueDate.getTime())) throw errors.validation("Geçersiz vade tarihi.");
+
+    return this.db.tx(async (tx) => {
+      const unitRows = await tx
+        .select({ id: units.id, lateFeeExempt: units.lateFeeExempt })
+        .from(units)
+        .where(and(eq(units.id, input.unitId), isNull(units.deletedAt)))
+        .limit(1);
+      if (!unitRows[0]) throw errors.notFound("Bağımsız bölüm bulunamadı.");
+
+      const [row] = await tx
+        .insert(debts)
+        .values({
+          tenantId: ctx.tenantId,
+          unitId: input.unitId,
+          debtorUserId: input.debtorUserId ?? null,
+          kind: input.kind,
+          description: input.description,
+          amountKurus: input.amountKurus,
+          dueDate,
+          period: input.period ?? null,
+          // Daire muaf ise borç da muaf doğar: muafiyet dairenin özelliği,
+          // isteğin değil.
+          lateFeeExempt: input.lateFeeExempt || unitRows[0].lateFeeExempt,
+        })
+        .returning();
+      return row;
+    });
   }
 }
+
+const SORTS = {
+  dueDate: debts.dueDate,
+  amount: debts.amountKurus,
+  createdAt: debts.createdAt,
+} as const;
 
 const createSchema = z.object({
   unitId: z.string().uuid(),
@@ -109,52 +165,9 @@ const createSchema = z.object({
   description: z.string().min(3).max(200),
   amountKurus: z.number().int().positive(),
   dueDate: z.string().datetime().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)),
-  period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).nullish(),
+  period: z
+    .string()
+    .regex(/^\d{4}-(0[1-9]|1[0-2])$/)
+    .nullish(),
   lateFeeExempt: z.boolean().default(false),
 });
-
-export async function POST(request: Request) {
-  try {
-    const ctx = await authenticateApi(request, "debt:write");
-    const input = await parseJsonBody(request, createSchema);
-
-    // "2026-07-15" biçimi İstanbul gününün başına sabitlenir; tam ISO ise olduğu gibi.
-    const dueDate = /^\d{4}-\d{2}-\d{2}$/.test(input.dueDate)
-      ? new Date(`${input.dueDate}T00:00:00+03:00`)
-      : new Date(input.dueDate);
-    if (Number.isNaN(dueDate.getTime())) throw errors.validation("Geçersiz vade tarihi.");
-
-    const created = await withTenant(
-      ctx.tenantId,
-      async (tx) => {
-        const unitRows = await tx
-          .select({ id: units.id, lateFeeExempt: units.lateFeeExempt })
-          .from(units)
-          .where(and(eq(units.id, input.unitId), isNull(units.deletedAt)))
-          .limit(1);
-        if (!unitRows[0]) throw errors.notFound("Bağımsız bölüm bulunamadı.");
-
-        const [row] = await tx
-          .insert(debts)
-          .values({
-            tenantId: ctx.tenantId,
-            unitId: input.unitId,
-            debtorUserId: input.debtorUserId ?? null,
-            kind: input.kind,
-            description: input.description,
-            amountKurus: input.amountKurus,
-            dueDate,
-            period: input.period ?? null,
-            lateFeeExempt: input.lateFeeExempt || unitRows[0].lateFeeExempt,
-          })
-          .returning();
-        return row;
-      },
-      { userId: ctx.userId },
-    );
-
-    return apiOk(created, { status: 201 });
-  } catch (error) {
-    return apiError(error);
-  }
-}

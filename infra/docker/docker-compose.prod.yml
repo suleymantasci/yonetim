@@ -21,6 +21,10 @@ x-api-env: &api-env
   # ← YALNIZ api ve worker. app'te YOK (§8.3 değişmez 4).
   FIELD_ENCRYPTION_KEY: ${FIELD_ENCRYPTION_KEY:?zorunlu}
   INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:?zorunlu}
+  # Zamanlanmış işlerin sırrı. `INTERNAL_API_TOKEN`'dan ayrı: iç token tek bir
+  # tenant bağlamında çalışır, cron **tüm** tenant'ları dolaşır. Aynı sırrı
+  # paylaşmak, bir tenant için verilmiş erişimi platform geneline açardı.
+  CRON_SECRET: ${CRON_SECRET:?zorunlu}
   SESSION_CACHE_TTL: "60"
   S3_ENDPOINT: http://minio:9000
   S3_BUCKET: ${S3_BUCKET:-yonetim}
@@ -119,6 +123,8 @@ services:
       NEXT_PUBLIC_APP_URL: https://${APP_DOMAIN:-panel.localhost}
       # DATABASE_URL YOK — kasıtlı ve en güçlü kalite kapısı (§11).
       # FIELD_ENCRYPTION_KEY YOK — TCKN/IBAN çözme yalnız api'de (§8.3).
+      # CRON_SECRET YOK — zamanlanmış işleri api çalıştırıyor; app yalnız
+      # ters vekil arkasındaki bir render süreci (A5).
     depends_on:
       api: { condition: service_healthy }
 

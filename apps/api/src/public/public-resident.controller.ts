@@ -1,14 +1,21 @@
+import { Controller, Get, Query, UseFilters, UseInterceptors } from "@nestjs/common";
+import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 
 import { maskPhone } from "@yonetim/core";
-import {
-  blocks, memberships, unitOccupancies, units, users, withBypassRls, withTenant,
-} from "@yonetim/db";
+import { blocks, memberships, unitOccupancies, units, users } from "@yonetim/db";
 
-import { apiError, apiList, authenticateApi, parsePagination } from "@/lib/api";
+import { RequirePermission } from "../identity/decorators";
+import { DbService } from "../infra/db/db.service";
+import {
+  PublicV1ExceptionFilter,
+  PublicV1Interceptor,
+  PublicV1Raw,
+} from "./public-v1.envelope";
+import { parsePagination, toListEnvelope } from "./public-v1.pagination";
 
 /**
- * `/api/v1/residents` — sakin listesi (salt okunur).
+ * `/api/v1/residents` — sakin listesi (salt okunur, DIŞ SÖZLEŞME).
  *
  * YAZMA UCU BİLİNÇLİ OLARAK YOK. Sakin kaydı açmak KVKK aydınlatma onayı
  * gerektiriyor (md.10) ve o onayın kime, ne zaman, hangi metin sürümüyle
@@ -20,16 +27,22 @@ import { apiError, apiList, authenticateApi, parsePagination } from "@/lib/api";
  * bilgisi değil. Ham telefona ihtiyaç duyan bir kullanım çıkarsa ayrı bir
  * scope ve ayrı bir uç ile, gerekçesi kayıtlı biçimde açılmalı.
  */
-export const dynamic = "force-dynamic";
+@ApiTags("v1/residents")
+@Controller("api/v1/residents")
+@UseFilters(PublicV1ExceptionFilter)
+@UseInterceptors(PublicV1Interceptor)
+export class PublicResidentController {
+  constructor(private readonly db: DbService) {}
 
-export async function GET(request: Request) {
-  try {
-    const ctx = await authenticateApi(request, "resident:read");
-    const url = new URL(request.url);
-    const page = parsePagination(url);
-    const unitId = url.searchParams.get("unitId");
+  @Get()
+  @RequirePermission("resident:read")
+  @PublicV1Raw()
+  @ApiOperation({ summary: "Sakinleri listele (salt okunur)" })
+  async list(@Query() query: Record<string, string>) {
+    const page = parsePagination(query);
+    const unitId = query.unitId;
 
-    const scoped = await withTenant(ctx.tenantId, async (tx) => {
+    const scoped = await this.db.tx(async (tx) => {
       const memberRows = await tx
         .select({ userId: memberships.userId, role: memberships.role })
         .from(memberships)
@@ -61,10 +74,12 @@ export async function GET(request: Request) {
       : [...new Set(scoped.memberRows.map((row) => row.userId))];
 
     if (candidateIds.length === 0) {
-      return apiList([], { page: page.page, pageSize: page.pageSize, total: 0 });
+      return toListEnvelope([], { page: page.page, pageSize: page.pageSize, total: 0 });
     }
 
-    const people = await withBypassRls("api:residents-list", async (tx) =>
+    // `users` global tablo (tenant sütunu yok); erişim yukarıdaki tenant
+    // kapsamlı sorgudan çıkan kimlik listesiyle sınırlanıyor.
+    const people = await this.db.bypass("api:residents-list", async (tx) =>
       tx
         .select({
           id: users.id,
@@ -117,12 +132,10 @@ export async function GET(request: Request) {
         createdAt: person.createdAt,
       }));
 
-    return apiList(rows, {
+    return toListEnvelope(rows, {
       page: page.page,
       pageSize: page.pageSize,
       total: filtered.length,
     });
-  } catch (error) {
-    return apiError(error);
   }
 }

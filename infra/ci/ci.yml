@@ -39,7 +39,7 @@ jobs:
       DATABASE_OWNER_URL: postgresql://yonetim:yonetim@localhost:5432/yonetim
       AUTH_SECRET: ci-secret
       FIELD_ENCRYPTION_KEY: "1111111111111111111111111111111111111111111111111111111111111111"
-      CRON_SECRET: ci-cron
+      CRON_SECRET: ci-cron-secret-0123456789
       NEXT_PUBLIC_BASE_URL: http://localhost:3000
       NEXT_PUBLIC_APP_URL: http://localhost:3001
 

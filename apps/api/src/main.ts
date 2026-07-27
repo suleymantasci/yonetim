@@ -1,6 +1,7 @@
 import "reflect-metadata";
 import "./bootstrap-env";
 
+import { json } from "express";
 import { NestFactory } from "@nestjs/core";
 import type { NestExpressApplication } from "@nestjs/platform-express";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
@@ -30,6 +31,25 @@ async function bootstrap(): Promise<void> {
 
   // Ters vekil (Caddy) arkasında gerçek istemci IP'si için.
   app.set("trust proxy", 1);
+
+  /**
+   * WhatsApp imzası **ham gövde** üzerinden HMAC'leniyor. JSON parse edilip
+   * yeniden serialize edilmiş bir gövde, anahtar sırası ya da boşluk farkı
+   * yüzünden farklı bir imza üretir ve geçerli istekleri reddettirir. Bu
+   * yüzden gövdenin bayt bayt hâli saklanıyor.
+   *
+   * Yalnız bu iki yol için: her istekte fazladan bir kopya tutmanın anlamı yok.
+   */
+  app.use(
+    json({
+      verify: (req, _res, buf) => {
+        const url = (req as { url?: string }).url ?? "";
+        if (url.startsWith("/v1/webhooks/")) {
+          (req as { rawBody?: Buffer }).rawBody = buf;
+        }
+      },
+    }),
+  );
 
   const origins = e.CORS_ORIGINS.split(",")
     .map((o) => o.trim())

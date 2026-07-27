@@ -4,7 +4,6 @@ import { z } from "zod";
 import { AppError, isValidIban, isValidTckn, normalizePhone } from "@yonetim/core";
 import type { Permission } from "@yonetim/core";
 
-import { audit } from "./audit";
 import { requirePermission, type AppContext } from "./context";
 
 /**
@@ -290,19 +289,17 @@ export function asArray(value: unknown): string[] {
  * Aksiyon sarmalayıcısı
  * ------------------------------------------------------------------ */
 
+/**
+ * Aksiyonun kimliği — hata loglarında ve geliştirici izlerinde kullanılır.
+ *
+ * DENETİM KÜTÜĞÜ BURADA YAZILMIYOR (MIMARI-PLAN §8.4): kütüğü `apps/api`
+ * yazıyor, çünkü hangi kaydın gerçekten değiştiğini yalnız servis biliyor.
+ * Render katmanı "başarılı görünüyor" diyerek ikinci bir satır bıraksaydı
+ * kütükte her işlem için iki kayıt olurdu — biri gerçek, biri tahmin.
+ */
 export interface ActionMeta {
-  /** Denetim kütüğü aksiyon adı (`unit_created` gibi). */
   action: string;
   resource: string;
-  /**
-   * Denetim kaydını **kim** yazıyor?
-   *
-   * Göç ettikten sonra kütüğü `apps/api` yazıyor (MIMARI-PLAN §8.4) — çünkü
-   * hangi kaydın gerçekten değiştiğini yalnız servis biliyor. Böyle aksiyonlar
-   * `audit: "api"` der ve buradaki ikinci kayıt atlanır; yoksa her işlem kütükte
-   * iki satır bırakırdı.
-   */
-  audit?: "app" | "api";
 }
 
 /**
@@ -336,8 +333,6 @@ export async function runAction<TSchema extends z.ZodTypeAny, TData = undefined>
   handler: (args: {
     ctx: AppContext;
     input: z.output<TSchema>;
-    /** Handler bu kimliği döndürdüğünde denetim kaydına yazılır. */
-    setResourceId: (id: string) => void;
   }) => Promise<ActionState<TData>>,
 ): Promise<ActionState<TData>> {
   const tValidation = await getTranslations("common.validation");
@@ -358,25 +353,8 @@ export async function runAction<TSchema extends z.ZodTypeAny, TData = undefined>
     );
   }
 
-  let resourceId: string | undefined;
-
   try {
-    const state = await handler({
-      ctx,
-      input: parsed.data,
-      setResourceId: (id) => {
-        resourceId = id;
-      },
-    });
-
-    if (state.status === "ok" && (options.meta.audit ?? "app") === "app") {
-      await audit(ctx, {
-        action: options.meta.action,
-        resource: options.meta.resource,
-        resourceId,
-      });
-    }
-    return state;
+    return await handler({ ctx, input: parsed.data });
   } catch (error) {
     if (error instanceof ActionError) {
       return errorState(error.message, error.fieldErrors);

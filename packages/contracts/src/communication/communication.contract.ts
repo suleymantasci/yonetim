@@ -218,3 +218,36 @@ export const announcementCreateResult = z.object({
 });
 
 export type AnnouncementCreateResult = z.infer<typeof announcementCreateResult>;
+
+/* ------------------------------------------------------------------ *
+ * Uygulama içi bildirimler
+ * ------------------------------------------------------------------ */
+
+/**
+ * `GET /v1/panel/notifications` — kabuktaki bildirim merkezi.
+ *
+ * Yetki adı yok: kullanıcı yalnız **kendi** bildirimini görür ve işaretler,
+ * sorgu `userId = ctx.userId` ile sınırlı. Ayrı bir izin adı üretmek yanlış
+ * bir güvenlik hissi verirdi — kısıtlama izinde değil, sorgunun kendisinde.
+ */
+export const inAppNotificationRow = z.object({
+  id: uuid,
+  title: z.string(),
+  body: z.string().nullable(),
+  createdAt: dateTime,
+  read: z.boolean(),
+  resourceType: z.string().nullable(),
+  resourceId: z.string().nullable(),
+});
+
+export const inAppNotificationList = z.object({
+  items: z.array(inAppNotificationRow),
+  unreadCount: z.number().int(),
+});
+
+export type InAppNotificationList = z.infer<typeof inAppNotificationList>;
+
+/** Tek bildirim ya da tümü — `id` yoksa okunmamışların hepsi işaretlenir. */
+export const notificationReadRequest = z.object({ id: uuid.nullish() });
+
+export type NotificationReadRequest = z.infer<typeof notificationReadRequest>;

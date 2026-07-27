@@ -15,8 +15,8 @@ import {
 
 import { PageHeader } from "@/components/app-shell";
 import { ListControls } from "@/components/list/list-controls";
-import { requirePermissionWithLog } from "@/lib/access";
 import { apiGet } from "@/lib/api/server";
+import { requirePermission } from "@/lib/context";
 import { toListQuery } from "@/lib/api/list";
 import { formatters } from "@/lib/format";
 import {
@@ -34,7 +34,10 @@ export default async function ResidentsPage({
 }: {
   readonly searchParams: Promise<SearchParamsInput>;
 }) {
-  await requirePermissionWithLog("resident:read");
+  // KVKK erişim kaydını (md.12) `apps/api` yazıyor: kütüğe **yanıtta dönen**
+  // kişi kümesi geçiyor (MIMARI-PLAN §8.4). Burada ikinci bir kayıt açmak
+  // "ekran açıldı" ile "şu kişilere bakıldı"yı karıştırırdı.
+  await requirePermission("resident:read");
   const t = await getTranslations("app.residents");
   const tCommon = await getTranslations("common");
   const tEnum = await getTranslations("enum");

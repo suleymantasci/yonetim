@@ -1,23 +1,22 @@
 "use server";
 
-import { eq } from "drizzle-orm";
-import { cookies } from "next/headers";
+import { getLocale, getTranslations } from "next-intl/server";
 import { redirect } from "next/navigation";
-import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
-import {
-  RATE_LIMITS, consumeVerificationToken, createSession, generateOtp, issueVerificationToken,
-  rateLimit, SESSION_COOKIE,
-} from "@yonetim/auth";
-import { siteConfig } from "@yonetim/config";
-import { normalizePhone } from "@yonetim/core";
-import { users, withBypassRls } from "@yonetim/db";
-import { magicLinkEmail, sendEmail } from "@yonetim/emails";
-import { sendSms } from "@yonetim/sms";
+import { webLoginRequestResult, webLoginSession } from "@yonetim/contracts";
+import { AppError } from "@yonetim/core";
 
-import { notificationTranslator } from "@/lib/notify";
+import { apiPost } from "@/lib/api/server";
+import { setSessionCookie } from "@/lib/session-cookie";
 
+/**
+ * Parolasız giriş — SPEC Bölüm 14.2 (magic link + SMS OTP).
+ *
+ * Kod üretimi, gönderimi ve oturum açma `apps/api`'de: oturumun tek otoritesi
+ * orası (MIMARI-PLAN §8.1). Burada kalan iş sunum — form durumu, çeviri ve
+ * çerezin yazılması.
+ */
 export interface LoginState {
   ok: boolean;
   step: "identify" | "verify";
@@ -26,88 +25,53 @@ export interface LoginState {
   message?: string;
 }
 
-const identifySchema = z.object({
-  identifier: z.string().min(5),
-});
+const identifySchema = z.object({ identifier: z.string().min(5) });
 
-/**
- * Giriş adımı 1 — SPEC Bölüm 14.2 (magic link + SMS OTP, parolasız).
- * Kullanıcı numarası/e-postası doğrulanır, tek kullanımlık kod gönderilir.
- * Kullanıcı bulunmasa da aynı yanıt döner (kullanıcı sayımı sızmasın).
- */
-export async function requestLoginCode(_prev: LoginState, formData: FormData): Promise<LoginState> {
+export async function requestLoginCode(
+  _prev: LoginState,
+  formData: FormData,
+): Promise<LoginState> {
   const t = await getTranslations("app.login");
-  const parsed = identifySchema.safeParse({ identifier: String(formData.get("identifier") ?? "") });
+  const parsed = identifySchema.safeParse({
+    identifier: String(formData.get("identifier") ?? ""),
+  });
   if (!parsed.success) {
     return { ok: false, step: "identify", message: t("invalidIdentifier") };
   }
 
-  const raw = parsed.data.identifier.trim();
-  const phone = normalizePhone(raw);
-  const isEmail = raw.includes("@");
-  const identifier = isEmail ? raw.toLowerCase() : phone;
-
-  if (!identifier) {
-    return { ok: false, step: "identify", message: t("invalidIdentifier") };
-  }
-
-  const limit = await rateLimit(RATE_LIMITS.login, identifier);
-  if (!limit.allowed) {
-    return {
-      ok: false,
-      step: "identify",
-      message: t("tooManyAttempts"),
-    };
-  }
-
-  const user = await withBypassRls("auth:lookup", async (tx) => {
-    const rows = await tx
-      .select({ id: users.id, email: users.email, phone: users.phone })
-      .from(users)
-      .where(isEmail ? eq(users.email, identifier) : eq(users.phone, identifier))
-      .limit(1);
-    return rows[0] ?? null;
-  });
-
-  if (user) {
-    if (isEmail) {
-      const { token } = await issueVerificationToken({
-        identifier,
-        purpose: "magic_link",
-        ttlMinutes: 15,
-        metadata: { userId: user.id },
-      });
-      const url = `${siteConfig.env.appUrl}/giris/dogrula?e=${encodeURIComponent(identifier)}&t=${token}`;
-      const mail = magicLinkEmail(await notificationTranslator(), { url, expiresMinutes: 15 });
-      await sendEmail({ to: identifier, subject: mail.subject, html: mail.html });
-    } else {
-      const code = generateOtp(6);
-      await issueVerificationToken({
-        identifier,
-        purpose: "otp",
-        ttlMinutes: 5,
-        code,
-        metadata: { userId: user.id },
-      });
-      await sendSms({
-        to: identifier,
-        body: t("smsBody", { brand: siteConfig.brand.name, code }),
-        isOtp: true,
-      });
+  let result;
+  try {
+    result = await apiPost(
+      "/v1/auth/web/request",
+      { identifier: parsed.data.identifier.trim(), locale: await getLocale() },
+      webLoginRequestResult,
+    );
+  } catch (error) {
+    if (error instanceof AppError) {
+      if (error.code === "rate_limited") {
+        return { ok: false, step: "identify", message: t("tooManyAttempts") };
+      }
+      if (error.code === "validation") {
+        return { ok: false, step: "identify", message: t("invalidIdentifier") };
+      }
     }
+    throw error;
   }
 
   return {
     ok: true,
     step: "verify",
-    channel: isEmail ? "email" : "sms",
-    identifier,
-    message: isEmail ? t("emailSent") : t("smsSent"),
+    channel: result.channel,
+    identifier: result.identifier,
+    message: result.channel === "email" ? t("emailSent") : t("smsSent"),
   };
 }
 
-/** Giriş adımı 2 — SMS kodunu doğrular ve oturum açar. */
-export async function verifyLoginCode(_prev: LoginState, formData: FormData): Promise<LoginState> {
+/** Giriş adımı 2 — kodu doğrular ve oturumu açar. */
+export async function verifyLoginCode(
+  _prev: LoginState,
+  formData: FormData,
+): Promise<LoginState> {
   const t = await getTranslations("app.login");
   const identifier = String(formData.get("identifier") ?? "");
   const code = String(formData.get("code") ?? "").trim();
@@ -117,36 +81,49 @@ export async function verifyLoginCode(_prev: LoginState, formData: FormData): Pr
     return { ok: false, step: "verify", identifier, message: t("codeIncomplete") };
   }
 
-  const limit = await rateLimit(RATE_LIMITS.otp, identifier);
-  if (!limit.allowed) {
-    return { ok: false, step: "verify", identifier, message: t("tooManyCodeAttempts") };
+  let session;
+  try {
+    session = await apiPost(
+      "/v1/auth/web/verify",
+      { identifier, token: code },
+      webLoginSession,
+    );
+  } catch (error) {
+    if (error instanceof AppError) {
+      if (error.code === "rate_limited") {
+        return {
+          ok: false,
+          step: "verify",
+          identifier,
+          message: t("tooManyCodeAttempts"),
+        };
+      }
+      // Sunucu **kod** döndürüyor, metin değil: mesaj burada, kullanıcının
+      // dilinde üretiliyor (SPEC 4.2).
+      const reason = reasonOf(error.details);
+      if (reason) {
+        return {
+          ok: false,
+          step: "verify",
+          identifier,
+          message:
+            reason === "userNotFound"
+              ? t("userNotFound")
+              : t(`tokenError.${reason}`),
+        };
+      }
+    }
+    throw error;
   }
 
-  const purpose = identifier.includes("@") ? "magic_link" : "otp";
-  const result = await consumeVerificationToken({ identifier, token: code, purpose });
-  if (!result.ok) {
-    return { ok: false, step: "verify", identifier, message: t(`tokenError.${result.reason}`) };
-  }
+  await setSessionCookie(session.sessionToken, session.expiresAt);
 
-  const userId = String((result.metadata as { userId?: string }).userId ?? "");
-  if (!userId) {
-    return { ok: false, step: "verify", identifier, message: t("userNotFound") };
-  }
-
-  const { token, expiresAt } = await createSession({ userId, rememberMe: true });
-  const store = await cookies();
-  store.set(SESSION_COOKIE, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    expires: expiresAt,
-  });
-
-  await withBypassRls("auth:touch-login", async (tx) => {
-    await tx.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, userId));
-  });
-
-  redirect(next.startsWith("/") ? next : "/panel");
+  // Açık yönlendirme koruması: yalnız kendi origin'imizdeki göreli adresler.
+  redirect(next.startsWith("/") && !next.startsWith("//") ? next : "/panel");
 }
 
+function reasonOf(details: unknown): string | null {
+  if (!details || typeof details !== "object") return null;
+  const reason = (details as { reason?: unknown }).reason;
+  return typeof reason === "string" ? reason : null;
+}

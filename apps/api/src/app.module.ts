@@ -23,7 +23,9 @@ import { HealthController } from "./infra/health/health.controller";
 import { ApiExceptionFilter } from "./infra/logging/api-exception.filter";
 import { pinoParams } from "./infra/logging/pino.config";
 import { RedisModule } from "./infra/redis/redis.module";
+import { CronController } from "./infra/scheduler/cron.controller";
 import { PropertyModule } from "./property/property.module";
+import { PublicModule } from "./public/public.module";
 
 /**
  * Kök modül — MIMARI-PLAN §5.
@@ -71,8 +73,11 @@ import { PropertyModule } from "./property/property.module";
     CommunicationModule,
     TenancyModule,
     IntegrationModule,
+
+    // Dış sözleşme (§9.1) — bağlam değil, istemci ayrımı.
+    PublicModule,
   ],
-  controllers: [HealthController],
+  controllers: [HealthController, CronController],
   providers: [
     { provide: APP_FILTER, useClass: ApiExceptionFilter },
     { provide: APP_GUARD, useClass: TenantContextGuard },

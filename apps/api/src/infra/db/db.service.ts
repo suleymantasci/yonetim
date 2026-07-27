@@ -72,6 +72,26 @@ export class DbService {
     });
   }
 
+  /**
+   * Tenant'ı **açıkça** verilen transaction — yalnız bağlamsız girişler için.
+   *
+   * Webhook'ların (WhatsApp, iyzico) isteği bir kullanıcıdan gelmiyor; tenant
+   * gelen numaradan ya da ödeme kaydından **bulunuyor**. Bulunduktan sonraki
+   * her okuma/yazma yine RLS altında olmalı; `bypass` ile devam etmek, tenant
+   * belliyken korumayı kapalı bırakmak olurdu.
+   *
+   * Guard'ın çözdüğü bağlam varken bu metot kullanılmaz: `tx()` zaten doğru
+   * tenant'ı biliyor ve onu geçersiz kılmak yatay yetki aşımına açık kapı
+   * bırakır.
+   */
+  tenantScoped<T>(
+    tenantId: string,
+    userId: string | undefined,
+    fn: (tx: Database) => Promise<T>,
+  ): Promise<T> {
+    return withTenant(tenantId, fn, { userId });
+  }
+
   /** Platform (tenant'sız) — abonelik, plan, kampanya. RLS'i baypas etmez. */
   platform<T>(fn: (tx: Database) => Promise<T>): Promise<T> {
     return withPlatform(fn);

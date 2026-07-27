@@ -39,7 +39,7 @@ import {
  * geliyor ve kullanıcıya alan bazlı hata gösterilmesi gerekiyor), ama
  * **bağlayıcı** doğrulama API'de: sunucu şemayı yeniden çalıştırıyor.
  *
- * Denetim kütüğünü artık API yazıyor (`audit: "api"`), çünkü hangi kaydın
+ * Denetim kütüğünü artık API yazıyor (MIMARI-PLAN §8.4), çünkü hangi kaydın
  * gerçekten ne şekilde değiştiğini yalnız servis biliyor (§8.4).
  *
  * Silme her zaman **soft-delete**: kayıt 30 gün çöp kutusunda kalır. Kalıcı
@@ -147,10 +147,10 @@ export async function createUnit(
     {
       permission: "unit:write",
       schema: unitSchema,
-      meta: { action: "unit_created", resource: "unit", audit: "api" },
+      meta: { action: "unit_created", resource: "unit" },
     },
     formData,
-    async ({ input, setResourceId }) => {
+    async ({ input }) => {
       const t = await getTranslations("app.units");
       const created = await apiPost(
         "/v1/panel/units",
@@ -159,7 +159,6 @@ export async function createUnit(
       );
 
       if (!created?.id) throw new ActionError(t("createFailed"));
-      setResourceId(created.id);
       revalidatePath("/panel/birimler");
 
       return okState(t("created", { number: input.number }), {
@@ -180,12 +179,11 @@ export async function updateUnit(
     {
       permission: "unit:write",
       schema,
-      meta: { action: "unit_updated", resource: "unit", audit: "api" },
+      meta: { action: "unit_updated", resource: "unit" },
     },
     formData,
-    async ({ input, setResourceId }) => {
+    async ({ input }) => {
       const t = await getTranslations("app.units");
-      setResourceId(input.id);
 
       await apiPatch(`/v1/panel/units/${input.id}`, toUnitBody(input), null, {
         reason: PANEL_FORM_REASON,
@@ -289,7 +287,7 @@ export async function createUnitsBulk(
     {
       permission: "unit:write",
       schema: bulkCreateSchema,
-      meta: { action: "unit_bulk_created", resource: "unit", audit: "api" },
+      meta: { action: "unit_bulk_created", resource: "unit" },
     },
     formData,
     async ({ input }) => {
@@ -481,10 +479,10 @@ export async function saveBlock(
     {
       permission: "unit:write",
       schema: blockSchema,
-      meta: { action: "block_saved", resource: "block", audit: "api" },
+      meta: { action: "block_saved", resource: "block" },
     },
     formData,
-    async ({ input, setResourceId }) => {
+    async ({ input }) => {
       const t = await getTranslations("app.units");
       const body = {
         name: input.name,
@@ -495,14 +493,8 @@ export async function saveBlock(
 
       if (input.id) {
         await apiPatch(`/v1/panel/units/bloklar/${input.id}`, body, null);
-        setResourceId(input.id);
       } else {
-        const created = await apiPost(
-          "/v1/panel/units/bloklar",
-          body,
-          createdSchema,
-        );
-        if (created?.id) setResourceId(created.id);
+        await apiPost("/v1/panel/units/bloklar", body, createdSchema);
       }
 
       revalidatePath("/panel/birimler");

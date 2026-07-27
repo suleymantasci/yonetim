@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, Post, Req } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import type { Request } from "express";
 
@@ -7,13 +7,21 @@ import {
   otpRequest,
   otpVerify,
   refreshRequest,
+  webLoginRequest,
+  webLoginVerify,
   type AuthMe,
+  type WebLoginRequest,
+  type WebLoginVerify,
   type OtpRequest,
   type OtpVerify,
 } from "@yonetim/contracts";
 
+import { SESSION_COOKIE } from "@yonetim/auth/cookie";
+
 import { DbService } from "../infra/db/db.service";
 import { ZodBodyPipe } from "../infra/zod/zod-dto";
+import { AppContextService } from "./app-context.service";
+import { WebAuthService } from "./web-auth.service";
 import { Public } from "./decorators";
 import { MobileAuthService } from "./mobile-auth.service";
 
@@ -30,7 +38,53 @@ export class AuthController {
   constructor(
     private readonly mobile: MobileAuthService,
     private readonly db: DbService,
+    private readonly appContext: AppContextService,
+    private readonly web: WebAuthService,
   ) {}
+
+  /* ---------------------------------------------------------------- *
+   * Web (parolasız) — magic link + SMS OTP
+   * ---------------------------------------------------------------- */
+
+  @Public()
+  @Post("web/request")
+  @ApiOperation({
+    summary: "Web girişi — kod/bağlantı gönder",
+    description:
+      "Kayıtlı olmayan kimlikte de aynı yanıt döner: aksi halde uç, kimin " +
+      "sistemde olduğunu sorgulanabilir hale getirirdi.",
+  })
+  webRequest(
+    @Body(new ZodBodyPipe(webLoginRequest)) dto: WebLoginRequest,
+  ) {
+    return this.web.request(dto);
+  }
+
+  @Public()
+  @Post("web/verify")
+  @ApiOperation({
+    summary: "Web girişi — kodu oturuma çevir",
+    description:
+      "Oturum **jetonu** döner, çerez değil: çerezi tarayıcıya `apps/app` " +
+      "yazar (tarayıcı yalnız onun origin'ini görür), ama oturumun var olma " +
+      "kararı burada verilir ve iptali burada etkili olur.",
+  })
+  webVerify(@Body(new ZodBodyPipe(webLoginVerify)) dto: WebLoginVerify) {
+    return this.web.verify(dto);
+  }
+
+  @Public()
+  @Post("web/logout")
+  @HttpCode(204)
+  @ApiOperation({
+    summary: "Web oturumunu kapat",
+    description:
+      "Oturum kaydı silinir. Yalnız çerezi düşürmek, çalınmış bir jetonu " +
+      "geçersiz kılmazdı — kararın kaydın kendisinde olması şart.",
+  })
+  async webLogout(@Req() req: Request): Promise<void> {
+    await this.web.logout(readSessionCookie(req.headers.cookie));
+  }
 
   @Public()
   @Post("mobile/otp")
@@ -103,6 +157,34 @@ export class AuthController {
       impersonatedBy: ctx.impersonatedBy ?? null,
     };
   }
+
+  /**
+   * Kabuk bağlamı — site adı/durumu ve erişilebilir diğer siteler.
+   *
+   * `me`'den ayrı: o uç kimlik yollarının aynılığını sınayan testin
+   * sözleşmesi ve sabit kalmalı. Ekranın istediği alanları oraya eklemek,
+   * bir başlık değişikliğini kimlik testini kıran bir değişiklik yapardı.
+   */
+  @Get("context")
+  context() {
+    return this.appContext.resolve();
+  }
+}
+
+/**
+ * Çerez başlığından oturum jetonunu okur.
+ *
+ * `@Public()` olduğu için guard bağlam çözmüyor; jetona doğrudan erişmek
+ * gerekiyor. Ayrıştırma basit tutuldu: tek bir ada bakılıyor.
+ */
+function readSessionCookie(header: string | undefined): string | undefined {
+  if (!header) return undefined;
+  const prefix = `${SESSION_COOKIE}=`;
+  const part = header
+    .split(";")
+    .map((piece) => piece.trim())
+    .find((piece) => piece.startsWith(prefix));
+  return part ? decodeURIComponent(part.slice(prefix.length)) : undefined;
 }
 
 function headerValue(req: Request, name: string): string | null {

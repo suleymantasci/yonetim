@@ -126,3 +126,105 @@ export const mobileSessionRow = z.object({
 });
 
 export const mobileSessionList = z.object({ rows: z.array(mobileSessionRow) });
+
+/**
+ * `GET /v1/auth/context` — panelin kabuk bağlamı.
+ *
+ * `authMe`'den farkı **görüntülenebilir** alanları da taşıması: site adı ve
+ * durumu her sayfanın başlığında ve askıya alma uyarısında kullanılıyor.
+ * İkisini tek uca birleştirmek, kimlik yolu doğrulayan e2e testi ekran
+ * ihtiyacına bağımlı kılardı — `authMe` sabit kalmalı.
+ *
+ * `tenantStatus` bilerek serbest metin değil, ekranın karar verdiği bir alan:
+ * `past_due` ise ödeme uyarısı, `suspended` ise salt-okunur kabuk gösteriliyor.
+ */
+export const appContext = z.object({
+  userId: uuid,
+  /**
+   * Kabukta gösterilecek ad — sunucuda birleştiriliyor.
+   *
+   * Ad/soyad ayrı ayrı gönderilip istemcide birleştirilseydi, adı boş olan
+   * kullanıcı için "  " (iki boşluk) render edilirdi. Boşluk yerine e-posta,
+   * o da yoksa boş string düşüyor; karar tek yerde.
+   */
+  userName: z.string(),
+  tenantId: uuid,
+  tenantSlug: z.string(),
+  tenantName: z.string(),
+  tenantStatus: z.string(),
+  roles: z.array(z.string()),
+  locale: z.string(),
+  impersonatedBy: uuid.nullable(),
+  /** Kullanıcının erişebildiği diğer siteler — site değiştirici için. */
+  memberships: z.array(
+    z.object({ id: uuid, slug: z.string(), name: z.string() }),
+  ),
+});
+
+export type AppContextResponse = z.infer<typeof appContext>;
+
+/* ------------------------------------------------------------------ *
+ * Web girişi (parolasız) — magic link + SMS OTP
+ * ------------------------------------------------------------------ */
+
+/**
+ * `POST /v1/auth/web/request` — kod/bağlantı gönderir.
+ *
+ * Mobil akışla (`/v1/auth/mobile/*`) aynı **değil** ve olmamalı: mobil bir
+ * token çifti alıyor, web bir oturum çerezi. İkisini tek uca sıkıştırmak,
+ * yanıtın hangi istemciye gittiğine bakarak şekil değiştirmesi demekti.
+ *
+ * Ortak olan tek şey kullanıcı sayımı (enumeration) engeli: kayıtlı olmayan
+ * kimlikte de aynı yanıt dönüyor. "Bu numara sistemde yok" cevabı, bir
+ * apartman yönetim sisteminde kimin nerede oturduğunu sızdırırdı.
+ */
+export const webLoginRequest = z.object({
+  identifier: authIdentifier,
+  /** SMS metni ve e-posta şablonu bu dilde üretilir. */
+  locale: z.string().max(8).optional(),
+});
+
+export type WebLoginRequest = z.infer<typeof webLoginRequest>;
+
+export const webLoginRequestResult = z.object({
+  channel: z.enum(["email", "sms"]),
+  /** Normalize edilmiş kimlik — ikinci adım bunu geri gönderir. */
+  identifier: z.string(),
+});
+
+export const webLoginVerify = z.object({
+  identifier: authIdentifier,
+  /** SMS kodu ya da magic link token'ı — hangi olduğunu sunucu anlar. */
+  token: z.string().trim().min(4).max(200),
+});
+
+export type WebLoginVerify = z.infer<typeof webLoginVerify>;
+
+/**
+ * Oturum **jetonu** dönüyor, çerezin kendisi değil.
+ *
+ * Çerezi tarayıcıya `apps/app` yazıyor çünkü tarayıcı yalnız onun origin'ini
+ * görüyor. Oturumun **var olma** kararı yine burada: kayıt `apps/api`'de
+ * açılıyor, iptali de orada etkili oluyor. Render katmanına verilen şey bir
+ * yetki değil, taşınacak bir dize.
+ */
+export const webLoginSession = z.object({
+  sessionToken: z.string(),
+  expiresAt: dateTime,
+  userId: uuid,
+});
+
+export type WebLoginSession = z.infer<typeof webLoginSession>;
+
+/**
+ * Doğrulama başarısızsa neden.
+ *
+ * Kod olarak dönüyor, metin olarak değil: mesaj `app.login.tokenError.<kod>`
+ * altından kullanıcının dilinde çevriliyor (SPEC 4.2). Sunucunun sabit Türkçe
+ * metin döndürmesi, İngilizce arayüzde Türkçe hata göstermek olurdu.
+ */
+export const webLoginFailure = z.object({
+  reason: z.enum(["invalid", "used", "expired", "wrongPurpose", "userNotFound"]),
+});
+
+export type WebLoginFailure = z.infer<typeof webLoginFailure>;

@@ -47,35 +47,20 @@ const APP_FORBIDDEN_IMPORTS = {
 };
 
 /**
- * Göç sırası — MIMARI-PLAN §14 Track A.
+ * Göç sırası — MIMARI-PLAN §14 Track A. **TAMAMLANDI.**
  *
- * Kapı 1 baştan **tüm** `apps/app`'e uygulansaydı A0 kırmızı başlardı; göç
- * bitene kadar (A5) hiçbir kapı çalışmazdı. Bunun yerine kapı, henüz göç
- * etmemiş dosyaları geçici olarak muaf tutuyor ve bu liste **her fazda
- * kısalıyor**. Böylece göç eden her klasör geri dönüşe karşı anında kilitleniyor;
- * §16'daki "55 dosyalık göç yarıda kalır" riski liste boşalınca kapanıyor.
+ * Kapı 1 baştan tüm `apps/app`'e uygulansaydı A0 kırmızı başlardı; göç bitene
+ * kadar hiçbir kapı çalışmazdı. Bunun yerine kapı, henüz göç etmemiş dosyaları
+ * geçici olarak muaf tuttu ve liste her fazda kısaldı.
  *
- * A5 sonunda bu dizi boşalır ve `apps/app/package.json`'dan `@yonetim/db` +
- * `drizzle-orm` kaldırılır — ondan sonra kural zaten fiziksel olarak zorunlu.
+ * A5'te liste **boşaldı** ve `apps/app/package.json`'dan `@yonetim/db` +
+ * `drizzle-orm` kaldırıldı. Artık kural iki katmanlı: lint kuralı niyeti
+ * anlatıyor, paket bağımlılığının yokluğu ise ihlali fiziksel olarak imkânsız
+ * kılıyor. Dizi boş bırakılıyor (silinmiyor) çünkü aynı desen ileride başka
+ * bir göç için gerekirse mekanizma hazır durmalı — ve boş olması, kapının
+ * artık istisnasız çalıştığının okunabilir kanıtı.
  */
-const PENDING_DB_MIGRATION = [
-  "apps/app/src/lib/audit.ts",
-  "apps/app/src/lib/api.ts",
-  "apps/app/src/lib/context.ts",
-  "apps/app/src/lib/notify.ts",
-  "apps/app/src/lib/shell-data.ts",
-  "apps/app/src/lib/form.ts",
-  "apps/app/src/app/api/**",
-  // A1–A4'te göç edenler listeden çıkarıldı; kalanlar A5'te düşecek.
-  "apps/app/src/app/panel/layout.tsx",
-  "apps/app/src/app/yonetim/**",
-  "apps/app/src/app/sakin/**",
-  "apps/app/src/app/giris/**",
-  "apps/app/src/app/odeme/**",
-  "apps/app/src/app/belge/**",
-  "apps/app/src/middleware.ts",
-  "apps/app/src/components/shell/actions.ts",
-];
+const PENDING_DB_MIGRATION = [];
 
 export default tseslint.config(
   {

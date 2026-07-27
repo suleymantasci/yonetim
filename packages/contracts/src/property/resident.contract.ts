@@ -373,3 +373,66 @@ export const tcknLookupResult = z.object({
 });
 
 export type TcknLookupResult = z.infer<typeof tcknLookupResult>;
+
+/* ------------------------------------------------------------------ *
+ * Sakin portalı
+ * ------------------------------------------------------------------ */
+
+/**
+ * `GET /v1/panel/portal/me` — sakin self-servis ekranı (SPEC Faz 2 / 6.1).
+ *
+ * "BİR EKRAN = BİR ÇAĞRI" (§9a): borç, ödeme, düzeltme geçmişi ve duyurular
+ * tek yanıtta. Dört ayrı uca bölmek, telefonda açılan bir sayfayı dört
+ * gidiş-dönüşe çıkarırdı.
+ *
+ * KAPSAM SUNUCUDA: hangi dairenin verisi döneceğine **oturum** karar veriyor,
+ * istemcinin gönderdiği bir `unitId` değil. Aksi halde sakin başkasının
+ * daire kimliğini yazıp komşusunun borcunu görebilirdi.
+ *
+ * `overdueMinor` sunucuda hesaplanıyor: "vadesi geçti mi" sorusunu saati
+ * yanlış kurulmuş bir tarayıcıya sormak, tam da yanlış cevabı almaktır.
+ */
+export const portalDebtRow = z.object({
+  id: uuid,
+  description: z.string(),
+  dueDate: dateTime,
+  amountMinor: moneyMinor,
+  lateFeeMinor: moneyMinor,
+  paidMinor: moneyMinor,
+  status: z.string(),
+  overdue: z.boolean(),
+});
+
+export const portalChangeRow = z.object({
+  id: uuid,
+  changeType: z.string(),
+  oldAmountMinor: moneyMinor,
+  newAmountMinor: moneyMinor,
+  reason: z.string().nullable(),
+  createdAt: dateTime,
+});
+
+export const portalAnnouncementRow = z.object({
+  id: uuid,
+  title: z.string(),
+  body: z.string(),
+  publishedAt: dateTime.nullable(),
+});
+
+export const portalOverview = z.object({
+  /** Sakinin aktif bir bağımsız bölümü yoksa `null` — hata değil, durum. */
+  unit: z
+    .object({ id: uuid, number: z.string(), relation: z.string() })
+    .nullable(),
+  tenantName: z.string(),
+  totals: z.object({
+    outstandingMinor: moneyMinor,
+    overdueMinor: moneyMinor,
+    lastPaymentMinor: moneyMinor.nullable(),
+  }),
+  debts: z.array(portalDebtRow),
+  changes: z.array(portalChangeRow),
+  announcements: z.array(portalAnnouncementRow),
+});
+
+export type PortalOverview = z.infer<typeof portalOverview>;

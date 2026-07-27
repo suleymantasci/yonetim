@@ -103,10 +103,10 @@ export async function createResident(
     {
       permission: "resident:write",
       schema: residentSchema,
-      meta: { action: "resident_created", resource: "resident", audit: "api" },
+      meta: { action: "resident_created", resource: "resident" },
     },
     formData,
-    async ({ input, setResourceId }) => {
+    async ({ input }) => {
       const t = await getTranslations("app.residents");
 
       // İki kural sunucuda da zorlanıyor; burada tekrarlanmalarının sebebi
@@ -149,7 +149,6 @@ export async function createResident(
         residentSaveResult,
       );
 
-      setResourceId(created.id);
       revalidatePath("/panel/sakinler");
       if (input.unitId) revalidatePath(`/panel/birimler/${input.unitId}`);
 
@@ -198,12 +197,11 @@ export async function updateResident(
     {
       permission: "resident:write",
       schema: updateSchema,
-      meta: { action: "resident_updated", resource: "resident", audit: "api" },
+      meta: { action: "resident_updated", resource: "resident" },
     },
     formData,
-    async ({ input, setResourceId }) => {
+    async ({ input }) => {
       const t = await getTranslations("app.residents");
-      setResourceId(input.id);
 
       if (!input.phone && !input.email) {
         return errorState(t("contactRequired"), {
@@ -277,14 +275,13 @@ export async function addOccupancy(
       meta: {
         action: "occupancy_created",
         resource: "unit_occupancy",
-        audit: "api",
       },
     },
     formData,
-    async ({ input, setResourceId }) => {
+    async ({ input }) => {
       const t = await getTranslations("app.residents");
 
-      const created = await apiPost(
+      await apiPost(
         "/v1/panel/residents/ilgi",
         {
           userId: input.userId,
@@ -298,7 +295,6 @@ export async function addOccupancy(
         z.object({ id: z.string().uuid() }),
       );
 
-      setResourceId(created.id);
       revalidatePath(`/panel/sakinler/${input.userId}`);
       revalidatePath(`/panel/birimler/${input.unitId}`);
       return okState(t("occupancyAdded"));
@@ -343,13 +339,11 @@ export async function endOccupancy(
       meta: {
         action: "occupancy_ended",
         resource: "unit_occupancy",
-        audit: "api",
       },
     },
     formData,
-    async ({ input, setResourceId }) => {
+    async ({ input }) => {
       const t = await getTranslations("app.residents");
-      setResourceId(input.occupancyId);
 
       const result = await apiPatch(
         `/v1/panel/residents/ilgi/${input.occupancyId}/bitir`,

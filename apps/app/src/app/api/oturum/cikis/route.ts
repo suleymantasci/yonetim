@@ -1,12 +1,17 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 
-import { destroySession, SESSION_COOKIE } from "@yonetim/auth";
+import { apiPost } from "@/lib/api/server";
+import { clearSessionCookie } from "@/lib/session-cookie";
 
+/**
+ * Çıkış — oturum kaydını `apps/api` siliyor, çerezi burası düşürüyor.
+ *
+ * İki adım da gerekli: yalnız çerezi silmek tarayıcının kopyasını unutturur
+ * ama çalınmış bir jetonu geçersiz kılmaz; yalnız kaydı silmek de kullanıcıyı
+ * kendi tarayıcısında oturum açmış gösterirdi.
+ */
 export async function POST(request: Request) {
-  const store = await cookies();
-  const token = store.get(SESSION_COOKIE)?.value;
-  if (token) await destroySession(token);
-  store.delete(SESSION_COOKIE);
+  await apiPost("/v1/auth/web/logout", {});
+  await clearSessionCookie();
   return NextResponse.redirect(new URL("/giris", request.url), { status: 303 });
 }

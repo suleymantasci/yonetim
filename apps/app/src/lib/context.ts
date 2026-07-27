@@ -1,101 +1,88 @@
-import { and, eq, isNull } from "drizzle-orm";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
-import {
-  hasPermission, resolveSession, SESSION_COOKIE, type ActiveSession,
-} from "@yonetim/auth";
-import { errors, type Permission, type Role, type TenantContext } from "@yonetim/core";
-import { memberships, tenants, withBypassRls } from "@yonetim/db";
+import { hasPermission } from "@yonetim/auth/guard";
+import { SESSION_COOKIE } from "@yonetim/auth/cookie";
+import { appContext } from "@yonetim/contracts";
+import { AppError, errors, type Permission, type Role, type TenantContext } from "@yonetim/core";
+
+import { apiGet } from "./api/server";
 
 /**
- * İstek bağlamı çözümleyicisi — SPEC Bölüm 13.2/13.3.
- * Her server component ve server action bu fonksiyonlar üzerinden tenant'a erişir.
+ * İstek bağlamı çözümleyicisi — SPEC Bölüm 13.2/13.3, MIMARI-PLAN §8.1.
+ *
+ * OTURUM OTORİTESİ NEXT'TE DEĞİL. Bu dosya eskiden cookie'yi kendisi çözüp
+ * üyelik ve rolleri veritabanından okuyordu; artık `GET /v1/auth/context`
+ * çağırıyor ve cookie'yi olduğu gibi iletiyor. Fark yalnız mimari değil:
+ * render katmanına "ben bu tenant'ın adminiyim" iddiasını üretme yetkisi
+ * verilmiyor, dolayısıyla bir yetki iptali anında etkili oluyor.
+ *
+ * `apiGet` render içi `cache()`'li olduğu için layout + sayfa aynı bağlamı
+ * isterse tek hop oluyor.
  */
 export interface AppContext extends TenantContext {
   tenantName: string;
+  /** Kabukta gösterilen ad — sunucuda birleştirilmiş hâli. */
+  userName: string;
   tenantStatus: string;
-  session: ActiveSession;
+  /** Kullanıcının erişebildiği diğer siteler — site değiştirici için. */
+  memberships: Array<{ id: string; slug: string; name: string }>;
 }
 
-export async function getSession(): Promise<ActiveSession | null> {
+/**
+ * Oturum var mı — yalnız "giriş yapılmış mı" sorusu için.
+ *
+ * Cookie'nin **varlığına** bakıyor, geçerliliğine değil: geçerlilik kararı
+ * `apps/api`'nin ve onu burada taklit etmek iki farklı doğruluk kaynağı
+ * yaratırdı. Gerçek doğrulama `requireContext()` çağrısında, API tarafında
+ * yapılıyor.
+ */
+export async function hasSessionCookie(): Promise<boolean> {
   const store = await cookies();
-  return resolveSession(store.get(SESSION_COOKIE)?.value);
-}
-
-export async function requireSession(): Promise<ActiveSession> {
-  const session = await getSession();
-  if (!session) redirect("/giris");
-  return session;
+  return Boolean(store.get(SESSION_COOKIE)?.value);
 }
 
 export async function requireContext(): Promise<AppContext> {
-  const session = await requireSession();
   const h = await headers();
 
-  let tenantId = session.activeTenantId;
-  const slugHeader = h.get("x-tenant-slug");
-
-  const tenant = await withBypassRls("ctx:resolve-tenant", async (tx) => {
-    if (slugHeader) {
-      const rows = await tx
-        .select()
-        .from(tenants)
-        .where(and(eq(tenants.slug, slugHeader), isNull(tenants.deletedAt)))
-        .limit(1);
-      if (rows[0]) return rows[0];
+  let resolved;
+  try {
+    resolved = await apiGet("/v1/auth/context", appContext);
+  } catch (error) {
+    if (error instanceof AppError) {
+      // 401 = oturum yok/süresi dolmuş → giriş; 404 = erişilebilir site yok
+      // → kurulum. İkisi de hata sayfası değil, yönlendirme.
+      if (error.code === "unauthorized") redirect("/giris");
+      if (error.code === "not_found") redirect("/kurulum");
     }
-    if (!tenantId) {
-      const membership = await tx
-        .select({ tenantId: memberships.tenantId })
-        .from(memberships)
-        .where(and(eq(memberships.userId, session.user.id), isNull(memberships.deletedAt)))
-        .limit(1);
-      tenantId = membership[0]?.tenantId ?? null;
-    }
-    if (!tenantId) return null;
-    const rows = await tx.select().from(tenants).where(eq(tenants.id, tenantId)).limit(1);
-    return rows[0] ?? null;
-  });
-
-  if (!tenant) redirect("/kurulum");
-
-  // Kullanıcının bu tenant'ta üyeliği var mı? (yatay yetki kontrolü)
-  const roles = await withBypassRls("ctx:roles", async (tx) => {
-    const rows = await tx
-      .select({ role: memberships.role })
-      .from(memberships)
-      .where(
-        and(
-          eq(memberships.userId, session.user.id),
-          eq(memberships.tenantId, tenant.id),
-          isNull(memberships.deletedAt),
-        ),
-      );
-    return rows.map((r) => r.role as Role);
-  });
-
-  if (roles.length === 0 && !session.user.platformRole) {
-    throw errors.forbidden((await getTranslations("common.error"))("forbiddenTenant"));
+    throw error;
   }
-  if (session.user.platformRole) roles.push(session.user.platformRole);
 
   return {
-    tenantId: tenant.id,
-    tenantSlug: tenant.slug,
-    tenantName: tenant.name,
-    tenantStatus: tenant.status,
-    userId: session.user.id,
-    roles,
-    impersonatedBy: session.impersonatedBy ?? undefined,
+    tenantId: resolved.tenantId,
+    tenantSlug: resolved.tenantSlug,
+    tenantName: resolved.tenantName,
+    userName: resolved.userName,
+    tenantStatus: resolved.tenantStatus,
+    userId: resolved.userId,
+    roles: resolved.roles as Role[],
+    impersonatedBy: resolved.impersonatedBy ?? undefined,
     ip: h.get("x-client-ip") ?? undefined,
     userAgent: h.get("user-agent") ?? undefined,
-    locale: session.user.locale,
-    session,
+    locale: resolved.locale,
+    memberships: resolved.memberships,
   };
 }
 
+/**
+ * Yetki kapısı — **görünürlük** için.
+ *
+ * Gerçek kapı API tarafında: her uç kendi `@RequirePermission`'ını taşıyor.
+ * Buradaki kontrol, yetkisiz kullanıcının hiç göremeyeceği bir ekranı açıp
+ * boş tablo görmesini engelliyor. İkisinden biri kaldırılacaksa bu taraf
+ * kaldırılabilir; API tarafı kaldırılamaz.
+ */
 export async function requirePermission(permission: Permission): Promise<AppContext> {
   const ctx = await requireContext();
   if (!hasPermission(ctx.roles, permission)) {

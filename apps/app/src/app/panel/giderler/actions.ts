@@ -90,11 +90,10 @@ export async function saveExpenseCategory(
       meta: {
         action: "expense_category_saved",
         resource: "expense_category",
-        audit: "api",
       },
     },
     formData,
-    async ({ input, setResourceId }) => {
+    async ({ input }) => {
       const t = await getTranslations("app.expenses");
 
       const { id } = await apiPost(
@@ -114,7 +113,6 @@ export async function saveExpenseCategory(
         savedIdSchema,
       );
 
-      setResourceId(id);
       revalidatePath("/panel/giderler");
       revalidatePath("/panel/giderler/kategoriler");
       return okState(t("categorySaved", { name: input.name }), {
@@ -204,10 +202,10 @@ export async function saveExpense(
     {
       permission: "expense:write",
       schema: expenseSchema,
-      meta: { action: "expense_saved", resource: "expense", audit: "api" },
+      meta: { action: "expense_saved", resource: "expense" },
     },
     formData,
-    async ({ input, setResourceId }) => {
+    async ({ input }) => {
       const t = await getTranslations("app.expenses");
 
       const { id } = await apiPost(
@@ -230,7 +228,6 @@ export async function saveExpense(
         savedIdSchema,
       );
 
-      setResourceId(id);
       revalidatePath("/panel/giderler");
       revalidatePath(`/panel/giderler/${id}`);
 
@@ -356,13 +353,11 @@ export async function distributeExpense(
       meta: {
         action: "expense_distributed",
         resource: "expense",
-        audit: "api",
       },
     },
     formData,
-    async ({ input, setResourceId }) => {
+    async ({ input }) => {
       const t = await getTranslations("app.expenses");
-      setResourceId(input.expenseId);
 
       const result = await apiPost(
         "/v1/panel/expenses/dagitim",

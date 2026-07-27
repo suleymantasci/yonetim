@@ -12,6 +12,7 @@ import { CertificateService } from "./certificate/certificate.service";
 import { DebtController } from "./debt/debt.controller";
 import { DebtRepository } from "./debt/debt.repository";
 import { DebtService } from "./debt/debt.service";
+import { PortalPaymentController } from "./portal-payment/portal-payment.controller";
 
 /**
  * `finance` bağlamı — MIMARI-PLAN §6.4: aidat planı, borç, tahsilat, gider,
@@ -28,6 +29,7 @@ import { DebtService } from "./debt/debt.service";
     ExpenseController,
     DuesPlanController,
     CertificateController,
+    PortalPaymentController,
   ],
   providers: [
     DebtService,

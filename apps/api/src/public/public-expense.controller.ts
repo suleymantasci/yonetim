@@ -1,39 +1,44 @@
+import { Body, Controller, Get, HttpCode, Post, Query, UseFilters, UseInterceptors } from "@nestjs/common";
+import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { and, asc, desc, eq, ilike, isNull, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { periodKey, toIstanbul } from "@yonetim/core";
-import { expenseCategories, expenses, withTenant } from "@yonetim/db";
+import { expenseCategories, expenses } from "@yonetim/db";
 
+import { RequirePermission } from "../identity/decorators";
+import { DbService } from "../infra/db/db.service";
 import {
-  apiError, apiList, apiOk, authenticateApi, parseJsonBody, parsePagination,
-} from "@/lib/api";
+  PublicV1ExceptionFilter,
+  PublicV1Interceptor,
+  PublicV1Raw,
+} from "./public-v1.envelope";
+import { parsePagination, toListEnvelope } from "./public-v1.pagination";
 
 /**
- * `/api/v1/expenses` — gider listesi ve oluşturma.
+ * `/api/v1/expenses` — gider listesi ve oluşturma (DIŞ SÖZLEŞME).
  *
  * Muhasebe yazılımının fatura akışını buraya bağlaması hedefleniyor: fatura
  * kaydedildiği anda gider oluşur. Bu yüzden POST varsayılan olarak
  * `pending_approval` durumunda kayıt açar — dışarıdan gelen bir kayıt
  * kendiliğinden onaylı sayılmaz, yönetici onayından geçer.
  */
-export const dynamic = "force-dynamic";
+@ApiTags("v1/expenses")
+@Controller("api/v1/expenses")
+@UseFilters(PublicV1ExceptionFilter)
+@UseInterceptors(PublicV1Interceptor)
+export class PublicExpenseController {
+  constructor(private readonly db: DbService) {}
 
-const SORTS = {
-  expenseDate: expenses.expenseDate,
-  amount: expenses.amountKurus,
-  createdAt: expenses.createdAt,
-} as const;
+  @Get()
+  @RequirePermission("expense:read")
+  @PublicV1Raw()
+  @ApiOperation({ summary: "Giderleri listele" })
+  async list(@Query() query: Record<string, string>) {
+    const page = parsePagination(query);
+    const { categoryId, period, status } = query;
 
-export async function GET(request: Request) {
-  try {
-    const ctx = await authenticateApi(request, "expense:read");
-    const url = new URL(request.url);
-    const page = parsePagination(url);
-    const categoryId = url.searchParams.get("categoryId");
-    const period = url.searchParams.get("period");
-    const status = url.searchParams.get("status");
-
-    const result = await withTenant(ctx.tenantId, async (tx) => {
+    const result = await this.db.tx(async (tx) => {
       const conditions = [isNull(expenses.deletedAt)];
       if (page.q) {
         const needle = `%${page.q}%`;
@@ -87,15 +92,63 @@ export async function GET(request: Request) {
       return { rows, total: Number(total?.value ?? 0) };
     });
 
-    return apiList(result.rows, {
+    return toListEnvelope(result.rows, {
       page: page.page,
       pageSize: page.pageSize,
       total: result.total,
     });
-  } catch (error) {
-    return apiError(error);
+  }
+
+  @Post()
+  @HttpCode(201)
+  @RequirePermission("expense:write")
+  @ApiOperation({
+    summary: "Gider oluştur",
+    description:
+      "Dışarıdan gelen kayıt `pending_approval` durumunda açılır; yönetici onayından geçer.",
+  })
+  async create(@Body() body: unknown) {
+    const input = createSchema.parse(body ?? {});
+    const ctx = this.db.ctx();
+
+    const expenseDate = new Date(`${input.expenseDate}T00:00:00+03:00`);
+    const istanbul = toIstanbul(expenseDate);
+    // Tutar KDV **dahil** geliyor; KDV içinden ayrıştırılır.
+    const vatKurus = Math.round((input.amountKurus * input.vatRate) / (1 + input.vatRate));
+
+    return this.db.tx(async (tx) => {
+      const [row] = await tx
+        .insert(expenses)
+        .values({
+          tenantId: ctx.tenantId,
+          categoryId: input.categoryId ?? null,
+          vendorName: input.vendorName ?? null,
+          description: input.description,
+          amountKurus: input.amountKurus,
+          vatRate: input.vatRate.toFixed(2),
+          vatKurus,
+          withholdingKurus: input.withholdingKurus,
+          invoiceNo: input.invoiceNo ?? null,
+          expenseDate,
+          attachmentUrl: input.attachmentUrl ?? null,
+          // Dış kaynaktan gelen kayıt onaylı sayılmaz.
+          status: "pending_approval",
+          period: periodKey({
+            year: istanbul.getUTCFullYear(),
+            month: istanbul.getUTCMonth() + 1,
+          }),
+        })
+        .returning();
+      return row;
+    });
   }
 }
+
+const SORTS = {
+  expenseDate: expenses.expenseDate,
+  amount: expenses.amountKurus,
+  createdAt: expenses.createdAt,
+} as const;
 
 const createSchema = z.object({
   categoryId: z.string().uuid().nullish(),
@@ -109,48 +162,3 @@ const createSchema = z.object({
   expenseDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   attachmentUrl: z.string().url().max(500).nullish(),
 });
-
-export async function POST(request: Request) {
-  try {
-    const ctx = await authenticateApi(request, "expense:write");
-    const input = await parseJsonBody(request, createSchema);
-
-    const expenseDate = new Date(`${input.expenseDate}T00:00:00+03:00`);
-    const istanbul = toIstanbul(expenseDate);
-    const vatKurus = Math.round((input.amountKurus * input.vatRate) / (1 + input.vatRate));
-
-    const created = await withTenant(
-      ctx.tenantId,
-      async (tx) => {
-        const [row] = await tx
-          .insert(expenses)
-          .values({
-            tenantId: ctx.tenantId,
-            categoryId: input.categoryId ?? null,
-            vendorName: input.vendorName ?? null,
-            description: input.description,
-            amountKurus: input.amountKurus,
-            vatRate: input.vatRate.toFixed(2),
-            vatKurus,
-            withholdingKurus: input.withholdingKurus,
-            invoiceNo: input.invoiceNo ?? null,
-            expenseDate,
-            attachmentUrl: input.attachmentUrl ?? null,
-            // Dış kaynaktan gelen kayıt onaylı sayılmaz.
-            status: "pending_approval",
-            period: periodKey({
-              year: istanbul.getUTCFullYear(),
-              month: istanbul.getUTCMonth() + 1,
-            }),
-          })
-          .returning();
-        return row;
-      },
-      { userId: ctx.userId },
-    );
-
-    return apiOk(created, { status: 201 });
-  } catch (error) {
-    return apiError(error);
-  }
-}

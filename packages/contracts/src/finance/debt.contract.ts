@@ -442,3 +442,76 @@ export const debtCertificateIssueResult = z.object({
 export type DebtCertificateIssueResult = z.infer<
   typeof debtCertificateIssueResult
 >;
+
+/* ------------------------------------------------------------------ *
+ * Belge doğrulama (halka açık)
+ * ------------------------------------------------------------------ */
+
+/**
+ * `GET /v1/public/certificates/verify` — banka/kurum teyidi (SPEC 3.6).
+ *
+ * Kimlik doğrulaması yok ve olmamalı: belgeyi ibraz eden kişi karşı tarafa
+ * hesap açtıramaz. Buna karşılık yanıt **kişisel veri taşımıyor** — daire
+ * numarası, sakin adı, borç kalemleri yok. Dönen tek şey "bu belge gerçek mi,
+ * hangi site verdi, ne zaman ve sonuç neydi".
+ *
+ * Seri numarası + doğrulama kodu **birlikte** aranıyor: yalnız seri numarası
+ * tahmin edilebilir (sıralı), kod ise değil.
+ */
+export const certificateVerifyResult = z.discriminatedUnion("valid", [
+  z.object({ valid: z.literal(false) }),
+  z.object({
+    valid: z.literal(true),
+    tenantName: z.string(),
+    asOfDate: dateTime,
+    result: z.enum(["clear", "outstanding"]),
+    outstandingMinor: moneyMinor,
+  }),
+]);
+
+export type CertificateVerifyResult = z.infer<typeof certificateVerifyResult>;
+
+/* ------------------------------------------------------------------ *
+ * Sakin ödemesi (hosted checkout)
+ * ------------------------------------------------------------------ */
+
+/**
+ * `GET /v1/panel/portal/payment` — ödeme özeti (SPEC 1.2 / 7.1).
+ *
+ * Komisyon kırılımı **sunucudan** geliyor, ekranda hesaplanmıyor: gösterilen
+ * tutarla tahsil edilen tutar arasında bir kuruş fark, şeffaflık vaadini
+ * (Bölüm 1.2) bozardı. İki yerde hesaplamak o farkın kaçınılmaz yolu.
+ */
+export const portalPaymentSummary = z.object({
+  unit: z.object({ id: uuid, number: z.string() }).nullable(),
+  tenantName: z.string(),
+  items: z.array(
+    z.object({ id: uuid, description: z.string(), outstandingMinor: moneyMinor }),
+  ),
+  fees: z.object({
+    amountMinor: moneyMinor,
+    platformFeeMinor: moneyMinor,
+    processorFeeMinor: moneyMinor,
+    totalMinor: moneyMinor,
+    /** Komisyonu kim üstleniyor — ekrandaki bilgi notunu bu belirliyor. */
+    paidBy: z.enum(["management", "resident"]),
+  }),
+});
+
+export type PortalPaymentSummary = z.infer<typeof portalPaymentSummary>;
+
+/**
+ * `POST /v1/panel/portal/payment` — ödeme başlatır.
+ *
+ * Gövde **boş**: tutar da daire de sunucuda, açık borçlardan türetiliyor.
+ * İstemciden tutar almak, ödenecek miktarı istemcinin belirlemesi demekti.
+ */
+export const portalCheckoutResult = z.object({
+  /** Hosted checkout adresi — kart verisi hiçbir zaman bize gelmiyor (PCI-DSS). */
+  paymentPageUrl: z.string().nullable(),
+  /** Sağlayıcı yapılandırılmamışsa havale talimatına düşülür. */
+  fallback: z.enum(["bank_transfer"]).nullable(),
+  conversationId: z.string(),
+});
+
+export type PortalCheckoutResult = z.infer<typeof portalCheckoutResult>;

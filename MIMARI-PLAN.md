@@ -860,7 +860,7 @@ kullanım yerleri değişmez.
 Kritik gözlem: **backend bölünmesi ve UI geçişi farklı dosyalara dokunuyor.**
 Paralel yürüyebilirler. Track A ve C birbirini beklemez.
 
-### Track A — Backend iskeleti ve modül göçü (kritik yol)
+### Track A — Backend iskeleti ve modül göçü (kritik yol) — **TAMAMLANDI**
 
 | Faz | İş | Bitti kriteri |
 | --- | --- | --- |
@@ -870,6 +870,28 @@ Paralel yürüyebilirler. Track A ve C birbirini beklemez.
 | **A3** | `property/resident` + `identity`. TCKN şifre çözme yalnız api'de. `identity`'ye **`mobile-auth`** (access + refresh) dördüncü strateji olarak eklenir — Faz 17 beklemesin, kimlik yolları tek seferde otursun. | `sakinler/**` SQL'siz; `ENCRYPTION_KEY` app env'inden **çıkarılır**; dört kimlik yolu da aynı `RequestContext`'i üretiyor (e2e test). |
 | **A4** | `insight` (dashboard, `lib/queries/dashboard-charts.ts`) + `governance/audit`. | `panel/page.tsx` tek API çağrısı. |
 | **A5** | Kalan 24 `page.tsx`: operations, communication, tenancy, integration. `/api/v1` **birebir** api'ye taşınır (§9.1: dış sözleşme donuk) ve Next'ten silinir. | **`apps/app/package.json`'dan `@yonetim/db` ve `drizzle-orm` kaldırılır.** Sert kapı. Eski `/v1` yanıtları sözleşme testiyle bit-bazlı doğrulanır. |
+
+**Track A durumu: A0–A5 tamamlandı.** `apps/app` içinde `@yonetim/db`,
+`drizzle-orm` ve `@yonetim/jobs` importu **sıfır**; bağımlılıklar
+`package.json`'dan kaldırıldı ve `eslint.config.mjs`'teki
+`PENDING_DB_MIGRATION` muafiyet listesi **boşaldı**. Artık kural iki katmanlı:
+lint kuralı niyeti anlatıyor, paket bağımlılığının yokluğu ihlali fiziksel
+olarak imkânsız kılıyor.
+
+A5'te ayrıca beklenenden fazlası taşındı, çünkü hepsi aynı değişmezin
+(§8.3 değişmez 3) ihlaliydi:
+
+| Taşınan | Nereye | Neden zorunluydu |
+| --- | --- | --- |
+| `/api/v1/{units,debts,expenses,residents}` + OpenAPI | `apps/api` `PublicModule` | Dış sözleşme; adres ve zarf **aynı** kaldı (Caddy `/api/v1*` → api). |
+| Oturum açma/kapama (magic link + SMS OTP) | `identity/web-auth.service.ts` | Oturumun tek otoritesi api (§8.1). Çerezi app yazıyor, kararı api veriyor. |
+| `lib/context.ts` bağlam çözümü | `GET /v1/auth/context` | Render katmanı kendi yetkisini imzalayamamalı. |
+| Kabuk rozetleri + bildirim merkezi | `insight/shell`, `communication/notification` | Panelin her sayfasında çalışan sorgular. |
+| Sakin portalı + ödeme başlatma | `property/resident/portal`, `finance/portal-payment` | Ödenecek tutar artık istemciden gelmiyor, sunucuda türüyor. |
+| WhatsApp ve iyzico webhook'ları | `communication/whatsapp`, `integration/payment` | Bot ve mahsup veritabanına yazıyor. Next'te kalan yalnız adresi koruyan ince aktarım. |
+| Zamanlanmış işler (`/api/cron/[job]`) | `POST /internal/cron/:job` (`CRON_SECRET`) | `@yonetim/jobs` DB'ye yazıyordu; dolaylı bir delikti. |
+| Belge doğrulama, NPS widget'ı, platform paneli | `PublicModule`, `tenancy/platform` | Halka açık ya da tenant sınırı dışı sorgular. |
+| Denetim kütüğü yazımı (`lib/audit.ts`) | `governance/audit` (silindi) | §8.4: kayıt **gerçekten değişen** veriyle, servis içinde yazılır. |
 
 ### Track B — Worker ve kuyruk
 

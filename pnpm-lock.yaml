@@ -95,15 +95,30 @@ importers:
       '@yonetim/dues':
         specifier: workspace:*
         version: link:../../packages/dues
+      '@yonetim/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
+      '@yonetim/jobs':
+        specifier: workspace:*
+        version: link:../../packages/jobs
       '@yonetim/kvkk':
         specifier: workspace:*
         version: link:../../packages/kvkk
+      '@yonetim/notifications':
+        specifier: workspace:*
+        version: link:../../packages/notifications
+      '@yonetim/payment':
+        specifier: workspace:*
+        version: link:../../packages/payment
       '@yonetim/pricing':
         specifier: workspace:*
         version: link:../../packages/pricing
       '@yonetim/sms':
         specifier: workspace:*
         version: link:../../packages/sms
+      '@yonetim/whatsapp':
+        specifier: workspace:*
+        version: link:../../packages/whatsapp
       cookie:
         specifier: ^1.0.2
         version: 1.1.1
@@ -186,12 +201,6 @@ importers:
       '@yonetim/auth':
         specifier: workspace:*
         version: link:../../packages/auth
-      '@yonetim/bank':
-        specifier: workspace:*
-        version: link:../../packages/bank
-      '@yonetim/campaigns':
-        specifier: workspace:*
-        version: link:../../packages/campaigns
       '@yonetim/config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -201,48 +210,21 @@ importers:
       '@yonetim/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@yonetim/db':
-        specifier: workspace:*
-        version: link:../../packages/db
       '@yonetim/dues':
         specifier: workspace:*
         version: link:../../packages/dues
-      '@yonetim/emails':
-        specifier: workspace:*
-        version: link:../../packages/emails
       '@yonetim/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
-      '@yonetim/jobs':
-        specifier: workspace:*
-        version: link:../../packages/jobs
       '@yonetim/kvkk':
         specifier: workspace:*
         version: link:../../packages/kvkk
-      '@yonetim/notifications':
-        specifier: workspace:*
-        version: link:../../packages/notifications
-      '@yonetim/payment':
-        specifier: workspace:*
-        version: link:../../packages/payment
-      '@yonetim/pricing':
-        specifier: workspace:*
-        version: link:../../packages/pricing
       '@yonetim/seo':
         specifier: workspace:*
         version: link:../../packages/seo
-      '@yonetim/sms':
-        specifier: workspace:*
-        version: link:../../packages/sms
       '@yonetim/ui':
         specifier: workspace:*
         version: link:../../packages/ui
-      '@yonetim/whatsapp':
-        specifier: workspace:*
-        version: link:../../packages/whatsapp
-      drizzle-orm:
-        specifier: ^0.38.3
-        version: 0.38.4(@types/react@19.2.17)(postgres@3.4.9)(react@19.2.8)
       lucide-react:
         specifier: ^0.469.0
         version: 0.469.0(react@19.2.8)

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
-import { hasPermission } from "@yonetim/auth";
+import { hasPermission } from "@yonetim/auth/guard";
 import {
   blockListResponse,
   expenseDetail as expenseDetailSchema,

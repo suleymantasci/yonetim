@@ -1,15 +1,19 @@
-import { and, eq } from "drizzle-orm";
 import { getTranslations } from "next-intl/server";
 
-import { debtCertificates, tenants, withBypassRls } from "@yonetim/db";
+import { certificateVerifyResult } from "@yonetim/contracts";
+import { AppError } from "@yonetim/core";
 import { Alert, Card, CardBody, CardHeader, Field, Input } from "@yonetim/ui";
 
+import { apiGet, toQuery } from "@/lib/api/server";
 import { formatters } from "@/lib/format";
 
 /**
  * Belge doğrulama — SPEC Bölüm 3.6.
+ *
  * Bankalar/kurumlar belge numarası + doğrulama kodu ile gerçekliği teyit eder.
- * Kimlik doğrulaması gerektirmez; yalnızca belge geçerliliğini döner (kişisel veri sızmaz).
+ * Kimlik doğrulaması gerektirmez; yalnızca belge geçerliliğini döner (kişisel
+ * veri sızmaz). Sorgu `apps/api`'de, deneme yanılmayı kapatan hız sınırıyla
+ * birlikte.
  */
 export const dynamic = "force-dynamic";
 
@@ -28,7 +32,7 @@ export default async function VerifyCertificatePage({
   const tCommon = await getTranslations("common");
   const f = await formatters();
 
-  const record = no && kod ? await lookup(no.trim(), kod.trim().toUpperCase()) : null;
+  const record = no && kod ? await lookup(no.trim(), kod.trim()) : null;
 
   return (
     <div className="mx-auto max-w-lg p-6">
@@ -57,7 +61,7 @@ export default async function VerifyCertificatePage({
                   value={
                     record.result === "clear"
                       ? t("resultClear")
-                      : t("resultOutstanding", { amount: f.money(record.outstandingKurus) })
+                      : t("resultOutstanding", { amount: f.money(record.outstandingMinor) })
                   }
                 />
               </dl>
@@ -74,34 +78,22 @@ export default async function VerifyCertificatePage({
   );
 }
 
-/** Yalnızca doğrulama için gereken alanları döner — kişisel veri taşımaz. */
 async function lookup(serialNo: string, code: string) {
-  return withBypassRls("certificate:verify", async (tx) => {
-    const rows = await tx
-      .select({
-        result: debtCertificates.result,
-        outstandingKurus: debtCertificates.outstandingKurus,
-        asOfDate: debtCertificates.asOfDate,
-        tenantName: tenants.name,
-      })
-      .from(debtCertificates)
-      .innerJoin(tenants, eq(tenants.id, debtCertificates.tenantId))
-      .where(
-        and(eq(debtCertificates.serialNo, serialNo), eq(debtCertificates.verificationCode, code)),
-      )
-      .limit(1);
-
-    const row = rows[0];
-    if (!row) return { valid: false as const };
-
-    return {
-      valid: true as const,
-      tenantName: row.tenantName,
-      asOfDate: row.asOfDate,
-      result: row.result,
-      outstandingKurus: row.outstandingKurus,
-    };
-  });
+  try {
+    return await apiGet(
+      `/v1/public/certificates/verify?${toQuery({ serialNo, code })}`,
+      certificateVerifyResult,
+    );
+  } catch (error) {
+    // Hız sınırına takılan kullanıcıya "belge geçersiz" demek yanlış olurdu;
+    // aynı ekranda kalıp geçersiz sonucu göstermek yerine hatayı yukarı
+    // veriyoruz ki error.tsx doğru mesajı göstersin.
+    if (error instanceof AppError && error.code === "rate_limited") throw error;
+    if (error instanceof AppError && error.code === "validation") {
+      return { valid: false as const };
+    }
+    throw error;
+  }
 }
 
 function Row({ label, value }: { label: string; value: string }) {

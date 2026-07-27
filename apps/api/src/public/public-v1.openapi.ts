@@ -1,5 +1,3 @@
-import { NextResponse } from "next/server";
-
 import { siteConfig } from "@yonetim/config";
 
 /**
@@ -10,10 +8,13 @@ import { siteConfig } from "@yonetim/config";
  * bakım maliyetini şu ölçekte hak etmiyor. Yüzey büyürse üreteci getirmek
  * doğru olur — bu dosya o zaman silinir.
  *
+ * Panel yüzeyinin (`/v1/panel/*`) Swagger dokümanı ayrı ve **üretiliyor**:
+ * o yüzey ekranla birlikte değiştiği için elle bakım yapılamaz. Bu doküman
+ * ise donuk bir sözleşmeyi anlatıyor; elle yazılmış olması onun özelliği.
+ *
  * Kimlik doğrulama, hata zarfı ve sayfalama sözleşmesi burada tek yerde
  * tanımlı; entegrasyon yazan geliştirici başka yere bakmak zorunda kalmıyor.
  */
-export const dynamic = "force-dynamic";
 
 const paginationParams = [
   { name: "page", in: "query", schema: { type: "integer", minimum: 1, default: 1 } },
@@ -36,8 +37,7 @@ const errorResponse = {
   },
 };
 
-export function GET() {
-  return NextResponse.json({
+export const OPENAPI_V1_DOCUMENT = {
     openapi: "3.1.0",
     info: {
       title: `${siteConfig.brand.name} API`,
@@ -355,5 +355,4 @@ export function GET() {
         },
       },
     },
-  });
-}
+};

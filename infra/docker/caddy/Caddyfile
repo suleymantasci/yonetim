@@ -1,9 +1,13 @@
 # Caddy — TLS sonlandırma ve yönlendirme (MIMARI-PLAN §11).
 #
-# Yönlendirme kararı: `/v1/*` doğrudan api'ye çıkıyor (muhasebe yazılımı ve
-# mobil oradan geliyor), panelin geri kalanı app'e. Panelin **iç** çağrıları
-# (`/v1/panel/*`) buradan geçmiyor — onlar docker iç ağında `http://api:3000`
-# üzerinden gidiyor, TLS ve RTT maliyeti yok (§9.2b).
+# Yönlendirme kararı: `/v1/*` ve `/api/v1/*` doğrudan api'ye çıkıyor (muhasebe
+# yazılımı ve mobil oradan geliyor), panelin geri kalanı app'e. Panelin **iç**
+# çağrıları (`/v1/panel/*`) buradan geçmiyor — onlar docker iç ağında
+# `http://api:3000` üzerinden gidiyor, TLS ve RTT maliyeti yok (§9.2b).
+#
+# `/api/v1/*` adresi A5'te Next'ten api'ye taşındı ama **adres değişmedi**:
+# o yüzeyin istemcileri bizim repomuzda değil ve URL'in kendisi sözleşmenin
+# parçası (§9.1). Taşımanın dışarıdan görünmemesi tam olarak amaç.
 
 {
 	email {$ACME_EMAIL:admin@localhost}
@@ -21,6 +25,19 @@
 
 	# Dış sözleşme yüzeyi — donuk, sürümlü (§9.1).
 	handle /v1/* {
+		reverse_proxy api:3000
+	}
+
+	# Aynı yüzeyin eski (ve yayınlanmış) adresi. Next'te artık karşılığı yok.
+	handle /api/v1* {
+		reverse_proxy api:3000
+	}
+
+	# Zamanlanmış işler — dış zamanlayıcı bu adresi çağırıyor, api'nin iç
+	# ucuna yeniden yazılıyor. Kimlik `CRON_SECRET` (Authorization başlığı
+	# olduğu gibi geçiyor); yetkisiz çağrı api tarafında 401 alıyor.
+	handle /api/cron/* {
+		uri replace /api/cron/ /internal/cron/
 		reverse_proxy api:3000
 	}
 
