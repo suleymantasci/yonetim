@@ -3,10 +3,11 @@ import { getTranslations } from "next-intl/server";
 
 import { Card, CardBody } from "@yonetim/ui";
 
+import { residentEditForm, unitOptionList } from "@yonetim/contracts";
+
 import { PageHeader } from "@/components/app-shell";
+import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
-import { getResidentDetail } from "@/lib/queries/residents";
-import { getUnitOptions } from "@/lib/queries/units";
 import { updateResident } from "../../actions";
 import { ResidentForm } from "../../resident-form";
 
@@ -18,14 +19,23 @@ export default async function EditResidentPage({
   readonly params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const ctx = await requirePermission("resident:write");
+  await requirePermission("resident:write");
   const t = await getTranslations("app.residents");
   const tCommon = await getTranslations("common");
 
-  const [detail, units] = await Promise.all([getResidentDetail(ctx, id), getUnitOptions(ctx)]);
+  // Ham telefonu yalnız bu uç döndürüyor (`resident:write` + ayrı KVKK kaydı):
+  // maskeli değer forma yazılsaydı kaydetmek numarayı maskeyle ezerdi.
+  const [detail, units] = await Promise.all([
+    apiGet(`/v1/panel/residents/${id}/duzenle`, residentEditForm).catch(
+      () => null,
+    ),
+    apiGet("/v1/panel/units/secenekler", unitOptionList),
+  ]);
   if (!detail) notFound();
 
-  const name = [detail.firstName, detail.lastName].filter(Boolean).join(" ") || t("unnamed");
+  const name =
+    [detail.firstName, detail.lastName].filter(Boolean).join(" ") ||
+    t("unnamed");
 
   return (
     <>
@@ -49,18 +59,18 @@ export default async function EditResidentPage({
             cancelHref={`/panel/sakinler/${id}`}
             submitLabel={tCommon("action.save")}
             defaults={{
-              id: detail.userId,
+              id: detail.id,
               firstName: detail.firstName,
               lastName: detail.lastName,
               phone: detail.phone,
               email: detail.email,
-              role: detail.roles[0] ?? "owner",
+              role: detail.role,
               locale: detail.locale,
               whatsappOptIn: detail.whatsappOptIn,
               emergencyContactName: detail.emergencyContactName,
               emergencyContactPhone: detail.emergencyContactPhone,
               notes: detail.notes,
-              hasTckn: detail.tcknEncrypted !== null,
+              hasTckn: detail.hasTckn,
             }}
           />
         </CardBody>

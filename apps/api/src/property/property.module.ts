@@ -1,6 +1,11 @@
 import { Module } from "@nestjs/common";
 
 import { BlockService } from "./block/block.service";
+import { PiiService } from "./resident/pii.service";
+import { ResidentWriteRepository } from "./resident/resident-write.repository";
+import { ResidentController } from "./resident/resident.controller";
+import { ResidentRepository } from "./resident/resident.repository";
+import { ResidentService } from "./resident/resident.service";
 import { BulkUnitBuilder } from "./unit/unit-bulk.service";
 import { UnitController } from "./unit/unit.controller";
 import { UnitRepository } from "./unit/unit.repository";
@@ -8,11 +13,20 @@ import { UnitService } from "./unit/unit.service";
 
 /**
  * `property` bağlamı — blok, birim, sakin, adres, sayaç (MIMARI-PLAN §6.3).
- * A1'de blok + birim; sakin A3'te, sayaç Track E'de eklenir.
+ * A1'de blok + birim, A3'te sakin; sayaç Track E'de eklenir.
  */
 @Module({
-  controllers: [UnitController],
-  providers: [UnitService, UnitRepository, BulkUnitBuilder, BlockService],
-  exports: [UnitService, UnitRepository],
+  controllers: [UnitController, ResidentController],
+  providers: [
+    UnitService,
+    UnitRepository,
+    BulkUnitBuilder,
+    BlockService,
+    ResidentService,
+    ResidentRepository,
+    ResidentWriteRepository,
+    PiiService,
+  ],
+  exports: [UnitService, UnitRepository, ResidentService, PiiService],
 })
 export class PropertyModule {}

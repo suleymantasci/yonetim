@@ -443,6 +443,7 @@
     "kvkkRequired": "KVKK aydınlatma onayı olmadan sakin kaydı açılamaz.",
     "contactRequired": "Telefon veya e-postadan en az biri zorunludur.",
     "created": "{name} eklendi.",
+    "linkedExisting": "{name} zaten kayıtlıydı; bu siteye bağlandı.",
     "updated": "Sakin bilgileri güncellendi.",
     "createFailed": "Sakin kaydı oluşturulamadı.",
     "notFound": "Sakin bulunamadı.",

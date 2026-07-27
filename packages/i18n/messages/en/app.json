@@ -443,6 +443,7 @@
     "kvkkRequired": "A resident cannot be created without privacy-notice consent.",
     "contactRequired": "Either a phone number or an e-mail address is required.",
     "created": "{name} added.",
+    "linkedExisting": "{name} was already registered and has been linked to this site.",
     "updated": "Resident details updated.",
     "createFailed": "The resident record could not be created.",
     "notFound": "Resident not found.",

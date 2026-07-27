@@ -2,10 +2,12 @@ import { getTranslations } from "next-intl/server";
 
 import { Card, CardBody } from "@yonetim/ui";
 
+import { unitOptionList } from "@yonetim/contracts";
+
 import { PageHeader } from "@/components/app-shell";
+import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import type { SearchParamsInput } from "@/lib/list-params";
-import { getUnitOptions } from "@/lib/queries/units";
 import { createResident } from "../actions";
 import { ResidentForm } from "../resident-form";
 
@@ -16,22 +18,29 @@ export default async function NewResidentPage({
 }: {
   readonly searchParams: Promise<SearchParamsInput>;
 }) {
-  const ctx = await requirePermission("resident:write");
+  await requirePermission("resident:write");
   const t = await getTranslations("app.residents");
   const tCommon = await getTranslations("common");
   const query = await searchParams;
 
-  const units = await getUnitOptions(ctx);
+  const units = await apiGet("/v1/panel/units/secenekler", unitOptionList);
   // Birim detayından "sakin ata" ile gelindiğinde birim ön seçili olur.
-  const presetUnitRaw = Array.isArray(query.birim) ? query.birim[0] : query.birim;
-  const presetUnitId = units.some((unit) => unit.id === presetUnitRaw) ? presetUnitRaw : undefined;
+  const presetUnitRaw = Array.isArray(query.birim)
+    ? query.birim[0]
+    : query.birim;
+  const presetUnitId = units.some((unit) => unit.id === presetUnitRaw)
+    ? presetUnitRaw
+    : undefined;
 
   return (
     <>
       <PageHeader
         title={t("newResident")}
         description={t("newResidentDescription")}
-        breadcrumb={[{ label: t("title"), href: "/panel/sakinler" }, { label: t("newResident") }]}
+        breadcrumb={[
+          { label: t("title"), href: "/panel/sakinler" },
+          { label: t("newResident") },
+        ]}
       />
       <Card className="max-w-3xl">
         <CardBody>

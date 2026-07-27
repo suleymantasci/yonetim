@@ -21,7 +21,12 @@ export interface ResidentRowView {
   name: string;
   phone: string;
   email: string | null;
-  units: { unitId: string; label: string; relation: string; relationLabel: string }[];
+  units: {
+    unitId: string;
+    label: string;
+    relation: string;
+    relationLabel: string;
+  }[];
   roleLabel: string;
   whatsappOptIn: boolean;
   outstanding: string;
@@ -82,7 +87,11 @@ export function ResidentsTable({
   ];
 
   if (rows.length === 0) {
-    return <p className="px-4 py-10 text-center text-sm text-fg-subtle">{labels.empty}</p>;
+    return (
+      <p className="px-4 py-10 text-center text-sm text-fg-subtle">
+        {labels.empty}
+      </p>
+    );
   }
 
   return (
@@ -144,7 +153,10 @@ export function ResidentsTable({
                     >
                       <td className="px-4 py-2.5">{rowCheckbox(row.id)}</td>
                       <td className={`${tc.td} font-medium`}>
-                        <Link href={`/panel/sakinler/${row.id}`} className="hover:underline">
+                        <Link
+                          href={`/panel/sakinler/${row.id}`}
+                          className="hover:underline"
+                        >
                           {row.name}
                         </Link>
                         {row.multiUnit ? (
@@ -168,7 +180,9 @@ export function ResidentsTable({
                                 <span
                                   aria-hidden
                                   className={`h-1.5 w-1.5 rounded-full ${
-                                    unit.relation === "owner" ? "bg-primary" : "bg-info"
+                                    unit.relation === "owner"
+                                      ? "bg-primary"
+                                      : "bg-info"
                                   }`}
                                 />
                                 {unit.label}
@@ -177,7 +191,9 @@ export function ResidentsTable({
                           </span>
                         )}
                       </td>
-                      <td className={`${tc.tdMuted} tabular-nums`}>{row.phone}</td>
+                      <td className={`${tc.tdMuted} tabular-nums`}>
+                        {row.phone}
+                      </td>
                       <td className={tc.td}>{row.roleLabel}</td>
                       <td
                         className={`${tc.tdNum} ${row.hasOutstanding ? "font-semibold text-danger-fg" : ""}`}
@@ -187,12 +203,19 @@ export function ResidentsTable({
                       <td className={tc.td}>
                         {row.whatsappOptIn ? (
                           <span className="inline-flex items-center gap-1 text-xs text-success-fg">
-                            <MessageCircle aria-hidden className="h-3.5 w-3.5" />
+                            <MessageCircle
+                              aria-hidden
+                              className="h-3.5 w-3.5"
+                            />
                             {labels.whatsapp}
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 text-xs text-fg-subtle">
-                            <MessageCircleOff aria-hidden className="h-3.5 w-3.5" />—
+                            <MessageCircleOff
+                              aria-hidden
+                              className="h-3.5 w-3.5"
+                            />
+                            —
                           </span>
                         )}
                       </td>
@@ -217,12 +240,16 @@ export function ResidentsTable({
               <DataCard
                 key={row.id}
                 title={row.name}
-                subtitle={row.units.map((unit) => unit.label).join(", ") || undefined}
+                subtitle={
+                  row.units.map((unit) => unit.label).join(", ") || undefined
+                }
                 href={`/panel/sakinler/${row.id}`}
                 linkComponent={Link as never}
                 leading={rowCheckbox(row.id)}
                 badge={
-                  row.hasOutstanding ? <Badge tone="danger">{row.outstanding}</Badge> : null
+                  row.hasOutstanding ? (
+                    <Badge tone="danger">{row.outstanding}</Badge>
+                  ) : null
                 }
                 rows={[
                   { label: labels.phone, value: row.phone },

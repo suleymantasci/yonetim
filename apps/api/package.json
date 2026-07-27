@@ -28,6 +28,7 @@
     "@yonetim/dues": "workspace:*",
     "@yonetim/kvkk": "workspace:*",
     "@yonetim/pricing": "workspace:*",
+    "@yonetim/sms": "workspace:*",
     "cookie": "^1.0.2",
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.38.3",

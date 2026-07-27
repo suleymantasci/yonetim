@@ -17,6 +17,12 @@ export interface JwtPayload {
   typ: "access" | "refresh";
   /** Oturum kaydı kimliği — iptal (revocation) bunun üzerinden çalışır. */
   sid?: string;
+  /**
+   * Refresh kuşağı — her yenilemede değişir ve oturum satırındaki değerle
+   * karşılaştırılır. Eski refresh token'ı bir kez kullanıldıktan sonra
+   * geçersiz kılan şey budur (gerçek rotasyon).
+   */
+  jti?: string;
   iat: number;
   exp: number;
 }

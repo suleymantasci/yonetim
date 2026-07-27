@@ -26,13 +26,21 @@ export const serverEnv = {
   redisUrl: () => optional("UPSTASH_REDIS_REST_URL"),
   redisToken: () => optional("UPSTASH_REDIS_REST_TOKEN"),
 
-  authSecret: () => required("AUTH_SECRET", "dev-only-insecure-secret-change-me"),
-  /** Field-level encryption master key (Bölüm 5.6). 32 byte hex. */
-  encryptionKey: () =>
-    required(
-      "FIELD_ENCRYPTION_KEY",
-      "0000000000000000000000000000000000000000000000000000000000000000",
-    ),
+  authSecret: () =>
+    required("AUTH_SECRET", "dev-only-insecure-secret-change-me"),
+
+  /*
+   * `encryptionKey` BİLEREK YOK — MIMARI-PLAN §14 A3.
+   *
+   * Alan bazlı şifreleme anahtarı (`FIELD_ENCRYPTION_KEY`, SPEC 5.6) yalnız
+   * `apps/api` tarafından okunuyor: `apps/api/src/infra/config/env.ts` onu
+   * zorunlu kılıyor, `PiiService` tek tüketicisi. Buradan bir erişimci
+   * sunmak, anahtarı `apps/app` dahil bu paketi kuran **her** sürece açardı.
+   *
+   * TCKN/IBAN çözmenin tek yeri olması bir konvansiyon değil, dağıtım
+   * kısıtı: `app` konteynerine bu değişken hiç verilmiyor (§8.3, docker
+   * compose'daki yorumlu satır).
+   */
 
   iyzico: () => ({
     apiKey: optional("IYZICO_API_KEY"),

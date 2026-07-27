@@ -4,8 +4,18 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import {
-  Alert, Checkbox, Combobox, DateInput, FormSection, Input, PhoneInput, RadioGroup, Select,
-  Switch, TcknInput, Textarea,
+  Alert,
+  Checkbox,
+  Combobox,
+  DateInput,
+  FormSection,
+  Input,
+  PhoneInput,
+  RadioGroup,
+  Select,
+  Switch,
+  TcknInput,
+  Textarea,
 } from "@yonetim/ui";
 
 import { ActionForm, FormField } from "@/components/form/action-form";
@@ -69,10 +79,17 @@ export function ResidentForm({
   }));
 
   return (
-    <ActionForm action={action} submitLabel={submitLabel} cancelHref={cancelHref}>
+    <ActionForm
+      action={action}
+      submitLabel={submitLabel}
+      cancelHref={cancelHref}
+    >
       {isEdit ? <input type="hidden" name="id" value={defaults.id} /> : null}
 
-      <FormSection title={t("sectionIdentity")} description={t("sectionIdentityHint")}>
+      <FormSection
+        title={t("sectionIdentity")}
+        description={t("sectionIdentityHint")}
+      >
         <FormField name="firstName" label={t("firstName")} required>
           <Input
             name="firstName"
@@ -91,7 +108,11 @@ export function ResidentForm({
             autoComplete="family-name"
           />
         </FormField>
-        <FormField name="tckn" label={t("tckn")} hint={isEdit ? t("tcknEditHint") : t("tcknHint")}>
+        <FormField
+          name="tckn"
+          label={t("tckn")}
+          hint={isEdit ? t("tcknEditHint") : t("tcknHint")}
+        >
           <TcknInput
             name="tckn"
             masked={defaults?.hasTckn}
@@ -100,18 +121,27 @@ export function ResidentForm({
         </FormField>
         <FormField name="role" label={t("role")} required>
           <Select name="role" defaultValue={defaults?.role ?? "owner"} required>
-            {(["owner", "tenant_resident", "staff", "auditor", "accountant"] as const).map(
-              (role) => (
-                <option key={role} value={role}>
-                  {tEnum(`role.${role}`)}
-                </option>
-              ),
-            )}
+            {(
+              [
+                "owner",
+                "tenant_resident",
+                "staff",
+                "auditor",
+                "accountant",
+              ] as const
+            ).map((role) => (
+              <option key={role} value={role}>
+                {tEnum(`role.${role}`)}
+              </option>
+            ))}
           </Select>
         </FormField>
       </FormSection>
 
-      <FormSection title={t("sectionContact")} description={t("sectionContactHint")}>
+      <FormSection
+        title={t("sectionContact")}
+        description={t("sectionContactHint")}
+      >
         <FormField name="phone" label={t("phone")} hint={t("phoneHint")}>
           <PhoneInput
             name="phone"
@@ -146,7 +176,10 @@ export function ResidentForm({
         </div>
       </FormSection>
 
-      <FormSection title={t("sectionEmergency")} description={t("sectionEmergencyHint")}>
+      <FormSection
+        title={t("sectionEmergency")}
+        description={t("sectionEmergencyHint")}
+      >
         <FormField name="emergencyContactName" label={t("emergencyName")}>
           <Input
             name="emergencyContactName"
@@ -164,16 +197,34 @@ export function ResidentForm({
       </FormSection>
 
       {isEdit ? null : (
-        <FormSection title={t("sectionFirstUnit")} description={t("sectionFirstUnitHint")} columns={1}>
+        <FormSection
+          title={t("sectionFirstUnit")}
+          description={t("sectionFirstUnitHint")}
+          columns={1}
+        >
           <RadioGroup
             name="relation"
             columns={3}
             defaultValue={relation}
-            onChange={(value) => setRelation(value as "owner" | "tenant" | "none")}
+            onChange={(value) =>
+              setRelation(value as "owner" | "tenant" | "none")
+            }
             options={[
-              { value: "owner", label: tEnum("occupancy.owner"), description: t("relationOwnerHint") },
-              { value: "tenant", label: tEnum("occupancy.tenant"), description: t("relationTenantHint") },
-              { value: "none", label: t("relationNone"), description: t("relationNoneHint") },
+              {
+                value: "owner",
+                label: tEnum("occupancy.owner"),
+                description: t("relationOwnerHint"),
+              },
+              {
+                value: "tenant",
+                label: tEnum("occupancy.tenant"),
+                description: t("relationTenantHint"),
+              },
+              {
+                value: "none",
+                label: t("relationNone"),
+                description: t("relationNoneHint"),
+              },
             ]}
           />
 
@@ -191,12 +242,24 @@ export function ResidentForm({
                   emptyText={t("noUnitFound")}
                 />
               </FormField>
-              <FormField name="startDate" label={t("startDate")} hint={t("startDateHint")}>
+              <FormField
+                name="startDate"
+                label={t("startDate")}
+                hint={t("startDateHint")}
+              >
                 <DateInput name="startDate" defaultValue={today()} />
               </FormField>
               {relation === "owner" ? (
-                <FormField name="ownershipPct" label={t("ownershipPct")} hint={t("ownershipPctHint")}>
-                  <Input name="ownershipPct" inputMode="decimal" defaultValue="100" />
+                <FormField
+                  name="ownershipPct"
+                  label={t("ownershipPct")}
+                  hint={t("ownershipPctHint")}
+                >
+                  <Input
+                    name="ownershipPct"
+                    inputMode="decimal"
+                    defaultValue="100"
+                  />
                 </FormField>
               ) : (
                 <FormField
@@ -206,7 +269,9 @@ export function ResidentForm({
                 >
                   <Select name="debtTransferPolicy" defaultValue="owner">
                     <option value="owner">{t("transferPolicy.owner")}</option>
-                    <option value="next_tenant">{t("transferPolicy.next_tenant")}</option>
+                    <option value="next_tenant">
+                      {t("transferPolicy.next_tenant")}
+                    </option>
                     <option value="keep">{t("transferPolicy.keep")}</option>
                   </Select>
                 </FormField>
@@ -218,7 +283,12 @@ export function ResidentForm({
 
       <FormSection title={t("sectionNotes")} columns={1}>
         <FormField name="notes" label={t("notes")} hint={t("notesHint")}>
-          <Textarea name="notes" defaultValue={defaults?.notes ?? ""} rows={3} maxLength={1000} />
+          <Textarea
+            name="notes"
+            defaultValue={defaults?.notes ?? ""}
+            rows={3}
+            maxLength={1000}
+          />
         </FormField>
       </FormSection>
 

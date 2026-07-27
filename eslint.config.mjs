@@ -63,13 +63,13 @@ const PENDING_DB_MIGRATION = [
   "apps/app/src/lib/api.ts",
   "apps/app/src/lib/context.ts",
   "apps/app/src/lib/queries.ts",
-  "apps/app/src/lib/queries/**",
+  // Yalnız dashboard sorguları kaldı; A4'te düşecek.
+  "apps/app/src/lib/queries/dashboard-charts.ts",
   "apps/app/src/lib/notify.ts",
-  "apps/app/src/lib/pii.ts",
   "apps/app/src/lib/shell-data.ts",
   "apps/app/src/lib/form.ts",
   "apps/app/src/app/api/**",
-  // A1 · A2'de göç edenler listeden çıkarıldı; kalanlar A3–A5'te düşecek.
+  // A1 · A2 · A3'te göç edenler listeden çıkarıldı; kalanlar A4–A5'te düşecek.
   "apps/app/src/app/panel/anketler/**",
   "apps/app/src/app/panel/ayarlar/**",
   "apps/app/src/app/panel/bakim/**",
@@ -85,7 +85,6 @@ const PENDING_DB_MIGRATION = [
   "apps/app/src/app/panel/personel/**",
   "apps/app/src/app/panel/raporlar/**",
   "apps/app/src/app/panel/rezervasyon/**",
-  "apps/app/src/app/panel/sakinler/**",
   "apps/app/src/app/panel/sayaclar/**",
   "apps/app/src/app/panel/simulator/**",
   "apps/app/src/app/panel/talepler/**",

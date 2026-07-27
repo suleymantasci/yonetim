@@ -101,6 +101,9 @@ importers:
       '@yonetim/pricing':
         specifier: workspace:*
         version: link:../../packages/pricing
+      '@yonetim/sms':
+        specifier: workspace:*
+        version: link:../../packages/sms
       cookie:
         specifier: ^1.0.2
         version: 1.1.1

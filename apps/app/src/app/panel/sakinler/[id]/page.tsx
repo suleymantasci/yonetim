@@ -3,17 +3,26 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
-import { maskPhone, type Role } from "@yonetim/core";
-import { Badge, Card, CardBody, CardHeader, Stat, Tabs, tableClasses as tc } from "@yonetim/ui";
+import {
+  residentDetail as residentDetailSchema,
+  unitOptionList,
+} from "@yonetim/contracts";
+import type { Role } from "@yonetim/core";
+import {
+  Badge,
+  Card,
+  CardBody,
+  CardHeader,
+  Stat,
+  Tabs,
+  tableClasses as tc,
+} from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
-import { logDataAccess } from "@/lib/access";
+import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
 import type { SearchParamsInput } from "@/lib/list-params";
-import { revealTcknMasked } from "@/lib/pii";
-import { getResidentDetail } from "@/lib/queries/residents";
-import { getUnitOptions } from "@/lib/queries/units";
 import { OccupancyManager, type OccupancyView } from "./occupancy-manager";
 
 export const dynamic = "force-dynamic";
@@ -28,7 +37,9 @@ type TabKey = (typeof TAB_KEYS)[number];
  * borçları, ödemeleri ve KVKK rıza geçmişi bir arada. Rakiplerde bu bilgi
  * daire başına ayrı ayrı duruyor; burada kişi merkezli.
  *
- * TCKN yalnız maskeli gösterilir; açık değer hiçbir zaman istemciye gitmez.
+ * TCKN yalnız maskeli gösterilir. A3 sonrası bu artık bir konvansiyon değil
+ * **kısıt**: maskeyi sunucu üretiyor, `apps/app` şifreleme anahtarına sahip
+ * olmadığı için açık değeri üretemez (MIMARI-PLAN §9.1).
  */
 export default async function ResidentDetailPage({
   params,
@@ -39,72 +50,83 @@ export default async function ResidentDetailPage({
 }) {
   const { id } = await params;
   const query = await searchParams;
-  const ctx = await requirePermission("resident:read");
+  await requirePermission("resident:read");
   const t = await getTranslations("app.residents");
   const tUnits = await getTranslations("app.units");
   const tCommon = await getTranslations("common");
   const tEnum = await getTranslations("enum");
   const fmt = await formatters();
 
-  const [detail, units] = await Promise.all([getResidentDetail(ctx, id), getUnitOptions(ctx)]);
+  // KVKK erişim kaydını uç yazıyor (§8.4); burada ayrıca yazmak çift satır olurdu.
+  const [detail, units] = await Promise.all([
+    apiGet(`/v1/panel/residents/${id}`, residentDetailSchema).catch(() => null),
+    apiGet("/v1/panel/units/secenekler", unitOptionList),
+  ]);
   if (!detail) notFound();
-
-  await logDataAccess(ctx, {
-    subjectUserId: id,
-    dataCategory: "kimlik_bilgisi",
-    action: "view",
-    purpose: "resident_detail_view",
-  });
 
   const rawTab = Array.isArray(query.sekme) ? query.sekme[0] : query.sekme;
   const tab: TabKey = (TAB_KEYS as readonly string[]).includes(rawTab ?? "")
     ? (rawTab as TabKey)
     : "ozet";
 
-  const name = [detail.firstName, detail.lastName].filter(Boolean).join(" ") || t("unnamed");
+  const name =
+    [detail.firstName, detail.lastName].filter(Boolean).join(" ") ||
+    t("unnamed");
   const tabHref = (key: TabKey) =>
-    key === "ozet" ? `/panel/sakinler/${id}` : `/panel/sakinler/${id}?sekme=${key}`;
+    key === "ozet"
+      ? `/panel/sakinler/${id}`
+      : `/panel/sakinler/${id}?sekme=${key}`;
 
   // Birim başına bakiye: ayrılma kararında hangi birimde borç kaldığını gösterir.
   const balanceByUnit = new Map<string, number>();
   for (const debt of detail.debts) {
     if (debt.status === "paid") continue;
-    const open = debt.amountKurus + debt.lateFeeKurus - debt.paidKurus;
-    balanceByUnit.set(debt.unitNumber, (balanceByUnit.get(debt.unitNumber) ?? 0) + open);
+    const open = debt.amountMinor + debt.lateFeeMinor - debt.paidMinor;
+    balanceByUnit.set(
+      debt.unitNumber,
+      (balanceByUnit.get(debt.unitNumber) ?? 0) + open,
+    );
   }
 
-  const occupancyViews: OccupancyView[] = detail.occupancies.map((occupancy) => {
-    const outstanding = balanceByUnit.get(occupancy.unitNumber) ?? 0;
-    return {
-      occupancyId: occupancy.occupancyId,
-      unitId: occupancy.unitId,
-      unitLabel: occupancy.blockName
-        ? `${occupancy.blockName} / ${occupancy.unitNumber}`
-        : occupancy.unitNumber,
-      relation: occupancy.relation,
-      relationLabel: tEnum(`occupancy.${occupancy.relation}`),
-      ownershipPct: `${Number(occupancy.ownershipPct).toFixed(2)}%`,
-      startDate: fmt.date(occupancy.startDate),
-      endDate: occupancy.endDate ? fmt.date(occupancy.endDate) : null,
-      policyLabel: tUnits(`transferPolicy.${occupancy.debtTransferPolicy}`),
-      contractUrl: occupancy.contractUrl,
-      outstanding: outstanding > 0 ? fmt.money(outstanding) : "—",
-      hasOutstanding: outstanding > 0,
-    };
-  });
+  const occupancyViews: OccupancyView[] = detail.occupancies.map(
+    (occupancy) => {
+      const outstanding = balanceByUnit.get(occupancy.unitNumber) ?? 0;
+      return {
+        occupancyId: occupancy.occupancyId,
+        unitId: occupancy.unitId,
+        unitLabel: occupancy.blockName
+          ? `${occupancy.blockName} / ${occupancy.unitNumber}`
+          : occupancy.unitNumber,
+        relation: occupancy.relation,
+        relationLabel: tEnum(`occupancy.${occupancy.relation}`),
+        ownershipPct: `${Number(occupancy.ownershipPct).toFixed(2)}%`,
+        startDate: fmt.date(occupancy.startDate),
+        endDate: occupancy.endDate ? fmt.date(occupancy.endDate) : null,
+        policyLabel: tUnits(`transferPolicy.${occupancy.debtTransferPolicy}`),
+        contractUrl: occupancy.contractUrl,
+        outstanding: outstanding > 0 ? fmt.money(outstanding) : "—",
+        hasOutstanding: outstanding > 0,
+      };
+    },
+  );
 
-  const activeCount = detail.occupancies.filter((o) => o.endDate === null).length;
+  const activeCount = detail.occupancies.filter(
+    (o) => o.endDate === null,
+  ).length;
 
   return (
     <>
       <PageHeader
         title={name}
         description={
-          detail.phone
-            ? t("detailSubtitle", { phone: maskPhone(detail.phone) })
+          detail.phoneMasked
+            ? t("detailSubtitle", { phone: detail.phoneMasked })
             : (detail.email ?? undefined)
         }
-        breadcrumb={[{ label: t("title"), href: "/panel/sakinler" }, { label: name }]}
+        breadcrumb={[
+          { label: t("title"), href: "/panel/sakinler" },
+          { label: name },
+        ]}
         meta={
           <>
             {detail.roles.map((role) => (
@@ -117,7 +139,9 @@ export default async function ResidentDetailPage({
             ) : (
               <Badge tone="neutral">{t("whatsappOptOut")}</Badge>
             )}
-            {activeCount > 1 ? <Badge tone="brand">{t("multiUnitBadge")}</Badge> : null}
+            {activeCount > 1 ? (
+              <Badge tone="brand">{t("multiUnitBadge")}</Badge>
+            ) : null}
           </>
         }
         action={
@@ -143,15 +167,18 @@ export default async function ResidentDetailPage({
       <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Stat
           label={t("outstanding")}
-          value={fmt.money(detail.balance.outstandingKurus)}
-          tone={detail.balance.outstandingKurus > 0 ? "danger" : "success"}
+          value={fmt.money(detail.balance.outstandingMinor)}
+          tone={detail.balance.outstandingMinor > 0 ? "danger" : "success"}
         />
         <Stat
           label={t("overdue")}
-          value={fmt.money(detail.balance.overdueKurus)}
-          tone={detail.balance.overdueKurus > 0 ? "danger" : "neutral"}
+          value={fmt.money(detail.balance.overdueMinor)}
+          tone={detail.balance.overdueMinor > 0 ? "danger" : "neutral"}
         />
-        <Stat label={t("paidTotal")} value={fmt.money(detail.balance.paidTotalKurus)} />
+        <Stat
+          label={t("paidTotal")}
+          value={fmt.money(detail.balance.paidTotalMinor)}
+        />
         <Stat label={t("activeUnits")} value={String(activeCount)} />
       </div>
 
@@ -198,29 +225,29 @@ export default async function ResidentDetailPage({
               <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
                 <Row label={t("firstName")} value={detail.firstName ?? "—"} />
                 <Row label={t("lastName")} value={detail.lastName ?? "—"} />
-                <Row
-                  label={t("phone")}
-                  value={detail.phone ? maskPhone(detail.phone) : "—"}
-                />
+                <Row label={t("phone")} value={detail.phoneMasked ?? "—"} />
                 <Row label={t("email")} value={detail.email ?? "—"} />
-                <Row
-                  label={t("tckn")}
-                  value={revealTcknMasked(detail.tcknEncrypted, ctx.tenantId) ?? "—"}
-                />
+                <Row label={t("tckn")} value={detail.tcknMasked ?? "—"} />
                 <Row label={t("locale")} value={detail.locale.toUpperCase()} />
-                <Row label={t("emergencyName")} value={detail.emergencyContactName ?? "—"} />
+                <Row
+                  label={t("emergencyName")}
+                  value={detail.emergencyContactName ?? "—"}
+                />
                 <Row
                   label={t("emergencyPhone")}
-                  value={
-                    detail.emergencyContactPhone
-                      ? maskPhone(detail.emergencyContactPhone)
-                      : "—"
-                  }
+                  value={detail.emergencyContactPhoneMasked ?? "—"}
                 />
-                <Row label={t("createdAt")} value={fmt.date(detail.createdAt)} />
+                <Row
+                  label={t("createdAt")}
+                  value={fmt.date(detail.createdAt)}
+                />
                 <Row
                   label={t("lastLogin")}
-                  value={detail.lastLoginAt ? fmt.dateTime(detail.lastLoginAt) : t("neverLoggedIn")}
+                  value={
+                    detail.lastLoginAt
+                      ? fmt.dateTime(detail.lastLoginAt)
+                      : t("neverLoggedIn")
+                  }
                 />
               </dl>
               {detail.notes ? (
@@ -235,10 +262,15 @@ export default async function ResidentDetailPage({
           </Card>
 
           <Card>
-            <CardHeader title={t("tabUnits")} description={t("unitsSummaryHint")} />
+            <CardHeader
+              title={t("tabUnits")}
+              description={t("unitsSummaryHint")}
+            />
             <CardBody className="p-0">
               {occupancyViews.length === 0 ? (
-                <p className="p-6 text-center text-sm text-fg-subtle">{t("noUnits")}</p>
+                <p className="p-6 text-center text-sm text-fg-subtle">
+                  {t("noUnits")}
+                </p>
               ) : (
                 <ul className="divide-y divide-border">
                   {occupancyViews.map((occupancy) => (
@@ -260,7 +292,9 @@ export default async function ResidentDetailPage({
                       </div>
                       <span
                         className={`shrink-0 text-sm tabular-nums ${
-                          occupancy.hasOutstanding ? "font-semibold text-danger-fg" : "text-fg-muted"
+                          occupancy.hasOutstanding
+                            ? "font-semibold text-danger-fg"
+                            : "text-fg-muted"
                         }`}
                       >
                         {occupancy.outstanding}
@@ -328,13 +362,27 @@ export default async function ResidentDetailPage({
               <table className={tc.table} style={{ minWidth: 780 }}>
                 <thead className={tc.thead}>
                   <tr>
-                    <th scope="col" className={tc.th}>{t("unit")}</th>
-                    <th scope="col" className={tc.th}>{tUnits("debtDescription")}</th>
-                    <th scope="col" className={tc.th}>{tUnits("period")}</th>
-                    <th scope="col" className={`${tc.th} text-right`}>{tUnits("amount")}</th>
-                    <th scope="col" className={`${tc.th} text-right`}>{tUnits("paid")}</th>
-                    <th scope="col" className={tc.th}>{tUnits("dueDate")}</th>
-                    <th scope="col" className={tc.th}>{t("status")}</th>
+                    <th scope="col" className={tc.th}>
+                      {t("unit")}
+                    </th>
+                    <th scope="col" className={tc.th}>
+                      {tUnits("debtDescription")}
+                    </th>
+                    <th scope="col" className={tc.th}>
+                      {tUnits("period")}
+                    </th>
+                    <th scope="col" className={`${tc.th} text-right`}>
+                      {tUnits("amount")}
+                    </th>
+                    <th scope="col" className={`${tc.th} text-right`}>
+                      {tUnits("paid")}
+                    </th>
+                    <th scope="col" className={tc.th}>
+                      {tUnits("dueDate")}
+                    </th>
+                    <th scope="col" className={tc.th}>
+                      {t("status")}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -349,15 +397,22 @@ export default async function ResidentDetailPage({
                       <tr key={debt.id} className={tc.tr}>
                         <td className={tc.td}>{debt.unitNumber}</td>
                         <td className={`${tc.td} font-medium`}>
-                          <Link href={`/panel/borclar/${debt.id}`} className="hover:underline">
+                          <Link
+                            href={`/panel/borclar/${debt.id}`}
+                            className="hover:underline"
+                          >
                             {debt.description}
                           </Link>
                         </td>
                         <td className={tc.tdMuted}>
                           {debt.period ? fmt.period(debt.period) : "—"}
                         </td>
-                        <td className={tc.tdNum}>{fmt.money(debt.amountKurus)}</td>
-                        <td className={tc.tdNum}>{fmt.money(debt.paidKurus)}</td>
+                        <td className={tc.tdNum}>
+                          {fmt.money(debt.amountMinor)}
+                        </td>
+                        <td className={tc.tdNum}>
+                          {fmt.money(debt.paidMinor)}
+                        </td>
                         <td className={tc.td}>{fmt.date(debt.dueDate)}</td>
                         <td className={tc.td}>
                           <Badge tone={debtTone(debt.status)}>
@@ -376,18 +431,33 @@ export default async function ResidentDetailPage({
 
       {tab === "odemeler" ? (
         <Card>
-          <CardHeader title={t("tabPayments")} description={t("paymentsHint")} />
+          <CardHeader
+            title={t("tabPayments")}
+            description={t("paymentsHint")}
+          />
           <CardBody className="p-0">
             <div className={tc.wrapper}>
               <table className={tc.table} style={{ minWidth: 720 }}>
                 <thead className={tc.thead}>
                   <tr>
-                    <th scope="col" className={tc.th}>{tUnits("paidAt")}</th>
-                    <th scope="col" className={`${tc.th} text-right`}>{tUnits("amount")}</th>
-                    <th scope="col" className={tc.th}>{tUnits("method")}</th>
-                    <th scope="col" className={tc.th}>{t("status")}</th>
-                    <th scope="col" className={tc.th}>{t("onBehalfOf")}</th>
-                    <th scope="col" className={tc.th}>{tUnits("receiptNo")}</th>
+                    <th scope="col" className={tc.th}>
+                      {tUnits("paidAt")}
+                    </th>
+                    <th scope="col" className={`${tc.th} text-right`}>
+                      {tUnits("amount")}
+                    </th>
+                    <th scope="col" className={tc.th}>
+                      {tUnits("method")}
+                    </th>
+                    <th scope="col" className={tc.th}>
+                      {t("status")}
+                    </th>
+                    <th scope="col" className={tc.th}>
+                      {t("onBehalfOf")}
+                    </th>
+                    <th scope="col" className={tc.th}>
+                      {tUnits("receiptNo")}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -403,10 +473,20 @@ export default async function ResidentDetailPage({
                         <td className={tc.td}>
                           {payment.paidAt ? fmt.dateTime(payment.paidAt) : "—"}
                         </td>
-                        <td className={tc.tdNum}>{fmt.money(payment.amountKurus)}</td>
-                        <td className={tc.td}>{tEnum(`paymentMethod.${payment.method}`)}</td>
+                        <td className={tc.tdNum}>
+                          {fmt.money(payment.amountMinor)}
+                        </td>
                         <td className={tc.td}>
-                          <Badge tone={payment.status === "completed" ? "success" : "neutral"}>
+                          {tEnum(`paymentMethod.${payment.method}`)}
+                        </td>
+                        <td className={tc.td}>
+                          <Badge
+                            tone={
+                              payment.status === "completed"
+                                ? "success"
+                                : "neutral"
+                            }
+                          >
                             {tEnum(`paymentStatus.${payment.status}`)}
                           </Badge>
                         </td>
@@ -420,7 +500,9 @@ export default async function ResidentDetailPage({
                             "—"
                           )}
                         </td>
-                        <td className={tc.tdMuted}>{payment.receiptNo ?? "—"}</td>
+                        <td className={tc.tdMuted}>
+                          {payment.receiptNo ?? "—"}
+                        </td>
                       </tr>
                     ))
                   )}
@@ -436,7 +518,9 @@ export default async function ResidentDetailPage({
           <CardHeader title={t("tabKvkk")} description={t("kvkkHint")} />
           <CardBody className="p-0">
             {detail.consents.length === 0 ? (
-              <p className="p-6 text-center text-sm text-fg-subtle">{t("noConsents")}</p>
+              <p className="p-6 text-center text-sm text-fg-subtle">
+                {t("noConsents")}
+              </p>
             ) : (
               <ul className="divide-y divide-border">
                 {detail.consents.map((consent, index) => (
@@ -449,12 +533,16 @@ export default async function ResidentDetailPage({
                         {t(`consentKind.${consent.kind}`)}
                       </span>
                       <span className="text-xs text-fg-subtle">
-                        {t("consentVersion", { version: consent.documentVersion })}
+                        {t("consentVersion", {
+                          version: consent.documentVersion,
+                        })}
                         {consent.at ? ` · ${fmt.dateTime(consent.at)}` : ""}
                       </span>
                     </div>
                     <Badge tone={consent.granted ? "success" : "danger"}>
-                      {consent.granted ? t("consentGranted") : t("consentRevoked")}
+                      {consent.granted
+                        ? t("consentGranted")
+                        : t("consentRevoked")}
                     </Badge>
                   </li>
                 ))}
@@ -467,7 +555,13 @@ export default async function ResidentDetailPage({
   );
 }
 
-function Row({ label, value }: { readonly label: string; readonly value: string }) {
+function Row({
+  label,
+  value,
+}: {
+  readonly label: string;
+  readonly value: string;
+}) {
   return (
     <>
       <dt className="text-fg-subtle">{label}</dt>
@@ -476,7 +570,9 @@ function Row({ label, value }: { readonly label: string; readonly value: string 
   );
 }
 
-function debtTone(status: string): "success" | "danger" | "warning" | "neutral" {
+function debtTone(
+  status: string,
+): "success" | "danger" | "warning" | "neutral" {
   if (status === "paid") return "success";
   if (status === "overdue" || status === "in_legal") return "danger";
   if (status === "partial") return "warning";

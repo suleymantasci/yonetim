@@ -19,6 +19,7 @@ import {
 import {
   debtDetail as debtDetailSchema,
   openDebtList,
+  residentOptionList,
 } from "@yonetim/contracts";
 import { AppError } from "@yonetim/core";
 
@@ -26,7 +27,6 @@ import { PageHeader } from "@/components/app-shell";
 import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
-import { getResidentOptions } from "@/lib/queries/residents";
 import { DebtActionPanels } from "./adjust-panel";
 
 export const dynamic = "force-dynamic";
@@ -48,7 +48,7 @@ export default async function DebtDetailPage({
   readonly params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const ctx = await requirePermission("debt:read");
+  await requirePermission("debt:read");
   const t = await getTranslations("app.debts");
   const tUnits = await getTranslations("app.units");
   const tCommon = await getTranslations("common");
@@ -67,10 +67,9 @@ export default async function DebtDetailPage({
   const outstanding = total - debt.paidMinor;
   const overdue = debt.status !== "paid" && debt.dueDate.getTime() < Date.now();
 
-  // `getResidentOptions` A3'te API'ye taşınacak; şu an hâlâ sorgu katmanından.
   const [openDebts, residents] = await Promise.all([
     apiGet(`/v1/panel/debts/acik/${debt.unitId}`, openDebtList),
-    getResidentOptions(ctx),
+    apiGet("/v1/panel/residents/secenekler", residentOptionList),
   ]);
 
   const timelineEntries: TimelineEntry[] = [
@@ -178,7 +177,7 @@ export default async function DebtDetailPage({
                 row.amountMinor + row.lateFeeMinor - row.paidMinor,
               ),
             }))}
-            residents={residents.map((person) => ({
+            residents={residents.rows.map((person) => ({
               id: person.id,
               label:
                 [person.firstName, person.lastName].filter(Boolean).join(" ") ||

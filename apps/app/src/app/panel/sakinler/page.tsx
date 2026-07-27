@@ -2,15 +2,29 @@ import { Plus, Users } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
-import { maskPhone, type Role } from "@yonetim/core";
-import { Alert, Card, CardBody, EmptyState, Pagination, Stat } from "@yonetim/ui";
+import { residentListResponse, RESIDENT_SORT_KEYS } from "@yonetim/contracts";
+import type { Role } from "@yonetim/core";
+import {
+  Alert,
+  Card,
+  CardBody,
+  EmptyState,
+  Pagination,
+  Stat,
+} from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
 import { ListControls } from "@/components/list/list-controls";
-import { logDataAccess, requirePermissionWithLog } from "@/lib/access";
+import { requirePermissionWithLog } from "@/lib/access";
+import { apiGet } from "@/lib/api/server";
+import { toListQuery } from "@/lib/api/list";
 import { formatters } from "@/lib/format";
-import { buildListHref, pageRange, parseListParams, type SearchParamsInput } from "@/lib/list-params";
-import { listResidents, RESIDENT_SORT_KEYS } from "@/lib/queries/residents";
+import {
+  buildListHref,
+  pageRange,
+  parseListParams,
+  type SearchParamsInput,
+} from "@/lib/list-params";
 import { ResidentsTable, type ResidentRowView } from "./residents-table";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +34,7 @@ export default async function ResidentsPage({
 }: {
   readonly searchParams: Promise<SearchParamsInput>;
 }) {
-  const ctx = await requirePermissionWithLog("resident:read");
+  await requirePermissionWithLog("resident:read");
   const t = await getTranslations("app.residents");
   const tCommon = await getTranslations("common");
   const tEnum = await getTranslations("enum");
@@ -32,22 +46,25 @@ export default async function ResidentsPage({
     filterKeys: ["blok", "rol", "durum"],
   });
 
-  const data = await listResidents(ctx, params);
-  const { from, to, pageCount } = pageRange(params, data.total);
+  // KVKK md.12 erişim kaydını artık API yazıyor: kayıt, uçtan **dönen**
+  // kişi kümesini kullanıyor (MIMARI-PLAN §8.4). Buradaki döngü kaldırıldı;
+  // ekranın gösterdiğiyle kütüğe düşenin ayrışması artık mümkün değil.
+  const data = await apiGet(
+    `/v1/panel/residents?${toListQuery(params, {
+      blockId: params.filters.blok,
+      role: params.filters.rol,
+      status:
+        params.filters.durum === "borclu"
+          ? "inDebt"
+          : params.filters.durum === "coklu"
+            ? "multiUnit"
+            : undefined,
+    })}`,
+    residentListResponse,
+  );
+  const { from, to, pageCount } = pageRange(params, data.meta.total);
 
-  // KVKK md.12: yalnız **gösterilen** sayfadaki kişiler için erişim kaydı.
-  // Önceki uygulama ilk 50 kişiyi körü körüne loglıyordu; artık kayıt,
-  // fiilen ekranda görünen kişi kümesiyle birebir örtüşüyor.
-  for (const row of data.rows) {
-    await logDataAccess(ctx, {
-      subjectUserId: row.userId,
-      dataCategory: "iletisim_bilgisi",
-      action: "view",
-      purpose: "resident_list_view",
-    });
-  }
-
-  if (data.activeCount === 0 && !params.query) {
+  if (data.totals.activeCount === 0 && !params.query) {
     return (
       <>
         <PageHeader
@@ -83,8 +100,10 @@ export default async function ResidentsPage({
 
   const rows: ResidentRowView[] = data.rows.map((row) => ({
     id: row.userId,
-    name: [row.firstName, row.lastName].filter(Boolean).join(" ") || t("unnamed"),
-    phone: row.phone ? maskPhone(row.phone) : "—",
+    name:
+      [row.firstName, row.lastName].filter(Boolean).join(" ") || t("unnamed"),
+    // Maskeleme sunucuda yapıldı: ham numara bu sınıra hiç ulaşmıyor (§9.1).
+    phone: row.phoneMasked ?? "—",
     email: row.email,
     units: row.occupancies.map((occupancy) => ({
       unitId: occupancy.unitId,
@@ -96,8 +115,9 @@ export default async function ResidentsPage({
     })),
     roleLabel: row.roles[0] ? tEnum(`role.${row.roles[0] as Role}`) : "—",
     whatsappOptIn: row.whatsappOptIn,
-    outstanding: row.outstandingKurus > 0 ? fmt.money(row.outstandingKurus) : "—",
-    hasOutstanding: row.outstandingKurus > 0,
+    outstanding:
+      row.outstandingMinor > 0 ? fmt.money(row.outstandingMinor) : "—",
+    hasOutstanding: row.outstandingMinor > 0,
     multiUnit: row.occupancies.length > 1,
   }));
 
@@ -122,10 +142,16 @@ export default async function ResidentsPage({
       </div>
 
       <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat label={t("statPeople")} value={String(data.activeCount)} />
-        <Stat label={t("statOwners")} value={String(data.ownerCount)} />
-        <Stat label={t("statTenants")} value={String(data.tenantCount)} />
-        <Stat label={t("statWhatsapp")} value={String(data.optInCount)} />
+        <Stat label={t("statPeople")} value={String(data.totals.activeCount)} />
+        <Stat label={t("statOwners")} value={String(data.totals.ownerCount)} />
+        <Stat
+          label={t("statTenants")}
+          value={String(data.totals.tenantCount)}
+        />
+        <Stat
+          label={t("statWhatsapp")}
+          value={String(data.totals.optInCount)}
+        />
       </div>
 
       <ListControls
@@ -137,7 +163,10 @@ export default async function ResidentsPage({
             value: params.filters.blok ?? "",
             options: [
               { value: "", label: t("allBlocks") },
-              ...data.blocks.map((block) => ({ value: block.id, label: block.name })),
+              ...data.facets.blocks.map((block) => ({
+                value: block.id,
+                label: block.label,
+              })),
             ],
           },
           {
@@ -146,9 +175,15 @@ export default async function ResidentsPage({
             value: params.filters.rol ?? "",
             options: [
               { value: "", label: t("allRoles") },
-              ...(["owner", "tenant_resident", "staff", "auditor", "accountant"] as const).map(
-                (role) => ({ value: role, label: tEnum(`role.${role}`) }),
-              ),
+              ...(
+                [
+                  "owner",
+                  "tenant_resident",
+                  "staff",
+                  "auditor",
+                  "accountant",
+                ] as const
+              ).map((role) => ({ value: role, label: tEnum(`role.${role}`) })),
             ],
           },
           {
@@ -171,7 +206,11 @@ export default async function ResidentsPage({
             sort={params.sort}
             direction={params.direction}
             hrefFor={(key, direction) =>
-              buildListHref("/panel/sakinler", params, { sirala: key, yon: direction, sayfa: 1 })
+              buildListHref("/panel/sakinler", params, {
+                sirala: key,
+                yon: direction,
+                sayfa: 1,
+              })
             }
             labels={{
               fullName: t("fullName"),
@@ -191,12 +230,18 @@ export default async function ResidentsPage({
           <Pagination
             page={params.page}
             pageCount={pageCount}
-            total={data.total}
-            hrefFor={(page) => buildListHref("/panel/sakinler", params, { sayfa: page })}
+            total={data.meta.total}
+            hrefFor={(page) =>
+              buildListHref("/panel/sakinler", params, { sayfa: page })
+            }
             labels={{
               previous: tCommon("action.previous"),
               next: tCommon("action.next"),
-              summary: tCommon("state.showing", { from, to, total: data.total }),
+              summary: tCommon("state.showing", {
+                from,
+                to,
+                total: data.meta.total,
+              }),
             }}
             linkComponent={Link as never}
           />

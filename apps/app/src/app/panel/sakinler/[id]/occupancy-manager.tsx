@@ -6,7 +6,15 @@ import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import {
-  Alert, Badge, Combobox, DateInput, Drawer, Input, Select, tableClasses as tc, Textarea,
+  Alert,
+  Badge,
+  Combobox,
+  DateInput,
+  Drawer,
+  Input,
+  Select,
+  tableClasses as tc,
+  Textarea,
 } from "@yonetim/ui";
 
 import { ActionForm, FormField } from "@/components/form/action-form";
@@ -111,13 +119,27 @@ export function OccupancyManager({
           <table className={tc.table} style={{ minWidth: 780 }}>
             <thead className={tc.thead}>
               <tr>
-                <th scope="col" className={tc.th}>{labels.unit}</th>
-                <th scope="col" className={tc.th}>{labels.relation}</th>
-                <th scope="col" className={`${tc.th} text-right`}>{labels.sharePct}</th>
-                <th scope="col" className={`${tc.th} text-right`}>{labels.outstanding}</th>
-                <th scope="col" className={tc.th}>{labels.startDate}</th>
-                <th scope="col" className={tc.th}>{labels.endDate}</th>
-                <th scope="col" className={tc.th}>{labels.policy}</th>
+                <th scope="col" className={tc.th}>
+                  {labels.unit}
+                </th>
+                <th scope="col" className={tc.th}>
+                  {labels.relation}
+                </th>
+                <th scope="col" className={`${tc.th} text-right`}>
+                  {labels.sharePct}
+                </th>
+                <th scope="col" className={`${tc.th} text-right`}>
+                  {labels.outstanding}
+                </th>
+                <th scope="col" className={tc.th}>
+                  {labels.startDate}
+                </th>
+                <th scope="col" className={tc.th}>
+                  {labels.endDate}
+                </th>
+                <th scope="col" className={tc.th}>
+                  {labels.policy}
+                </th>
                 <th scope="col" className="w-24 px-4 py-2">
                   <span className="sr-only">{labels.endAction}</span>
                 </th>
@@ -142,7 +164,9 @@ export function OccupancyManager({
                       </Link>
                     </td>
                     <td className={tc.td}>
-                      <Badge tone={occupancy.relation === "owner" ? "brand" : "info"}>
+                      <Badge
+                        tone={occupancy.relation === "owner" ? "brand" : "info"}
+                      >
                         {occupancy.relationLabel}
                       </Badge>
                     </td>
@@ -153,7 +177,9 @@ export function OccupancyManager({
                       {occupancy.outstanding}
                     </td>
                     <td className={tc.td}>{occupancy.startDate}</td>
-                    <td className={tc.tdMuted}>{occupancy.endDate ?? labels.ongoing}</td>
+                    <td className={tc.tdMuted}>
+                      {occupancy.endDate ?? labels.ongoing}
+                    </td>
                     <td className={tc.tdMuted}>{occupancy.policyLabel}</td>
                     <td className="px-4 py-2.5 text-right">
                       {occupancy.endDate ? null : (
@@ -210,12 +236,20 @@ export function OccupancyManager({
               label={labels.ownershipPct}
               hint={labels.ownershipPctHint}
             >
-              <Input name="ownershipPct" inputMode="decimal" defaultValue="100" />
+              <Input
+                name="ownershipPct"
+                inputMode="decimal"
+                defaultValue="100"
+              />
             </FormField>
             <FormField name="startDate" label={labels.startDate} required>
               <DateInput name="startDate" defaultValue={today()} required />
             </FormField>
-            <FormField name="debtTransferPolicy" label={labels.policy} hint={labels.transferHint}>
+            <FormField
+              name="debtTransferPolicy"
+              label={labels.policy}
+              hint={labels.transferHint}
+            >
               <Select name="debtTransferPolicy" defaultValue="owner">
                 <option value="owner">{labels.transferOwner}</option>
                 <option value="next_tenant">{labels.transferNextTenant}</option>
@@ -223,7 +257,12 @@ export function OccupancyManager({
               </Select>
             </FormField>
             <FormField name="contractUrl" label={labels.contract}>
-              <Input name="contractUrl" type="url" placeholder="https://…" maxLength={500} />
+              <Input
+                name="contractUrl"
+                type="url"
+                placeholder="https://…"
+                maxLength={500}
+              />
             </FormField>
           </div>
 
@@ -260,12 +299,20 @@ export function OccupancyManager({
             onSuccess={() => setEnding(null)}
             footer={null}
           >
-            <input type="hidden" name="occupancyId" value={ending.occupancyId} />
+            <input
+              type="hidden"
+              name="occupancyId"
+              value={ending.occupancyId}
+            />
 
             <div className="space-y-4">
               <div className="rounded-lg bg-surface-sunken p-3 text-sm">
-                <span className="font-semibold text-fg">{ending.unitLabel}</span>
-                <span className="ml-2 text-fg-muted">{ending.relationLabel}</span>
+                <span className="font-semibold text-fg">
+                  {ending.unitLabel}
+                </span>
+                <span className="ml-2 text-fg-muted">
+                  {ending.relationLabel}
+                </span>
               </div>
 
               {ending.hasOutstanding ? (
@@ -278,15 +325,26 @@ export function OccupancyManager({
                 <DateInput name="endDate" defaultValue={today()} required />
               </FormField>
 
-              <FormField name="transferTo" label={labels.transferLabel} hint={labels.transferHint} required>
+              <FormField
+                name="transferTo"
+                label={labels.transferLabel}
+                hint={labels.transferHint}
+                required
+              >
                 <Select name="transferTo" defaultValue="owner" required>
                   <option value="owner">{labels.transferOwner}</option>
-                  <option value="next_tenant">{labels.transferNextTenant}</option>
+                  <option value="next_tenant">
+                    {labels.transferNextTenant}
+                  </option>
                   <option value="keep">{labels.transferKeep}</option>
                 </Select>
               </FormField>
 
-              <FormField name="reason" label={labels.reason} hint={labels.reasonHint}>
+              <FormField
+                name="reason"
+                label={labels.reason}
+                hint={labels.reasonHint}
+              >
                 <Textarea name="reason" rows={2} maxLength={500} />
               </FormField>
             </div>
