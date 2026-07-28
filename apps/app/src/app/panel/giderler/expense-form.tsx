@@ -37,6 +37,8 @@ export function ExpenseForm({
   canApprove,
   stayOnSuccess,
   onCreated,
+  layout,
+  onCancel,
 }: {
   categories: {
     id: string;
@@ -65,6 +67,9 @@ export function ExpenseForm({
   /** Çekmece içinde açıldığında: kayıt sonrası sayfa değiştirme. */
   stayOnSuccess?: boolean;
   onCreated?: (id: string) => void;
+  /** `"modal"`: alanlar kayar, Vazgeç/Kaydet çubuğu panelin altına sabitlenir. */
+  layout?: "page" | "modal";
+  onCancel?: () => void;
   canApprove: boolean;
 }) {
   const t = useTranslations("app.expenses");
@@ -85,6 +90,8 @@ export function ExpenseForm({
       submitLabel={submitLabel}
       cancelHref={cancelHref}
       stayOnSuccess={stayOnSuccess}
+      layout={layout}
+      onCancel={onCancel}
       onSuccess={(state) => {
         if (state.data?.id) onCreated?.(state.data.id);
       }}

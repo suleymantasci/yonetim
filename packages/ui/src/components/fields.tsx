@@ -64,10 +64,36 @@ export function FormSection({
   );
 }
 
-/** Uzun formlarda kaybolmayan kaydet çubuğu (GAP 4.3.1). */
+/**
+ * Uzun formlarda kaybolmayan kaydet çubuğu (GAP 4.3.1).
+ *
+ * NEGATİF KENAR BOŞLUĞU DÜZELTİLDİ: çubuk `sm:-mx-6` ile kapsayıcısından
+ * taşıyordu ama tek kullanıcısı olan `CardBody` her ölçüde `p-4`. Sonuç, her
+ * form sayfasının **altında sekiz piksellik yatay kaydırma çubuğu**ydu. Artık
+ * inset tek değer (`-mx-4`) ve kapsayıcının dolgusuyla birebir aynı.
+ *
+ * `-mb-4` + `rounded-b-lg`: çubuk kartın alt kenarına oturur, arada bir şerit
+ * boşluk kalmaz ve kartın yuvarlak köşesinden taşmaz.
+ */
 export function StickyFormBar({ children }: { children: ReactNode }) {
   return (
-    <div className="sticky bottom-0 z-10 -mx-4 mt-6 flex flex-wrap items-center justify-end gap-2 border-t border-border bg-surface/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
+    <div className="sticky bottom-0 z-10 -mx-4 -mb-4 mt-6 flex flex-wrap items-center justify-end gap-2 rounded-b-lg border-t border-border bg-surface/95 px-4 py-3 backdrop-blur">
+      {children}
+    </div>
+  );
+}
+
+/**
+ * Modal/çekmece içindeki eylem çubuğu.
+ *
+ * `StickyFormBar`'dan farkı **yapışkan olmaması**: modalda kaydırılan şey
+ * gövde, panelin kendisi değil. Çubuk panelin alt kenarında duran gerçek bir
+ * `footer` olduğu için `sticky`/negatif marj hilesine gerek yok — taşma da,
+ * içerikle çakışma da imkânsız hâle geliyor.
+ */
+export function ModalFormBar({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-border bg-surface-sunken px-5 py-3 sm:px-6">
       {children}
     </div>
   );
@@ -77,6 +103,27 @@ export function StickyFormBar({ children }: { children: ReactNode }) {
  * Basit sarmalayıcılar
  * ------------------------------------------------------------------ */
 
+/**
+ * Aç/kapa anahtarı — UI Faz 2.5'te iki hata giderildi.
+ *
+ * 1. **`<label>` içine `<button>` yerleştirilmişti.** `button` etiketlenebilir
+ *    bir öğedir: etikete yapılan tıklama düğmeye iletiliyor, düğmenin kendisine
+ *    yapılan tıklama ise tarayıcıya göre bir kez daha iletilebiliyordu —
+ *    anahtar açılıp anında kapanıyordu. Yerine **gerçek bir checkbox**
+ *    (`role="switch"`, görsel olarak gizli) kondu: etiket ilişkisi, klavye
+ *    (Space), ekran okuyucu duyurusu ve JS kapalıyken gönderim artık
+ *    tarayıcıdan geliyor. Görsel durum `peer-checked` ile CSS'ten çiziliyor,
+ *    yani React state'i ile DOM arasında ayrışma ihtimali de kalmadı.
+ *
+ *    Gizli `input[type=hidden]` kaldırıldı: işaretsiz checkbox hiç
+ *    gönderilmez ve `checkboxField` (`value === "on"`) bunu zaten `false`
+ *    olarak okur — davranış aynı, alan sayısı bir eksik.
+ *
+ * 2. **Kutu yoktu.** Anahtar formun içinde çerçevesiz duruyor, komşusu olan
+ *    `FormField`'lar çerçeveli olduğu için hizasız görünüyordu. Artık
+ *    `RadioGroup` seçenekleriyle aynı kutu dilinde ve açıkken kutunun kendisi
+ *    de işaretleniyor: durum yalnız 22 pikselik topuzdan okunmuyor.
+ */
 export function Switch({
   label,
   description,
@@ -94,41 +141,49 @@ export function Switch({
   onCheckedChange?: (next: boolean) => void;
   disabled?: boolean;
 }) {
-  const [internal, setInternal] = useState(defaultChecked ?? false);
-  const isOn = checked ?? internal;
+  const controlled = checked !== undefined;
 
   return (
-    <label className="flex items-start justify-between gap-4">
+    <label
+      className={cn(
+        "flex items-start justify-between gap-4 rounded-lg border border-border bg-surface p-3 transition-colors",
+        "has-[:checked]:border-primary has-[:checked]:bg-primary-soft",
+        disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:border-border-strong",
+      )}
+    >
       <span className="min-w-0">
         <span className="block text-sm font-medium text-fg">{label}</span>
-        {description ? <span className="block text-xs text-fg-muted">{description}</span> : null}
+        {description ? (
+          <span className="mt-0.5 block text-xs text-fg-muted">{description}</span>
+        ) : null}
       </span>
-      <button
-        type="button"
+
+      <input
+        type="checkbox"
         role="switch"
-        aria-checked={isOn}
+        name={name}
+        className="peer sr-only"
         disabled={disabled}
-        onClick={() => {
-          const next = !isOn;
-          if (checked === undefined) setInternal(next);
-          onCheckedChange?.(next);
-        }}
+        {...(controlled
+          ? { checked, onChange: (event) => onCheckedChange?.(event.target.checked) }
+          : {
+              defaultChecked,
+              onChange: (event) => onCheckedChange?.(event.target.checked),
+            })}
+      />
+      <span
+        aria-hidden
         className={cn(
-          "relative mt-0.5 h-6 w-11 shrink-0 rounded-full transition-colors",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
-          isOn ? "bg-primary" : "bg-border-strong",
-          disabled && "opacity-50",
+          "relative mt-0.5 h-6 w-11 shrink-0 rounded-full bg-border-strong transition-colors",
+          "peer-checked:bg-primary",
+          "peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-surface",
+          // Topuz rayın **çocuğu**; `peer-*` yalnız kardeşe uygulanır, bu yüzden
+          // kaydırma kuralı ray üzerinden çocuğa iniyor.
+          "peer-checked:[&>span]:translate-x-[21px]",
         )}
       >
-        <span
-          aria-hidden
-          className={cn(
-            "absolute top-0.5 h-5 w-5 rounded-full bg-surface shadow transition-transform",
-            isOn ? "translate-x-[22px]" : "translate-x-0.5",
-          )}
-        />
-      </button>
-      {name ? <input type="hidden" name={name} value={isOn ? "on" : "off"} /> : null}
+        <span className="absolute top-0.5 h-5 w-5 translate-x-0.5 rounded-full bg-surface shadow-sm ring-1 ring-black/5 transition-transform" />
+      </span>
     </label>
   );
 }

@@ -175,13 +175,15 @@ export function CategoryManager({
         }
         description={labels.formHint}
         closeLabel={tCommon("action.close")}
+        padded={false}
       >
         <ActionForm
           key={current?.id ?? `new-${presetParentId ?? "root"}`}
           action={saveExpenseCategory}
           submitLabel={tCommon("action.save")}
           onSuccess={() => setEditing(null)}
-          footer={null}
+          layout="modal"
+          onCancel={() => setEditing(null)}
         >
           {current ? (
             <input type="hidden" name="id" value={current.id} />
@@ -288,22 +290,6 @@ export function CategoryManager({
               description={labels.isActiveHint}
               defaultChecked={current?.isActive ?? true}
             />
-          </div>
-
-          <div className="mt-6 flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setEditing(null)}
-              className="inline-flex h-10 items-center rounded-lg border border-border-strong px-4 text-sm font-semibold text-fg hover:bg-hover"
-            >
-              {tCommon("action.cancel")}
-            </button>
-            <button
-              type="submit"
-              className="inline-flex h-10 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-fg hover:bg-primary-hover"
-            >
-              {tCommon("action.save")}
-            </button>
           </div>
         </ActionForm>
       </Drawer>

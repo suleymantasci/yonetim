@@ -1,7 +1,6 @@
 "use client";
 
 import { Pencil, Wallet } from "lucide-react";
-import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import {
@@ -83,7 +82,6 @@ export function DebtActionPanels({
     cancel: string;
   };
 }) {
-  const tCommon = useTranslations("common");
   const [adjusting, setAdjusting] = useState(false);
   const [collecting, setCollecting] = useState(false);
 
@@ -112,12 +110,14 @@ export function DebtActionPanels({
         title={labels.adjustTitle}
         description={labels.adjustHint}
         closeLabel={labels.cancel}
+        padded={false}
       >
         <ActionForm
           action={adjustDebt}
           submitLabel={labels.save}
           onSuccess={() => setAdjusting(false)}
-          footer={null}
+          layout="modal"
+          onCancel={() => setAdjusting(false)}
         >
           <input type="hidden" name="id" value={debtId} />
 
@@ -172,22 +172,6 @@ export function DebtActionPanels({
               defaultChecked={lateFeeExempt}
             />
           </div>
-
-          <div className="mt-6 flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setAdjusting(false)}
-              className="inline-flex h-10 items-center rounded-lg border border-border-strong px-4 text-sm font-semibold text-fg hover:bg-hover"
-            >
-              {labels.cancel}
-            </button>
-            <button
-              type="submit"
-              className="inline-flex h-10 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-fg hover:bg-primary-hover"
-            >
-              {labels.save}
-            </button>
-          </div>
         </ActionForm>
       </Drawer>
 
@@ -198,12 +182,14 @@ export function DebtActionPanels({
         description={labels.collectHint}
         closeLabel={labels.cancel}
         size="lg"
+        padded={false}
       >
         <ActionForm
           action={collectPayment}
           submitLabel={labels.collect}
           onSuccess={() => setCollecting(false)}
-          footer={null}
+          layout="modal"
+          onCancel={() => setCollecting(false)}
         >
           <input type="hidden" name="unitId" value={unitId} />
 
@@ -269,22 +255,6 @@ export function DebtActionPanels({
             <FormField name="note" label={labels.note}>
               <Textarea name="note" rows={2} maxLength={500} />
             </FormField>
-          </div>
-
-          <div className="mt-6 flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setCollecting(false)}
-              className="inline-flex h-10 items-center rounded-lg border border-border-strong px-4 text-sm font-semibold text-fg hover:bg-hover"
-            >
-              {tCommon("action.cancel")}
-            </button>
-            <button
-              type="submit"
-              className="inline-flex h-10 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-fg hover:bg-primary-hover"
-            >
-              {labels.collect}
-            </button>
           </div>
         </ActionForm>
       </Drawer>

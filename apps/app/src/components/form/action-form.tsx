@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
@@ -8,7 +9,9 @@ import {
 } from "react";
 import { useFormStatus } from "react-dom";
 
-import { Alert, Field, Spinner, StickyFormBar, useToast } from "@yonetim/ui";
+import {
+  Alert, Field, ModalFormBar, Spinner, StickyFormBar, cn, useToast,
+} from "@yonetim/ui";
 
 import type { ActionState } from "@/lib/form";
 
@@ -61,6 +64,14 @@ export function ActionForm<T = undefined>({
   stayOnSuccess = false,
   footer,
   className,
+  /**
+   * `"modal"`: form bir modal/çekmece gövdesini doldurur — alanlar kayar,
+   * eylem çubuğu panelin alt kenarında sabit kalır. `"page"` (varsayılan)
+   * eski davranış: sayfa kayar, çubuk `sticky` ile takip eder.
+   */
+  layout = "page",
+  /** Modal düzeninde "Vazgeç" düğmesi; genelde paneli kapatır. */
+  onCancel,
 }: {
   action: ServerAction<T>;
   /**
@@ -77,6 +88,8 @@ export function ActionForm<T = undefined>({
   stayOnSuccess?: boolean;
   footer?: ReactNode | ((state: ActionState<T>) => ReactNode);
   className?: string;
+  layout?: "page" | "modal";
+  onCancel?: () => void;
 }) {
   const [state, formAction] = useActionState(action, { status: "idle" } as ActionState<T>);
   const router = useRouter();
@@ -107,47 +120,101 @@ export function ActionForm<T = undefined>({
 
   const fieldErrors = state.fieldErrors ?? {};
   const formLevelErrors = fieldErrors._form ?? [];
+  const isModal = layout === "modal";
+
+  /**
+   * `footer={null}` "alt bar istemiyorum" demek. Burada `??` kullanılıyordu ve
+   * `null ?? <StickyFormBar/>` çubuğu **yine de** basıyordu: modal içinde elle
+   * yazılmış Vazgeç/Kaydet satırının altında ikinci bir Vazgeç/Kaydet çubuğu
+   * beliriyordu (ve `sm:-mx-6` ile birlikte yatay kaydırma). Ayrım artık
+   * `undefined` üzerinden.
+   */
+  const resolvedFooter = typeof footer === "function" ? footer(state) : footer;
+  const bar =
+    footer !== undefined ? (
+      resolvedFooter
+    ) : isModal ? (
+      <ModalFormBar>
+        {onCancel ? (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="inline-flex h-10 items-center rounded-lg border border-border-strong px-4 text-sm font-semibold text-fg transition-colors hover:bg-hover"
+          >
+            {t("action.cancel")}
+          </button>
+        ) : cancelHref ? (
+          <Link
+            href={cancelHref}
+            className="inline-flex h-10 items-center rounded-lg border border-border-strong px-4 text-sm font-semibold text-fg transition-colors hover:bg-hover"
+          >
+            {t("action.cancel")}
+          </Link>
+        ) : null}
+        <SubmitButton label={submitLabel} />
+      </ModalFormBar>
+    ) : (
+      // Yapışkan kaydet çubuğu `packages/ui`'deki `StickyFormBar`;
+      // burada ikinci bir kopyası duruyordu ve ikisi ayrışmıştı.
+      <StickyFormBar>
+        {cancelHref ? (
+          // `<a>` idi: iptal, istemci gezinmesi yerine tam sayfa yeniden
+          // yükleme yapıyordu (liste durumu ve kaydırma konumu gidiyordu).
+          <Link
+            href={cancelHref}
+            className="inline-flex h-10 items-center rounded-lg border border-border-strong px-4 text-sm font-semibold text-fg transition-colors hover:bg-hover"
+          >
+            {t("action.cancel")}
+          </Link>
+        ) : null}
+        <SubmitButton label={submitLabel} />
+      </StickyFormBar>
+    );
+
+  const body = (
+    <>
+      {state.status === "error" && (state.message || formLevelErrors.length > 0) ? (
+        <div ref={summaryRef} tabIndex={-1} className="mb-4 outline-none">
+          <Alert tone="danger" title={state.message ?? t("state.error")}>
+            {formLevelErrors.length > 0 ? (
+              <ul className="list-inside list-disc">
+                {formLevelErrors.map((message) => (
+                  <li key={message}>{message}</li>
+                ))}
+              </ul>
+            ) : null}
+          </Alert>
+        </div>
+      ) : null}
+
+      {inlineSuccess && state.status === "ok" && state.message ? (
+        <div className="mb-4">
+          <Alert tone="success">{state.message}</Alert>
+        </div>
+      ) : null}
+
+      {typeof children === "function" ? children(state) : children}
+    </>
+  );
 
   return (
     <FormContext.Provider value={{ fieldErrors, pending: false }}>
-      <form ref={formRef} action={formAction} className={className} noValidate>
-        {state.status === "error" && (state.message || formLevelErrors.length > 0) ? (
-          <div ref={summaryRef} tabIndex={-1} className="mb-4 outline-none">
-            <Alert tone="danger" title={state.message ?? t("state.error")}>
-              {formLevelErrors.length > 0 ? (
-                <ul className="list-inside list-disc">
-                  {formLevelErrors.map((message) => (
-                    <li key={message}>{message}</li>
-                  ))}
-                </ul>
-              ) : null}
-            </Alert>
+      <form
+        ref={formRef}
+        action={formAction}
+        className={cn(isModal && "flex min-h-0 flex-1 flex-col", className)}
+        noValidate
+      >
+        {isModal ? (
+          // Kaydırma **yalnız burada**: panelin gövdesi sabit, alanlar kayar.
+          // `overflow-x-hidden` alt kenarda beliren yatay çubuğu kapatır.
+          <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 py-5 sm:px-6">
+            {body}
           </div>
-        ) : null}
-
-        {inlineSuccess && state.status === "ok" && state.message ? (
-          <div className="mb-4">
-            <Alert tone="success">{state.message}</Alert>
-          </div>
-        ) : null}
-
-        {typeof children === "function" ? children(state) : children}
-
-        {(typeof footer === "function" ? footer(state) : footer) ?? (
-          // Yapışkan kaydet çubuğu `packages/ui`'deki `StickyFormBar`;
-          // burada ikinci bir kopyası duruyordu ve ikisi ayrışmıştı.
-          <StickyFormBar>
-            {cancelHref ? (
-              <a
-                href={cancelHref}
-                className="inline-flex h-10 items-center rounded-lg border border-border-strong px-4 text-sm font-semibold text-fg hover:bg-hover"
-              >
-                {t("action.cancel")}
-              </a>
-            ) : null}
-            <SubmitButton label={submitLabel} />
-          </StickyFormBar>
+        ) : (
+          body
         )}
+        {bar}
       </form>
     </FormContext.Provider>
   );

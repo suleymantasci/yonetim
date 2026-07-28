@@ -207,12 +207,14 @@ export function OccupancyManager({
         title={labels.addTitle}
         description={labels.addHint}
         closeLabel={tCommon("action.close")}
+        padded={false}
       >
         <ActionForm
           action={addOccupancy}
           submitLabel={tCommon("action.save")}
           onSuccess={() => setAdding(false)}
-          footer={null}
+          layout="modal"
+          onCancel={() => setAdding(false)}
         >
           <input type="hidden" name="userId" value={userId} />
           <div className="space-y-4">
@@ -265,22 +267,6 @@ export function OccupancyManager({
               />
             </FormField>
           </div>
-
-          <div className="mt-6 flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setAdding(false)}
-              className="inline-flex h-10 items-center rounded-lg border border-border-strong px-4 text-sm font-semibold text-fg hover:bg-hover"
-            >
-              {tCommon("action.cancel")}
-            </button>
-            <button
-              type="submit"
-              className="inline-flex h-10 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-fg hover:bg-primary-hover"
-            >
-              {tCommon("action.save")}
-            </button>
-          </div>
         </ActionForm>
       </Drawer>
 
@@ -290,6 +276,7 @@ export function OccupancyManager({
         title={labels.endTitle}
         description={labels.endHint}
         closeLabel={tCommon("action.close")}
+        padded={false}
       >
         {ending ? (
           <ActionForm
@@ -297,7 +284,8 @@ export function OccupancyManager({
             action={endOccupancy}
             submitLabel={labels.endAction}
             onSuccess={() => setEnding(null)}
-            footer={null}
+            layout="modal"
+            onCancel={() => setEnding(null)}
           >
             <input
               type="hidden"
@@ -347,22 +335,6 @@ export function OccupancyManager({
               >
                 <Textarea name="reason" rows={2} maxLength={500} />
               </FormField>
-            </div>
-
-            <div className="mt-6 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setEnding(null)}
-                className="inline-flex h-10 items-center rounded-lg border border-border-strong px-4 text-sm font-semibold text-fg hover:bg-hover"
-              >
-                {tCommon("action.cancel")}
-              </button>
-              <button
-                type="submit"
-                className="inline-flex h-10 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-fg hover:bg-primary-hover"
-              >
-                {labels.endAction}
-              </button>
             </div>
           </ActionForm>
         ) : null}

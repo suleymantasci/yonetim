@@ -9,6 +9,7 @@ import {
   CheckboxGroup,
   Drawer,
   Input,
+  ModalFormBar,
   PeriodInput,
   RadioGroup,
   Spinner,
@@ -118,12 +119,35 @@ export function DistributePanel({
         description={labels.hint}
         closeLabel={labels.cancel}
         size="xl"
+        padded={false}
       >
         <ActionForm
           action={distributeExpense}
           submitLabel={labels.submit}
           onSuccess={() => setOpen(false)}
-          footer={null}
+          layout="modal"
+          onCancel={() => setOpen(false)}
+          // Gönder düğmesi önizleme yapılmadan kilitli olduğu için varsayılan
+          // çubuk yerine özel bir çubuk; kabuk (`ModalFormBar`) yine ortak.
+          footer={
+            <ModalFormBar>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="inline-flex h-10 items-center rounded-lg border border-border-strong px-4 text-sm font-semibold text-fg transition-colors hover:bg-hover"
+              >
+                {labels.cancel}
+              </button>
+              <button
+                type="submit"
+                disabled={!canSubmit}
+                title={canSubmit ? undefined : labels.previewRequired}
+                className="inline-flex h-10 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-fg transition-colors hover:bg-primary-hover disabled:opacity-50"
+              >
+                {labels.submit}
+              </button>
+            </ModalFormBar>
+          }
         >
           <input type="hidden" name="expenseId" value={expenseId} />
 
@@ -278,24 +302,6 @@ export function DistributePanel({
                 </div>
               </>
             )}
-          </div>
-
-          <div className="mt-6 flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="inline-flex h-10 items-center rounded-lg border border-border-strong px-4 text-sm font-semibold text-fg hover:bg-hover"
-            >
-              {labels.cancel}
-            </button>
-            <button
-              type="submit"
-              disabled={!canSubmit}
-              title={canSubmit ? undefined : labels.previewRequired}
-              className="inline-flex h-10 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-fg hover:bg-primary-hover disabled:opacity-50"
-            >
-              {labels.submit}
-            </button>
           </div>
         </ActionForm>
       </Drawer>

@@ -33,6 +33,15 @@ import { cn } from "../cn";
  *
  * DIŞ API DEĞİŞMEDİ: `open`/`onClose`/`title`/`variant` aynı. Çağıran taraf
  * için bu değişiklik görünmez — görünür olan tek şey davranışın düzelmesi.
+ *
+ * GÖRSEL KATMAN (UI Faz 2.5): panel artık **her zaman bir flex sütunu**:
+ * başlık ve alt bar sabit, yalnız gövde kayar. Önceki hâlde modal gövdesi
+ * `max-h-[70dvh]` ile kendi başına kayıyordu, alt bar da içeriğin bir parçası
+ * olduğu için kaydırma ile birlikte gidiyordu.
+ *
+ * `padded={false}`: gövdeyi çağıran doldurur — form kabuğunun kendi kaydırma
+ * alanı ve kendi yapışkan alt barı olduğunda gerekli. İki kaydırma alanının
+ * iç içe geçmesini (ve alttaki yatay kaydırma çubuğunu) bu ayrım bitiriyor.
  */
 
 export type OverlayVariant = "modal" | "drawer" | "sheet";
@@ -51,27 +60,52 @@ export interface OverlayProps {
   dismissible?: boolean;
   closeLabel?: string;
   className?: string;
+  /**
+   * Gövdeye iç boşluk ve kaydırma verilsin mi? `false` ise gövde yalnız bir
+   * flex sütunu olur ve kaydırmayı/boşluğu çocuk yönetir (bkz. `ActionForm`
+   * `layout="modal"`).
+   */
+  padded?: boolean;
 }
 
 const PANEL: Record<OverlayVariant, string> = {
   modal:
-    "fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 " +
-    "rounded-xl border border-border bg-surface shadow-xl " +
+    "fixed left-1/2 top-1/2 z-50 flex max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] " +
+    "-translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-2xl " +
+    "border border-border bg-surface shadow-2xl ring-1 ring-black/5 " +
     "motion-safe:animate-[overlay-zoom_150ms_ease-out]",
+  // Masaüstünde çekmece kenardan 8px içeride ve köşeleri yuvarlak duruyor:
+  // ekranın kenarına yapışık dikdörtgen panel, arkadaki listeyi "örtülmüş"
+  // değil "kesilmiş" gösteriyordu. Telefonda tam ekran kalıyor — orada
+  // kenar boşluğu, zaten dar olan formdan yer çalar.
   drawer:
-    "fixed inset-y-0 right-0 z-50 flex h-full w-full flex-col border-l border-border " +
-    "bg-surface shadow-xl motion-safe:animate-[overlay-slide-right_180ms_ease-out]",
+    "fixed inset-y-0 right-0 z-50 flex h-full w-full flex-col overflow-hidden " +
+    "border-l border-border bg-surface shadow-2xl " +
+    "motion-safe:animate-[overlay-slide-right_180ms_ease-out] " +
+    "sm:inset-y-2 sm:right-2 sm:h-auto sm:rounded-2xl sm:border sm:ring-1 sm:ring-black/5",
   sheet:
-    "fixed inset-x-0 bottom-0 z-50 flex max-h-[90dvh] w-full flex-col rounded-t-2xl " +
-    "border-t border-border bg-surface shadow-xl " +
+    "fixed inset-x-0 bottom-0 z-50 flex max-h-[90dvh] w-full flex-col overflow-hidden " +
+    "rounded-t-2xl border-t border-border bg-surface shadow-2xl " +
     "motion-safe:animate-[overlay-slide-up_180ms_ease-out]",
 };
 
+/** Ortalanmış modal için genişlik. */
 const SIZE: Record<NonNullable<OverlayProps["size"]>, string> = {
   sm: "max-w-sm",
   md: "max-w-lg",
   lg: "max-w-2xl",
   xl: "max-w-4xl",
+};
+
+/**
+ * Çekmece genişliği `sm:` altında uygulanmaz: `max-w-sm` telefonda çekmeceyi
+ * 384px'e sıkıştırıyor, ekranın sağında bir şerit boş kalıyordu.
+ */
+const DRAWER_SIZE: Record<NonNullable<OverlayProps["size"]>, string> = {
+  sm: "sm:max-w-sm",
+  md: "sm:max-w-md",
+  lg: "sm:max-w-2xl",
+  xl: "sm:max-w-3xl",
 };
 
 export function Overlay({
@@ -86,6 +120,7 @@ export function Overlay({
   dismissible = true,
   closeLabel = "Kapat",
   className,
+  padded = true,
 }: OverlayProps) {
   return (
     <Dialog.Root
@@ -95,12 +130,12 @@ export function Overlay({
       }}
     >
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-overlay motion-safe:animate-[overlay-fade_120ms_ease-out]" />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-overlay backdrop-blur-[2px] motion-safe:animate-[overlay-fade_120ms_ease-out]" />
         <Dialog.Content
           className={cn(
             PANEL[variant],
             variant === "modal" && SIZE[size],
-            variant === "drawer" && (size === "xl" ? "max-w-2xl" : SIZE[size]),
+            variant === "drawer" && DRAWER_SIZE[size],
             "outline-none",
             className,
           )}
@@ -116,13 +151,21 @@ export function Overlay({
             if (!dismissible) event.preventDefault();
           }}
         >
-          <div className="flex items-start justify-between gap-4 border-b border-border p-4">
+          {/* Alttan açılan yaprakta tutamaç: parmakla kapatılabileceğinin
+              tek görsel ipucu. Fare kullanıcısı için zararsız bir çizgi. */}
+          {variant === "sheet" ? (
+            <div aria-hidden className="flex justify-center pt-2">
+              <span className="h-1 w-10 rounded-full bg-border-strong" />
+            </div>
+          ) : null}
+
+          <div className="flex shrink-0 items-start justify-between gap-4 border-b border-border px-5 py-4 sm:px-6">
             <div className="min-w-0">
-              <Dialog.Title className="text-base font-semibold text-fg">
+              <Dialog.Title className="text-base font-semibold tracking-tight text-fg sm:text-lg">
                 {title}
               </Dialog.Title>
               {description ? (
-                <Dialog.Description className="mt-1 text-sm text-fg-muted">
+                <Dialog.Description className="mt-1 text-sm leading-relaxed text-fg-muted">
                   {description}
                 </Dialog.Description>
               ) : (
@@ -138,7 +181,7 @@ export function Overlay({
             {dismissible ? (
               <Dialog.Close
                 aria-label={closeLabel}
-                className="-m-1 rounded-lg p-1 text-fg-subtle hover:bg-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="-mr-2 -mt-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-fg-subtle transition-colors hover:bg-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <X aria-hidden className="h-5 w-5" />
               </Dialog.Close>
@@ -147,17 +190,19 @@ export function Overlay({
 
           <div
             className={cn(
-              "p-4",
-              variant === "modal"
-                ? "max-h-[70dvh] overflow-y-auto"
-                : "flex-1 overflow-y-auto",
+              // `overflow-x-hidden`: gövde içindeki tam genişlik (negatif
+              // kenar boşluklu) şeritler bir piksel taşsa bile panelin
+              // altında yatay kaydırma çubuğu belirmesin.
+              padded
+                ? "min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 py-5 sm:px-6"
+                : "flex min-h-0 flex-1 flex-col",
             )}
           >
             {children}
           </div>
 
           {footer ? (
-            <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border bg-surface-sunken p-4">
+            <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 border-t border-border bg-surface-sunken px-5 py-3 sm:px-6">
               {footer}
             </div>
           ) : null}

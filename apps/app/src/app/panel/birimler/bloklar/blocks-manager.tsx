@@ -148,6 +148,7 @@ export function BlocksManager({ blocks }: { blocks: BlockRow[] }) {
         description={t("blockFormHint")}
         closeLabel={tCommon("action.close")}
         size="md"
+        padded={false}
       >
         {/* `key` ile form sıfırdan kurulur: farklı bloğa geçince eski değerler kalmaz. */}
         <ActionForm
@@ -155,7 +156,8 @@ export function BlocksManager({ blocks }: { blocks: BlockRow[] }) {
           action={saveBlock}
           submitLabel={tCommon("action.save")}
           onSuccess={() => setEditing(null)}
-          footer={null}
+          layout="modal"
+          onCancel={() => setEditing(null)}
         >
           {current ? (
             <input type="hidden" name="id" value={current.id} />
@@ -200,22 +202,6 @@ export function BlocksManager({ blocks }: { blocks: BlockRow[] }) {
               label={t("elevator")}
               defaultChecked={current?.hasElevator}
             />
-          </div>
-
-          <div className="mt-6 flex justify-end gap-2">
-            <button
-              type="button"
-              onClick={() => setEditing(null)}
-              className="inline-flex h-10 items-center rounded-lg border border-border-strong px-4 text-sm font-semibold text-fg hover:bg-hover"
-            >
-              {tCommon("action.cancel")}
-            </button>
-            <button
-              type="submit"
-              className="inline-flex h-10 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-fg hover:bg-primary-hover"
-            >
-              {tCommon("action.save")}
-            </button>
           </div>
         </ActionForm>
       </Drawer>

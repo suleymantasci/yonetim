@@ -32,7 +32,10 @@ export function UnitForm({
   submitLabel,
   stayOnSuccess,
   onCreated,
+  onSaved,
   footer,
+  layout,
+  onCancel,
 }: {
   action: ServerAction<{ id: string }>;
   blocks: { id: string; name: string }[];
@@ -59,8 +62,13 @@ export function UnitForm({
   /** Çekmece içinde açıldığında: kayıt sonrası sayfa değiştirme. */
   stayOnSuccess?: boolean;
   onCreated?: (id: string) => void;
+  /** Kayıt (ekleme ya da düzenleme) başarıyla tamamlandığında. */
+  onSaved?: () => void;
   /** Varsayılan yapışkan alt bar yerine özel bir alt bar. */
   footer?: ReactNode;
+  /** `"modal"`: alanlar kayar, Vazgeç/Kaydet çubuğu panelin altına sabitlenir. */
+  layout?: "page" | "modal";
+  onCancel?: () => void;
 }) {
   const t = useTranslations("app.units");
   const tEnum = useTranslations("enum");
@@ -89,8 +97,11 @@ export function UnitForm({
       cancelHref={cancelHref}
       stayOnSuccess={stayOnSuccess}
       footer={footer}
+      layout={layout}
+      onCancel={onCancel}
       onSuccess={(state) => {
         if (state.data?.id) onCreated?.(state.data.id);
+        onSaved?.();
       }}
     >
       {defaults ? <input type="hidden" name="id" value={defaults.id} /> : null}

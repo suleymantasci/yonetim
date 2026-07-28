@@ -46,7 +46,10 @@ export function ResidentForm({
   submitLabel,
   stayOnSuccess,
   onCreated,
+  onSaved,
   footer,
+  layout,
+  onCancel,
 }: {
   action: ServerAction<{ id: string }>;
   units: { id: string; number: string; blockName: string | null }[];
@@ -70,8 +73,13 @@ export function ResidentForm({
   /** Çekmece içinde açıldığında: kayıt sonrası sayfa değiştirme. */
   stayOnSuccess?: boolean;
   onCreated?: (id: string) => void;
+  /** Kayıt (ekleme ya da düzenleme) başarıyla tamamlandığında. */
+  onSaved?: () => void;
   /** Varsayılan yapışkan alt bar yerine özel bir alt bar. */
   footer?: ReactNode;
+  /** `"modal"`: alanlar kayar, Vazgeç/Kaydet çubuğu panelin altına sabitlenir. */
+  layout?: "page" | "modal";
+  onCancel?: () => void;
 }) {
   const t = useTranslations("app.residents");
   const tCommon = useTranslations("common");
@@ -93,8 +101,11 @@ export function ResidentForm({
       cancelHref={cancelHref}
       stayOnSuccess={stayOnSuccess}
       footer={footer}
+      layout={layout}
+      onCancel={onCancel}
       onSuccess={(state) => {
         if (state.data?.id) onCreated?.(state.data.id);
+        onSaved?.();
       }}
     >
       {isEdit ? <input type="hidden" name="id" value={defaults.id} /> : null}

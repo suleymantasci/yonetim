@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
@@ -10,6 +11,7 @@ import {
   Input,
   RadioGroup,
   Select,
+  StickyFormBar,
 } from "@yonetim/ui";
 
 import {
@@ -97,13 +99,16 @@ export function BulkUnitForm({
         const step = state.status === "ok" ? state.data : undefined;
         const ready = step?.kind === "preview" ? step.preview : null;
         return (
-          <div className="sticky bottom-0 z-10 -mx-4 mt-6 flex flex-wrap items-center justify-end gap-2 border-t border-border bg-surface/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
-            <a
+          // Elle yazılmış kopya yerine `StickyFormBar`: kopyadaki `sm:-mx-6`,
+          // `CardBody`'nin `p-4` dolgusundan taşıp sayfanın altına yatay
+          // kaydırma çubuğu koyuyordu.
+          <StickyFormBar>
+            <Link
               href={cancelHref}
-              className="inline-flex h-10 items-center rounded-lg border border-border-strong px-4 text-sm font-semibold text-fg hover:bg-hover"
+              className="inline-flex h-10 items-center rounded-lg border border-border-strong px-4 text-sm font-semibold text-fg transition-colors hover:bg-hover"
             >
               {tCommon("action.cancel")}
-            </a>
+            </Link>
             {/* Önizleme adımı: onaysız gönderim yazmaz, listeyi getirir. */}
             <SubmitButton
               label={ready ? t("bulkEdit") : t("preview")}
@@ -116,7 +121,7 @@ export function BulkUnitForm({
                 label={t("bulkConfirm", { count: ready.total })}
               />
             ) : null}
-          </div>
+          </StickyFormBar>
         );
       }}
     >

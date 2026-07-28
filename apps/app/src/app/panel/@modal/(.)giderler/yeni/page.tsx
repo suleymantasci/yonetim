@@ -46,8 +46,11 @@ export default async function NewExpenseModal() {
       closeLabel={tCommon("action.close")}
       size="xl"
     >
+      {/* Çekmece gövdesi artık dolgusuz (`padded={false}`); kaydırma ve iç
+          boşluk formun kabuğunda. Uyarı formun dışında kaldığı için kendi
+          boşluğunu taşıyor ve kaydırma alanının üstünde sabit duruyor. */}
       {categories.length === 0 ? (
-        <div className="mb-4">
+        <div className="px-5 pt-5 sm:px-6">
           <Alert tone="warning" title={t("noCategoriesTitle")}>
             {t("noCategoriesBody")}
           </Alert>

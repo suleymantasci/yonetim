@@ -67,22 +67,48 @@ export function Field({
   );
 }
 
-/** Onay kutusu — etiketi ile birlikte, dokunma alanı yeterli. */
+/**
+ * Onay kutusu — etiketi ile birlikte.
+ *
+ * UI Faz 2.5 düzeltmeleri: kutu 16px'ten 18px'e büyütüldü (dokunmatikte
+ * ıskalanıyordu), `accent-primary`'nin tarayıcıya bıraktığı odak halkası
+ * yerine tasarım sistemindeki `ring` kullanılıyor ve ilk satırın taban
+ * çizgisiyle hizası `mt-0.5` tahmininden `h-5` (etiket satır yüksekliği)
+ * içinde ortalamaya çevrildi — açıklamalı ve açıklamasız kullanımda aynı
+ * hizada duruyor. Etiketin tamamı tıklanabilir olduğu için hedef alanı
+ * kutunun kendisiyle sınırlı değil.
+ */
 export function Checkbox({
   label,
   description,
+  className,
+  disabled,
   ...props
 }: InputHTMLAttributes<HTMLInputElement> & { label: ReactNode; description?: ReactNode }) {
   return (
-    <label className="flex items-start gap-2 text-sm text-fg">
-      <input
-        type="checkbox"
-        className="mt-0.5 h-4 w-4 rounded border-border-strong accent-primary"
-        {...props}
-      />
-      <span>
-        {label}
-        {description ? <span className="block text-xs text-fg-subtle">{description}</span> : null}
+    <label
+      className={cn(
+        "flex items-start gap-2.5 text-sm text-fg",
+        disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer",
+        className,
+      )}
+    >
+      <span className="flex h-5 shrink-0 items-center">
+        <input
+          type="checkbox"
+          disabled={disabled}
+          className={cn(
+            "h-[18px] w-[18px] rounded border-border-strong accent-primary disabled:cursor-not-allowed",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
+          )}
+          {...props}
+        />
+      </span>
+      <span className="min-w-0">
+        <span className="block leading-5">{label}</span>
+        {description ? (
+          <span className="mt-0.5 block text-xs leading-relaxed text-fg-muted">{description}</span>
+        ) : null}
       </span>
     </label>
   );

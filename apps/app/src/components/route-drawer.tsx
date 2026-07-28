@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
 
 import { Drawer } from "@yonetim/ui";
 
@@ -28,37 +28,67 @@ import { Drawer } from "@yonetim/ui";
  * karşılığı geçmişten bir adım geri gitmek. `replace` ile listeye dönmek,
  * kullanıcının çekmece öncesi geçmişini de silerdi.
  */
+const RouteDrawerCloseContext = createContext<(() => void) | null>(null);
+
+/**
+ * Çekmeceyi içeriden kapatmak için.
+ *
+ * Çekmece kabuğu sunucu bileşeninden besleniyor; içindeki "Vazgeç" düğmesinin
+ * kapatma işini kendi başına `router.back()` ile yapması mümkün ama o zaman
+ * kapanış animasyonu atlanır (kabuk `open=false` yapmadan yok olur). Kapatma
+ * kararı tek yerde kalsın diye bağlamdan geçiriliyor. Çekmece dışında
+ * çağrılırsa hiçbir şey yapmaz — form aynı bileşenle tam sayfada da render
+ * edilebiliyor.
+ */
+export function useRouteDrawerClose(): () => void {
+  const close = useContext(RouteDrawerCloseContext);
+  return useCallback(() => close?.(), [close]);
+}
+
 export function RouteDrawer({
   title,
   description,
   children,
   closeLabel,
   size = "lg",
+  /**
+   * `false`: gövdenin iç boşluğunu ve kaydırmasını çocuk yönetir. Form
+   * kabuğu (`ActionForm layout="modal"`) kendi kaydırma alanını ve alt barını
+   * kurduğu için gerekli — iki kaydırma alanı iç içe geçtiğinde alt barın
+   * altında ikinci bir çubuk ve yatay taşma oluşuyordu.
+   */
+  padded = false,
 }: {
   title: ReactNode;
   description?: ReactNode;
   children: ReactNode;
   closeLabel: string;
   size?: "sm" | "md" | "lg" | "xl";
+  padded?: boolean;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(true);
 
+  const close = useCallback(() => {
+    // Önce kapanış animasyonu, sonra gezinme: `back()`'i doğrudan çağırmak
+    // paneli tek karede yok ediyor ve kapanış hareketi hiç görünmüyor.
+    setOpen(false);
+    router.back();
+  }, [router]);
+
   return (
-    <Drawer
-      open={open}
-      onClose={() => {
-        // Önce kapanış animasyonu, sonra gezinme: `back()`'i doğrudan çağırmak
-        // paneli tek karede yok ediyor ve kapanış hareketi hiç görünmüyor.
-        setOpen(false);
-        router.back();
-      }}
-      title={title}
-      description={description}
-      size={size}
-      closeLabel={closeLabel}
-    >
-      {children}
-    </Drawer>
+    <RouteDrawerCloseContext.Provider value={close}>
+      <Drawer
+        open={open}
+        onClose={close}
+        title={title}
+        description={description}
+        size={size}
+        closeLabel={closeLabel}
+        padded={padded}
+      >
+        {children}
+      </Drawer>
+    </RouteDrawerCloseContext.Provider>
   );
 }

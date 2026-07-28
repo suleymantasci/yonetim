@@ -353,7 +353,14 @@ export class UnitRepository {
       ]);
 
       return {
-        unit,
+        // `rowProjection()`'daki iki alan SQL toplama fonksiyonundan geliyor:
+        // `COUNT(*)` bigint, `SUM(...)` numeric döner ve pg sürücüsü ikisini de
+        // **string** olarak verir (bigint JS sayısına sığmayabileceği için).
+        // `list()` bunu `toUnitRow` ile düzeltiyordu; `detail()` ham satırı
+        // olduğu gibi döndürüyordu ve `unitDetail` sözleşmesi
+        // `occupantCount: z.number()` beklediği için birim detay/düzenle uçları
+        // ZodError ile patlıyordu. Normalizasyon artık iki yolda da aynı.
+        unit: toUnitRow(unit),
         raw: raw!,
         occupancyRows,
         debtSummary: {
