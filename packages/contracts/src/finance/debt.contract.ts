@@ -15,6 +15,12 @@ import { listQuery, option, pageMeta } from "../_shared/list";
  * Para her yerde **kuruş** (`moneyMinor`) — float yok.
  */
 
+/**
+ * Borç türleri — `packages/db` `debt_kind` enum'unun birebir karşılığı.
+ *
+ * Son üçü 2026-07-28 rakip incelemesinde doğrulandığı için eklendi; gerekçe
+ * `packages/db/src/schema/enums.ts` ve `0003_debt_kinds.sql` içinde.
+ */
 export const DEBT_KINDS = [
   "dues",
   "utility",
@@ -23,8 +29,87 @@ export const DEBT_KINDS = [
   "late_fee",
   "extra",
   "legal_cost",
+  "rent",
+  "deposit",
+  "admin_fine",
 ] as const;
 export const debtKind = z.enum(DEBT_KINDS);
+
+export type DebtKind = (typeof DEBT_KINDS)[number];
+
+/**
+ * Formda **elle seçilebilen** türler.
+ *
+ * `late_fee` dışarıda: gecikme tazminatı borcunu yönetici yazmaz, gecikme işi
+ * (`debt.lateFee`) hesaplayıp yazar. Seçenek olarak sunmak aynı kalemin iki
+ * farklı yoldan doğmasına ve toplamların uyuşmamasına yol açardı.
+ *
+ * Bu liste daha önce **üç ekranda ayrı ayrı** yazılıydı (`borclar/page.tsx`,
+ * `borclar/actions.ts`, `yeni/debt-form.tsx`) ve üçü birbirinden farklıydı:
+ * filtre `late_fee`yi listeliyor, form listelemiyordu. Tek kaynağa indirildi.
+ *
+ * `filter(...)` ile türetilemiyor çünkü `z.enum` boş olmayan bir **tuple**
+ * istiyor; `filter` dizi döner. Bunun yerine aşağıdaki iki tip iddiası
+ * listelerin birbirinden kaymasını **derleme zamanında** yakalıyor.
+ */
+export const MANUAL_DEBT_KINDS = [
+  "dues",
+  "utility",
+  "reservation",
+  "penalty",
+  "extra",
+  "legal_cost",
+  "rent",
+  "deposit",
+  "admin_fine",
+] as const;
+
+export const manualDebtKind = z.enum(MANUAL_DEBT_KINDS);
+
+/** `MANUAL_DEBT_KINDS ⊆ DEBT_KINDS \ {late_fee}` — fazlalık varsa tip hatası. */
+type _ManualKindsAreValid =
+  (typeof MANUAL_DEBT_KINDS)[number] extends Exclude<DebtKind, "late_fee">
+    ? true
+    : never;
+/** `DEBT_KINDS \ {late_fee} ⊆ MANUAL_DEBT_KINDS` — eksik varsa tip hatası. */
+type _ManualKindsAreComplete =
+  Exclude<DebtKind, "late_fee"> extends (typeof MANUAL_DEBT_KINDS)[number]
+    ? true
+    : never;
+
+// Tipler yalnız kısıt taşıyor; `void` ile kullanılmayan-tip uyarısı önleniyor.
+export type ManualDebtKindInvariants = [
+  _ManualKindsAreValid,
+  _ManualKindsAreComplete,
+];
+
+/**
+ * **Toplu** borçlandırma sihirbazında sunulan türler.
+ *
+ * Elle seçilebilenlerin bir alt kümesi, çünkü toplu borçlandırma tanımı gereği
+ * "aynı kalemi çok daireye formülle dağıtmak". Bu kalıba uymayan türler
+ * sunulmuyor:
+ *  - `rent` — ortak alan kirası **tek** kiracıdan alınan gelirdir, dairelere
+ *    dağıtılan bir borç değil;
+ *  - `deposit` — depozito kişiye özel ve tek seferlik;
+ *  - `reservation` — rezervasyon bedeli rezervasyonu yapana yazılır;
+ *  - `legal_cost` — takibi yapılan daireye yazılır, hepsine değil.
+ *
+ * `admin_fine` **dahil**: kamu kurumunun siteye kestiği ceza tam olarak
+ * dairelere arsa payı/eşit formülüyle dağıtılan bir kalemdir (KMK md.20).
+ *
+ * Uç bu listeyi zorlamıyor (`debtBulkCreate.kind` tüm türleri kabul eder) —
+ * bu bir ekran affordance'ı, güvenlik sınırı değil.
+ */
+export const BULK_DEBT_KINDS = [
+  "dues",
+  "utility",
+  "extra",
+  "penalty",
+  "admin_fine",
+] as const;
+
+export type BulkDebtKind = (typeof BULK_DEBT_KINDS)[number];
 
 /**
  * Borcun kime yazılacağı — GAP 4.1.3 "borç paylaşımı seçimi".
@@ -68,6 +153,21 @@ export const debtSort = z.enum(DEBT_SORT_KEYS);
  * Liste
  * ------------------------------------------------------------------ */
 
+/**
+ * "Riskli cari" eşikleri — kuruş cinsinden kalan borç alt sınırları.
+ *
+ * Rakip incelemesinde (Yönetimcell, 2026-07-28) canlı doğrulandı: yöneticinin
+ * asıl sorusu "kim borçlu" değil, **"kimi arayacak kadar borçlu"**. Serbest
+ * tutar kutusu yerine hazır eşik sunuluyor çünkü bu bir arama değil, tek tıkla
+ * ulaşılması gereken bir çalışma listesi — her seferinde "500" yazdırmak
+ * filtreyi kullanılmaz hale getirirdi.
+ *
+ * Eşikler **kuruş** (para her yerde kuruş, float yok). 500 ₺ = 50_000 kuruş.
+ */
+export const RISK_THRESHOLDS_MINOR = [
+  50_000, 100_000, 200_000, 500_000,
+] as const;
+
 export const debtListQuery = listQuery.extend({
   sort: debtSort.default("dueDate"),
   dir: z.enum(["asc", "desc"]).default("desc"),
@@ -77,6 +177,14 @@ export const debtListQuery = listQuery.extend({
   status: z
     .enum(["all", "acik", "gecikmis", "odendi", "taksit"])
     .default("all"),
+  /**
+   * Kalan borç alt sınırı (kuruş) — `>=` karşılaştırması.
+   *
+   * Serbest sayı kabul ediliyor (yalnız `RISK_THRESHOLDS_MINOR` değil): uç
+   * dışarıya da açık ve sabit bir listeye kilitlemek API tüketicisini
+   * gereksiz kısıtlardı. Ekran hazır eşikleri sunuyor, uç eşiği doğruluyor.
+   */
+  minOutstanding: z.coerce.number().int().min(0).optional(),
 });
 
 export type DebtListQuery = z.infer<typeof debtListQuery>;
@@ -380,7 +488,36 @@ export const unitDebtSummaryRow = z.object({
   overdueMinor: moneyMinor,
   oldestDue: dateTime.nullable(),
   debtCount: z.number().int(),
+  /**
+   * Son 6 ayın ay sonu kalan borcu (eskiden yeniye, kuruş) — satır içi
+   * bakiye trendi (rakip incelemesi §4.3).
+   *
+   * NEDEN SUNUCUDA: seri, ödemelerin **tahsil tarihine** göre geriye doğru
+   * kurulan bir zaman serisi; satırdaki tek "kalan borç" sayısından
+   * türetilemez. İstemciye 6 ay × N daire ham hareket göndermek yerine
+   * altı sayı gönderiliyor.
+   *
+   * Uzunluk sabit (`TREND_MONTHS`): değişken uzunluk, grafiklerin x eksenini
+   * satırdan satıra kaydırıp karşılaştırmayı imkânsız kılardı.
+   */
+  trendMinor: z.array(moneyMinor),
 });
+
+/** Bakiye trendinde gösterilen ay sayısı — sözleşme ve ekran aynı sayıyı kullanır. */
+export const TREND_MONTHS = 6;
+
+/**
+ * Daire özeti sorgusu.
+ *
+ * `minOutstanding` borç listesindekiyle **aynı anlamda**: kalan borcu bu
+ * eşiğin altında kalan daire hiç dönmez. İki görünümde farklı davranan bir
+ * filtre, sekme değiştiren yöneticiye sessizce farklı bir liste gösterirdi.
+ */
+export const unitDebtSummaryQuery = z.object({
+  minOutstanding: z.coerce.number().int().min(0).optional(),
+});
+
+export type UnitDebtSummaryQuery = z.infer<typeof unitDebtSummaryQuery>;
 
 export const unitDebtSummary = z.object({ rows: z.array(unitDebtSummaryRow) });
 export type UnitDebtSummary = z.infer<typeof unitDebtSummary>;

@@ -88,6 +88,76 @@ export const staffListResponse = z.object({
 export type StaffListResponse = z.infer<typeof staffListResponse>;
 
 /* ------------------------------------------------------------------ *
+ * Kıdem / ihbar tazminatı hesaplayıcı — rakip incelemesi §4.1
+ * ------------------------------------------------------------------ */
+
+/**
+ * `POST /v1/panel/staff/tazminat`.
+ *
+ * NİYE SUNUCUDA HESAPLANIYOR: girdilerin ikisi (işe giriş tarihi ve
+ * giydirilmiş brüt ücret) `staff` tablosunda ve **panele hiç gitmiyor**
+ * (§9.1 — bordro tutarları listede var ama hesabın tavan/vergi parametreleri
+ * yok). İstemcide hesaplamak ya bu verileri dışarı taşımayı ya da kullanıcıya
+ * elle girdirmeyi gerektirirdi; ikisi de mevcut kaydı atlatır.
+ *
+ * Ücret **ezilebiliyor** (`monthlyGrossOverrideMinor`): "zam yapsak tazminat
+ * ne olur" sorusu yöneticinin gerçekten sorduğu soru. Ezme kaydı değiştirmez,
+ * yalnız hesabı besler.
+ */
+export const severanceQuote = z.object({
+  staffId: uuid,
+  /** Fesih tarihi — varsayılan bugün değil, açıkça seçilir. */
+  endedAt: dateTime,
+  /** Boş = personel kaydındaki brüt ücret. Kuruş. */
+  monthlyGrossOverrideMinor: z.coerce.number().int().min(0).optional(),
+  /**
+   * Hakların doğup doğmadığı **olgu** sorusudur, koddan türetilemez: istifa,
+   * haklı nedenle derhal fesih (md.25/II) ya da önel kullandırılması bu
+   * hakları düşürür. Yönetici işaretler.
+   */
+  severanceApplies: z.coerce.boolean().default(true),
+  noticeApplies: z.coerce.boolean().default(true),
+});
+
+export type SeveranceQuote = z.infer<typeof severanceQuote>;
+
+const severanceComponent = z.object({
+  grossMinor: moneyMinor,
+  stampDutyMinor: moneyMinor,
+  incomeTaxMinor: moneyMinor,
+  netMinor: moneyMinor,
+});
+
+export const severanceQuoteResult = z.object({
+  staffName: z.string(),
+  startedAt: dateTime,
+  endedAt: dateTime,
+  serviceDays: z.number().int(),
+  /** Ekranda "6 yıl 4 ay" biçiminde gösterilebilsin diye ayrık. */
+  serviceYears: z.number().int(),
+  serviceMonthsRemainder: z.number().int(),
+  monthlyGrossMinor: moneyMinor,
+  cappedMonthlyGrossMinor: moneyMinor,
+  /** Tavanı aşan aylık kısım; 0 değilse ekran bunu ayrıca yazar. */
+  ceilingExcessMinor: moneyMinor,
+  noticeWeeks: z.number().int(),
+  severance: severanceComponent,
+  notice: severanceComponent,
+  totalNetMinor: moneyMinor,
+  belowMinimumService: z.boolean(),
+  /**
+   * Hesapta kullanılan tavan/vergi parametrelerinin yürürlük tarihi.
+   * Ekranda **gösteriliyor**: eskimiş bir tavanla üretilmiş rakam sessiz
+   * kalmasın, kullanıcı tarihi görüp sorgulayabilsin.
+   */
+  parametersEffectiveFrom: z.string(),
+  ceilingMinor: moneyMinor,
+  incomeTaxRate: z.number(),
+});
+
+export type SeveranceQuoteResult = z.infer<typeof severanceQuoteResult>;
+
+/* ------------------------------------------------------------------ *
  * Platform paneli (süper-admin)
  * ------------------------------------------------------------------ */
 

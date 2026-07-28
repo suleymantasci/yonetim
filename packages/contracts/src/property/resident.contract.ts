@@ -42,6 +42,29 @@ export const relation = z.enum(RELATIONS);
 export const TRANSFER_POLICIES = ["owner", "next_tenant", "keep"] as const;
 export const transferPolicy = z.enum(TRANSFER_POLICIES);
 
+/**
+ * Kan grubu — **KVKK md.6 özel nitelikli (sağlık) veri.**
+ *
+ * Türkiye'de "O" değil **"0" (sıfır)** yazılır; kan kartı, nüfus cüzdanı ve
+ * Kızılay gösterimi böyle. Harf "O" ile sıfırı karıştırmak acil durumda
+ * yanlış grup okunmasına yol açabileceği için serbest metin kabul edilmiyor.
+ */
+export const BLOOD_TYPES = [
+  "0 Rh+",
+  "0 Rh-",
+  "A Rh+",
+  "A Rh-",
+  "B Rh+",
+  "B Rh-",
+  "AB Rh+",
+  "AB Rh-",
+] as const;
+export const bloodType = z.enum(BLOOD_TYPES);
+export type BloodType = (typeof BLOOD_TYPES)[number];
+
+/** `consents.kind` — sağlık verisi açık rızası (md.6/3). */
+export const HEALTH_CONSENT_KIND = "acik_riza_saglik" as const;
+
 export const RESIDENT_SORT_KEYS = ["name", "outstanding", "unit"] as const;
 
 export const residentListQuery = listQuery.extend({
@@ -127,6 +150,13 @@ export const residentDetail = z.object({
   tcknMasked: z.string().nullable(),
   emergencyContactName: z.string().nullable(),
   emergencyContactPhoneMasked: z.string().nullable(),
+  /**
+   * Kan grubu — özel nitelikli veri; **maskelenmiyor** çünkü maskelenmiş bir
+   * kan grubu ("A ••") hiçbir işe yaramaz. Koruma maskede değil erişim
+   * denetiminde: bu uç `resident:read` istiyor ve her okuma
+   * `data_category = 'health'` ile kütüğe yazılıyor.
+   */
+  bloodType: z.string().nullable(),
   createdAt: dateTime,
   lastLoginAt: dateTime.nullable(),
   roles: z.array(z.string()),
@@ -197,6 +227,15 @@ export const residentEditForm = z.object({
   whatsappOptIn: z.boolean(),
   emergencyContactName: z.string().nullable(),
   emergencyContactPhone: z.string().nullable(),
+  bloodType: z.string().nullable(),
+  /**
+   * Bu kişi için geçerli bir sağlık verisi açık rızası var mı.
+   *
+   * Form bunu **kutuyu önceden işaretlemek için** kullanıyor: rıza bir kez
+   * alındıysa yönetici her düzenlemede tekrar işaretlemek zorunda kalmasın.
+   * Rıza yokken kutu boş gelir ve kan grubu girilirse işaretlenmesi zorunlu.
+   */
+  hasHealthConsent: z.boolean(),
   notes: z.string().nullable(),
   hasTckn: z.boolean(),
 });
@@ -223,6 +262,23 @@ const personFields = {
   whatsappOptIn: z.coerce.boolean().default(false),
   emergencyContactName: z.string().trim().max(120).nullish(),
   emergencyContactPhone: z.string().trim().max(30).nullish(),
+  /**
+   * Kan grubu — özel nitelikli veri (md.6). Boş bırakmak "değiştirme" değil
+   * **"sil"** demektir: TCKN'in tersi. TCKN'de boş bırakmak korumaydı çünkü
+   * değer okuma ucuna hiç dönmüyor, kullanıcı onu forma geri yazamaz. Kan
+   * grubu ise forma dolu geliyor; boşaltmak bilinçli bir silme eylemidir ve
+   * rızanın geri çekilmesiyle aynı anlama gelir.
+   */
+  bloodType: bloodType.nullish(),
+  /**
+   * Sağlık verisi **açık rızası** (md.6/3) — kan grubu yazılacaksa zorunlu.
+   *
+   * Ayrı bir alan: `kvkkAcknowledged` (md.10 aydınlatma) rızayı kapsamıyor.
+   * Aydınlatma "seni bilgilendirdim", açık rıza "sağlık verimi işlemene izin
+   * veriyorum" demek; ikisini tek kutuya bağlamak, rızayı kayda geçirmeden
+   * özel nitelikli veri toplamak olurdu.
+   */
+  healthDataConsent: z.coerce.boolean().default(false),
   notes: z.string().trim().max(1000).nullish(),
 };
 
@@ -373,6 +429,54 @@ export const tcknLookupResult = z.object({
 });
 
 export type TcknLookupResult = z.infer<typeof tcknLookupResult>;
+
+/* ------------------------------------------------------------------ *
+ * Acil durum raporu — GAP 4.1.2 / rakip incelemesi §4.1
+ * ------------------------------------------------------------------ */
+
+/**
+ * `GET /v1/panel/residents/acil-durum`.
+ *
+ * NİYE AYRI UÇ: acil durum listesi sakin listesinden **daha az** alan taşıyor
+ * ama **daha hassas** olanı taşıyor (kan grubu). Aynı uca bir bayrak
+ * eklemek, sıradan liste görüntülemelerinin de sağlık verisi erişim kaydı
+ * bırakmasına ya da tersine, sağlık verisinin kaydı olmadan sızmasına yol
+ * açardı. Ayrı uç = ayrı yetki noktası + ayrı KVKK kategorisi.
+ *
+ * TELEFON BURADA **MASKESİZ**: yangın/deprem anında maskelenmiş bir acil
+ * durum numarası aranabilir değildir; uç zaten bu iş için var. Bedeli erişim
+ * denetimiyle ödeniyor — çağrı `data_category = 'health'` ile kütüğe yazılır
+ * ve KVKK ekranında ayrıca görünür.
+ */
+export const emergencyContactRow = z.object({
+  userId: uuid,
+  fullName: z.string(),
+  /** Kişinin kendi telefonu — maskesiz (bkz. uç notu). */
+  phone: z.string().nullable(),
+  /** Boş olabilir: kişi hiçbir daireye bağlı değilse (yalnız üyelik). */
+  units: z.array(z.string()),
+  bloodType: z.string().nullable(),
+  emergencyContactName: z.string().nullable(),
+  emergencyContactPhone: z.string().nullable(),
+});
+
+export const emergencyReport = z.object({
+  rows: z.array(emergencyContactRow),
+  totals: z.object({
+    residents: z.number().int(),
+    /** Kan grubu **kayıtlı** olan kişi sayısı — kapsama göstergesi. */
+    withBloodType: z.number().int(),
+    withEmergencyContact: z.number().int(),
+    /**
+     * Ne kan grubu ne acil durum kişisi olan sakinler. Rapor tam da bu sayıyı
+     * sıfıra indirmek için var; toplamı göstermeden liste bir "iş listesi"
+     * değil, yalnız bir döküm olurdu.
+     */
+    missingBoth: z.number().int(),
+  }),
+});
+
+export type EmergencyReport = z.infer<typeof emergencyReport>;
 
 /* ------------------------------------------------------------------ *
  * Sakin portalı

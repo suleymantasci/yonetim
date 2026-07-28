@@ -3,7 +3,10 @@ import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
 import {
+  DEBT_KINDS,
   DEBT_SORT_KEYS,
+  RISK_THRESHOLDS_MINOR,
+  TREND_MONTHS,
   debtListResponse,
   unitDebtSummary,
 } from "@yonetim/contracts";
@@ -22,7 +25,7 @@ import {
 import { PageHeader } from "@/components/app-shell";
 import { ListControls } from "@/components/list/list-controls";
 import { toListQuery } from "@/lib/api/list";
-import { apiGet } from "@/lib/api/server";
+import { apiGet, toQuery } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
 import {
@@ -32,18 +35,9 @@ import {
   type SearchParamsInput,
 } from "@/lib/list-params";
 import { DebtsTable, type DebtRowView } from "./debts-table";
+import { UnitTrendCell } from "./unit-trend-cell";
 
 export const dynamic = "force-dynamic";
-
-const DEBT_KINDS = [
-  "dues",
-  "utility",
-  "reservation",
-  "penalty",
-  "late_fee",
-  "extra",
-  "legal_cost",
-] as const;
 
 /**
  * Borçlar ekranı — GAP 4.1.3.
@@ -76,8 +70,15 @@ export default async function DebtsPage({
     sortableKeys: DEBT_SORT_KEYS,
     defaultSort: "dueDate",
     defaultDirection: "desc",
-    filterKeys: ["blok", "donem", "tur", "durum"],
+    filterKeys: ["blok", "donem", "tur", "durum", "risk"],
   });
+
+  // Eşik URL'de **kuruş** taşınıyor (₺ değil): `toListQuery` değeri olduğu gibi
+  // uca geçiriyor ve uç kuruş bekliyor. Ekranda ₺'ye çeviren tek yer aşağıdaki
+  // filtre etiketi.
+  const riskThreshold = RISK_THRESHOLDS_MINOR.find(
+    (value) => String(value) === params.filters.risk,
+  );
 
   const data = await apiGet(
     `/v1/panel/debts?${toListQuery(params, {
@@ -85,6 +86,7 @@ export default async function DebtsPage({
       period: params.filters.donem,
       kind: params.filters.tur,
       status: params.filters.durum,
+      minOutstanding: riskThreshold,
     })}`,
     debtListResponse,
   );
@@ -155,8 +157,10 @@ export default async function DebtsPage({
   );
 
   if (view === "daire") {
+    // Eşik iki görünümde de geçerli: sekme değiştiren yönetici aynı daralmış
+    // listeyi görmeye devam etsin (sözleşmedeki `unitDebtSummaryQuery` notu).
     const { rows: unitRows } = await apiGet(
-      "/v1/panel/debts/daire-ozeti",
+      `/v1/panel/debts/daire-ozeti?${toQuery({ minOutstanding: riskThreshold })}`,
       unitDebtSummary,
     );
     return (
@@ -164,11 +168,30 @@ export default async function DebtsPage({
         {header}
         {stats}
         <div className="mb-4">{tabs}</div>
+
+        <ListControls
+          searchable={false}
+          filters={[
+            {
+              param: "risk",
+              label: t("riskFilter"),
+              value: params.filters.risk ?? "",
+              options: [
+                { value: "", label: t("allRisks") },
+                ...RISK_THRESHOLDS_MINOR.map((minor) => ({
+                  value: String(minor),
+                  label: t("riskAtLeast", { amount: fmt.money(minor) }),
+                })),
+              ],
+            },
+          ]}
+        />
+
         <Card>
           <CardHeader title={t("viewUnits")} description={t("unitViewHint")} />
           <CardBody className="p-0">
             <div className={tc.wrapper}>
-              <table className={tc.table} style={{ minWidth: 720 }}>
+              <table className={tc.table} style={{ minWidth: 820 }}>
                 <thead className={tc.thead}>
                   <tr>
                     <th scope="col" className={tc.th}>
@@ -189,12 +212,15 @@ export default async function DebtsPage({
                     <th scope="col" className={tc.th}>
                       {t("oldestDue")}
                     </th>
+                    <th scope="col" className={tc.th}>
+                      {t("trendHeader")}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {unitRows.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className={tc.empty}>
+                      <td colSpan={7} className={tc.empty}>
                         {tCommon("state.empty")}
                       </td>
                     </tr>
@@ -221,6 +247,16 @@ export default async function DebtsPage({
                         <td className={tc.tdNum}>{row.debtCount}</td>
                         <td className={tc.tdMuted}>
                           {row.oldestDue ? fmt.date(row.oldestDue) : "—"}
+                        </td>
+                        <td className={tc.td}>
+                          <UnitTrendCell
+                            values={row.trendMinor}
+                            label={t("trendLabel", {
+                              unit: row.number,
+                              months: TREND_MONTHS,
+                            })}
+                            emptyLabel={t("trendFlat")}
+                          />
                         </td>
                       </tr>
                     ))
@@ -316,9 +352,24 @@ export default async function DebtsPage({
             value: params.filters.tur ?? "",
             options: [
               { value: "", label: t("allKinds") },
+              // Filtre **tüm** türleri listeler (`late_fee` dahil): gecikme
+              // tazminatı borcu listede görünüyor, dolayısıyla aranabilmeli.
+              // Elle seçilemeyen tür yalnız *formda* gizleniyor.
               ...DEBT_KINDS.map((kind) => ({
                 value: kind,
                 label: tEnum(`debtKind.${kind}`),
+              })),
+            ],
+          },
+          {
+            param: "risk",
+            label: t("riskFilter"),
+            value: params.filters.risk ?? "",
+            options: [
+              { value: "", label: t("allRisks") },
+              ...RISK_THRESHOLDS_MINOR.map((minor) => ({
+                value: String(minor),
+                label: t("riskAtLeast", { amount: fmt.money(minor) }),
               })),
             ],
           },

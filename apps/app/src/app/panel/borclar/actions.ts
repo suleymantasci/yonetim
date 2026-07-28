@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
 import {
+  MANUAL_DEBT_KINDS,
   debtBulkPreview,
   debtBulkResult,
   debtBulkResultSimple,
@@ -51,16 +52,14 @@ import {
  * `DbService.txWithReason()` yapıyor, 199 ayrı çağrı yeri değil.
  */
 
-const DEBT_KINDS = [
-  "dues",
-  "utility",
-  "reservation",
-  "penalty",
-  "late_fee",
-  "extra",
-  "legal_cost",
-] as const;
-
+/**
+ * Elle borçlandırmada `late_fee` **kabul edilmiyor** (`MANUAL_DEBT_KINDS`).
+ *
+ * Daha önce kabul ediliyordu ama form onu hiç listelemiyordu; yani yalnız
+ * elle uydurulmuş bir POST ile yazılabiliyordu. Gecikme tazminatı borcunu
+ * gecikme işi üretiyor — ikinci bir kaynak, aynı kalemin iki kez doğmasına ve
+ * gecikme raporunun toplamıyla borç toplamının ayrışmasına yol açardı.
+ */
 const SHARE_TARGETS = ["owner", "tenant", "split", "share"] as const;
 
 /* ------------------------------------------------------------------ *
@@ -69,7 +68,7 @@ const SHARE_TARGETS = ["owner", "tenant", "split", "share"] as const;
 
 const debtSchema = z.object({
   unitId: uuidField,
-  kind: z.enum(DEBT_KINDS, {
+  kind: z.enum(MANUAL_DEBT_KINDS, {
     errorMap: () => ({ message: V.invalidSelection }),
   }),
   description: requiredText(3, 200),
@@ -151,7 +150,7 @@ export async function createDebt(
 
 const bulkDebtSchema = z.object({
   description: requiredText(3, 200),
-  kind: z.enum(DEBT_KINDS, {
+  kind: z.enum(MANUAL_DEBT_KINDS, {
     errorMap: () => ({ message: V.invalidSelection }),
   }),
   period: periodField,

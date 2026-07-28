@@ -4,8 +4,9 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, sql } from "drizzle-orm";
 
+import { HEALTH_CONSENT_KIND } from "@yonetim/contracts";
 import type {
   OccupancyCreate,
   OccupancyEnd,
@@ -34,6 +35,31 @@ import { PiiService } from "./pii.service";
  * verildi" demesine izin vermek, kaydın doğruluğunu istemciye emanet etmekti.
  */
 export const KVKK_NOTICE_VERSION = "2026.1";
+
+/**
+ * Kan grubunun yazılacak değerini ve rıza kaydının yönünü belirler.
+ *
+ * TEK YERDE, ÇÜNKÜ İKİ YAZMA YOLU VAR (`create` ve `update`) ve kural ikisinde
+ * de aynı olmak zorunda — özel nitelikli veriyi bir yolda rızasız kabul eden
+ * bir uygulama, ihlali o yoldan yapar.
+ *
+ * Üç durum:
+ *  - **rıza var + değer var** → yaz, rızayı `granted` kaydet
+ *  - **rıza yok + değer var** → `consent_required` (400). Sessizce yok saymak
+ *    yöneticiye "kaydettim" der, alan boş kalırdı — en kötü sonuç.
+ *  - **değer yok** → alanı NULL'la ve varsa rızayı geri çekilmiş işaretle;
+ *    rızası olmayan sağlık verisini saklamaya devam etmek ihlalin kendisi.
+ */
+function resolveHealthData(dto: {
+  bloodType?: string | null;
+  healthDataConsent: boolean;
+}): { bloodType: string | null; consentGranted: boolean } {
+  if (!dto.bloodType) return { bloodType: null, consentGranted: false };
+  if (!dto.healthDataConsent) {
+    throw new BadRequestException("consent_required:health");
+  }
+  return { bloodType: dto.bloodType, consentGranted: true };
+}
 
 /**
  * Sakin yazma işlemleri — MIMARI-PLAN §8.5.
@@ -68,6 +94,8 @@ export class ResidentWriteRepository {
       throw new BadRequestException("validation_failed:phone");
     }
     const tckn = this.pii.sealTckn(dto.tckn ?? undefined, ctx.tenantId);
+    // Rıza kontrolü **yazmadan önce**: eksikse hiçbir satır oluşmadan 400 döner.
+    const health = resolveHealthData(dto);
 
     const { userId, linkedExisting } = await this.db.bypass(
       "residents:create",
@@ -98,6 +126,9 @@ export class ResidentWriteRepository {
               whatsappOptInAt: optInAt,
               emergencyContactName: dto.emergencyContactName ?? undefined,
               emergencyContactPhone: dto.emergencyContactPhone ?? undefined,
+              // TCKN'in aksine kan grubu boş gelirse **NULL'lanır** (bkz.
+              // sözleşmedeki `bloodType` notu): boş bırakmak silmektir.
+              bloodType: health.bloodType,
               // TCKN yalnız yeni değer geldiyse yazılır: boş bırakmak silme değil.
               ...(tckn
                 ? { tcknEncrypted: tckn.encrypted, tcknIndex: tckn.index }
@@ -119,6 +150,7 @@ export class ResidentWriteRepository {
             whatsappOptInAt: optInAt,
             emergencyContactName: dto.emergencyContactName ?? null,
             emergencyContactPhone: dto.emergencyContactPhone ?? null,
+            bloodType: health.bloodType,
             tcknEncrypted: tckn?.encrypted ?? null,
             tcknIndex: tckn?.index ?? null,
           })
@@ -157,7 +189,47 @@ export class ResidentWriteRepository {
     });
 
     await this.recordConsents(userId, dto.whatsappOptIn);
+    await this.syncHealthConsent(userId, health.consentGranted);
     return { id: userId, linkedExisting };
+  }
+
+  /**
+   * Sağlık verisi açık rızası (md.6/3) — yalnız **durum değiştiğinde** yazar.
+   *
+   * `consents` append-only bir kütük; her sakin güncellemesinde "rıza hâlâ
+   * var" satırı eklemek onu okunamaz hale getirirdi. Kayıt bir olayı
+   * anlatmalı: rıza verildi ya da geri çekildi. Değişiklik yoksa olay da yok.
+   */
+  private async syncHealthConsent(userId: string, granted: boolean) {
+    const ctx = this.db.ctx();
+    await this.db.bypass("residents:health-consent", async (tx) => {
+      const [latest] = await tx
+        .select({ granted: consents.granted })
+        .from(consents)
+        .where(
+          and(
+            eq(consents.userId, userId),
+            eq(consents.kind, HEALTH_CONSENT_KIND),
+          ),
+        )
+        .orderBy(desc(consents.createdAt))
+        .limit(1);
+
+      const current = latest?.granted ?? false;
+      if (current === granted) return;
+
+      await tx.insert(consents).values({
+        tenantId: ctx.tenantId,
+        userId,
+        kind: HEALTH_CONSENT_KIND,
+        granted,
+        documentVersion: KVKK_NOTICE_VERSION,
+        ip: ctx.ip,
+        userAgent: ctx.userAgent,
+        grantedAt: granted ? new Date() : null,
+        revokedAt: granted ? null : new Date(),
+      });
+    });
   }
 
   /** KVKK md.10 aydınlatma onayı — ve verildiyse WhatsApp rızası, ayrı satır. */
@@ -197,6 +269,7 @@ export class ResidentWriteRepository {
     if (dto.phone && !phone)
       throw new BadRequestException("validation_failed:phone");
     const tckn = this.pii.sealTckn(dto.tckn ?? undefined, ctx.tenantId);
+    const health = resolveHealthData(dto);
 
     const changes = await this.db.bypass("residents:update", async (tx) => {
       const [before] = await tx
@@ -207,6 +280,7 @@ export class ResidentWriteRepository {
           email: users.email,
           locale: users.locale,
           whatsappOptIn: users.whatsappOptIn,
+          bloodType: users.bloodType,
         })
         .from(users)
         .where(eq(users.id, dto.id))
@@ -222,6 +296,9 @@ export class ResidentWriteRepository {
         whatsappOptIn: dto.whatsappOptIn,
         emergencyContactName: dto.emergencyContactName ?? null,
         emergencyContactPhone: dto.emergencyContactPhone ?? null,
+        // Diff'e dahil: özel nitelikli verinin ne zaman kimin tarafından
+        // eklendiği/silindiği KVKK izlenebilirliğinin tam olarak sorduğu şey.
+        bloodType: health.bloodType,
       };
 
       await tx
@@ -260,6 +337,7 @@ export class ResidentWriteRepository {
         });
     });
 
+    await this.syncHealthConsent(dto.id, health.consentGranted);
     return changes;
   }
 

@@ -61,6 +61,25 @@ export class ResidentController {
     return this.service.options();
   }
 
+  /**
+   * Acil durum raporu — `/:id` deseninden **önce** tanımlı olmalı, aksi halde
+   * "acil-durum" bir kimlik sanılır ve `ParseUUIDPipe` 400 döndürür.
+   */
+  @Get("acil-durum")
+  @RequirePermission("resident:read")
+  @ApiOperation({
+    summary: "Acil durum listesi — kan grubu ve acil durum kişisi",
+    description:
+      "Kan grubu **KVKK md.6 özel nitelikli (sağlık) veri**; yalnız açık " +
+      "rızası olan kişilerde dolu olur. Acil durum telefonu bu uçta " +
+      "**maskesiz** döner (maskeli numara acil durumda aranamaz); bedeli " +
+      "erişim denetimiyle ödenir — her çağrı `data_access_logs`'a ayrıca " +
+      "`saglik_bilgisi` kategorisiyle yazılır.",
+  })
+  emergencyReport() {
+    return this.service.emergencyReport();
+  }
+
   @Get("tckn-arama")
   @RequirePermission("resident:read")
   @ApiOperation({

@@ -1,7 +1,10 @@
-import { Controller, Get } from "@nestjs/common";
+import { Body, Controller, Get, Post } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 
+import { severanceQuote, type SeveranceQuote } from "@yonetim/contracts";
+
 import { RequirePermission } from "../identity/decorators";
+import { ZodBodyPipe } from "../infra/zod/zod-dto";
 import { TenancyService } from "./tenancy.service";
 
 /** Panel iç BFF yüzeyi — site ayarları ve personel. */
@@ -26,5 +29,30 @@ export class TenancyController {
   })
   staff() {
     return this.service.staff();
+  }
+
+  /**
+   * Kıdem/ihbar tazminatı hesaplayıcı.
+   *
+   * `staff:read` değil **`staff:payroll`**: sonuç ücret bilgisinin türevi ve
+   * bu yetki `company_operator` rolünden bilinçli olarak esirgenmiş.
+   *
+   * `POST`, çünkü hesap girdileri (fesih tarihi, ücret ezmesi, hakların doğup
+   * doğmadığı) bir sorgu dizesine sığmıyor ve senaryo denemesi bir kaynak
+   * okuması değil. Hiçbir şey yazmıyor.
+   */
+  @Post("staff/tazminat")
+  @RequirePermission("staff:payroll")
+  @ApiOperation({
+    summary: "Kıdem ve ihbar tazminatı hesabı (yaklaşık)",
+    description:
+      "Kanunda sabit olanlar (30 gün/yıl, ihbar kademeleri, damga vergisi " +
+      "binde 7,59, kıdemin gelir vergisi istisnası) `packages/core` içinde " +
+      "ve test altında. Tavan ile gelir vergisi oranı yapılandırmadan gelir; " +
+      "yürürlük tarihi yanıtta döner. Gelir vergisi tek marjinal oranla " +
+      "hesaplandığı için sonuç **yaklaşıktır**, bordro değildir.",
+  })
+  severanceQuote(@Body(new ZodBodyPipe(severanceQuote)) dto: SeveranceQuote) {
+    return this.service.severanceQuote(dto);
   }
 }

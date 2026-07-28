@@ -38,8 +38,27 @@ export const debtStatusEnum = pgEnum("debt_status", [
   "pending", "partial", "paid", "overdue", "in_legal", "written_off", "cancelled",
 ]);
 
+/**
+ * Borç türü.
+ *
+ * Son üçü (`rent`/`deposit`/`admin_fine`) 2026-07-28 rakip incelemesinde
+ * (Yönetimcell) canlı doğrulandığı için eklendi: yönetimin kiraya verdiği
+ * ortak alan (çatı anteni, kantin, otopark), alınan depozito ve kamu
+ * kurumundan gelen idari para cezası bugüne kadar `extra`ya yazılıyordu.
+ * `extra` bir kova olduğu için de "geçen yıl kira geliri ne kadardı"
+ * sorusu kayıtlardan cevaplanamıyordu.
+ *
+ * `penalty` ile `admin_fine` ayrı: ilki **yönetimin** kendi kararıyla kestiği
+ * ceza (yönetim planı ihlali), ikincisi **kamu kurumunun** siteye kestiği ve
+ * dairelere yansıtılan ceza. İtiraz mercileri farklı olduğu için tek kalemde
+ * toplamak yanlış olurdu.
+ *
+ * SIRA ÖNEMLİ: `ALTER TYPE ... ADD VALUE` değerleri sona ekler; bu listenin
+ * sırası veritabanındaki sırayla aynı kalmalı (bkz. `0003_debt_kinds.sql`).
+ */
 export const debtKindEnum = pgEnum("debt_kind", [
   "dues", "utility", "reservation", "penalty", "late_fee", "extra", "legal_cost",
+  "rent", "deposit", "admin_fine",
 ]);
 
 export const paymentMethodEnum = pgEnum("payment_method", [
@@ -144,4 +163,22 @@ export const bankTxDirectionEnum = pgEnum("bank_tx_direction", ["in", "out"]);
 
 export const staffRoleEnum = pgEnum("staff_role", [
   "kapici", "guvenlik", "temizlik", "bahcivan", "teknik", "diger",
+]);
+
+/**
+ * Demirbaş durumu — KMK md.34/9 yöneticinin ortak yer eşyasını koruma ve
+ * hesap verme yükümlülüğü.
+ *
+ * `disposed` (hurdaya ayrıldı) ile `lost` (kayıp) **ayrı**: ilki yönetimin
+ * kararıyla düşülen, ikincisi hesabı sorulacak bir eksik. Tek "pasif" durumda
+ * toplamak, devir teslimde en çok sorulan soruyu ("eksik ne var") cevapsız
+ * bırakırdı. Kayıt hiçbir durumda **silinmiyor**: demirbaş defteri bir
+ * tarihçe, anlık liste değil.
+ */
+export const inventoryStatusEnum = pgEnum("inventory_status", [
+  "active", // kullanımda
+  "in_repair", // tamirde
+  "broken", // arızalı, kullanım dışı
+  "disposed", // hurdaya ayrıldı / düşüldü
+  "lost", // kayıp
 ]);

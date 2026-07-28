@@ -15,6 +15,7 @@ import { PageHeader } from "@/components/app-shell";
 import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
+import { SeveranceCalculator } from "./severance-calculator";
 
 export const dynamic = "force-dynamic";
 
@@ -115,6 +116,23 @@ export default async function StaffPage() {
           )}
         </CardBody>
       </Card>
+
+      {/*
+        Hesaplayıcı yalnız **aktif** personel için: ayrılmış birinin tazminatı
+        zaten ödenmiş olmalı ve listede tutmak "kime hesaplıyorum" sorusunu
+        bulanıklaştırırdı. Hesap `staff:payroll` yetkisi istiyor; yetkisiz
+        kullanıcıda uç 403 dönüyor (ekran sunucuda ayrıca filtrelenmiyor
+        çünkü bağlayıcı karar API'de — §9.1).
+      */}
+      <SeveranceCalculator
+        staff={rows
+          .filter((s) => s.isActive)
+          .map((s) => ({
+            id: s.id,
+            name: s.fullName,
+            grossKurus: s.grossSalaryMinor,
+          }))}
+      />
     </>
   );
 }

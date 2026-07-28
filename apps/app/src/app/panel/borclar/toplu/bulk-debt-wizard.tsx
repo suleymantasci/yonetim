@@ -4,6 +4,7 @@ import { Eye } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 
+import { BULK_DEBT_KINDS, type BulkDebtKind } from "@yonetim/contracts";
 import {
   Alert,
   CheckboxGroup,
@@ -52,9 +53,8 @@ export function BulkDebtWizard({
   const tCommon = useTranslations("common");
   const tEnum = useTranslations("enum");
 
-  type DebtKind = "dues" | "utility" | "extra" | "penalty";
   const [description, setDescription] = useState("");
-  const [kind, setKind] = useState<DebtKind>("dues");
+  const [kind, setKind] = useState<BulkDebtKind>("dues");
   const [period] = useState(defaultPeriod);
   const [dueDay, setDueDay] = useState(10);
   const [formula, setFormula] = useState("equal");
@@ -156,16 +156,16 @@ export function BulkDebtWizard({
                 <Select
                   name="kind"
                   value={kind}
-                  onChange={(event) => setKind(event.target.value as DebtKind)}
+                  onChange={(event) =>
+                    setKind(event.target.value as BulkDebtKind)
+                  }
                   required
                 >
-                  {(["dues", "utility", "extra", "penalty"] as const).map(
-                    (value) => (
-                      <option key={value} value={value}>
-                        {tEnum(`debtKind.${value}`)}
-                      </option>
-                    ),
-                  )}
+                  {BULK_DEBT_KINDS.map((value) => (
+                    <option key={value} value={value}>
+                      {tEnum(`debtKind.${value}`)}
+                    </option>
+                  ))}
                 </Select>
               </FormField>
 

@@ -22,9 +22,29 @@ function loadDotEnv() {
 if (process.env.INTEGRATION === "1") loadDotEnv();
 
 export default defineConfig({
+  /*
+   * JSX **otomatik** runtime: testlerin `import React` satırı yazması
+   * gerekmesin. Uygulamalarda Next zaten bu ayarı kullanıyor; testin ondan
+   * farklı derlenmesi, testte geçen bir bileşenin uygulamada patlaması gibi
+   * bir ayrışmaya kapı açardı.
+   */
+  esbuild: { jsx: "automatic" },
   test: {
     environment: "node",
-    include: ["tests/**/*.test.ts", "packages/**/*.test.ts"],
+    /*
+     * `.tsx` de dahil: erişilebilirlik smoke testi (`tests/a11y-smoke.test.tsx`)
+     * gerçek bileşenleri render ediyor.
+     *
+     * Ortam yine `node`, `jsdom` değil: yalnız **bir** dosya DOM'a ihtiyaç
+     * duyuyor ve o dosya kendi `JSDOM` örneğini kuruyor. Global ortamı jsdom
+     * yapmak, DOM'la işi olmayan 20 test dosyasının her koşusuna bir jsdom
+     * kurulumu bindirirdi.
+     */
+    include: [
+      "tests/**/*.test.ts",
+      "tests/**/*.test.tsx",
+      "packages/**/*.test.ts",
+    ],
     // Entegrasyon testleri gerçek Postgres gerektirir; ayrı komutla çalışır.
     exclude: process.env.INTEGRATION === "1" ? [] : ["tests/integration/**"],
     globals: false,

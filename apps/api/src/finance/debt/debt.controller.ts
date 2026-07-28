@@ -20,11 +20,13 @@ import {
   debtExemptPatch,
   debtListQuery,
   paymentCollect,
+  unitDebtSummaryQuery,
   type DebtAdjust,
   type DebtBulkCreate,
   type DebtCreate,
   type DebtListQuery,
   type PaymentCollect,
+  type UnitDebtSummaryQuery,
 } from "@yonetim/contracts";
 
 import { RequirePermission } from "../../identity/decorators";
@@ -67,8 +69,17 @@ export class DebtController {
   /** Borçlar ekranının "daire" sekmesi — satır = daire. */
   @Get("daire-ozeti")
   @RequirePermission("debt:read")
-  unitSummary() {
-    return this.service.unitSummary();
+  @ApiOperation({
+    summary: "Daire bazlı borç özeti + bakiye trendi",
+    description:
+      "Her satır son 6 ayın ay sonu bakiyesini de taşır. `minOutstanding` " +
+      "(kuruş) verilirse kalan borcu eşiğin altındaki daireler hiç dönmez — " +
+      "borç listesindeki eşikle aynı anlam.",
+  })
+  unitSummary(
+    @Query(new ZodQueryPipe(unitDebtSummaryQuery)) q: UnitDebtSummaryQuery,
+  ) {
+    return this.service.unitSummary(q);
   }
 
   /** Tahsilat formunun ihtiyacı: bir birimin açık borçları. */

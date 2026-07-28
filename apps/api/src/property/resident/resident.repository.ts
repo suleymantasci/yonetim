@@ -10,6 +10,7 @@ import {
   type SQL,
 } from "drizzle-orm";
 
+import { HEALTH_CONSENT_KIND } from "@yonetim/contracts";
 import type { ResidentListQuery } from "@yonetim/contracts";
 import {
   blocks,
@@ -386,6 +387,7 @@ export class ResidentRepository {
           tcknEncrypted: users.tcknEncrypted,
           emergencyContactName: users.emergencyContactName,
           emergencyContactPhone: users.emergencyContactPhone,
+          bloodType: users.bloodType,
           createdAt: users.createdAt,
           lastLoginAt: users.lastLoginAt,
         })
@@ -471,14 +473,108 @@ export class ResidentRepository {
           whatsappOptIn: users.whatsappOptIn,
           emergencyContactName: users.emergencyContactName,
           emergencyContactPhone: users.emergencyContactPhone,
+          bloodType: users.bloodType,
           tcknIndex: users.tcknIndex,
         })
         .from(users)
         .where(and(eq(users.id, userId), isNull(users.deletedAt)))
         .limit(1);
       const person = rows[0];
-      return person ? { person, member } : null;
+      if (!person) return null;
+
+      // Geçerli sağlık rızası: `granted` olan **en son** satır. `consents`
+      // append-only olduğu için "verildi → geri çekildi → tekrar verildi"
+      // dizisinde yalnız sonuncusu bağlayıcı; `granted = true` var mı diye
+      // bakmak geri çekilmiş bir rızayı geçerli sayardı.
+      const [latestConsent] = await tx
+        .select({ granted: consents.granted })
+        .from(consents)
+        .where(
+          and(
+            eq(consents.userId, userId),
+            eq(consents.kind, HEALTH_CONSENT_KIND),
+          ),
+        )
+        .orderBy(desc(consents.createdAt))
+        .limit(1);
+
+      return {
+        person,
+        member,
+        hasHealthConsent: latestConsent?.granted === true,
+      };
     });
+  }
+
+  /**
+   * Acil durum raporu — GAP 4.1.2.
+   *
+   * Telefon **maskesiz** dönüyor (uç notu: `emergencyContactRow`), bu yüzden
+   * kapsam üyeliklerle sıkı sınırlı: önce bu sitenin üye kimlikleri tenant
+   * içinden çıkarılıyor, sonra yalnız o kimlikler için bypass yapılıyor —
+   * `withBypassRls` daraltma kararının (PROJE-DURUMU §3) aynı deseni.
+   */
+  async emergencyContacts() {
+    const scoped = await this.db.tx(async (tx) => {
+      const memberRows = await tx
+        .select({ userId: memberships.userId })
+        .from(memberships)
+        .where(isNull(memberships.deletedAt));
+
+      // Daire etiketleri tenant içinden geliyor; bypass'a hiç gerek yok.
+      const occupancyRows = await tx
+        .select({
+          userId: unitOccupancies.userId,
+          number: units.number,
+          blockName: blocks.name,
+        })
+        .from(unitOccupancies)
+        .innerJoin(units, eq(units.id, unitOccupancies.unitId))
+        .leftJoin(blocks, eq(blocks.id, units.blockId))
+        .where(isNull(unitOccupancies.endDate));
+
+      return { memberRows, occupancyRows };
+    });
+
+    const ids = [...new Set(scoped.memberRows.map((row) => row.userId))];
+    if (ids.length === 0) return [];
+
+    const people = await this.db.bypass("residents:emergency", async (tx) =>
+      tx
+        .select({
+          id: users.id,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          phone: users.phone,
+          bloodType: users.bloodType,
+          emergencyContactName: users.emergencyContactName,
+          emergencyContactPhone: users.emergencyContactPhone,
+        })
+        .from(users)
+        .where(and(inArray(users.id, ids), isNull(users.deletedAt)))
+        .orderBy(asc(users.firstName), asc(users.lastName)),
+    );
+
+    const unitsByUser = new Map<string, string[]>();
+    for (const row of scoped.occupancyRows) {
+      const label = row.blockName
+        ? `${row.blockName}/${row.number}`
+        : row.number;
+      const existing = unitsByUser.get(row.userId);
+      if (existing) existing.push(label);
+      else unitsByUser.set(row.userId, [label]);
+    }
+
+    return people.map((person) => ({
+      userId: person.id,
+      fullName:
+        [person.firstName, person.lastName].filter(Boolean).join(" ") || "—",
+      phone: person.phone,
+      units: unitsByUser.get(person.id) ?? [],
+      bloodType: person.bloodType,
+      emergencyContactName: person.emergencyContactName,
+      emergencyContactPhone: person.emergencyContactPhone,
+    }));
   }
 
   /** Combobox için sakin listesi (borç/ödeme ekranlarında). */

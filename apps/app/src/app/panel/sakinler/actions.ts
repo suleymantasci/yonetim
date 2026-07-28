@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
 import {
+  BLOOD_TYPES,
   occupancyEndResult,
   residentRemoveResult,
   residentSaveResult,
@@ -79,6 +80,14 @@ const residentSchema = z.object({
   kvkkAcknowledged: checkboxField,
   emergencyContactName: optionalText(120),
   emergencyContactPhone: phoneField,
+  /** Boş = seçilmedi/silindi. Sunucu bunu NULL'lama olarak yorumluyor. */
+  bloodType: z.preprocess(
+    (value) => (value === "" || value === null ? undefined : value),
+    z.enum(BLOOD_TYPES, { errorMap: () => ({ message: V.invalidSelection }) })
+      .optional(),
+  ),
+  /** Sağlık verisi açık rızası (KVKK md.6/3) — kan grubu doluysa zorunlu. */
+  healthDataConsent: checkboxField,
   notes: optionalText(1000),
 
   /** İlk ilişki (isteğe bağlı): birim + rol + başlangıç. */
@@ -123,6 +132,13 @@ export async function createResident(
           email: [t("contactRequired")],
         });
       }
+      // Sunucu bunu `consent_required:health` ile zaten reddediyor; burada
+      // tekrarlanmasının sebebi hangi kutunun kırmızı olacağını söyleyebilmek.
+      if (input.bloodType && !input.healthDataConsent) {
+        return errorState(t("healthConsentRequired"), {
+          healthDataConsent: [t("healthConsentRequired")],
+        });
+      }
 
       const created = await apiPost(
         "/v1/panel/residents",
@@ -138,6 +154,8 @@ export async function createResident(
           kvkkAcknowledged: input.kvkkAcknowledged,
           emergencyContactName: input.emergencyContactName,
           emergencyContactPhone: input.emergencyContactPhone,
+          bloodType: input.bloodType ?? null,
+          healthDataConsent: input.healthDataConsent,
           notes: input.notes,
           // "vacant" bir ilişki değil, ilişkisizlik: API'ye gönderilmez.
           unitId: input.relation === "vacant" ? null : input.unitId,
@@ -186,6 +204,14 @@ const updateSchema = z.object({
   whatsappOptIn: checkboxField,
   emergencyContactName: optionalText(120),
   emergencyContactPhone: phoneField,
+  /** Boş = seçilmedi/silindi. Sunucu bunu NULL'lama olarak yorumluyor. */
+  bloodType: z.preprocess(
+    (value) => (value === "" || value === null ? undefined : value),
+    z.enum(BLOOD_TYPES, { errorMap: () => ({ message: V.invalidSelection }) })
+      .optional(),
+  ),
+  /** Sağlık verisi açık rızası (KVKK md.6/3) — kan grubu doluysa zorunlu. */
+  healthDataConsent: checkboxField,
   notes: optionalText(1000),
 });
 
@@ -209,6 +235,13 @@ export async function updateResident(
           email: [t("contactRequired")],
         });
       }
+      // Sunucu bunu `consent_required:health` ile zaten reddediyor; burada
+      // tekrarlanmasının sebebi hangi kutunun kırmızı olacağını söyleyebilmek.
+      if (input.bloodType && !input.healthDataConsent) {
+        return errorState(t("healthConsentRequired"), {
+          healthDataConsent: [t("healthConsentRequired")],
+        });
+      }
 
       await apiPatch(
         `/v1/panel/residents/${input.id}`,
@@ -225,6 +258,8 @@ export async function updateResident(
           whatsappOptIn: input.whatsappOptIn,
           emergencyContactName: input.emergencyContactName,
           emergencyContactPhone: input.emergencyContactPhone,
+          bloodType: input.bloodType ?? null,
+          healthDataConsent: input.healthDataConsent,
           notes: input.notes,
         },
         residentSaveResult,

@@ -155,6 +155,43 @@ export const siteConfig = {
     meetingReminderDays: [15, 7, 1],
   },
 
+  /**
+   * === PERSONEL / TAZMİNAT ===
+   *
+   * Kıdem-ihbar hesabının **yılda bir/iki kez değişen** girdileri. Kanunda
+   * sabit olanlar (30 gün/yıl, ihbar süreleri, damga vergisi binde 7,59)
+   * `packages/core/src/severance.ts` içinde gömülü; burada yalnız eskiyen
+   * rakamlar var.
+   *
+   * ⚠ [DEĞİŞECEK — HER OCAK VE TEMMUZ GÖZDEN GEÇİRİN]
+   * Kıdem tazminatı tavanı memur emekli ikramiyesine bağlı olarak **6 ayda
+   * bir** güncelleniyor. Eski bir tavanla hesap yapmak sessizce yanlış rakam
+   * üretir; bu yüzden `effectiveFrom` ekranda sonucun yanında **gösteriliyor**
+   * — güncellenmemiş bir değer kullanıcıya görünür oluyor, sessiz kalmıyor.
+   */
+  payroll: {
+    /**
+     * Bu parametrelerin yürürlük tarihi (ISO). Ekran bunu sonucun yanında
+     * yazıyor: tarih eskiyse rakama güvenilmemesi gerektiği anlaşılsın.
+     */
+    effectiveFrom: "2026-01-01",
+    /**
+     * Kıdem tazminatı yıllık tavanı — **kuruş**.
+     *
+     * Kurulumdan önce Hazine ve Maliye Bakanlığı'nın yayımladığı güncel
+     * tutarla değiştirin. Buradaki değer bir yer tutucudur.
+     */
+    severanceCeilingMinor: 5_300_000,
+    /**
+     * İhbar tazminatına uygulanacak gelir vergisi oranı.
+     *
+     * Gerçekte kümülatif matraha bağlı dilimli bir hesap; burada **tek marjinal
+     * oran** tutuluyor ve sonuç bu yüzden "yaklaşık" olarak işaretleniyor
+     * (`SeveranceResult.isEstimate`). İlk dilim oranı varsayılan.
+     */
+    noticeIncomeTaxRate: 0.15,
+  },
+
   // === AIDAT / BORÇ (Bölüm 6.1) ===
   dues: {
     /** KMK md.20: aylık %5 gecikme tazminatı üst sınırı. */

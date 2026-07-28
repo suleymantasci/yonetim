@@ -13,7 +13,7 @@ import {
 } from "drizzle-orm";
 
 import type { DebtListQuery, DebtListResponse } from "@yonetim/contracts";
-import { toPageMeta } from "@yonetim/contracts";
+import { TREND_MONTHS, toPageMeta } from "@yonetim/contracts";
 import {
   blocks,
   debtChanges,
@@ -34,6 +34,24 @@ import { DbService } from "../../infra/db/db.service";
  * `withTenant`/`withBypassRls` yerine `DbService` ve kuruş alanlarının
  * sözleşme adlarına (`*Minor`) çevrilmesi.
  */
+/**
+ * `unitSummary` ham sorgusunun satır biçimi.
+ *
+ * Sürücü `bigint`i **metin** olarak veriyor (64-bit tam sayı JS `number`'ına
+ * her zaman sığmadığı için); dönüşüm tek yerde, `Number()` ile yapılıyor.
+ * `trend` dizisi de aynı sebeple `string[]`.
+ */
+interface UnitSummarySqlRow extends Record<string, unknown> {
+  unit_id: string;
+  number: string;
+  block_name: string | null;
+  outstanding: string;
+  overdue: string;
+  oldest_due: string | null;
+  debt_count: number;
+  trend: string[] | null;
+}
+
 const SORT_COLUMNS = {
   dueDate: debts.dueDate,
   amount: debts.amountKurus,
@@ -185,6 +203,15 @@ export class DebtRepository {
     if (q.status === "taksit")
       conditions.push(sql`${debts.installmentCount} IS NOT NULL`);
 
+    // "Riskli cari" eşiği — satır bazında kalan borç. Ödenmiş borcun kalanı
+    // 0'dır, dolayısıyla eşik verildiğinde `status='paid'` satırları zaten
+    // elenir; ayrıca durum koşulu eklemek gerekmiyor.
+    if (q.minOutstanding !== undefined && q.minOutstanding > 0) {
+      conditions.push(
+        sql`${debts.amountKurus} + ${debts.lateFeeKurus} - ${debts.paidKurus} >= ${q.minOutstanding}`,
+      );
+    }
+
     return and(...conditions);
   }
 
@@ -319,22 +346,72 @@ export class DebtRepository {
    * Ham SQL bilinçli: `LEFT JOIN` + `FILTER` ile tek turda hem toplam hem
    * gecikmiş hem en eski vade çıkıyor. Query builder ile aynı planı üretmek
    * için üç ayrı sorgu gerekirdi.
+   *
+   * BAKİYE TRENDİ (rakip incelemesi §4.3): her satır son `TREND_MONTHS` ayın
+   * ay sonu bakiyesini de taşıyor. Bu **geçmişin yeniden kurulması**, mevcut
+   * bakiyeden türetilemez — borcun doğduğu an (`debts.created_at`) ile
+   * tahsilatın yapıldığı an (`payments.paid_at`) ayrı ayrı kesiliyor. Aynı
+   * sorguda üretiliyor çünkü daire başına ayrı sorgu, N+1'in tam tanımı olurdu.
    */
-  async unitSummary() {
+  async unitSummary(minOutstanding?: number) {
+    // Eşik `HAVING`'e giriyor: kalan borç bir toplam, `WHERE` aşamasında
+    // henüz hesaplanmamış oluyor.
+    const havingClause =
+      minOutstanding !== undefined && minOutstanding > 0
+        ? sql`HAVING COALESCE(SUM(d.amount_kurus + d.late_fee_kurus - d.paid_kurus), 0) >= ${minOutstanding}`
+        : sql``;
+
     return this.db.tx(async (tx) => {
       // Ham `execute` sonucu sürücü tip eşlemesinden geçmiyor: sayısal
       // toplamlar ve `MIN(due_date)` string olarak geliyor. Aşağıda hepsi tek
       // yerde normalleştiriliyor ki uçtan çıkan tarih diğer uçlarla aynı
       // (ISO-8601) biçimde olsun.
-      const rows = await tx.execute<{
-        unit_id: string;
-        number: string;
-        block_name: string | null;
-        outstanding: string;
-        overdue: string;
-        oldest_due: string | null;
-        debt_count: number;
-      }>(sql`
+      const rows = await tx.execute<UnitSummarySqlRow>(sql`
+        WITH months AS (
+          -- Her ayın **kesim anı** (üst sınır, hariç). Cari ay için ay sonu
+          -- geleceğe düşeceğinden now() ile sınırlanıyor: henüz olmamış bir
+          -- ayın bakiyesini göstermek, son noktayı sistematik olarak şişirirdi.
+          SELECT gs.idx,
+                 LEAST(
+                   date_trunc('month', now()) - make_interval(months => gs.idx) + interval '1 month',
+                   now()
+                 ) AS cutoff
+          FROM generate_series(0, ${TREND_MONTHS - 1}) AS gs(idx)
+        ),
+        charges AS (
+          SELECT d.unit_id, m.idx, SUM(d.amount_kurus + d.late_fee_kurus)::bigint AS total
+          FROM debts d
+          CROSS JOIN months m
+          WHERE d.deleted_at IS NULL AND d.created_at < m.cutoff
+          GROUP BY d.unit_id, m.idx
+        ),
+        settled AS (
+          -- Tahsilat borcun kendisinden değil, **dağıtımından** okunuyor:
+          -- debts.paid_kurus bugünkü durumu taşır, geçmiş bir ay sonunda ne
+          -- kadarının ödenmiş olduğunu söylemez.
+          SELECT d.unit_id, m.idx, SUM(pa.amount_kurus)::bigint AS total
+          FROM payment_allocations pa
+          JOIN payments p ON p.id = pa.payment_id
+          JOIN debts d ON d.id = pa.debt_id
+          CROSS JOIN months m
+          WHERE d.deleted_at IS NULL AND p.paid_at < m.cutoff
+          GROUP BY d.unit_id, m.idx
+        ),
+        trend AS (
+          -- idx DESC → dizi eskiden yeniye sıralı çıkıyor; grafik x eksenini
+          -- ters çevirmek zorunda kalmıyor.
+          SELECT u.id AS unit_id,
+                 array_agg(
+                   (COALESCE(c.total, 0) - COALESCE(s.total, 0))::bigint
+                   ORDER BY m.idx DESC
+                 ) AS series
+          FROM units u
+          CROSS JOIN months m
+          LEFT JOIN charges c ON c.unit_id = u.id AND c.idx = m.idx
+          LEFT JOIN settled s ON s.unit_id = u.id AND s.idx = m.idx
+          WHERE u.deleted_at IS NULL
+          GROUP BY u.id
+        )
         SELECT u.id AS unit_id,
                u.number,
                b.name AS block_name,
@@ -342,26 +419,19 @@ export class DebtRepository {
                COALESCE(SUM(CASE WHEN d.due_date < now()
                             THEN d.amount_kurus + d.late_fee_kurus - d.paid_kurus ELSE 0 END), 0)::bigint AS overdue,
                MIN(d.due_date) FILTER (WHERE d.status <> 'paid') AS oldest_due,
-               COUNT(d.id) FILTER (WHERE d.status <> 'paid')::int AS debt_count
+               COUNT(d.id) FILTER (WHERE d.status <> 'paid')::int AS debt_count,
+               t.series AS trend
         FROM units u
         LEFT JOIN blocks b ON b.id = u.block_id
         LEFT JOIN debts d ON d.unit_id = u.id AND d.deleted_at IS NULL AND d.status <> 'paid'
+        LEFT JOIN trend t ON t.unit_id = u.id
         WHERE u.deleted_at IS NULL
-        GROUP BY u.id, u.number, b.name
+        GROUP BY u.id, u.number, b.name, t.series
+        ${havingClause}
         ORDER BY outstanding DESC, u.number
       `);
 
-      return (
-        rows as unknown as {
-          unit_id: string;
-          number: string;
-          block_name: string | null;
-          outstanding: string;
-          overdue: string;
-          oldest_due: string | null;
-          debt_count: number;
-        }[]
-      ).map((row) => ({
+      return (rows as unknown as UnitSummarySqlRow[]).map((row) => ({
         unitId: row.unit_id,
         number: row.number,
         blockName: row.block_name,
@@ -369,6 +439,11 @@ export class DebtRepository {
         overdueMinor: Number(row.overdue),
         oldestDue: row.oldest_due ? new Date(row.oldest_due) : null,
         debtCount: Number(row.debt_count),
+        // Hiç borcu olmamış daire için `array_agg` NULL döner; sözleşme sabit
+        // uzunluk vaat ettiği için sıfır serisine indirgeniyor.
+        trendMinor: (row.trend ?? []).length
+          ? row.trend!.map(Number)
+          : new Array<number>(TREND_MONTHS).fill(0),
       }));
     });
   }

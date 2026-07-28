@@ -18,6 +18,7 @@ export function ListToolbar({
   onQueryChange,
   placeholder,
   clearLabel = "Temizle",
+  searchable = true,
   children,
   trailing,
 }: {
@@ -25,6 +26,14 @@ export function ListToolbar({
   onQueryChange: (query: string) => void;
   placeholder: string;
   clearLabel?: string;
+  /**
+   * Arama kutusunu gizler.
+   *
+   * Her liste ucu arama kabul etmiyor (örn. borçların daire özeti bir toplam
+   * görünümü). Çalışmayan bir arama kutusu göstermek, kullanıcıya olmayan bir
+   * yetenek vaat etmek olurdu — filtreler tek başına da anlamlı.
+   */
+  searchable?: boolean;
   /** Filtre kontrolleri (select, çipler). */
   children?: ReactNode;
   /** Sağ uçta ek aksiyon (dışa aktar, sütun seçimi). */
@@ -45,30 +54,32 @@ export function ListToolbar({
 
   return (
     <div className="mb-4 flex flex-wrap items-center gap-2">
-      <div className="relative min-w-48 flex-1">
-        <Search
-          aria-hidden
-          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle"
-        />
-        <input
-          type="search"
-          value={value}
-          onChange={(event) => update(event.target.value)}
-          placeholder={placeholder}
-          aria-label={placeholder}
-          className="w-full rounded-lg border border-border-strong bg-surface py-2 pl-9 pr-9 text-sm text-fg placeholder:text-fg-subtle focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/40"
-        />
-        {value ? (
-          <button
-            type="button"
-            onClick={() => update("")}
-            aria-label={clearLabel}
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-fg-subtle hover:bg-hover hover:text-fg"
-          >
-            <X aria-hidden className="h-3.5 w-3.5" />
-          </button>
-        ) : null}
-      </div>
+      {searchable ? (
+        <div className="relative min-w-48 flex-1">
+          <Search
+            aria-hidden
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fg-subtle"
+          />
+          <input
+            type="search"
+            value={value}
+            onChange={(event) => update(event.target.value)}
+            placeholder={placeholder}
+            aria-label={placeholder}
+            className="w-full rounded-lg border border-border-strong bg-surface py-2 pl-9 pr-9 text-sm text-fg placeholder:text-fg-subtle focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/40"
+          />
+          {value ? (
+            <button
+              type="button"
+              onClick={() => update("")}
+              aria-label={clearLabel}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-fg-subtle hover:bg-hover hover:text-fg"
+            >
+              <X aria-hidden className="h-3.5 w-3.5" />
+            </button>
+          ) : null}
+        </div>
+      ) : null}
       {children}
       {trailing ? <div className="ml-auto flex items-center gap-2">{trailing}</div> : null}
     </div>

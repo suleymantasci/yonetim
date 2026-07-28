@@ -79,8 +79,15 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/panel/sayaclar", key: "meters", permission: "meter:read", group: "operations" },
   { href: "/panel/rezervasyon", key: "reservations", permission: "reservation:read", group: "operations" },
   { href: "/panel/personel", key: "staff", permission: "staff:read", group: "operations" },
+  { href: "/panel/demirbas", key: "inventory", permission: "inventory:read", group: "operations" },
   { href: "/panel/belgeler", key: "documents", permission: "document:read", group: "operations" },
   { href: "/panel/hukuk", key: "legal", permission: "legal:read", group: "compliance" },
+  {
+    href: "/panel/karar-defteri",
+    key: "decisionBook",
+    permission: "decision:read",
+    group: "compliance",
+  },
   {
     href: "/panel/kvkk",
     key: "kvkk",

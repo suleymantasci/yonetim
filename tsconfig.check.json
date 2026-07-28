@@ -42,5 +42,19 @@
     },
     "baseUrl": "."
   },
-  "include": ["packages/*/src/**/*.ts", "packages/*/src/**/*.tsx", "tests/**/*.ts"]
+  // Testlerin `.tsx` olanları da dahil: erişilebilirlik smoke testi bileşen
+  // render ediyor ve JSX yazıyor. Yalnız `.ts` kapsanınca o dosya tip
+  // kontrolünden sessizce kaçıyordu — test de kodun bir parçası.
+  //
+  // DİKKAT: burada blok yorumu (slash-yıldız) KULLANMAYIN. Aşağıdaki glob
+  // desenleri yıldız-slash dizisi içeriyor ve blok yorumunu erken kapatıyor;
+  // sonuç sessiz ama yıkıcı: `include` anahtarı okunamıyor, TypeScript
+  // varsayılan `**/*` desenine düşüp `apps/api`yi de derliyor ve NestJS
+  // dekoratörleri yüzünden ~600 sahte hata üretiyor.
+  "include": [
+    "packages/*/src/**/*.ts",
+    "packages/*/src/**/*.tsx",
+    "tests/**/*.ts",
+    "tests/**/*.tsx"
+  ]
 }

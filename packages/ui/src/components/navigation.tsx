@@ -37,7 +37,25 @@ export type LinkLike = (props: {
 
 type AnchorLike = LinkLike;
 
-const defaultAnchor: AnchorLike = ({ href, className, children, ...rest }) => (
+/**
+ * `linkComponent` verilmediğindeki geri düşüş.
+ *
+ * `scroll` **kasıtlı olarak ayrıştırılıp atılıyor**: Next `Link`'ine ait bir
+ * prop ve düz bir `<a>` etiketine geçerse React "Received `false` for a
+ * non-boolean attribute" uyarısı basıyor, üstelik geçerli olmayan bir
+ * `scroll="false"` özniteliği DOM'a yazılıyor. Erişilebilirlik smoke testi
+ * (`tests/a11y-smoke.test.tsx`) bunu ilk koşusunda yakaladı.
+ *
+ * `aria-current` ise **geçmeli**: bağlantının aktif olduğunu ekran okuyucuya
+ * söyleyen tek şey o.
+ */
+const defaultAnchor: AnchorLike = ({
+  href,
+  className,
+  children,
+  scroll: _scroll,
+  ...rest
+}) => (
   <a href={href} className={className} {...rest}>
     {children}
   </a>

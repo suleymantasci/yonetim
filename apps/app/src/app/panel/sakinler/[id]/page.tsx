@@ -237,6 +237,12 @@ export default async function ResidentDetailPage({
                   label={t("emergencyPhone")}
                   value={detail.emergencyContactPhoneMasked ?? "—"}
                 />
+                {/*
+                  Kan grubu maskesiz: maskelenmiş bir kan grubu ("A ••")
+                  hiçbir işe yaramaz. Koruma erişim denetiminde — bu
+                  görüntüleme `saglik_bilgisi` kategorisiyle kütüğe geçiyor.
+                */}
+                <Row label={t("bloodType")} value={detail.bloodType ?? "—"} />
                 <Row
                   label={t("createdAt")}
                   value={fmt.date(detail.createdAt)}

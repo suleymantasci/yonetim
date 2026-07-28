@@ -16,11 +16,15 @@ import { ListToolbar, ToolbarSelect } from "@yonetim/ui";
  * `scroll: false`: filtre değişince sayfa başına zıplamaz.
  */
 export function ListControls({
-  searchPlaceholder,
+  searchPlaceholder = "",
+  searchable = true,
   filters,
   trailing,
 }: {
-  searchPlaceholder: string;
+  /** `searchable={false}` iken kullanılmaz; o yüzden zorunlu değil. */
+  searchPlaceholder?: string;
+  /** Arama kabul etmeyen uçlar için kutuyu gizler (bkz. `ListToolbar`). */
+  searchable?: boolean;
   /** Sunucudan gelen filtre tanımları (seçenek etiketleri çevrilmiş halde). */
   filters?: {
     param: string;
@@ -50,6 +54,7 @@ export function ListControls({
       defaultQuery={searchParams.get("q") ?? ""}
       onQueryChange={(query) => setParam("q", query)}
       placeholder={searchPlaceholder}
+      searchable={searchable}
       trailing={trailing}
     >
       {filters?.map((filter) => (

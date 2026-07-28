@@ -8,6 +8,7 @@ import type {
   DebtListResponse,
   OpenDebtList,
   UnitDebtSummary,
+  UnitDebtSummaryQuery,
 } from "@yonetim/contracts";
 
 import { AuditService } from "../../governance/audit/audit.service";
@@ -100,8 +101,8 @@ export class DebtService {
     };
   }
 
-  async unitSummary(): Promise<UnitDebtSummary> {
-    return { rows: await this.repo.unitSummary() };
+  async unitSummary(q: UnitDebtSummaryQuery): Promise<UnitDebtSummary> {
+    return { rows: await this.repo.unitSummary(q.minOutstanding) };
   }
 
   async openDebts(unitId: string): Promise<OpenDebtList> {

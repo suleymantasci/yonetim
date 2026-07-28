@@ -126,6 +126,42 @@ Git geçmişindeki son 3 commit: dev ortamında `apps/api` ESM çökmesi ve
 `auth ↔ db` döngüsü giderildi; UI bileşenlerinde erişilebilirlik/stil
 iyileştirmesi; landing sayfası güncellendi.
 
+### 2.7 Rakip bulgularının uygulanması (2026-07-28) — ✅ TAMAMLANDI
+
+§4.1'deki hızlı kazanımlar, §4.2'deki Karar Defteri, §4.3'teki bakiye trendi
+ve §6'daki teknik borçlar uygulandı. Migration'lar `0003`–`0006`.
+
+| İş | Ne yapıldı | Not |
+| --- | --- | --- |
+| Borç kategorileri | `debt_kind` enum'una **Kira / Depozito / İdari Ceza** eklendi | `penalty` (yönetim kararı) ile `admin_fine` (kamu kurumu) bilinçli ayrı; itiraz mercileri farklı. Sırasında `DEBT_KINDS`'in **dört ayrı kopyası** bulundu ve sözleşmeye indirildi; `MANUAL_DEBT_KINDS` / `BULK_DEBT_KINDS` alt kümeleri derleme-zamanı tip iddiasıyla kilitlendi |
+| Riskli cari filtresi | `minOutstanding` (kuruş) eşiği; ekranda 500/1.000/2.000/5.000 ₺ hazır seçenek | Hem borç listesi hem daire özeti sekmesinde **aynı** anlamda |
+| Kan grubu + acil durum raporu | `users.blood_type` + `/panel/sakinler/acil-durum` | **KVKK md.6 özel nitelikli (sağlık) veri**: açık rıza olmadan yazılmıyor (`acik_riza_saglik`), rıza çekilince alan NULL'lanıyor, her okuma `data_category='saglik_bilgisi'` ile ayrı kütüğe geçiyor. Ayrı ekran/ayrı uç olmasının sebebi bu |
+| Kıdem/ihbar tazminatı | `packages/core/src/severance.ts` + 17 birim testi + `POST /v1/panel/staff/tazminat` + personel ekranı widget'ı | Kanunda sabit olanlar (30 gün/yıl, ihbar kademeleri, damga vergisi ‰7,59, kıdemin gelir vergisi istisnası) kodda; **yılda bir/iki kez değişenler** (kıdem tavanı, gelir vergisi oranı) `siteConfig.payroll`'da tarih damgalı ve ekranda gösteriliyor. Sonuç `isEstimate: true` — bordro değil |
+| Demirbaş defteri | `inventory_items` + `/panel/demirbas` | Silme ucu **yok**: elden çıkan kalem `disposed`/`lost` ile düşülüyor. `disposed` ≠ `lost` ayrımı devir tesliminin asıl sorusu |
+| **Karar Defteri** | `decision_book_entries` + `/panel/karar-defteri` | Mevcut `meeting_decisions` yerine geçmiyordu: numara toplantı içinde tekildi, toplantısız kararı (md.32/son) taşıyamıyordu ve değiştirilebilirdi. Yeni defter **site geneli sürekli numaralı** ve **ekleme-yalnız** — DB trigger'ı UPDATE/DELETE'i engelliyor, düzeltme yeni kayıt olarak yazılıyor |
+| Bakiye trendi | Daire özeti satırlarında son 6 ayın ay sonu bakiyesi (sparkline) | Seri, `debts.created_at` ve `payments.paid_at` ayrı ayrı kesilerek **geçmişten yeniden kuruluyor**; mevcut bakiyeden türetilemez |
+
+**RBAC:** `inventory:read/write` ve `decision:read/write` eklendi.
+`decision:read` **sakin rolüne de** verildi — KMK md.32/son kat malikine
+kararları görme hakkı tanıyor; bu bir ürün tercihi değil kanuni bir hak.
+
+**§6 teknik borçları kapatıldı:**
+
+- `pnpm lint` adımı `infra/ci/ci.yml`'de **zaten vardı**; asıl eksik dosyanın
+  hiç kurulmamış olmasıydı — `.github/workflows/ci.yml` oluşturuldu, yani CI
+  bugüne kadar **hiç koşmamış**.
+- Ayrıca CI'a **uygulama tip kontrolü** eklendi: `tsconfig.check.json` yalnız
+  `packages/*` ve `tests/*` kapsıyordu, `apps/api` hiçbir kapıdan geçmiyordu.
+- `jest-axe` yerine `axe-core` doğrudan kullanıldı (proje vitest'te;
+  `jest-axe` Jest'in `expect` genişletmesine bağlı). `tests/a11y-smoke.test.tsx`
+  ortak bileşenleri denetliyor ve **kendi çalıştığını doğrulayan** bir test
+  içeriyor. İlk koşusunda gerçek bir kusur yakaladı: `Tabs`, `linkComponent`
+  verilmediğinde Next'e özgü `scroll` prop'unu düz `<a>`'ya sızdırıyordu.
+
+**Kontrast denetimi bilinçli olarak kapsam dışı**: jsdom stil hesaplamıyor ve
+CSS token'ları çözülmemiş kalıyor; sahte biçimde "geçirmek" yanlış güven
+verirdi. O katman `tests/design-tokens.test.ts` içinde token düzeyinde ölçülüyor.
+
 ---
 
 ## 3. Değişen / geri alınan kararlar
@@ -159,15 +195,13 @@ Kaynak: `RAKIP-ANALIZI-VE-EKSIK-MODULLER-2026-07-28.md` (Dijiyon + Yönetimcell
 canlı demo incelemesi, 2026-07-28). Bu liste GAP-ANALYSIS.md'deki eski
 maddelerle **çakışmayan/yeni** olanları önceliklendirir.
 
-### 4.1 Hızlı kazanımlar (düşük efor)
+### 4.1 Hızlı kazanımlar (düşük efor) — ✅ **TAMAMI YAPILDI** (bkz. §2.7)
 
-- Kan grubu / acil durum kişi alanı + basit rapor
-- Kıdem/İhbar tazminatı hesaplayıcı (personel modülüne widget)
-- Demirbaş/envanter basit CRUD listesi
-- Liste filtrelerine **tutar eşikli hazır "riskli cari" filtreleri**
-  (500₺+/1.000₺+/2.000₺+ vb. — Yönetimcell'de canlı doğrulandı)
-- Borç kategorilerine **Kira, Depozito, İdari Ceza** eklenmesi (ikisi de
-  Yönetimcell'de canlı doğrulandı; bizde yalnız aidat/yakıt/demirbaş var)
+- ~~Kan grubu / acil durum kişi alanı + basit rapor~~ ✅
+- ~~Kıdem/İhbar tazminatı hesaplayıcı (personel modülüne widget)~~ ✅
+- ~~Demirbaş/envanter basit CRUD listesi~~ ✅
+- ~~Liste filtrelerine tutar eşikli hazır "riskli cari" filtreleri~~ ✅
+- ~~Borç kategorilerine **Kira, Depozito, İdari Ceza** eklenmesi~~ ✅
 
 ### 4.2 Orta vadeli (GAP-DURUM zaten planlamıştı, rakip verisi önceliği doğruluyor)
 
@@ -176,9 +210,9 @@ maddelerle **çakışmayan/yeni** olanları önceliklendirir.
 - Talep yönetimi (thread + SLA + atama)
 - Toplu veri girişi / göç sihirbazı (Dijiyon'un "Toplu Tanımlamalar"ı ile
   doğrudan rakip)
-- Anket/toplantı/hukuk tam akışları + **Karar Defteri** (sıra no + tarih +
-  gündem — **hem Dijiyon hem Yönetimcell'de canlı doğrulandı**, neredeyse
-  zorunlu bir modül; bizdeki `toplantilar` bunun yerine geçmiyor)
+- Anket/toplantı/hukuk tam akışları — ~~+ **Karar Defteri**~~ ✅ **yapıldı**
+  (§2.7): site geneli sürekli numaralı, ekleme-yalnız defter. Anket/toplantı/
+  hukuk tam akışları hâlâ açık
 
 ### 4.3 Yeni, hiçbir GAP dokümanında geçmeyen fikirler
 
@@ -188,8 +222,8 @@ maddelerle **çakışmayan/yeni** olanları önceliklendirir.
   gerektirir.
 - **Firma ve Personel için ayrı "Ödeme ve Borçlanma" cari hesapları**
   (yalnızca sakinler değil, tedarikçiler ve personel de cari hesap)
-- **Kişi bazlı bakiye trend grafiği** (üye listesinde her satırda) — bizde
-  yalnız site geneli dashboard grafiği var
+- ~~**Kişi bazlı bakiye trend grafiği** (üye listesinde her satırda)~~ ✅
+  **yapıldı** (§2.7) — borçların "daire özeti" sekmesinde satır içi sparkline
 - **Vekaletname örneği, antetli evrak, adres etiketi** gibi hazır belge
   şablonları — bizde yalnız dosya deposu (`belgeler`) var, şablon üretimi yok
 - **AI destekli Yönetim Asistanı** (metin+sesli, KMK/aidat sorularını
@@ -240,12 +274,22 @@ her biri artık tek modül işi (altyapı: contracts, worker, iptal/ilerleme haz
 
 ## 6. Hâlâ açık, küçük teknik borçlar
 
-- `pnpm lint` CI adımı değil (yapılandırma var, adım yok)
-- `jest-axe` erişilebilirlik smoke testi yazılmadı
+- ~~`pnpm lint` CI adımı değil~~ → **kapatıldı** (§2.7): adım zaten vardı,
+  eksik olan workflow dosyasının kurulmamış olmasıydı; `.github/workflows/ci.yml`
+  eklendi ve CI'a uygulama tip kontrolü de kondu
+- ~~`jest-axe` erişilebilirlik smoke testi yazılmadı~~ → **kapatıldı** (§2.7):
+  `axe-core` ile `tests/a11y-smoke.test.tsx`
+- **`siteConfig.payroll` yer tutucu değerler içeriyor** — kıdem tazminatı
+  tavanı ve ihbar gelir vergisi oranı üretime çıkmadan **güncel resmî
+  değerlerle** doldurulmalı. Tavan 6 ayda bir değişiyor; yürürlük tarihi
+  ekranda gösteriliyor ama değerin kendisi doğrulanmadı
 - 375px mobil kart görünümü, JS-kapalı akış, klavye turu paneldeki tüm
   ekranlarda **ölçülmedi** (kod yolu Faz 1'dekiyle aynı ama panelde tarayıcıda
-  doğrulanmadı)
+  doğrulanmadı). Yeni gelen `/panel/demirbas` ve `/panel/karar-defteri`
+  ekranları da bu kapsamda
 - 16 worker job'ı hâlâ `skipped: no_handler` (Track E maddeleriyle birlikte dolacak)
+- Demirbaş ve Karar Defteri için **entegrasyon testi yok**; karar defterinin
+  değişmezlik trigger'ı elle (psql) doğrulandı, `tests/integration`'a taşınmalı
 
 ---
 

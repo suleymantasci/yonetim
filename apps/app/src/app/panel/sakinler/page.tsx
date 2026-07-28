@@ -1,4 +1,4 @@
-import { Plus, Users } from "lucide-react";
+import { Plus, Siren, Users } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
@@ -130,13 +130,22 @@ export default async function ResidentsPage({
         title={t("title")}
         description={t("description")}
         action={
-          <Link
-            href="/panel/sakinler/yeni"
-            className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-fg hover:bg-primary-hover"
-          >
-            <Plus aria-hidden className="h-4 w-4" />
-            {t("newResident")}
-          </Link>
+          <>
+            <Link
+              href="/panel/sakinler/acil-durum"
+              className="inline-flex h-10 items-center gap-2 rounded-lg border border-border-strong bg-surface px-3 text-sm font-semibold text-fg hover:bg-hover"
+            >
+              <Siren aria-hidden className="h-4 w-4" />
+              {t("emergencyTitle")}
+            </Link>
+            <Link
+              href="/panel/sakinler/yeni"
+              className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-fg hover:bg-primary-hover"
+            >
+              <Plus aria-hidden className="h-4 w-4" />
+              {t("newResident")}
+            </Link>
+          </>
         }
       />
 

@@ -1,0 +1,14 @@
+-- Kan grubu — acil durum raporunun eksik parçası (rakip incelemesi §4.1).
+--
+-- KVKK md.6: kan grubu **özel nitelikli kişisel veri** (sağlık verisi). Site
+-- yönetimi md.6/3'teki "sır saklama yükümlülüğü altındaki kişiler" grubuna
+-- girmediği için işlenmesi **açık rıza** gerektiriyor. Uygulamada karşılığı:
+--   · yazma yolu `consents.kind = 'acik_riza_saglik'` kaydı olmadan doldurmuyor,
+--   · okuma `data_access_logs`'a `data_category = 'health'` ile yazılıyor,
+--   · rıza geri çekilince alan NULL'lanıyor.
+--
+-- `varchar(6)` yeterli: en uzun değer "AB Rh+" (6 karakter). Enum tipi
+-- **bilinçli olarak kullanılmadı** — geçerli değer kümesi `packages/contracts`
+-- içindeki `BLOOD_TYPES` ile zorlanıyor ve orada kalması, tıbbi gösterim
+-- biçimi değişirse (örn. "0" yerine "O") migration gerektirmemesini sağlıyor.
+ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "blood_type" varchar(6);

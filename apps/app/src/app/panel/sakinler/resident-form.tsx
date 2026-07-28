@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useState, type ReactNode } from "react";
 
+import { BLOOD_TYPES } from "@yonetim/contracts";
 import {
   Alert,
   Checkbox,
@@ -64,6 +65,9 @@ export function ResidentForm({
     whatsappOptIn: boolean;
     emergencyContactName: string | null;
     emergencyContactPhone: string | null;
+    bloodType: string | null;
+    /** Rıza daha önce alındıysa kutu işaretli açılır (bkz. sözleşme notu). */
+    hasHealthConsent: boolean;
     notes: string | null;
     hasTckn: boolean;
   };
@@ -87,6 +91,8 @@ export function ResidentForm({
   const [relation, setRelation] = useState<"owner" | "tenant" | "none">(
     presetUnitId ? "owner" : "none",
   );
+  // Kan grubu kontrollü: açık rıza kutusunun görünürlüğü buna bağlı.
+  const [bloodType, setBloodType] = useState(defaults?.bloodType ?? "");
 
   const isEdit = defaults !== undefined;
   const unitOptions = units.map((unit) => ({
@@ -218,6 +224,45 @@ export function ResidentForm({
             invalidHint={tCommon("validation.invalidPhone")}
           />
         </FormField>
+
+        <FormField
+          name="bloodType"
+          label={t("bloodType")}
+          hint={t("bloodTypeHint")}
+        >
+          <Select
+            name="bloodType"
+            value={bloodType}
+            onChange={(event) => setBloodType(event.target.value)}
+          >
+            <option value="">{t("bloodTypeEmpty")}</option>
+            {BLOOD_TYPES.map((value) => (
+              <option key={value} value={value}>
+                {value}
+              </option>
+            ))}
+          </Select>
+        </FormField>
+
+        {/*
+          Açık rıza kutusu **yalnız kan grubu seçilince** çıkıyor ve o an
+          zorunlu oluyor. Her zaman görünür olsaydı, veri toplamayan
+          yöneticiye anlamsız bir hukuki kutu gösterirdi; hiç olmasaydı özel
+          nitelikli veri rızasız toplanırdı. Sunucu da aynı kuralı ayrıca
+          doğruluyor (`consent_required:health`) — kutuyu atlatmak bir
+          gerçeklik değil, yalnızca 400 hatası.
+        */}
+        {bloodType ? (
+          <div className="sm:col-span-2 rounded-lg border border-warning-border bg-warning-soft p-3">
+            <Checkbox
+              name="healthDataConsent"
+              required
+              defaultChecked={defaults?.hasHealthConsent}
+              label={t("healthConsentLabel")}
+              description={t("healthConsentDescription")}
+            />
+          </div>
+        ) : null}
       </FormSection>
 
       {isEdit ? null : (

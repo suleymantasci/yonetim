@@ -4,6 +4,8 @@ import { AuditController } from "./audit.controller";
 import { AuditReadService } from "./audit-read.service";
 import { AuditRepository } from "./audit.repository";
 import { AuditService } from "./audit.service";
+import { DecisionBookController } from "../decision-book/decision-book.controller";
+import { DecisionBookService } from "../decision-book/decision-book.service";
 import { DocumentController } from "../document/document.controller";
 import { DocumentService } from "../document/document.service";
 
@@ -16,8 +18,16 @@ import { DocumentService } from "../document/document.service";
  */
 @Global()
 @Module({
-  controllers: [AuditController, DocumentController],
-  providers: [AuditService, AuditReadService, AuditRepository, DocumentService],
+  controllers: [AuditController, DocumentController, DecisionBookController],
+  providers: [
+    AuditService,
+    AuditReadService,
+    AuditRepository,
+    DocumentService,
+    // Karar defteri `governance` bağlamında: denetim kütüğü ve belge deposuyla
+    // aynı yükümlülük ailesinden (kayıt tutma, hesap verme).
+    DecisionBookService,
+  ],
   exports: [AuditService],
 })
 export class AuditModule {}

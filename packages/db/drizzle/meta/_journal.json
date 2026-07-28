@@ -22,6 +22,34 @@
       "when": 1785169367626,
       "tag": "0002_job_runs",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1785342000000,
+      "tag": "0003_debt_kinds",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1785342100000,
+      "tag": "0004_blood_type",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1785342200000,
+      "tag": "0005_inventory_items",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1785342300000,
+      "tag": "0006_decision_book",
+      "breakpoints": true
     }
   ]
 }

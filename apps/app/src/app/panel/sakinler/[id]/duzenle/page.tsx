@@ -69,6 +69,8 @@ export default async function EditResidentPage({
               whatsappOptIn: detail.whatsappOptIn,
               emergencyContactName: detail.emergencyContactName,
               emergencyContactPhone: detail.emergencyContactPhone,
+              bloodType: detail.bloodType,
+              hasHealthConsent: detail.hasHealthConsent,
               notes: detail.notes,
               hasTckn: detail.hasTckn,
             }}

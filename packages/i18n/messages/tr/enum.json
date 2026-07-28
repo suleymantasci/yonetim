@@ -89,7 +89,10 @@
     "penalty": "Ceza",
     "late_fee": "Gecikme tazminatı",
     "extra": "Ek tahakkuk",
-    "legal_cost": "Hukuki masraf"
+    "legal_cost": "Hukuki masraf",
+    "rent": "Kira",
+    "deposit": "Depozito",
+    "admin_fine": "İdari ceza"
   },
   "paymentMethod": {
     "card": "Kredi/banka kartı",
@@ -322,5 +325,27 @@
     "running": "Çalışıyor",
     "completed": "Tamamlandı",
     "failed": "Başarısız"
+  },
+  "inventoryStatus": {
+    "active": "Kullanımda",
+    "in_repair": "Tamirde",
+    "broken": "Arızalı",
+    "disposed": "Hurdaya ayrıldı",
+    "lost": "Kayıp"
+  },
+  "inventoryCategory": {
+    "furniture": "Mobilya",
+    "electronics": "Elektronik",
+    "tools": "Alet ve ekipman",
+    "safety": "Yangın ve güvenlik",
+    "garden": "Bahçe",
+    "cleaning": "Temizlik",
+    "playground": "Oyun ve spor",
+    "other": "Diğer"
+  },
+  "decisionKind": {
+    "kurul": "Kat malikleri kurulu",
+    "yazili": "Toplantısız oybirliği",
+    "yonetim": "Yönetim kararı"
   }
 }

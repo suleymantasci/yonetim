@@ -89,7 +89,10 @@
     "penalty": "Penalty",
     "late_fee": "Late fee",
     "extra": "Extra charge",
-    "legal_cost": "Legal cost"
+    "legal_cost": "Legal cost",
+    "rent": "Rent",
+    "deposit": "Deposit",
+    "admin_fine": "Administrative fine"
   },
   "paymentMethod": {
     "card": "Credit/debit card",
@@ -322,5 +325,27 @@
     "running": "Running",
     "completed": "Completed",
     "failed": "Failed"
+  },
+  "inventoryStatus": {
+    "active": "In use",
+    "in_repair": "In repair",
+    "broken": "Broken",
+    "disposed": "Disposed",
+    "lost": "Lost"
+  },
+  "inventoryCategory": {
+    "furniture": "Furniture",
+    "electronics": "Electronics",
+    "tools": "Tools and equipment",
+    "safety": "Fire and safety",
+    "garden": "Garden",
+    "cleaning": "Cleaning",
+    "playground": "Playground and sports",
+    "other": "Other"
+  },
+  "decisionKind": {
+    "kurul": "General assembly",
+    "yazili": "Unanimous written decision",
+    "yonetim": "Management decision"
   }
 }

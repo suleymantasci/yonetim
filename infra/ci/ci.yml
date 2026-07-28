@@ -1,5 +1,7 @@
 # GitHub Actions CI — SPEC Bölüm 20 (Faz 0: PR preview, lint, type-check, test).
-# Kurulum: bu dosyayı `.github/workflows/ci.yml` konumuna kopyalayın.
+#
+# ⚠ BU DOSYA REFERANS KOPYADIR; çalışan sürüm `.github/workflows/ci.yml`.
+# İkisinden birini değiştirdiğinizde diğerini de güncelleyin.
 name: CI
 
 on:
@@ -59,6 +61,14 @@ jobs:
 
       - name: Tip kontrolü (paketler + testler)
         run: pnpm exec tsc --noEmit -p tsconfig.check.json
+
+      - name: Tip kontrolü (uygulamalar)
+        # `tsconfig.check.json` yalnız `packages/*` ve `tests/*` kapsıyor;
+        # `apps/api`, `apps/app` ve `apps/worker` onun `include` listesinde
+        # yok. Bu adım olmadan uygulama kodundaki tip hatası ancak `next build`
+        # aşamasında, hem de yalnız Next uygulamaları için görülüyordu —
+        # `apps/api` (Nest) hiç denetlenmiyordu.
+        run: pnpm typecheck
 
       - name: Mimari değişmezler (§8.3 / §15)
         # ESLint doğrudan importu görür, dolaylı olanı görmez:

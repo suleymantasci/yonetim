@@ -34,6 +34,13 @@ export const PERMISSIONS = [
   "reservation:read", "reservation:write", "reservation:approve",
   "document:read", "document:write",
   "meter:read", "meter:write",
+  // Demirbaş defteri (KMK md.34/9) ve karar defteri — 2026-07-28 rakip
+  // incelemesiyle eklendi. Ayrı izinler, çünkü ikisi de farklı sorumluluk:
+  // demirbaş yöneticinin mal koruma, karar defteri kurul kararlarının
+  // kaydını tutma yükümlülüğü. `document:*` altına sıkıştırmak, denetçiye
+  // karar defterini açmak isterken dosya deposunu da açmayı gerektirirdi.
+  "inventory:read", "inventory:write",
+  "decision:read", "decision:write",
   "staff:read", "staff:write", "staff:payroll",
   "legal:read", "legal:write",
   "message:read", "message:write",
@@ -58,6 +65,14 @@ const RESIDENT_BASE: Permission[] = [
   "poll:read",
   "poll:vote",
   "meeting:read",
+  /**
+   * KMK md.32/son: kurul kararları karar defterine yazılır ve **her kat
+   * malikince görülebilir**. Bu bir ürün tercihi değil, kanuni bir hak;
+   * bu yüzden sakin rolünün temel izinleri arasında.
+   *
+   * Sakin yalnız *okur*; deftere yazmak yöneticinin yükümlülüğü.
+   */
+  "decision:read",
   "request:read_own",
   "request:write",
   "reservation:read",
@@ -85,6 +100,8 @@ const MANAGER_PERMS: Permission[] = [
   "reservation:read", "reservation:write", "reservation:approve",
   "document:read", "document:write",
   "meter:read", "meter:write",
+  "inventory:read", "inventory:write",
+  "decision:read", "decision:write",
   "staff:read", "staff:write", "staff:payroll",
   "legal:read", "legal:write",
   "message:read", "message:write",
@@ -113,14 +130,25 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     (p) => !["tenant:billing", "debt:forgive", "payment:refund", "staff:payroll"].includes(p),
   ),
   manager: MANAGER_PERMS,
-  auditor: [...READ_ONLY_FINANCE, "meeting:read", "poll:read", "maintenance:read", "legal:read"],
+  // Denetçi karar defterini ve demirbaş listesini görmeden ibra denetimi
+  // yapamaz: ikisi de yöneticinin hesap vereceği kalemler.
+  auditor: [
+    ...READ_ONLY_FINANCE,
+    "meeting:read", "poll:read", "maintenance:read", "legal:read",
+    "inventory:read", "decision:read",
+  ],
   accountant: [
     ...READ_ONLY_FINANCE,
     "expense:write", "payment:create", "bank:reconcile", "meter:read", "meter:write",
+    // Demirbaş alış bedeli gider raporlarına giriyor; okuma yeterli.
+    "inventory:read",
   ],
   staff: [
     "tenant:read", "unit:read", "request:read", "request:write",
     "maintenance:read", "maintenance:write", "document:read", "message:read", "message:write",
+    // Kapıcı/teknisyen zimmetindeki ekipmanı görebilmeli; deftere yazmak
+    // yönetimin işi (arıza bildirimi zaten `request:write` üzerinden).
+    "inventory:read",
   ],
   owner: [...RESIDENT_BASE, "meeting:read"],
   tenant_resident: RESIDENT_BASE,

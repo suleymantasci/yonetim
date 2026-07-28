@@ -5,6 +5,7 @@ import {
 } from "@nestjs/common";
 
 import type {
+  EmergencyReport,
   OccupancyCreate,
   OccupancyEnd,
   OccupancyEndResult,
@@ -103,6 +104,16 @@ export class ResidentService {
       action: "view",
       purpose: "resident.detail",
     });
+    // Detay kartı kan grubunu da gösteriyor; dolu olduğunda bu bir sağlık
+    // verisi görüntülemesi ve ayrı kategoriyle kütüğe geçmeli (bkz. editForm).
+    if (person.bloodType) {
+      await this.audit.recordDataAccess({
+        subjectUserIds: [userId],
+        dataCategory: "saglik_bilgisi",
+        action: "view",
+        purpose: "resident.detail",
+      });
+    }
 
     return {
       userId: person.id,
@@ -119,6 +130,7 @@ export class ResidentService {
       emergencyContactPhoneMasked: person.emergencyContactPhone
         ? maskPhone(person.emergencyContactPhone)
         : null,
+      bloodType: person.bloodType,
       createdAt: person.createdAt,
       lastLoginAt: person.lastLoginAt,
       roles: scoped.memberRows.map((row) => row.role),
@@ -174,7 +186,20 @@ export class ResidentService {
       purpose: "resident.edit_form",
     });
 
-    const { person, member } = data;
+    const { person, member, hasHealthConsent } = data;
+
+    // Form kan grubunu da dolduruyor; dolu olduğunda bu bir **sağlık verisi**
+    // görüntülemesidir ve ayrı kategoriyle kütüğe geçmeli. Tek satırın
+    // kategorisini yükseltmek yerine ikinci satır yazılıyor: "iletişim
+    // bilgisi görüldü" olayı da doğru ve kaybolmamalı.
+    if (person.bloodType) {
+      await this.audit.recordDataAccess({
+        subjectUserIds: [userId],
+        dataCategory: "saglik_bilgisi",
+        action: "view",
+        purpose: "resident.edit_form",
+      });
+    }
     return {
       id: person.id,
       firstName: person.firstName,
@@ -186,10 +211,56 @@ export class ResidentService {
       whatsappOptIn: person.whatsappOptIn,
       emergencyContactName: person.emergencyContactName,
       emergencyContactPhone: person.emergencyContactPhone,
+      bloodType: person.bloodType,
+      hasHealthConsent,
       notes: member.notes,
       // TCKN'in kendisi değil varlığı: form "kayıtlı" göstergesi için yeterli,
       // boş bırakıldığında mevcut değer korunuyor.
       hasTckn: person.tcknIndex !== null,
+    };
+  }
+
+  /**
+   * Acil durum raporu — GAP 4.1.2 / rakip incelemesi §4.1.
+   *
+   * Yanıt hem kan grubu (özel nitelikli) hem maskesiz acil durum numarası
+   * taşıdığı için erişim **iki** kategoriyle kütüğe geçiyor. `saglik_bilgisi`
+   * ayrı tutuluyor ki KVKK ekranında "kim sağlık verisine baktı" sorusu
+   * `iletisim_bilgisi` gürültüsüne karışmadan sorulabilsin.
+   *
+   * Sağlık kategorisi yalnız kan grubu **kayıtlı** kişiler için yazılıyor:
+   * verisi olmayan kişi için "sağlık verisine erişildi" demek kütüğü yanlış
+   * doldurmak olurdu.
+   */
+  async emergencyReport(): Promise<EmergencyReport> {
+    const rows = await this.repo.emergencyContacts();
+
+    await this.audit.recordDataAccess({
+      subjectUserIds: rows.map((row) => row.userId),
+      dataCategory: "iletisim_bilgisi",
+      action: "view",
+      purpose: "resident.emergency_report",
+    });
+    await this.audit.recordDataAccess({
+      subjectUserIds: rows
+        .filter((row) => row.bloodType)
+        .map((row) => row.userId),
+      dataCategory: "saglik_bilgisi",
+      action: "view",
+      purpose: "resident.emergency_report",
+    });
+
+    return {
+      rows,
+      totals: {
+        residents: rows.length,
+        withBloodType: rows.filter((row) => row.bloodType).length,
+        withEmergencyContact: rows.filter((row) => row.emergencyContactPhone)
+          .length,
+        missingBoth: rows.filter(
+          (row) => !row.bloodType && !row.emergencyContactPhone,
+        ).length,
+      },
     };
   }
 

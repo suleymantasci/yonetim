@@ -1,11 +1,14 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 
+import { siteConfig } from "@yonetim/config";
 import type {
+  SeveranceQuote,
+  SeveranceQuoteResult,
   StaffListResponse,
   TenantSettingsResponse,
 } from "@yonetim/contracts";
-import { maskPhone } from "@yonetim/core";
+import { calculateSeverance, maskPhone } from "@yonetim/core";
 import { staff, staffAttendance, tenants } from "@yonetim/db";
 
 import { DbService } from "../infra/db/db.service";
@@ -53,6 +56,68 @@ export class TenancyService {
       currentPeriodEnd: row.currentPeriodEnd,
       trialEndsAt: row.trialEndsAt,
       createdAt: row.createdAt,
+    };
+  }
+
+  /**
+   * Kıdem/ihbar tazminatı hesabı — rakip incelemesi §4.1.
+   *
+   * Servis yalnız **veriyi toplayıp** `packages/core`'daki saf fonksiyona
+   * veriyor; kanunun kendisi orada ve orada test ediliyor. Buraya bir tane
+   * bile çarpma işlemi koymak, aynı kuralın ikinci bir uygulaması olurdu.
+   *
+   * `staff:payroll` yetkisi isteniyor, `staff:read` değil: tazminat rakamı
+   * ücret bilgisinin türevi ve `company_operator` rolünden bilinçli olarak
+   * esirgenmiş durumda (`packages/core/rbac`).
+   */
+  async severanceQuote(dto: SeveranceQuote): Promise<SeveranceQuoteResult> {
+    const row = await this.db.tx(async (tx) => {
+      const rows = await tx
+        .select()
+        .from(staff)
+        .where(and(eq(staff.id, dto.staffId), isNull(staff.deletedAt)))
+        .limit(1);
+      return rows[0] ?? null;
+    });
+    if (!row) throw new NotFoundException("not_found");
+
+    const { severanceCeilingMinor, noticeIncomeTaxRate, effectiveFrom } =
+      siteConfig.payroll;
+    const monthlyGrossMinor =
+      dto.monthlyGrossOverrideMinor ?? row.grossSalaryKurus;
+
+    const result = calculateSeverance({
+      startedAt: row.startedAt,
+      endedAt: dto.endedAt,
+      monthlyGrossMinor,
+      ceilingMinor: severanceCeilingMinor,
+      incomeTaxRate: noticeIncomeTaxRate,
+      severanceApplies: dto.severanceApplies,
+      noticeApplies: dto.noticeApplies,
+    });
+
+    return {
+      staffName: row.fullName,
+      startedAt: row.startedAt,
+      endedAt: dto.endedAt,
+      serviceDays: result.serviceDays,
+      // "6,42 yıl" okunmuyor; "6 yıl 5 ay" okunuyor. Bölme ekranda değil
+      // burada yapılıyor ki iki istemci aynı yuvarlamayı görsün.
+      serviceYears: Math.floor(result.serviceYears),
+      serviceMonthsRemainder: Math.floor(
+        result.serviceMonths - Math.floor(result.serviceYears) * 12,
+      ),
+      monthlyGrossMinor,
+      cappedMonthlyGrossMinor: result.cappedMonthlyGrossMinor,
+      ceilingExcessMinor: result.ceilingExcessMinor,
+      noticeWeeks: result.noticeWeeks,
+      severance: result.severance,
+      notice: result.notice,
+      totalNetMinor: result.totalNetMinor,
+      belowMinimumService: result.belowMinimumService,
+      parametersEffectiveFrom: effectiveFrom,
+      ceilingMinor: severanceCeilingMinor,
+      incomeTaxRate: noticeIncomeTaxRate,
     };
   }
 

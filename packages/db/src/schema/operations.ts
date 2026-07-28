@@ -1,11 +1,12 @@
+import { sql } from "drizzle-orm";
 import {
   boolean, index, integer, jsonb, numeric, pgTable, text, timestamp, uniqueIndex, uuid, varchar,
 } from "drizzle-orm/pg-core";
 
 import { idCol, money, softDelete, tenantId, timestamps } from "./_shared";
 import {
-  documentCategoryEnum, meterTypeEnum, requestPriorityEnum, requestStatusEnum,
-  reservationStatusEnum, staffRoleEnum,
+  documentCategoryEnum, inventoryStatusEnum, meterTypeEnum, requestPriorityEnum,
+  requestStatusEnum, reservationStatusEnum, staffRoleEnum,
 } from "./enums";
 import { resources, units } from "./property";
 import { tenants } from "./tenants";
@@ -266,6 +267,62 @@ export const staff = pgTable(
     ...softDelete,
   },
   (t) => [index("idx_staff_tenant").on(t.tenantId)],
+);
+
+/**
+ * Demirbaş / envanter defteri — KMK md.34/9 ve rakip incelemesi §4.1.
+ *
+ * NEDEN AYRI TABLO, `documents` YA DA `maintenance_records` DEĞİL:
+ *  - `documents` bir **dosya deposu**; demirbaşın kendisi bir dosya değil,
+ *    fiziksel bir varlık ve sayısı/yeri/durumu değişiyor.
+ *  - `maintenance_records` **periyodik bakım takvimi**; asansör her yıl
+ *    bakım ister, çim biçme makinesi istemez ama ikisi de demirbaştır.
+ *    İkisini birleştirmek "bakım periyodu olmayan demirbaş" için anlamsız
+ *    bir `interval_days` uydurmayı gerektirirdi.
+ *
+ * ALIŞ BEDELİ SAKLANIYOR AMA AMORTİSMAN YOK: yönetici "ne kadar ödedik"
+ * sorusunu soruyor; "defter değeri ne" sorusu mali müşavirin sorusu ve
+ * muhasebe raporları modülüne (henüz ürün kararı bekliyor) ait.
+ */
+export const inventoryItems = pgTable(
+  "inventory_items",
+  {
+    id: idCol(),
+    tenantId: tenantId().references(() => tenants.id, { onDelete: "cascade" }),
+    /** Site içi envanter/demirbaş numarası — etikette yazan değer. */
+    code: varchar("code", { length: 40 }),
+    name: varchar("name", { length: 160 }).notNull(),
+    /** `packages/contracts` `INVENTORY_CATEGORIES` ile sınırlı. */
+    category: varchar("category", { length: 40 }).notNull().default("other"),
+    /**
+     * Nerede — serbest metin (kazan dairesi, A blok girişi, sığınak).
+     * `units`'e bağlanmadı: demirbaşların çoğu ortak alanda ve ortak alanların
+     * hepsi `units` satırı değil.
+     */
+    location: varchar("location", { length: 120 }),
+    quantity: integer("quantity").notNull().default(1),
+    serialNo: varchar("serial_no", { length: 80 }),
+    purchaseDate: timestamp("purchase_date", { withTimezone: true }),
+    purchasePriceKurus: money("purchase_price_kurus").notNull().default(0),
+    warrantyUntil: timestamp("warranty_until", { withTimezone: true }),
+    status: inventoryStatusEnum("status").notNull().default("active"),
+    /** Zimmetli personel — kayıt silinirse zimmet düşer, demirbaş kalır. */
+    responsibleStaffId: uuid("responsible_staff_id").references(() => staff.id, {
+      onDelete: "set null",
+    }),
+    notes: text("notes"),
+    photoUrls: jsonb("photo_urls").notNull().default([]),
+    ...timestamps,
+    ...softDelete,
+  },
+  (t) => [
+    index("idx_inventory_tenant_status").on(t.tenantId, t.status),
+    // Envanter numarası site içinde tekil — iki demirbaşa aynı etiketi
+    // yapıştırmak sayımı imkânsız kılar. Kısmi index: numara isteğe bağlı.
+    uniqueIndex("idx_inventory_tenant_code")
+      .on(t.tenantId, t.code)
+      .where(sql`${t.code} IS NOT NULL AND ${t.deletedAt} IS NULL`),
+  ],
 );
 
 export const staffAttendance = pgTable(

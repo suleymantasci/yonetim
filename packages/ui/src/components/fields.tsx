@@ -596,6 +596,7 @@ export function DateInput({
   min,
   max,
   invalid,
+  onValueChange,
 }: {
   name: string;
   defaultValue?: string;
@@ -605,6 +606,16 @@ export function DateInput({
   min?: string;
   max?: string;
   invalid?: boolean;
+  /**
+   * Değer değiştiğinde haber verir — alan **kontrolsüz kalır**.
+   *
+   * `value` prop'u bilinçli olarak eklenmedi: `type="date"` girdisinde
+   * kontrollü mod, kullanıcı gün/ay/yıl kutuları arasında yazarken her ara
+   * durumu React'e sokar ve tarayıcının kısmi girdisi ("2026-__-__") her
+   * tuşta geçersiz sayılıp sıfırlanır. Çağıran değeri duymak istiyorsa
+   * dinlemesi yeterli; alanı yönetmesi gerekmiyor.
+   */
+  onValueChange?: (value: string) => void;
 }) {
   return (
     <input
@@ -616,6 +627,9 @@ export function DateInput({
       disabled={disabled}
       min={min}
       max={max}
+      onChange={
+        onValueChange ? (event) => onValueChange(event.target.value) : undefined
+      }
       aria-invalid={invalid || undefined}
       className={cn(fieldBase, invalid && invalidRing)}
     />

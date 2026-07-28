@@ -33,6 +33,24 @@ export const users = pgTable(
      */
     emergencyContactName: varchar("emergency_contact_name", { length: 120 }),
     emergencyContactPhone: varchar("emergency_contact_phone", { length: 20 }),
+    /**
+     * Kan grubu — **KVKK md.6 anlamında özel nitelikli (sağlık) veri.**
+     *
+     * Sıradan bir profil alanı değil. Üç sonucu var ve üçü de kodda karşılığını
+     * buluyor:
+     *  1. İşlenmesi **açık rıza** ister (md.6/3; site yönetimi md.6/3'teki
+     *     sır saklama yükümlüsü meslek grubuna girmiyor). Yazma yolu rıza
+     *     kaydı olmadan bu alanı doldurmuyor — `consents.kind =
+     *     'acik_riza_saglik'`.
+     *  2. Okunması `data_access_logs`'a `data_category = 'health'` ile
+     *     yazılıyor; genel `resident` kategorisiyle karışmıyor ki KVKK
+     *     ekranında "kim sağlık verisine baktı" ayrı sorulabilsin.
+     *  3. Rıza geri çekilirse alan **NULL'lanıyor** — rızası olmayan sağlık
+     *     verisini saklamaya devam etmek ihlalin kendisi olurdu.
+     *
+     * Kişiye bağlı (siteye değil), acil durum kişisiyle aynı gerekçe.
+     */
+    bloodType: varchar("blood_type", { length: 6 }),
     locale: varchar("locale", { length: 5 }).notNull().default("tr"),
     /** Platform seviyesi rol; tenant rolleri memberships tablosunda. */
     platformRole: roleEnum("platform_role"),

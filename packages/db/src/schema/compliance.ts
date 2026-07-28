@@ -1,12 +1,90 @@
+import { type AnyPgColumn } from "drizzle-orm/pg-core";
 import {
-  boolean, index, integer, jsonb, numeric, pgTable, text, timestamp, uuid, varchar,
+  boolean, index, integer, jsonb, numeric, pgTable, text, timestamp, uniqueIndex, uuid, varchar,
 } from "drizzle-orm/pg-core";
 
 import { idCol, money, tenantId, timestamps } from "./_shared";
-import { kvkkRequestStatusEnum, kvkkRequestTypeEnum, legalStageEnum } from "./enums";
+import {
+  kvkkRequestStatusEnum, kvkkRequestTypeEnum, legalStageEnum, quorumRuleEnum,
+} from "./enums";
 import { tenants } from "./tenants";
 import { units } from "./property";
 import { users } from "./users";
+
+/**
+ * KARAR DEFTERİ — KMK md.32.
+ *
+ * NEDEN `meeting_decisions` BUNUN YERİNE GEÇMİYOR (üç sebep, üçü de yapısal):
+ *
+ * 1. **Numara site geneli ve süreklidir.** `meeting_decisions.decision_no`
+ *    toplantı içinde tekil; her toplantı 1'den başlıyor. Karar defteri ise
+ *    tek ve sürekli numaralı bir defter — "2019/7 sayılı karar" ifadesi
+ *    ancak böyle anlam taşır ve mahkemede bu numarayla anılır.
+ *
+ * 2. **Toplantısız kararlar da deftere girer.** KMK md.32/son: kat malikleri
+ *    kurulunun toplanmaksızın **oybirliğiyle** aldığı karar da geçerlidir ve
+ *    deftere yazılır. Bir `meeting` satırı olmadığı için `meeting_decisions`
+ *    bu kararı hiç taşıyamıyor. Aynı şey yöneticinin kendi yetkisiyle aldığı
+ *    kararlar için de geçerli.
+ *
+ * 3. **Defter ekleme-yalnız (append-only).** Noter tasdikli, sayfaları
+ *    numaralı bir defterin karşılığı bu: yazılan karar **düzeltilmez**,
+ *    düzelten yeni bir karar yazılır (`corrects_entry_id`). Bu yüzden
+ *    `softDelete` yok ve güncelleme yolu dar.
+ *
+ * `meeting_decisions` silinmiyor: toplantı ekranının oy sayımı ve yeter sayı
+ * hesabı orada kalıyor. Deftere geçen karar `meeting_id` ile ona bağlanıyor.
+ */
+export const decisionBookEntries = pgTable(
+  "decision_book_entries",
+  {
+    id: idCol(),
+    tenantId: tenantId().references(() => tenants.id, { onDelete: "cascade" }),
+    /**
+     * Defter sıra numarası — site genelinde **sürekli** ve tekil.
+     * Boşluk bırakmaz: atlanan numara, yırtılmış sayfa gibi okunur.
+     */
+    entryNo: integer("entry_no").notNull(),
+    /** Kararın alındığı tarih; kayda geçirildiği tarih değil. */
+    decidedAt: timestamp("decided_at", { withTimezone: true }).notNull(),
+    /**
+     * 'kurul'   → kat malikleri kurulu toplantısı
+     * 'yazili'  → toplantısız oybirliği (md.32/son)
+     * 'yonetim' → yönetici / yönetim kurulu kararı
+     */
+    kind: varchar("kind", { length: 20 }).notNull().default("kurul"),
+    /** Varsa çıktığı toplantı — toplantısız kararda NULL. */
+    meetingId: uuid("meeting_id"),
+    subject: varchar("subject", { length: 200 }).notNull(),
+    body: text("body").notNull(),
+    quorumRule: quorumRuleEnum("quorum_rule").notNull().default("simple_majority"),
+    votesFor: numeric("votes_for", { precision: 12, scale: 6 }).notNull().default("0"),
+    votesAgainst: numeric("votes_against", { precision: 12, scale: 6 }).notNull().default("0"),
+    abstentions: numeric("abstentions", { precision: 12, scale: 6 }).notNull().default("0"),
+    passed: boolean("passed").notNull().default(true),
+    /**
+     * Bu kayıt hangi kararı düzeltiyor.
+     *
+     * Defterde silgi yok: yanlış yazılan karar düzeltilmez, düzelten yeni bir
+     * karar yazılır ve eskisine işaret eder. Ekran ikisini birlikte gösteriyor.
+     */
+    correctsEntryId: uuid("corrects_entry_id").references(
+      (): AnyPgColumn => decisionBookEntries.id,
+      { onDelete: "set null" },
+    ),
+    /** Noter tasdikli fiziki defterdeki sayfa — dijital ile kâğıt eşleşsin. */
+    bookPageNo: integer("book_page_no"),
+    attachmentUrls: jsonb("attachment_urls").notNull().default([]),
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+    ...timestamps,
+    // `softDelete` **yok**: defterden karar silinmez (bkz. yukarıdaki 3. madde).
+  },
+  (t) => [
+    uniqueIndex("idx_decision_book_tenant_no").on(t.tenantId, t.entryNo),
+    index("idx_decision_book_tenant_date").on(t.tenantId, t.decidedAt),
+    index("idx_decision_book_meeting").on(t.meetingId),
+  ],
+);
 
 /**
  * Denetim kütüğü — Bölüm 5.3 + 14.2.

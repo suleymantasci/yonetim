@@ -13,7 +13,10 @@ import type { ListParams } from "../list-params";
  */
 export function toListQuery(
   params: ListParams,
-  filters: Record<string, string | undefined> = {},
+  // Sayı da kabul ediliyor: kuruş eşiği gibi sayısal filtreleri çağrı yerinde
+  // `String(...)` ile sarmalamak, boş değeri "undefined" metnine çevirme
+  // hatasını davet ederdi. `toQuery` boş/undefined olanı zaten yazmıyor.
+  filters: Record<string, string | number | undefined> = {},
 ): string {
   return toQuery({
     page: params.page,

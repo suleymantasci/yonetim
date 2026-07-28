@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
+import { MANUAL_DEBT_KINDS } from "@yonetim/contracts";
 import {
   Alert,
   Combobox,
@@ -86,16 +87,7 @@ export function DebtForm({
 
         <FormField name="kind" label={t("kind")} required>
           <Select name="kind" defaultValue="dues" required>
-            {(
-              [
-                "dues",
-                "utility",
-                "reservation",
-                "penalty",
-                "extra",
-                "legal_cost",
-              ] as const
-            ).map((kind) => (
+            {MANUAL_DEBT_KINDS.map((kind) => (
               <option key={kind} value={kind}>
                 {tEnum(`debtKind.${kind}`)}
               </option>
