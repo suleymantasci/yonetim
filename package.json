@@ -21,6 +21,7 @@
     "db:up": "docker compose -f infra/docker/docker-compose.yml up -d",
     "db:down": "docker compose -f infra/docker/docker-compose.yml down",
     "setup": "pnpm install && pnpm db:up && pnpm db:generate && pnpm db:migrate && pnpm db:seed",
+    "bundle:budget": "node scripts/bundle-budget.mjs",
     "arch": "depcruise --config .dependency-cruiser.cjs apps/api/src apps/app/src apps/worker/src packages",
     "arch:graph": "depcruise --config .dependency-cruiser.cjs --output-type dot apps/api/src apps/app/src apps/worker/src packages"
   },

@@ -56,7 +56,49 @@
       "meeting": "General assembly and decision book",
       "kvkk": "KVKK audit log",
       "legal": "Enforcement and legal tracking"
-    }
+    },
+    "mock": {
+      "caption": "Product interface preview — with sample data",
+      "collectionRate": "Collection rate",
+      "collected": "Collected this year",
+      "openRequests": "Open requests",
+      "trend": "vs last month",
+      "chatPrompt": "balance",
+      "chatReply": "February dues paid. Your balance is ₺0",
+      "paid": "Paid",
+      "due": "Overdue",
+      "unit": "Unit {no}"
+    },
+    "trustTitle": "Compliance and integrations",
+    "showcaseTitle": "A manager's daily work",
+    "showcaseSubtitle": "Each one is a single screen in the panel. Pick a tab and see what changes.",
+    "pricingTitle": "How many units do you have?",
+    "pricingSubtitle": "Price depends only on unit count; no plan restricts features.",
+    "pricingUnits": "Number of units",
+    "pricingPlan": "Recommended plan",
+    "pricingMonthly": "Monthly",
+    "pricingYearly": "Yearly",
+    "pricingYearlyBadge": "2 months free",
+    "pricingPerUnit": "per unit monthly",
+    "pricingCta": "Start with this plan",
+    "pricingAll": "See all plans",
+    "faqTitle": "Frequently asked",
+    "faqSubtitle": "The most common questions; see the FAQ page for all of them.",
+    "faqAll": "See all questions",
+    "comparisonTitle": "How we compare",
+    "comparisonSubtitle": "The differences that matter; full table on the features page.",
+    "comparisonAll": "Full comparison",
+    "savingsBadge": "{pct}% cheaper than the equivalent",
+    "periodLabel": "Billing period",
+    "tablistLabel": "Highlighted features",
+    "featureDetail": "See the detail",
+    "trustKvkk": "KVKK compliant",
+    "trustKmk": "Turkish Condominium Law",
+    "trust3d": "3D Secure payments",
+    "trustWhatsapp": "WhatsApp Business API",
+    "trustSms": "SMS carrier integration",
+    "trustExport": "Export your data anytime",
+    "ctaSecondaryLink": "Switch from another system"
   },
   "features": {
     "metaTitle": "Features — dues, collection, maintenance, compliance, enforcement",
@@ -70,7 +112,10 @@
     "comparisonFeature": "Feature",
     "comparisonUs": "Us",
     "partial": "partial",
-    "soon": "soon"
+    "soon": "soon",
+    "yes": "yes",
+    "no": "no",
+    "indexLabel": "Feature index"
   },
   "pricing": {
     "metaTitle": "Pricing — transparent packages based on unit count",
@@ -88,7 +133,6 @@
     "noSurcharge": "Paid upfront — no surcharge",
     "perUnitMonthly": "Per unit / month",
     "smsIncluded": "{count} SMS/year included",
-    "savingsNote": "You save <strong>{amount}</strong> a year against the comparable package.",
     "tableCaption": "Packages and annual prices",
     "planColumn": "Package",
     "unitsColumn": "Units",
@@ -108,14 +152,22 @@
     "guarantee4": "SMS overage: {price} per message",
     "guarantee5": "{days}-day grace period when the licence ends",
     "guarantee6": "No platform commission on dues collection",
-    "faqTitle": "Questions about pricing"
+    "faqTitle": "Questions about pricing",
+    "sliderLabel": "Unit count slider",
+    "comparePeer": "Comparable package",
+    "compareCaption": "Annual list price comparison",
+    "ctaTrial": "Try free for 30 days",
+    "ctaNote": "No credit card required",
+    "plansTitle": "All packages",
+    "plansSubtitle": "Prices include VAT and assume annual upfront payment. All modules are enabled in every package.",
+    "guaranteesTitle": "Our written commitments"
   },
   "campaigns": {
     "metaTitle": "Offers",
     "metaDescription": "Switching offer, refer and earn, annual upfront discount and more. Explore the active offers.",
     "title": "Offers",
     "subtitle": "Offers don't stack; the system always applies the <strong>most advantageous</strong> one for you automatically. Even after an offer ends, your price stays locked until the end of the period.",
-    "seeConditions": "See conditions →",
+    "seeConditions": "See conditions",
     "rewardTitle": "What you get",
     "maxDiscount": "Total discount cap: {amount}",
     "conditionsTitle": "Conditions",
@@ -229,20 +281,31 @@
       "first100": "FIRST 100",
       "limitedTime": "LIMITED TIME",
       "green": "GREEN"
-    }
+    },
+    "filterLabel": "Filter by audience",
+    "filterAll": "All",
+    "filterEmpty": "No campaign is open for this audience right now.",
+    "segment": {
+      "new_signup": "New sign-ups",
+      "site_manager": "Site managers",
+      "mgmt_company": "Management companies",
+      "migrating": "Switching providers",
+      "existing_customer": "Existing customers"
+    },
+    "seePricing": "See pricing"
   },
   "migration": {
     "metaTitle": "Switching from your current software",
     "metaDescription": "Import your data from Apsiyon, Biyos, Dijiyon, Yönetimcell or Excel. We charge nothing until your current contract ends.",
     "title": "Switching is easier than you think",
     "subtitle": "The average switch takes one hour. If your current software contract is still running, we charge nothing until it ends (up to 12 months) — you never pay twice.",
-    "step1Title": "1. Export",
+    "step1Title": "Export",
     "step1Body": "Download the unit list, resident details and current balances from your existing software as Excel.",
-    "step2Title": "2. Upload",
+    "step2Title": "Upload",
     "step2Body": "Drop the file into the import wizard. Columns are detected automatically; you map any that aren't.",
-    "step3Title": "3. Preview",
+    "step3Title": "Preview",
     "step3Body": "How many units, how many residents, how much balance will be imported — you see the report before saving.",
-    "step4Title": "4. Reconcile",
+    "step4Title": "Reconcile",
     "step4Body": "After the import, compare against the old system using the balance reconciliation report.",
     "sourcesTitle": "Supported sources",
     "importFrom": "Import my {name} data",
@@ -259,7 +322,11 @@
   "faq": {
     "metaTitle": "Frequently asked questions",
     "metaDescription": "Setup time, data protection compliance, late fees, commission policy and the switching process.",
-    "title": "Frequently asked questions"
+    "title": "Frequently asked questions",
+    "subtitle": "The questions we hear most about dues, collection, data protection and migration. If yours is not here, write to us — we reply the same day.",
+    "ctaTitle": "Question not on the list?",
+    "ctaBody": "Ask us anything about setup, data migration or regulatory requirements.",
+    "ctaLink": "See all features"
   },
   "blog": {
     "metaTitle": "Blog and guides",
@@ -274,7 +341,14 @@
     },
     "ctaTitle": "Automate this work",
     "ctaBody": "Dues accrual, reminders, collection and document generation don't have to be done by hand.",
-    "relatedTitle": "Related articles"
+    "relatedTitle": "Related articles",
+    "filterLabel": "Filter by category",
+    "filterAll": "All",
+    "filterEmpty": "No articles in this category yet.",
+    "featuredLabel": "Featured",
+    "readMore": "Read the article",
+    "ctaButton": "Start the free trial",
+    "tocLabel": "Contents"
   },
   "guide": {
     "ctaBody": "Don't do these calculations by hand: {brand} generates accruals, reminders and documents automatically.",
@@ -299,7 +373,9 @@
     "registerRequest": "Request access",
     "npsTitle": "How would you rate this property's management?",
     "npsBody": "Your answer is collected anonymously and shared with management only as a summary.",
-    "disclaimer": "This page is published by {brand} at the request of the property management. It contains no personal data. To request removal, write to {email}."
+    "disclaimer": "This page is published by {brand} at the request of the property management. It contains no personal data. To request removal, write to {email}.",
+    "npsLowLabel": "0 — Not at all satisfied",
+    "npsHighLabel": "10 — Very satisfied"
   },
   "module": {
     "duesTitle": "Dues & debt",
@@ -340,5 +416,11 @@
     "linkCampaigns": "Offers",
     "linkBlog": "Blog",
     "linkApp": "Application"
+  },
+  "notFound": {
+    "title": "This page isn't here",
+    "body": "The link may have moved, the address may be mistyped, or the page may have been removed.",
+    "home": "Back to home",
+    "suggestions": "You might be looking for"
   }
 }

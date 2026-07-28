@@ -51,13 +51,29 @@ export const siteConfig = {
 
   // === GÖRSEL KİMLİK (Bölüm 12) ===
   design: {
+    /**
+     * MARKA / EYLEM AYRIMI (UI-MODERNIZASYON-PLANI §0.1, aday A)
+     *
+     * Önceden tek bir orta açıklıktaki lacivert (#0F4C81) hem kimlik hem
+     * birincil buton rengiydi. Bir rengin iki işi birden taşıması arayüze
+     * "kurumsal bankacılık" görüntüsü veriyordu: butonlar yeterince davetkâr
+     * değil, kimlik yeterince derin değildi. Roller ayrıldı:
+     *
+     *   primary → EYLEM. Birincil buton, bağlantı, seçili durum, ilerleme.
+     *   ink     → KİMLİK. Koyu bantlar, logo işareti, başlık vurgusu, footer.
+     *
+     * Kontrast `tests/design-tokens.test.ts` içinde makine tarafından
+     * denetleniyor (WCAG 2.1 AA, hem açık hem koyu tema).
+     */
     colors: {
-      primary: "#0F4C81", // [DEĞİŞEBİLİR] Kurumsal lacivert
-      secondary: "#06B6D4", // [DEĞİŞEBİLİR] Turkuaz
+      primary: "#2563EB", // [DEĞİŞEBİLİR] Aksiyon mavisi — birincil eylem
+      ink: "#0B3A66", // [DEĞİŞEBİLİR] Mürekkep laciverti — kurumsal kimlik
+      secondary: "#06B6D4", // [DEĞİŞEBİLİR] Turkuaz — odak halkası, ikincil vurgu
       accent: "#F59E0B", // [DEĞİŞEBİLİR] Amber
       success: "#10B981",
       warning: "#F59E0B",
-      danger: "#EF4444",
+      /* Üstünde beyaz metinle AA'yı geçen en açık kırmızı (#EF4444 3.76:1 idi). */
+      danger: "#DC2626",
       background: "#FFFFFF",
       foreground: "#0F172A",
       /** Koyu temanın zemin rengi — tarayıcı çubuğu (`themeColor`) için gerekir. */

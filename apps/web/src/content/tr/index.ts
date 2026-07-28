@@ -413,4 +413,13 @@ Ortak alan kameraları meşru menfaate dayanır ancak bilgilendirme levhası zor
       ],
     },
   ],
+
+  /*
+   * Sosyal kanıt — gerçek veri gelene kadar boş.
+   * Bileşenler boş diziyi "bölümü hiç gösterme" olarak yorumluyor;
+   * uydurma müşteri/referans/sayı yazılmaz (bkz. content/index.ts).
+   */
+  customers: [],
+  testimonials: [],
+  metrics: [],
 };

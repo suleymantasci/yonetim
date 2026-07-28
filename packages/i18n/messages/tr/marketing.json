@@ -56,7 +56,49 @@
       "meeting": "Kat malikleri toplantısı ve karar defteri",
       "kvkk": "KVKK denetim kütüğü",
       "legal": "İcra ve hukuk takibi"
-    }
+    },
+    "mock": {
+      "caption": "Ürün arayüzü önizlemesi — örnek verilerle",
+      "collectionRate": "Tahsilat oranı",
+      "collected": "Bu yıl tahsil edilen",
+      "openRequests": "Açık talep",
+      "trend": "geçen aya göre",
+      "chatPrompt": "borç",
+      "chatReply": "Şubat aidatı ödendi. Bakiyeniz 0 ₺",
+      "paid": "Ödendi",
+      "due": "Gecikmiş",
+      "unit": "Daire {no}"
+    },
+    "trustTitle": "Uyum ve entegrasyon",
+    "showcaseTitle": "Yöneticinin günlük işi",
+    "showcaseSubtitle": "Her biri panelde tek ekranda. Sekmeye tıklayın, ne değiştiğini görün.",
+    "pricingTitle": "Kaç daireniz var?",
+    "pricingSubtitle": "Fiyat yalnızca daire sayısına göre değişir; hiçbir pakette özellik kısıtı yok.",
+    "pricingUnits": "Daire sayısı",
+    "pricingPlan": "Önerilen paket",
+    "pricingMonthly": "Aylık",
+    "pricingYearly": "Yıllık",
+    "pricingYearlyBadge": "2 ay bedava",
+    "pricingPerUnit": "daire başına aylık",
+    "pricingCta": "Bu paketle başla",
+    "pricingAll": "Tüm paketleri gör",
+    "faqTitle": "Sık sorulanlar",
+    "faqSubtitle": "En çok merak edilenler; tamamı için SSS sayfasına bakın.",
+    "faqAll": "Tüm soruları gör",
+    "comparisonTitle": "Rakiplerle karşılaştırma",
+    "comparisonSubtitle": "Öne çıkan farklar; tam tablo özellikler sayfasında.",
+    "comparisonAll": "Tam karşılaştırma",
+    "savingsBadge": "Muadiline göre %{pct} daha uygun",
+    "periodLabel": "Ödeme dönemi",
+    "tablistLabel": "Öne çıkan özellikler",
+    "featureDetail": "Ayrıntıya bak",
+    "trustKvkk": "KVKK uyumlu",
+    "trustKmk": "634 sayılı KMK",
+    "trust3d": "3D Secure ödeme",
+    "trustWhatsapp": "WhatsApp Business API",
+    "trustSms": "SMS operatör entegrasyonu",
+    "trustExport": "Verinizi her an dışa aktarın",
+    "ctaSecondaryLink": "Rakip sistemden geçiş"
   },
   "features": {
     "metaTitle": "Özellikler — aidat, tahsilat, bakım, KVKK, icra",
@@ -70,7 +112,10 @@
     "comparisonFeature": "Özellik",
     "comparisonUs": "Biz",
     "partial": "kısmi",
-    "soon": "yakında"
+    "soon": "yakında",
+    "yes": "var",
+    "no": "yok",
+    "indexLabel": "Özellik dizini"
   },
   "pricing": {
     "metaTitle": "Fiyatlandırma — daire sayısına göre şeffaf paketler",
@@ -88,7 +133,6 @@
     "noSurcharge": "Peşin — vade farkı yok",
     "perUnitMonthly": "Daire başı / ay",
     "smsIncluded": "{count} SMS/yıl dahil",
-    "savingsNote": "Muadil pakete göre yıllık <strong>{amount}</strong> tasarruf.",
     "tableCaption": "Paketler ve yıllık fiyatlar",
     "planColumn": "Paket",
     "unitsColumn": "Bağımsız bölüm",
@@ -108,14 +152,22 @@
     "guarantee4": "SMS kota aşımı: adet başına {price}",
     "guarantee5": "Lisans bitiminde {days} gün ek süre",
     "guarantee6": "Aidat tahsilatından platform komisyonu alınmaz",
-    "faqTitle": "Fiyatlandırma hakkında sorular"
+    "faqTitle": "Fiyatlandırma hakkında sorular",
+    "sliderLabel": "Daire sayısı kaydırıcısı",
+    "comparePeer": "Muadil paket",
+    "compareCaption": "Yıllık liste fiyatı karşılaştırması",
+    "ctaTrial": "30 gün ücretsiz dene",
+    "ctaNote": "Kredi kartı istenmez",
+    "plansTitle": "Tüm paketler",
+    "plansSubtitle": "Fiyatlar KDV dahildir ve yıllık peşin ödemeye göredir. Tüm modüller her pakette açıktır.",
+    "guaranteesTitle": "Yazılı taahhütlerimiz"
   },
   "campaigns": {
     "metaTitle": "Kampanyalar",
     "metaDescription": "Geçiş kampanyası, tavsiye et kazan, yıllık peşin indirimi ve daha fazlası. Aktif kampanyaları inceleyin.",
     "title": "Kampanyalar",
     "subtitle": "Kampanyalar birbirine eklenmez; sistem her zaman <strong>sizin için en avantajlı</strong> olanı otomatik uygular. Kampanya bitse dahi aldığınız fiyat dönem sonuna kadar kilitlidir.",
-    "seeConditions": "Koşulları gör →",
+    "seeConditions": "Koşulları gör",
     "rewardTitle": "Kazancınız",
     "maxDiscount": "Toplam indirim üst sınırı: {amount}",
     "conditionsTitle": "Koşullar",
@@ -229,20 +281,31 @@
       "first100": "İLK 100",
       "limitedTime": "SINIRLI SÜRE",
       "green": "YEŞİL"
-    }
+    },
+    "filterLabel": "Kitleye göre süz",
+    "filterAll": "Tümü",
+    "filterEmpty": "Bu kitle için şu an açık kampanya yok.",
+    "segment": {
+      "new_signup": "Yeni kayıt",
+      "site_manager": "Site yöneticileri",
+      "mgmt_company": "Yönetim firmaları",
+      "migrating": "Geçiş yapanlar",
+      "existing_customer": "Mevcut müşteriler"
+    },
+    "seePricing": "Fiyatlara bak"
   },
   "migration": {
     "metaTitle": "Mevcut programınızdan geçiş",
     "metaDescription": "Apsiyon, Biyos, Dijiyon, Yönetimcell veya Excel'den verilerinizi aktarın. Mevcut sözleşmeniz bitene kadar ücret almıyoruz.",
     "title": "Geçiş, düşündüğünüzden kolay",
     "subtitle": "Ortalama geçiş süresi 1 saat. Mevcut yazılım sözleşmeniz devam ediyorsa, sözleşmeniz bitene kadar (en fazla 12 ay) bizden ücret alınmaz — çift ödeme yapmazsınız.",
-    "step1Title": "1. Dışa aktarın",
+    "step1Title": "Dışa aktarın",
     "step1Body": "Mevcut programınızdan daire listesi, sakin bilgileri ve güncel bakiyeleri Excel olarak indirin.",
-    "step2Title": "2. Yükleyin",
+    "step2Title": "Yükleyin",
     "step2Body": "Geçiş sihirbazına dosyayı bırakın. Sütunlar otomatik tanınır; tanınmayanları siz eşleştirirsiniz.",
-    "step3Title": "3. Önizleyin",
+    "step3Title": "Önizleyin",
     "step3Body": "Kaç daire, kaç sakin, ne kadar bakiye aktarılacak — kaydetmeden önce raporu görürsünüz.",
-    "step4Title": "4. Doğrulayın",
+    "step4Title": "Doğrulayın",
     "step4Body": "Aktarım sonrası bakiye mutabakat raporu ile eski sistemle karşılaştırma yaparsınız.",
     "sourcesTitle": "Desteklenen kaynaklar",
     "importFrom": "{name} verimi aktar",
@@ -259,7 +322,11 @@
   "faq": {
     "metaTitle": "Sık sorulan sorular",
     "metaDescription": "Kurulum süresi, KVKK uyumu, gecikme tazminatı, komisyon politikası ve geçiş süreci hakkında merak edilenler.",
-    "title": "Sık sorulan sorular"
+    "title": "Sık sorulan sorular",
+    "subtitle": "Aidat, tahsilat, KVKK ve geçiş süreci hakkında en çok sorulanlar. Aradığınızı bulamazsanız yazın, aynı gün dönüyoruz.",
+    "ctaTitle": "Sorunuz listede yok mu?",
+    "ctaBody": "Kurulum, veri aktarımı ya da mevzuat tarafında aklınıza takılan her şeyi doğrudan sorabilirsiniz.",
+    "ctaLink": "Tüm özellikleri gör"
   },
   "blog": {
     "metaTitle": "Blog ve rehberler",
@@ -274,7 +341,14 @@
     },
     "ctaTitle": "Bu işlemleri otomatikleştirin",
     "ctaBody": "Aidat tahakkuku, hatırlatma, tahsilat ve belge üretimi elle yapılmak zorunda değil.",
-    "relatedTitle": "İlgili yazılar"
+    "relatedTitle": "İlgili yazılar",
+    "filterLabel": "Kategoriye göre süz",
+    "filterAll": "Tümü",
+    "filterEmpty": "Bu kategoride henüz yazı yok.",
+    "featuredLabel": "Öne çıkan",
+    "readMore": "Yazıyı oku",
+    "ctaButton": "Ücretsiz denemeye başla",
+    "tocLabel": "İçindekiler"
   },
   "guide": {
     "ctaBody": "Bu hesapları elle yapmayın: {brand} tahakkuku, hatırlatmayı ve belgeleri otomatik üretir.",
@@ -299,7 +373,9 @@
     "registerRequest": "Kayıt talebi",
     "npsTitle": "Bu sitenin yönetimini nasıl buluyorsunuz?",
     "npsBody": "Yanıtınız anonim toplanır ve yalnızca özet olarak yönetime iletilir.",
-    "disclaimer": "Bu sayfa {brand} tarafından, site yönetiminin talebiyle yayınlanmaktadır. Kişisel veri içermez. Yayından kaldırılmasını istiyorsanız {email} adresine yazabilirsiniz."
+    "disclaimer": "Bu sayfa {brand} tarafından, site yönetiminin talebiyle yayınlanmaktadır. Kişisel veri içermez. Yayından kaldırılmasını istiyorsanız {email} adresine yazabilirsiniz.",
+    "npsLowLabel": "0 — Hiç memnun değilim",
+    "npsHighLabel": "10 — Çok memnunum"
   },
   "module": {
     "duesTitle": "Aidat & Borç",
@@ -340,5 +416,11 @@
     "linkCampaigns": "Kampanyalar",
     "linkBlog": "Blog",
     "linkApp": "Uygulama"
+  },
+  "notFound": {
+    "title": "Aradığınız sayfa burada değil",
+    "body": "Bağlantı taşınmış, adres yanlış yazılmış ya da sayfa kaldırılmış olabilir.",
+    "home": "Ana sayfaya dön",
+    "suggestions": "Belki bunları arıyorsunuzdur"
   }
 }

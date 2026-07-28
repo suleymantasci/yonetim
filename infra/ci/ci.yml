@@ -78,8 +78,19 @@ jobs:
       - name: Entegrasyon testleri (RLS izolasyonu, borç motoru)
         run: pnpm test:integration
 
+      - name: Lint (jsx-a11y dahil)
+        # `next build` yalnız kendi uygulamasını denetliyor; paketler ve
+        # betikler bu adım olmadan hiç lint'lenmiyordu.
+        run: pnpm lint
+
       - name: Uygulamaları derle
         run: pnpm build
+
+      - name: Bundle bütçesi (§12.3 — 250 kB)
+        # Derleme sonrası çalışır: manifest'e ihtiyaç duyuyor. Bu kapı olmadan
+        # `packages/ui` barrel'ına eklenen tek bir `export *` satırı pazarlama
+        # sitesinin ilk yükünü 137 kB'den 184 kB'ye çıkarmıştı — kimse görmedi.
+        run: node scripts/bundle-budget.mjs
 
   security:
     name: Bağımlılık denetimi

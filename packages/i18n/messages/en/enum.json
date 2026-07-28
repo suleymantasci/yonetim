@@ -257,7 +257,8 @@
     "biyos": "Biyos",
     "dijiyon": "Dijiyon",
     "yonetimcell": "Yönetimcell",
-    "excel": "Excel / CSV"
+    "excel": "Excel / CSV",
+    "diger": "Other"
   },
   "matchStatus": {
     "unmatched": "Unmatched",

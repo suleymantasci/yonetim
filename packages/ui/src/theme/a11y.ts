@@ -49,6 +49,25 @@ export function parseA11y(value: string | undefined | null): A11yPreferences {
   };
 }
 
+/**
+ * Sunucunun ilk HTML'de basacağı `<html>` nitelikleri.
+ *
+ * Betik zaten paint öncesi aynı nitelikleri yazıyor; bunu sunucuda da yapmak
+ * iki şey kazandırıyor: JS kapalıyken tercihler yine geçerli oluyor, ve
+ * `MotionProvider` hareket tercihini ilk render'da biliyor (istemcide
+ * öğrenseydi ilk animasyon çoktan başlamış olurdu).
+ */
+export function serverA11yAttributes(
+  cookieValue: string | undefined | null,
+): Record<string, string> {
+  const preferences = parseA11y(cookieValue);
+  return {
+    "data-font-scale": preferences.fontScale,
+    ...(preferences.highContrast ? { "data-contrast": "high" } : {}),
+    ...(preferences.reducedMotion ? { "data-motion": "reduced" } : {}),
+  };
+}
+
 /** Paint öncesi çalışan betik — tema betiğinin kardeşi. */
 export const a11yInitScript = `(function(){try{
 var d=document.documentElement;

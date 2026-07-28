@@ -30,10 +30,26 @@
  * -------------------------------------------------------------------------- */
 :root {
   /* Marka renkleri: packages/config/src/site.ts değerleri layout tarafından
-     enjekte edilir. Buradakiler yalnızca yedektir. */
-  --brand-primary: #0f4c81;
+     enjekte edilir. Buradakiler yalnızca yedektir.
+
+     `primary` ile `ink` bilinçli olarak ayrı: birincisi EYLEM (buton, bağlantı),
+     ikincisi KİMLİK (koyu bant, logo, başlık) rengidir. Gerekçe site.ts'te. */
+  --brand-primary: #2563eb;
+  --brand-ink: #0b3a66;
   --brand-secondary: #06b6d4;
   --brand-accent: #f59e0b;
+
+  /* Hareket: süre ve yumuşatma eğrileri. CSS keyframe'leri ile
+     `packages/ui/src/motion/*` içindeki JS animasyonları aynı ritmi paylaşsın
+     diye tek kaynakta durur. Hareket azaltma tercihinde CSS tarafını aşağıdaki
+     `[data-motion="reduced"]` kuralı, JS tarafını `MotionConfig` kapatır. */
+  --motion-fast: 120ms;
+  --motion-base: 220ms;
+  --motion-slow: 420ms;
+  --motion-slower: 720ms;
+  --motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --motion-ease-spring: cubic-bezier(0.34, 1.28, 0.64, 1);
 
   /* Yüzeyler */
   --t-canvas: #f8fafc;
@@ -48,10 +64,15 @@
   --t-fg-subtle: #64748b;
   --t-fg-inverted: #f8fafc;
 
-  /* Kenarlık ve odak */
+  /* Kenarlık ve odak
+     `border-strong` girdi alanlarının ve outline butonların sınırıdır; bu
+     sınır kontrolü **tanımlayan** bilgi olduğu için WCAG 1.4.11 gereği zemine
+     karşı ≥ 3:1 olmak zorunda (eski #cbd5e1 yalnız 1.48:1 idi).
+     Odak halkası da aynı eşiğe tabi: turkuaz beyaz üstünde 2.43:1 kalıyordu,
+     eylem mavisine alındı. Dekoratif ayraçlar `--t-border` ile çizilir. */
   --t-border: #e2e8f0;
-  --t-border-strong: #cbd5e1;
-  --t-ring: var(--brand-secondary);
+  --t-border-strong: #7d8da2;
+  --t-ring: var(--brand-primary);
 
   /* Etkileşim durumları */
   --t-hover: #f1f5f9;
@@ -64,9 +85,20 @@
   --t-primary-soft: color-mix(in oklab, var(--brand-primary) 10%, #ffffff);
   --t-primary-soft-fg: color-mix(in oklab, var(--brand-primary) 80%, #000000);
 
+  /* Kimlik yüzeyi: koyu bantlar, footer, logo işareti, hero zemini.
+     Eylem rengi değildir — birincil buton `--t-primary` kullanır. */
+  --t-ink: var(--brand-ink);
+  --t-ink-hover: color-mix(in oklab, var(--brand-ink) 88%, #000000);
+  --t-ink-fg: #ffffff;
+  --t-ink-muted-fg: color-mix(in oklab, #ffffff 78%, var(--brand-ink));
+  --t-ink-soft: color-mix(in oklab, var(--brand-ink) 8%, #ffffff);
+  --t-ink-soft-fg: color-mix(in oklab, var(--brand-ink) 92%, #000000);
+  --t-ink-border: color-mix(in oklab, var(--brand-ink) 22%, #ffffff);
+
   --t-secondary: var(--brand-secondary);
   --t-secondary-hover: color-mix(in oklab, var(--brand-secondary) 85%, #000000);
-  --t-secondary-fg: #ffffff;
+  /* Turkuaz açık bir renk: üstünde beyaz metin 2.43:1 ile okunmuyordu. */
+  --t-secondary-fg: #04303a;
 
   --t-accent: var(--brand-accent);
   --t-accent-hover: color-mix(in oklab, var(--brand-accent) 88%, #ffffff);
@@ -85,7 +117,9 @@
   --t-warning-fg: #78350f;
   --t-warning-border: #fde68a;
 
-  --t-danger: #ef4444;
+  /* Tehlike butonu `bg-danger` + `text-primary-fg` (beyaz) kuruluyor;
+     #ef4444 üstünde beyaz 3.76:1 ile AA'nın altında kalıyordu. */
+  --t-danger: #dc2626;
   --t-danger-soft: #fef2f2;
   --t-danger-fg: #991b1b;
   --t-danger-border: #fecaca;
@@ -154,7 +188,8 @@
   --t-fg-inverted: #0f172a;
 
   --t-border: #263041;
-  --t-border-strong: #3a475c;
+  /* Açık temadaki gerekçenin koyu karşılığı: #3a475c yalnız 1.89:1 idi. */
+  --t-border-strong: #5a6779;
   --t-ring: #38bdf8;
 
   --t-hover: #1a2334;
@@ -165,6 +200,19 @@
   --t-primary-fg: #0a0f1a;
   --t-primary-soft: color-mix(in oklab, var(--brand-primary) 26%, #111827);
   --t-primary-soft-fg: color-mix(in oklab, var(--brand-primary) 45%, #ffffff);
+
+  /*
+   * Kimlik bandı koyu temada da bir **bant** olarak okunmalı; laciverti
+   * açmak yerine zeminle karıştırıp lacivert tonlu bir yüzey üretiyoruz.
+   * Aksi hâlde koyu temada bant ile canvas ayırt edilemez hâle geliyordu.
+   */
+  --t-ink: color-mix(in oklab, var(--brand-ink) 55%, #0a0f1a);
+  --t-ink-hover: color-mix(in oklab, var(--brand-ink) 72%, #0a0f1a);
+  --t-ink-fg: #f1f5f9;
+  --t-ink-muted-fg: #a8b3c4;
+  --t-ink-soft: color-mix(in oklab, var(--brand-ink) 30%, #111827);
+  --t-ink-soft-fg: color-mix(in oklab, var(--brand-ink) 22%, #ffffff);
+  --t-ink-border: color-mix(in oklab, var(--brand-ink) 48%, #111827);
 
   --t-secondary: color-mix(in oklab, var(--brand-secondary) 78%, #ffffff);
   --t-secondary-hover: color-mix(in oklab, var(--brand-secondary) 90%, #ffffff);
@@ -270,6 +318,14 @@
   --color-primary-soft: var(--t-primary-soft);
   --color-primary-soft-fg: var(--t-primary-soft-fg);
 
+  --color-ink: var(--t-ink);
+  --color-ink-hover: var(--t-ink-hover);
+  --color-ink-fg: var(--t-ink-fg);
+  --color-ink-muted-fg: var(--t-ink-muted-fg);
+  --color-ink-soft: var(--t-ink-soft);
+  --color-ink-soft-fg: var(--t-ink-soft-fg);
+  --color-ink-border: var(--t-ink-border);
+
   --color-secondary: var(--t-secondary);
   --color-secondary-hover: var(--t-secondary-hover);
   --color-secondary-fg: var(--t-secondary-fg);
@@ -322,6 +378,12 @@
   --radius-card: 8px;
   --radius-input: 4px;
   --radius-modal: 16px;
+
+  /* Yumuşatma eğrileri Tailwind'e açılır: `ease-out-expo` gibi utility'ler
+     ile CSS ve JS animasyonları aynı eğriyi paylaşır. */
+  --ease-out-expo: var(--motion-ease-out);
+  --ease-in-out-quint: var(--motion-ease-in-out);
+  --ease-spring: var(--motion-ease-spring);
 }
 
 /* --------------------------------------------------------------------------
@@ -352,6 +414,127 @@
 @keyframes overlay-slide-up {
   from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: none; }
+}
+
+/* --------------------------------------------------------------------------
+ * PAZARLAMA / PANO ANİMASYONLARI
+ * JS gerektirmeyen efektler burada kalır; yalnız görünürlüğe bağlı olanlar
+ * (`Reveal`, `Counter`) `packages/ui/src/motion/*` içinde JS ile yürür.
+ * -------------------------------------------------------------------------- */
+
+/* Sonsuz şerit: içerik iki kez basılır, ilk kopyanın genişliği kadar kayar. */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* İskelet ve "yükleniyor" parıltısı — `animate-pulse`ten daha az dikkat çeker. */
+@keyframes shimmer {
+  from { background-position: -180% 0; }
+  to { background-position: 180% 0; }
+}
+
+/* Hero zemininde çok yavaş kayan gradyan; dekoratiftir, içerik taşımaz. */
+@keyframes gradient-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(2%, -3%, 0) scale(1.08); }
+}
+
+/* Canlı veri göstergesi (bildirim rozeti, "şu an" noktası). */
+@keyframes pulse-ring {
+  0% { opacity: 0.55; transform: scale(0.85); }
+  70%, 100% { opacity: 0; transform: scale(2.1); }
+}
+
+/*
+ * OKUMA İLERLEMESİ — kaydırmaya bağlı, JavaScript'siz.
+ *
+ * `animation-timeline: scroll()` ile çizgi doğrudan kaydırma konumuna bağlanır;
+ * ana iş parçacığında hiçbir kod çalışmaz. Aynı çubuğu `motion` kütüphanesinin
+ * `useScroll` + `useSpring` çiftiyle yapmak, **her route'un** paylaşılan
+ * parçasına ~6 kB ekliyordu (ölçüldü: 209 → 214,7 kB). Dekoratif bir çizginin
+ * bu bedeli ödemesi için bir neden yok.
+ *
+ * DESTEKLEMEYEN TARAYICI: `@supports` dışında `display: none`. Çizgi hiç
+ * görünmez — bozulmuş bir görünüm değil, yalnız eksik bir cila. Aynı bilgi
+ * ("N dakika okuma") yazının başında metin olarak zaten var.
+ *
+ * HAREKET AZALTMA: Süreleri 0.01ms'ye indiren genel kural burada işe yaramaz
+ * (çubuk anında %100'e sıçrayıp öyle kalırdı), bu yüzden çubuk tamamen
+ * gizlenir.
+ */
+@keyframes reading-progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+.reading-progress { display: none; }
+
+@supports (animation-timeline: scroll()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reading-progress {
+      display: block;
+      transform: scaleX(0);
+      transform-origin: left;
+      animation: reading-progress linear;
+      animation-timeline: scroll(root block);
+    }
+  }
+}
+
+:root[data-motion="reduced"] .reading-progress { display: none; }
+
+/*
+ * GÖRÜNÜRE GİRİNCE AÇILMA (`packages/ui/src/motion/reveal.tsx`)
+ *
+ * Niteliği JS yazar, geçişi CSS yürütür. Bu ayrım bilinçli: hareketin süresi
+ * ve eğrisi token'larda kalır, hareket azaltma kuralı da kendiliğinden
+ * uygulanır (aşağıdaki `[data-motion="reduced"]` bloğu ve
+ * `prefers-reduced-motion` süreleri 0.01ms'ye indirir → blok anında görünür).
+ *
+ * `data-reveal` niteliği yoksa hiçbir kural uygulanmaz; sunucu çıktısında ve
+ * JS kapalıyken içerik olduğu gibi görünür.
+ */
+[data-reveal] {
+  transition:
+    opacity var(--motion-slow) var(--motion-ease-out) var(--reveal-delay, 0s),
+    transform var(--motion-slow) var(--motion-ease-out) var(--reveal-delay, 0s);
+}
+
+[data-reveal="hidden"] {
+  opacity: 0;
+  transform: translate3d(var(--reveal-x, 0), var(--reveal-y, 18px), 0);
+}
+
+[data-reveal="shown"] {
+  opacity: 1;
+  transform: none;
+}
+
+/*
+ * AKORDİYON YÜKSEKLİK GEÇİŞİ (`components/disclosure.tsx`)
+ *
+ * `<details>` yüksekliği tarihsel olarak animasyona kapalıydı; `auto` bir
+ * uzunluk olmadığı için interpolasyon tanımsızdı. `interpolate-size` bunu
+ * çözüyor ama henüz her tarayıcıda yok — bu yüzden ilerici zenginleştirme:
+ * desteklemeyen tarayıcıda akordiyon anında açılır, bu bir bozulma değil.
+ */
+@supports (interpolate-size: allow-keywords) {
+  :root {
+    interpolate-size: allow-keywords;
+  }
+
+  details::details-content {
+    overflow: hidden;
+    block-size: 0;
+    transition:
+      block-size var(--motion-base) var(--motion-ease-out),
+      content-visibility var(--motion-base) allow-discrete;
+  }
+
+  details[open]::details-content {
+    block-size: auto;
+  }
 }
 
 /* --------------------------------------------------------------------------

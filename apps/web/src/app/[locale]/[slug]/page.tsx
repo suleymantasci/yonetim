@@ -1,3 +1,4 @@
+import { ArrowRight, Building2, CreditCard, MapPin } from "lucide-react";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
@@ -5,6 +6,7 @@ import type { Metadata } from "next";
 import { siteConfig } from "@yonetim/config";
 import type { Locale } from "@yonetim/i18n";
 import { apartmentComplexSchema, breadcrumbSchema, jsonLdScript, pageMeta } from "@yonetim/seo";
+import { GradientMesh, Reveal } from "@yonetim/ui/motion";
 
 import { alternatePaths, localizedPath } from "@/lib/paths";
 
@@ -56,8 +58,14 @@ export default async function TenantLandingPage({
   const tType = await getTranslations("enum.tenantType");
   const location = [tenant.neighborhood, tenant.district, tenant.city].filter(Boolean).join(", ");
 
+  const stats = [
+    { key: "units", value: String(tenant.unitCount), icon: Building2 },
+    { key: "managementSystem", value: siteConfig.brand.name, icon: CreditCard },
+    { key: "duesPayment", value: t("online"), icon: CreditCard },
+  ] as const;
+
   return (
-    <div className="mx-auto max-w-4xl px-4 py-14">
+    <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -87,75 +95,110 @@ export default async function TenantLandingPage({
         }}
       />
 
-      <span className="rounded-full bg-surface-sunken px-3 py-1 text-xs font-semibold text-fg-muted">
-        {tType(tenant.type as never)}
-      </span>
-      <h1 className="mt-4 font-heading text-4xl font-extrabold">{tenant.name}</h1>
-      {location ? <p className="mt-2 text-fg-muted">{location}</p> : null}
-
-      <dl className="mt-8 grid gap-4 sm:grid-cols-3">
-        <div className="rounded-lg border border-border p-4">
-          <dt className="text-sm text-fg-subtle">{t("units")}</dt>
-          <dd className="text-2xl font-bold">{tenant.unitCount}</dd>
-        </div>
-        <div className="rounded-lg border border-border p-4">
-          <dt className="text-sm text-fg-subtle">{t("managementSystem")}</dt>
-          <dd className="text-2xl font-bold">{siteConfig.brand.name}</dd>
-        </div>
-        <div className="rounded-lg border border-border p-4">
-          <dt className="text-sm text-fg-subtle">{t("duesPayment")}</dt>
-          <dd className="text-2xl font-bold">{t("online")}</dd>
-        </div>
-      </dl>
-
-      <section className="mt-10 rounded-lg border border-border p-6">
-        <h2 className="font-heading text-xl font-bold">{t("residentTitle")}</h2>
-        <p className="mt-2 text-fg-muted">{t("residentBody")}</p>
-        <div className="mt-4 flex flex-wrap gap-3">
-          <a
-            href={`${siteConfig.env.appUrl}/giris?site=${tenant.slug}`}
-            className="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-fg hover:bg-primary-hover"
-          >
-            {t("residentLogin")}
-          </a>
-          <a
-            href={`${siteConfig.env.appUrl}/kayit-talebi?site=${tenant.slug}`}
-            className="rounded-lg border border-border-strong px-5 py-2.5 text-sm font-semibold hover:bg-hover"
-          >
-            {t("registerRequest")}
-          </a>
+      <section className="relative isolate overflow-hidden border-b border-border">
+        <GradientMesh />
+        <div className="mx-auto max-w-4xl px-4 pb-12 pt-14">
+          <span className="rounded-full border border-border bg-surface/80 px-3 py-1 text-xs font-semibold text-fg-muted backdrop-blur">
+            {tType(tenant.type as never)}
+          </span>
+          <h1 className="mt-5 font-heading text-4xl font-extrabold tracking-tight text-fg sm:text-5xl">
+            {tenant.name}
+          </h1>
+          {location ? (
+            <p className="mt-3 flex items-center gap-1.5 text-fg-muted">
+              <MapPin aria-hidden className="h-4 w-4 shrink-0 text-fg-subtle" />
+              {location}
+            </p>
+          ) : null}
         </div>
       </section>
 
-      <section className="mt-6 rounded-lg border border-border p-6">
-        <h2 className="font-heading text-xl font-bold">{t("npsTitle")}</h2>
-        <p className="mt-1 text-sm text-fg-subtle">{t("npsBody")}</p>
-        <form
-          action={`${siteConfig.env.appUrl}/api/public/nps`}
-          method="post"
-          className="mt-4 flex flex-wrap gap-2"
-        >
-          <input type="hidden" name="tenantSlug" value={tenant.slug} />
-          {Array.from({ length: 11 }, (_, i) => (
-            <button
-              key={i}
-              type="submit"
-              name="score"
-              value={i}
-              className="h-10 w-10 rounded border border-border-strong text-sm font-semibold text-fg hover:border-primary hover:bg-primary-soft"
-            >
-              {i}
-            </button>
+      <div className="mx-auto max-w-4xl px-4 py-12">
+        <dl className="grid gap-4 sm:grid-cols-3">
+          {stats.map(({ key, value, icon: Icon }) => (
+            <div key={key} className="rounded-2xl border border-border bg-surface p-5">
+              <dt className="flex items-center gap-2 text-sm text-fg-subtle">
+                <Icon aria-hidden className="h-4 w-4" />
+                {t(key)}
+              </dt>
+              <dd className="mt-2 font-heading text-2xl font-extrabold tabular-nums text-fg">
+                {value}
+              </dd>
+            </div>
           ))}
-        </form>
-      </section>
+        </dl>
 
-      <p className="mt-10 text-xs text-fg-subtle">
-        {t("disclaimer", {
-          brand: siteConfig.brand.name,
-          email: siteConfig.brand.contact.email,
-        })}
-      </p>
-    </div>
+        <Reveal
+          as="section"
+          className="mt-8 rounded-2xl border border-border bg-surface-sunken p-6 sm:p-8"
+        >
+          <h2 className="font-heading text-xl font-bold text-fg">{t("residentTitle")}</h2>
+          <p className="mt-2 max-w-2xl leading-relaxed text-fg-muted">{t("residentBody")}</p>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <a
+              href={`${siteConfig.env.appUrl}/giris?site=${tenant.slug}`}
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-fg transition-colors hover:bg-primary-hover"
+            >
+              {t("residentLogin")}
+              <ArrowRight aria-hidden className="h-4 w-4" />
+            </a>
+            <a
+              href={`${siteConfig.env.appUrl}/kayit-talebi?site=${tenant.slug}`}
+              className="inline-flex items-center rounded-xl border border-border-strong bg-surface px-5 py-3 text-sm font-semibold text-fg transition-colors hover:bg-hover"
+            >
+              {t("registerRequest")}
+            </a>
+          </div>
+        </Reveal>
+
+        {/*
+          NPS ölçeği. Düğmeler `submit`: JavaScript olmadan da çalışıyor ve
+          form POST ile gidiyor — bu davranış korundu.
+          EKLENEN: uç etiketleri. Çıplak bir 0–10 satırında hangi ucun "iyi"
+          olduğu belirsizdi; NPS'te yanlış yönde okunan bir ölçek veriyi
+          sessizce bozar. Ölçek `fieldset`/`legend` içine alındı, böylece ekran
+          okuyucu her düğmeyi sorunun bağlamıyla birlikte okuyor.
+        */}
+        <section className="mt-6 rounded-2xl border border-border bg-surface p-6 sm:p-8">
+          <form
+            action={`${siteConfig.env.appUrl}/api/public/nps`}
+            method="post"
+            className="min-w-0"
+          >
+            <input type="hidden" name="tenantSlug" value={tenant.slug} />
+            <fieldset className="min-w-0 border-0 p-0">
+              <legend className="font-heading text-xl font-bold text-fg">{t("npsTitle")}</legend>
+              <p className="mt-1 text-sm text-fg-subtle">{t("npsBody")}</p>
+
+              <div className="mt-5 flex flex-wrap gap-1.5">
+                {Array.from({ length: 11 }, (_, score) => (
+                  <button
+                    key={score}
+                    type="submit"
+                    name="score"
+                    value={score}
+                    className="h-11 w-11 rounded-xl border border-border-strong bg-surface text-sm font-semibold tabular-nums text-fg transition-colors hover:border-primary hover:bg-primary-soft hover:text-primary-soft-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    {score}
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-2 flex justify-between text-xs text-fg-subtle">
+                <span>{t("npsLowLabel")}</span>
+                <span>{t("npsHighLabel")}</span>
+              </div>
+            </fieldset>
+          </form>
+        </section>
+
+        <p className="mt-10 text-xs leading-relaxed text-fg-subtle">
+          {t("disclaimer", {
+            brand: siteConfig.brand.name,
+            email: siteConfig.brand.contact.email,
+          })}
+        </p>
+      </div>
+    </>
   );
 }

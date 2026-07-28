@@ -11,30 +11,31 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@yonetim/campaigns": "workspace:*",
     "@yonetim/config": "workspace:*",
     "@yonetim/core": "workspace:*",
-    "@yonetim/ui": "workspace:*",
-    "@yonetim/seo": "workspace:*",
+    "@yonetim/db": "workspace:*",
     "@yonetim/i18n": "workspace:*",
+    "@yonetim/kvkk": "workspace:*",
+    "@yonetim/pricing": "workspace:*",
+    "@yonetim/seo": "workspace:*",
+    "@yonetim/ui": "workspace:*",
+    "drizzle-orm": "^0.38.3",
+    "lucide-react": "^0.469.0",
+    "motion": "^12.42.2",
     "next": "^15.1.3",
+    "next-intl": "^3.26.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "lucide-react": "^0.469.0",
-    "zod": "^3.25.76",
-    "@yonetim/pricing": "workspace:*",
-    "@yonetim/campaigns": "workspace:*",
-    "@yonetim/kvkk": "workspace:*",
-    "@yonetim/db": "workspace:*",
-    "drizzle-orm": "^0.38.3",
-    "next-intl": "^3.26.3"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.0.0",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
-    "@tailwindcss/postcss": "^4.0.0",
-    "tailwindcss": "^4.0.0",
     "postcss": "^8.4.49",
+    "tailwindcss": "^4.0.0",
     "typescript": "^5.7.2"
   }
 }

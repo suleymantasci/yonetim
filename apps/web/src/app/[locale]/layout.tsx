@@ -11,9 +11,12 @@ import {
 } from "@yonetim/i18n";
 import { jsonLdScript, organizationSchema } from "@yonetim/seo";
 import {
-  parseThemePreference, serverThemeAttribute, themeInitScript, THEME_COOKIE,
+  a11yInitScript, A11Y_COOKIE, parseA11y, parseThemePreference,
+  serverA11yAttributes, serverThemeAttribute, themeInitScript, THEME_COOKIE,
 } from "@yonetim/ui";
+import { MotionProvider } from "@yonetim/ui/motion";
 
+import { MotionEngine } from "@/components/motion";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { CLIENT_NAMESPACES } from "@/i18n/client-namespaces";
@@ -88,6 +91,10 @@ export default async function LocaleLayout({
   const cookieStore = await cookies();
   const themePreference = parseThemePreference(cookieStore.get(THEME_COOKIE)?.value);
   const themeAttribute = serverThemeAttribute(themePreference);
+  // Pazarlama sitesinde erişilebilirlik tercihi menüsü yok, ama panelde
+  // yapılan seçim burada da geçerli olmalı: aynı çerez, aynı alan adı.
+  const a11yCookie = cookieStore.get(A11Y_COOKIE)?.value;
+  const a11y = parseA11y(a11yCookie);
   const t = await getTranslations({ locale, namespace: "common" });
   const c = siteConfig.design.colors;
 
@@ -99,11 +106,13 @@ export default async function LocaleLayout({
       suppressHydrationWarning
       data-theme={themeAttribute}
       data-theme-preference={themePreference}
+      {...serverA11yAttributes(a11yCookie)}
       className={`${body.variable} ${heading.variable}`}
     >
       <head>
         <style>{`:root{
           --brand-primary:${c.primary};
+          --brand-ink:${c.ink};
           --brand-secondary:${c.secondary};
           --brand-accent:${c.accent};
           --font-body:var(--font-body-src);
@@ -111,6 +120,8 @@ export default async function LocaleLayout({
         }`}</style>
         {/* Tema atlamasını (FOUC) engeller: stil sonrası, gövde öncesi çalışır. */}
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        {/* Yazı ölçeği / karşıtlık / hareket tercihi — aynı gerekçe, aynı an. */}
+        <script dangerouslySetInnerHTML={{ __html: a11yInitScript }} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
@@ -128,9 +139,13 @@ export default async function LocaleLayout({
           >
             {t("a11y.skipToContent")}
           </a>
-          <SiteHeader themePreference={themePreference} />
-          <main id="icerik">{children}</main>
-          <SiteFooter />
+          <MotionProvider reducedMotion={a11y.reducedMotion}>
+            <MotionEngine>
+              <SiteHeader themePreference={themePreference} />
+              <main id="icerik">{children}</main>
+              <SiteFooter />
+            </MotionEngine>
+          </MotionProvider>
         </NextIntlClientProvider>
       </body>
     </html>

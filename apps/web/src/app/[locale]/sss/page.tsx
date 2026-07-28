@@ -1,9 +1,14 @@
+import { ArrowRight, Mail } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 
+import { siteConfig } from "@yonetim/config";
 import type { Locale } from "@yonetim/i18n";
 import { faqSchema, jsonLdScript, pageMeta } from "@yonetim/seo";
+import { Accordion, AccordionItem } from "@yonetim/ui";
+import { GradientMesh, Reveal } from "@yonetim/ui/motion";
 
+import { Link } from "@/i18n/navigation";
 import { alternatePaths, localizedPath } from "@/lib/paths";
 
 import { getContent } from "@/content";
@@ -32,20 +37,60 @@ export default async function FaqPage({ params }: { params: Promise<{ locale: st
   const content = getContent(locale);
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-14">
+    <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdScript(faqSchema(content.faqs)) }}
       />
-      <h1 className="font-heading text-4xl font-extrabold">{t("title")}</h1>
-      <dl className="mt-10 space-y-4">
-        {content.faqs.map((f) => (
-          <div key={f.question} className="rounded-lg border border-border p-5">
-            <dt className="font-heading font-bold">{f.question}</dt>
-            <dd className="mt-2 text-fg-muted">{f.answer}</dd>
+
+      <section className="relative isolate overflow-hidden border-b border-border">
+        <GradientMesh />
+        <div className="mx-auto max-w-3xl px-4 pb-12 pt-16 text-center">
+          <h1 className="font-heading text-4xl font-extrabold tracking-tight text-fg sm:text-5xl">
+            {t("title")}
+          </h1>
+          <p className="mx-auto mt-4 max-w-xl text-lg leading-relaxed text-fg-muted">
+            {t("subtitle")}
+          </p>
+        </div>
+      </section>
+
+      {/*
+        Akordiyon `<details>` üzerine kurulu: cevaplar DOM'da duruyor, yapısal
+        veriyle (`FAQPage`) birebir aynı metin. Tarayıcının "sayfada bul"
+        özelliği kapalı cevabı bulunca açıyor — elle yazılmış bir akordiyonda
+        bu davranış kaybolurdu.
+      */}
+      <section className="mx-auto max-w-3xl px-4 py-14">
+        <Accordion>
+          {content.faqs.map((faq) => (
+            <AccordionItem key={faq.question} title={faq.question}>
+              {faq.answer}
+            </AccordionItem>
+          ))}
+        </Accordion>
+
+        <Reveal className="mt-12 rounded-2xl border border-border bg-surface-sunken p-6 text-center sm:p-8">
+          <h2 className="font-heading text-xl font-bold text-fg">{t("ctaTitle")}</h2>
+          <p className="mx-auto mt-2 max-w-md text-sm text-fg-muted">{t("ctaBody")}</p>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+            <a
+              href={`mailto:${siteConfig.brand.contact.email}`}
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-fg transition-colors hover:bg-primary-hover"
+            >
+              <Mail aria-hidden className="h-4 w-4" />
+              {siteConfig.brand.contact.email}
+            </a>
+            <Link
+              href="/ozellikler"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-border-strong px-5 py-3 text-sm font-semibold text-fg transition-colors hover:bg-hover"
+            >
+              {t("ctaLink")}
+              <ArrowRight aria-hidden className="h-4 w-4" />
+            </Link>
           </div>
-        ))}
-      </dl>
-    </div>
+        </Reveal>
+      </section>
+    </>
   );
 }

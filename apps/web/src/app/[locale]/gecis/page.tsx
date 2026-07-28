@@ -1,3 +1,4 @@
+import { ArrowRight, ShieldCheck } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
 
@@ -5,6 +6,7 @@ import { siteConfig } from "@yonetim/config";
 import { MIGRATION_SOURCES } from "@yonetim/core";
 import type { Locale } from "@yonetim/i18n";
 import { pageMeta } from "@yonetim/seo";
+import { GradientMesh, Reveal, Stagger } from "@yonetim/ui/motion";
 
 import { alternatePaths, localizedPath } from "@/lib/paths";
 
@@ -44,44 +46,89 @@ export default async function MigrationPage({
   const tEnum = await getTranslations("enum.migrationSource");
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-14">
-      <h1 className="font-heading text-4xl font-extrabold">{t("title")}</h1>
-      <p className="mt-3 max-w-2xl text-fg-muted">{t("subtitle")}</p>
+    <>
+      <section className="relative isolate overflow-hidden border-b border-border">
+        <GradientMesh />
+        <div className="mx-auto max-w-4xl px-4 pb-12 pt-16">
+          <h1 className="font-heading text-4xl font-extrabold tracking-tight text-fg sm:text-5xl">
+            {t("title")}
+          </h1>
+          <p className="mt-4 max-w-2xl text-lg leading-relaxed text-fg-muted">{t("subtitle")}</p>
+        </div>
+      </section>
 
-      <div className="mt-10 grid gap-4 sm:grid-cols-2">
-        {([1, 2, 3, 4] as const).map((i) => (
-          <div key={i} className="rounded-lg border border-border p-5">
-            <h2 className="font-heading font-bold">{t(`step${i}Title`)}</h2>
-            <p className="mt-2 text-sm text-fg-muted">{t(`step${i}Body`)}</p>
-          </div>
-        ))}
-      </div>
-
-      <h2 className="mt-12 font-heading text-2xl font-extrabold">{t("sourcesTitle")}</h2>
-      <ul className="mt-4 space-y-3">
-        {MIGRATION_SOURCES.map((source) => (
-          <li
-            key={source}
-            className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border p-4"
-          >
-            <div>
-              <div className="font-semibold text-fg">{tEnum(source)}</div>
-              <div className="text-sm text-fg-subtle">{t(SOURCE_NOTE_KEY[source]!)}</div>
-            </div>
-            <a
-              href={`${siteConfig.env.appUrl}/kayit?gecis=${source}`}
-              className="rounded-lg border border-primary px-3 py-1.5 text-sm font-semibold text-primary hover:bg-primary-soft"
+      {/*
+        Dört adım sıralı bir süreç; dört eşit kutu bunu anlatmıyordu. Numaralı
+        madde işaretleri ve aralarındaki dikey çizgi "önce bu, sonra şu"yu
+        bakışta veriyor. Çizgi `aria-hidden` bir sözde-öğe; sıralama bilgisi
+        `<ol>` semantiğinden geliyor, çizgiden değil.
+      */}
+      <section className="mx-auto max-w-3xl px-4 py-14">
+        <ol className="relative space-y-6 ps-12">
+          <span
+            aria-hidden
+            className="absolute inset-y-4 start-[1.4375rem] w-px bg-border"
+          />
+          {([1, 2, 3, 4] as const).map((step) => (
+            <Reveal
+              key={step}
+              as="li"
+              delay={(step - 1) * 0.06}
+              className="relative rounded-2xl border border-border bg-surface p-5"
             >
-              {t("importFrom", { name: tEnum(source) })}
-            </a>
-          </li>
-        ))}
-      </ul>
+              <span className="absolute -start-12 top-4 inline-flex h-12 w-12 items-center justify-center">
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border-4 border-canvas bg-primary font-heading text-sm font-bold text-primary-fg">
+                  {step}
+                </span>
+              </span>
+              <h2 className="font-heading text-lg font-bold text-fg">{t(`step${step}Title`)}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-fg-muted">{t(`step${step}Body`)}</p>
+            </Reveal>
+          ))}
+        </ol>
+      </section>
 
-      <div className="mt-12 rounded-lg border border-warning-border bg-warning-soft p-5 text-warning-fg">
-        <h2 className="font-heading font-bold">{t("ownershipTitle")}</h2>
-        <p className="mt-2 text-sm">{t("ownershipBody")}</p>
-      </div>
-    </div>
+      {/* KAYNAKLAR */}
+      <section className="border-y border-border bg-surface-sunken py-14">
+        <div className="mx-auto max-w-4xl px-4">
+          <Reveal>
+            <h2 className="font-heading text-2xl font-extrabold tracking-tight text-fg">
+              {t("sourcesTitle")}
+            </h2>
+          </Reveal>
+
+          <Stagger className="mt-6 grid gap-4 sm:grid-cols-2" itemAs="div">
+            {MIGRATION_SOURCES.map((source) => (
+              <article
+                key={source}
+                className="flex h-full flex-col rounded-2xl border border-border bg-surface p-5"
+              >
+                <h3 className="font-heading font-bold text-fg">{tEnum(source)}</h3>
+                <p className="mt-1.5 flex-1 text-sm leading-relaxed text-fg-muted">
+                  {t(SOURCE_NOTE_KEY[source]!)}
+                </p>
+                <a
+                  href={`${siteConfig.env.appUrl}/kayit?gecis=${source}`}
+                  className="mt-4 inline-flex w-fit items-center gap-1.5 rounded-lg border border-primary px-3.5 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary-soft"
+                >
+                  {t("importFrom", { name: tEnum(source) })}
+                  <ArrowRight aria-hidden className="h-3.5 w-3.5" />
+                </a>
+              </article>
+            ))}
+          </Stagger>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-4xl px-4 py-14">
+        <Reveal className="flex gap-4 rounded-2xl border border-warning-border bg-warning-soft p-6">
+          <ShieldCheck aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-warning-fg" />
+          <div>
+            <h2 className="font-heading font-bold text-warning-fg">{t("ownershipTitle")}</h2>
+            <p className="mt-2 text-sm leading-relaxed text-warning-fg">{t("ownershipBody")}</p>
+          </div>
+        </Reveal>
+      </section>
+    </>
   );
 }

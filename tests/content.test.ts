@@ -58,6 +58,28 @@ describe("pazarlama içeriği", () => {
           expect(post.keywords.length, post.slug).toBeGreaterThan(0);
         }
       });
+
+      /**
+       * Sosyal kanıt bölümleri boş dizi olabilir (henüz gerçek veri yok) ama
+       * **dolduklarında eksiksiz olmalı**. Özellikle `metrics.source`: kaynağı
+       * yazılmayan bir sayı, landing sayfasında uydurmadan ayırt edilemez.
+       */
+      it("sosyal kanıt kayıtları eksiksiz", () => {
+        const incomplete: string[] = [];
+        for (const customer of content.customers) {
+          if (!customer.name.trim()) incomplete.push("customer:name");
+        }
+        for (const item of content.testimonials) {
+          if (!item.quote.trim() || !item.author.trim() || !item.role.trim()) {
+            incomplete.push(`testimonial:${item.author}`);
+          }
+        }
+        for (const metric of content.metrics) {
+          if (!metric.label.trim() || !metric.source.trim()) incomplete.push(`metric:${metric.label}`);
+          if (!Number.isFinite(metric.value)) incomplete.push(`metric:${metric.label}:value`);
+        }
+        expect(incomplete).toEqual([]);
+      });
     });
   }
 });

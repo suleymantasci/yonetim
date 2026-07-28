@@ -133,5 +133,12 @@
     "integrationUnavailable": "The {provider} integration is currently unavailable.",
     "internal": "An unexpected error occurred.",
     "validationFailed": "The form is incomplete or invalid. Fix the highlighted fields."
+  },
+  "errorPage": {
+    "title": "Something went wrong",
+    "body": "An unexpected error occurred while loading the page. Trying again usually resolves it.",
+    "retry": "Try again",
+    "home": "Back to home",
+    "reference": "Error reference"
   }
 }

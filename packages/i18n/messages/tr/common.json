@@ -133,5 +133,12 @@
     "integrationUnavailable": "{provider} entegrasyonu şu an kullanılamıyor.",
     "internal": "Beklenmeyen bir hata oluştu.",
     "validationFailed": "Form eksik veya hatalı doldurulmuş. İşaretli alanları düzeltin."
+  },
+  "errorPage": {
+    "title": "Bir şeyler ters gitti",
+    "body": "Sayfa yüklenirken beklenmeyen bir hata oluştu. Tekrar denemek çoğu durumda yeterli oluyor.",
+    "retry": "Tekrar dene",
+    "home": "Ana sayfaya dön",
+    "reference": "Hata referansı"
   }
 }

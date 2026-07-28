@@ -7,8 +7,10 @@ import type { Metadata, Viewport } from "next";
 import { siteConfig } from "@yonetim/config";
 import { getNamespaces, LOCALE_META, type Locale } from "@yonetim/i18n";
 import {
-  a11yInitScript, parseThemePreference, serverThemeAttribute, themeInitScript, THEME_COOKIE,
+  a11yInitScript, A11Y_COOKIE, parseA11y, parseThemePreference,
+  serverA11yAttributes, serverThemeAttribute, themeInitScript, THEME_COOKIE,
 } from "@yonetim/ui";
+import { MotionProvider } from "@yonetim/ui/motion";
 
 import { WebVitals } from "@/components/web-vitals";
 import { CLIENT_NAMESPACES } from "@/i18n/client-namespaces";
@@ -50,6 +52,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const cookieStore = await cookies();
   const themePreference = parseThemePreference(cookieStore.get(THEME_COOKIE)?.value);
   const themeAttribute = serverThemeAttribute(themePreference);
+  const a11yCookie = cookieStore.get(A11Y_COOKIE)?.value;
+  const a11y = parseA11y(a11yCookie);
   const c = siteConfig.design.colors;
 
   return (
@@ -59,11 +63,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       suppressHydrationWarning
       data-theme={themeAttribute}
       data-theme-preference={themePreference}
+      // Erişilebilirlik tercihleri sunucuda da basılır: JS kapalıyken de
+      // geçerli olsunlar ve `MotionProvider` ilk render'da bilsin.
+      {...serverA11yAttributes(a11yCookie)}
       className={`${body.variable} ${heading.variable}`}
     >
       <head>
         <style>{`:root{
           --brand-primary:${c.primary};
+          --brand-ink:${c.ink};
           --brand-secondary:${c.secondary};
           --brand-accent:${c.accent};
           --font-body:var(--font-body-src);
@@ -76,7 +84,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body className="min-h-dvh bg-canvas font-sans text-fg antialiased">
         <NextIntlClientProvider locale={locale} messages={clientMessages}>
-          {children}
+          <MotionProvider reducedMotion={a11y.reducedMotion}>{children}</MotionProvider>
         </NextIntlClientProvider>
         {/* Ölçüm sayfanın altında: render'ı geciktirmemesi için (GAP 4.8.2). */}
         <WebVitals />

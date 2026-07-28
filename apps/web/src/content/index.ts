@@ -50,12 +50,51 @@ export interface ComparisonRow {
   yonetimcell: boolean | "partial";
 }
 
+/**
+ * SOSYAL KANIT — üçü de bilerek boş başlıyor.
+ *
+ * Modern bir SaaS landing'inin en etkili bölümleri bunlar, ama üçü de
+ * **doğrulanabilir gerçek veri** ister. Uydurma referans, uydurma müşteri
+ * logosu veya "500+ site bize güveniyor" gibi bir sayı yazmak, ürünün geri
+ * kalanının dürüstlüğünü de şüpheli hâle getirir.
+ *
+ * Bileşenler dizinin boş olmasını bir hata değil, bir durum olarak ele alır:
+ * boşsa bölüm hiç render edilmez. Gerçek müşteri geldiğinde bu dosyaya bir
+ * satır eklenmesi yeterli.
+ */
+export interface Customer {
+  /** Görünen ad — logo dosyası yoksa kelime işareti olarak basılır. */
+  name: string;
+  /** `public/` altındaki logo yolu; yoksa ad yazıyla gösterilir. */
+  logo?: string;
+}
+
+export interface Testimonial {
+  quote: string;
+  author: string;
+  role: string;
+  /** Hangi siteden — "Çorlu, 84 daire" gibi bağlam. */
+  context?: string;
+}
+
+export interface Metric {
+  /** Sayısal değer; sayaç animasyonu bunu kullanır. */
+  value: number;
+  label: string;
+  suffix?: string;
+  /** Sayının nereden geldiği — kaynaksız metrik yayımlanmaz. */
+  source: string;
+}
+
 export interface LocaleContent {
   posts: Post[];
   guides: GuideTopic[];
   killerFeatures: KillerFeature[];
   faqs: Faq[];
   comparison: ComparisonRow[];
+  customers: Customer[];
+  testimonials: Testimonial[];
+  metrics: Metric[];
 }
 
 const CONTENT: Record<Locale, LocaleContent> = {

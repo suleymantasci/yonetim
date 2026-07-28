@@ -20,9 +20,19 @@ export interface PageMetaInput {
   alternatePaths?: Partial<Record<Locale, string>>;
 }
 
+/**
+ * Paylaşım görseli artık **route segment dosya kuralıyla** üretiliyor
+ * (`apps/web/src/app/[locale]/opengraph-image.tsx`). Burada sabit bir
+ * `images` yazmak o dosyayı geçersiz kılardı: `generateMetadata`'nın döndürdüğü
+ * değer dosya kuralını ezer. Bu yüzden `imageUrl` verilmediğinde alan hiç
+ * üretilmez ve Next kendi ürettiği görseli ekler.
+ *
+ * Eskiden burada `${baseUrl}/og-default.png` yazıyordu; o dosya hiç var
+ * olmadığı için tüm paylaşımlar kırık görselle çıkıyordu.
+ */
 export function pageMeta(input: PageMetaInput) {
   const url = `${siteConfig.env.baseUrl}${input.path}`;
-  const image = input.imageUrl ?? `${siteConfig.env.baseUrl}/og-default.png`;
+  const image = input.imageUrl;
   const locale = input.locale ?? "tr";
   const languages = hreflangMap(input.alternatePaths);
   return {
@@ -38,14 +48,14 @@ export function pageMeta(input: PageMetaInput) {
       siteName: siteConfig.brand.name,
       locale: LOCALE_META[locale].htmlLang.replace("-", "_"),
       type: input.publishedTime ? ("article" as const) : ("website" as const),
-      images: [{ url: image, width: 1200, height: 630, alt: input.title }],
+      ...(image ? { images: [{ url: image, width: 1200, height: 630, alt: input.title }] } : {}),
       ...(input.publishedTime ? { publishedTime: input.publishedTime } : {}),
     },
     twitter: {
       card: "summary_large_image" as const,
       title: input.title,
       description: input.description,
-      images: [image],
+      ...(image ? { images: [image] } : {}),
     },
   };
 }

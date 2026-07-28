@@ -1,3 +1,4 @@
+import { ArrowRight, ChevronLeft, Check, Info } from "lucide-react";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
@@ -7,16 +8,20 @@ import { siteConfig } from "@yonetim/config";
 import { formatAmount, LOCALES } from "@yonetim/i18n";
 import type { Locale } from "@yonetim/i18n";
 import { breadcrumbSchema, jsonLdScript, pageMeta } from "@yonetim/seo";
+import { GradientMesh, Reveal } from "@yonetim/ui/motion";
 
 import { alternatePaths, localizedPath } from "@/lib/paths";
+import { campaignSlug, rewardLabel } from "@/lib/campaign-reward";
+
+import { Link } from "@/i18n/navigation";
 
 function findTemplate(slug: string) {
-  return CAMPAIGN_TEMPLATES.find((c) => c.key.replace(/_/g, "-") === slug);
+  return CAMPAIGN_TEMPLATES.find((c) => campaignSlug(c.key) === slug);
 }
 
 export function generateStaticParams() {
   return LOCALES.flatMap((locale) =>
-    CAMPAIGN_TEMPLATES.map((c) => ({ locale, slug: c.key.replace(/_/g, "-") })),
+    CAMPAIGN_TEMPLATES.map((c) => ({ locale, slug: campaignSlug(c.key) })),
   );
 }
 
@@ -59,9 +64,9 @@ export default async function CampaignDetailPage({
   if (k.maxUnitCount) conditions.push(t("condition.maxUnits", { count: k.maxUnitCount }));
   if (k.minPeriod === "yearly") conditions.push(t("condition.yearlyUpfront"));
   if (k.migratingFrom?.length) {
-    const names = k.migratingFrom
-      .map((s) => (s === "diger" ? s : tEnum(s as never)))
-      .join(", ");
+    // `diger` artık `enum.migrationSource` içinde; önce çevirisi olmadığı için
+    // ham anahtar ("diger") metnin içine sızıyordu.
+    const names = k.migratingFrom.map((s) => tEnum(s as never)).join(", ");
     conditions.push(t("condition.migratingFrom", { sources: names }));
   }
   if (k.remainingContractMonths?.max) {
@@ -73,30 +78,19 @@ export default async function CampaignDetailPage({
   if (k.hasPartnerContract?.length) conditions.push(t("condition.partnerContract"));
   if (k.firstNTenants) conditions.push(t("condition.firstN", { count: k.firstNTenants }));
   if (k.requiresPromoCode) conditions.push(t("condition.promoCode"));
-  if (conditions.length === 0) conditions.push(t("noExtraConditions"));
 
-  const reward = (() => {
-    const r = template.reward;
-    switch (r.type) {
-      case "free_months":
-        return t("reward.freeMonths", { count: r.value });
-      case "percent_off":
-        return t("reward.percentOff", { value: r.value });
-      case "amount_off":
-        return t("reward.amountOff", { value: r.value });
-      case "free_period":
-        return r.value === 1
-          ? t("reward.freeFirstYear")
-          : t("reward.freeYears", { count: r.value });
-      case "credit_balance":
-        return t("reward.creditBalance", { value: r.value });
-      default:
-        return "";
-    }
-  })();
+  const noConditions = conditions.length === 0;
+  if (noConditions) conditions.push(t("noExtraConditions"));
+
+  const rules = [
+    template.stackable ? t("rule.stackable") : t("rule.notStackable"),
+    t("rule.oncePerTenant"),
+    t("rule.priceLocked"),
+    t("rule.fraudCheck"),
+  ];
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-14">
+    <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -112,53 +106,112 @@ export default async function CampaignDetailPage({
           ),
         }}
       />
-      {template.badge ? (
-        <span className="rounded-full bg-accent-soft px-3 py-1 text-xs font-bold text-accent-soft-fg">
-          {t(`badge.${template.badge}`)}
-        </span>
-      ) : null}
-      <h1 className="mt-4 font-heading text-4xl font-extrabold">
-        {t(`template.${template.key}.name`)}
-      </h1>
-      <p className="mt-3 text-lg text-fg-muted">{t(`template.${template.key}.headline`)}</p>
-      <p className="mt-2 text-sm text-fg-subtle">{t(`template.${template.key}.description`)}</p>
 
-      <div className="mt-8 rounded-lg border border-border p-5">
-        <h2 className="font-heading text-lg font-bold">{t("rewardTitle")}</h2>
-        <p className="mt-1 text-2xl font-extrabold text-primary">
-          {reward}
-          {template.reward.lifetime ? ` ${t("reward.lifetime")}` : ""}
-        </p>
-        {template.reward.maxTotalDiscountTl ? (
-          <p className="mt-1 text-sm text-fg-subtle">
-            {t("maxDiscount", {
-              amount: formatAmount(template.reward.maxTotalDiscountTl, locale),
-            })}
+      {/*
+        Görünür kırıntı yolu: yapısal veri zaten vardı ama sayfada yoktu.
+        Kampanya sayfalarına çoğunlukla doğrudan bağlantıyla giriliyor;
+        geri dönüş yolu olmadan ziyaretçi listeye ulaşamıyordu.
+      */}
+      <section className="relative isolate overflow-hidden border-b border-border">
+        <GradientMesh />
+        <div className="mx-auto max-w-3xl px-4 pb-12 pt-10">
+          <Link
+            href="/kampanyalar"
+            className="inline-flex items-center gap-1 text-sm font-medium text-fg-muted transition-colors hover:text-fg"
+          >
+            <ChevronLeft aria-hidden className="h-4 w-4 rtl:rotate-180" />
+            {t("title")}
+          </Link>
+
+          {/* `block w-fit`: satır içi bir öğede `mt-6` aynı satırda kalıp
+              kırıntı yolunun yanına yapışıyordu. */}
+          {template.badge ? (
+            <span className="mt-6 block w-fit rounded-full bg-accent-soft px-3 py-1 text-xs font-bold text-accent-soft-fg">
+              {t(`badge.${template.badge}`)}
+            </span>
+          ) : null}
+
+          <h1 className="mt-4 font-heading text-4xl font-extrabold tracking-tight text-fg">
+            {t(`template.${template.key}.name`)}
+          </h1>
+          <p className="mt-3 text-lg text-fg-muted">{t(`template.${template.key}.headline`)}</p>
+          <p className="mt-2 text-sm leading-relaxed text-fg-subtle">
+            {t(`template.${template.key}.description`)}
           </p>
-        ) : null}
+
+          <ul className="mt-5 flex flex-wrap gap-1.5">
+            {template.audience.segments.map((segment) => (
+              <li
+                key={segment}
+                className="rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs font-medium text-fg-muted"
+              >
+                {t(`segment.${segment}`)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      <div className="mx-auto max-w-3xl px-4 py-12">
+        {/* ÖDÜL — sayfadaki tek en büyük rakam. */}
+        <Reveal className="rounded-2xl border-2 border-primary bg-primary-soft p-6 sm:p-8">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-primary-soft-fg">
+            {t("rewardTitle")}
+          </h2>
+          <p className="mt-2 font-heading text-4xl font-extrabold leading-tight text-primary-soft-fg">
+            {rewardLabel(template, t)}
+          </p>
+          {template.reward.maxTotalDiscountTl ? (
+            <p className="mt-2 text-sm text-primary-soft-fg opacity-80">
+              {t("maxDiscount", {
+                amount: formatAmount(template.reward.maxTotalDiscountTl, locale),
+              })}
+            </p>
+          ) : null}
+        </Reveal>
+
+        <div className="mt-8 grid gap-6 sm:grid-cols-2">
+          <Reveal as="section" className="rounded-2xl border border-border bg-surface p-6">
+            <h2 className="font-heading text-lg font-bold text-fg">{t("conditionsTitle")}</h2>
+            <ul className="mt-4 space-y-2.5 text-sm text-fg">
+              {conditions.map((condition) => (
+                <li key={condition} className="flex gap-2.5">
+                  <Check aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+                  <span>{condition}</span>
+                </li>
+              ))}
+            </ul>
+          </Reveal>
+
+          <Reveal as="section" delay={0.05} className="rounded-2xl border border-border bg-surface-sunken p-6">
+            <h2 className="font-heading text-lg font-bold text-fg">{t("rulesTitle")}</h2>
+            <ul className="mt-4 space-y-2.5 text-sm text-fg-muted">
+              {rules.map((rule) => (
+                <li key={rule} className="flex gap-2.5">
+                  <Info aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-fg-subtle" />
+                  <span>{rule}</span>
+                </li>
+              ))}
+            </ul>
+          </Reveal>
+        </div>
+
+        <div className="mt-10 flex flex-wrap items-center gap-3">
+          <a
+            href={`${siteConfig.env.appUrl}/kayit?kampanya=${template.key}`}
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3.5 font-semibold text-primary-fg shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover hover:shadow-xl"
+          >
+            {t("startWithCampaign")}
+            <ArrowRight aria-hidden className="h-4 w-4" />
+          </a>
+          <Link
+            href="/fiyatlandirma"
+            className="inline-flex items-center rounded-xl border border-border-strong px-6 py-3.5 font-semibold text-fg transition-colors hover:bg-hover"
+          >
+            {t("seePricing")}
+          </Link>
+        </div>
       </div>
-
-      <h2 className="mt-8 font-heading text-lg font-bold">{t("conditionsTitle")}</h2>
-      <ul className="mt-3 space-y-1.5 text-fg">
-        {conditions.map((c) => (
-          <li key={c}>• {c}</li>
-        ))}
-      </ul>
-
-      <h2 className="mt-8 font-heading text-lg font-bold">{t("rulesTitle")}</h2>
-      <ul className="mt-3 space-y-1.5 text-sm text-fg-muted">
-        <li>• {template.stackable ? t("rule.stackable") : t("rule.notStackable")}</li>
-        <li>• {t("rule.oncePerTenant")}</li>
-        <li>• {t("rule.priceLocked")}</li>
-        <li>• {t("rule.fraudCheck")}</li>
-      </ul>
-
-      <a
-        href={`${siteConfig.env.appUrl}/kayit?kampanya=${template.key}`}
-        className="mt-10 inline-block rounded-lg bg-primary px-6 py-3 font-semibold text-primary-fg hover:bg-primary-hover"
-      >
-        {t("startWithCampaign")}
-      </a>
-    </div>
+    </>
   );
 }
