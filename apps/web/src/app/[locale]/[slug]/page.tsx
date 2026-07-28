@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 import { siteConfig } from "@yonetim/config";
 import type { Locale } from "@yonetim/i18n";
 import { apartmentComplexSchema, breadcrumbSchema, jsonLdScript, pageMeta } from "@yonetim/seo";
-import { GradientMesh, Reveal } from "@yonetim/ui/motion";
+import { BlueprintGrid, BrandWash, Reveal } from "@yonetim/ui/motion";
 
 import { alternatePaths, localizedPath } from "@/lib/paths";
 
@@ -96,8 +96,9 @@ export default async function TenantLandingPage({
       />
 
       <section className="relative isolate overflow-hidden border-b border-border">
-        <GradientMesh />
-        <div className="mx-auto max-w-4xl px-4 pb-12 pt-14">
+        <BrandWash />
+        <BlueprintGrid origin="top center" />
+        <div className="relative mx-auto max-w-4xl px-4 pb-12 pt-14">
           <span className="rounded-full border border-border bg-surface/80 px-3 py-1 text-xs font-semibold text-fg-muted backdrop-blur">
             {tType(tenant.type as never)}
           </span>

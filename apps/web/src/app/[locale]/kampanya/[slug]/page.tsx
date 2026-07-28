@@ -8,7 +8,7 @@ import { siteConfig } from "@yonetim/config";
 import { formatAmount, LOCALES } from "@yonetim/i18n";
 import type { Locale } from "@yonetim/i18n";
 import { breadcrumbSchema, jsonLdScript, pageMeta } from "@yonetim/seo";
-import { GradientMesh, Reveal } from "@yonetim/ui/motion";
+import { BlueprintGrid, BrandWash, Reveal } from "@yonetim/ui/motion";
 
 import { alternatePaths, localizedPath } from "@/lib/paths";
 import { campaignSlug, rewardLabel } from "@/lib/campaign-reward";
@@ -113,8 +113,9 @@ export default async function CampaignDetailPage({
         geri dönüş yolu olmadan ziyaretçi listeye ulaşamıyordu.
       */}
       <section className="relative isolate overflow-hidden border-b border-border">
-        <GradientMesh />
-        <div className="mx-auto max-w-3xl px-4 pb-12 pt-10">
+        <BrandWash />
+        <BlueprintGrid origin="top center" />
+        <div className="relative mx-auto max-w-3xl px-4 pb-12 pt-10">
           <Link
             href="/kampanyalar"
             className="inline-flex items-center gap-1 text-sm font-medium text-fg-muted transition-colors hover:text-fg"

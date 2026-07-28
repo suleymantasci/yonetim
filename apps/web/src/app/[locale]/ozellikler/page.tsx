@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 
 import type { Locale } from "@yonetim/i18n";
 import { pageMeta } from "@yonetim/seo";
-import { GradientMesh, Reveal, Stagger } from "@yonetim/ui/motion";
+import { BlueprintGrid, BrandWash, Reveal, Stagger } from "@yonetim/ui/motion";
 
 import { alternatePaths, localizedPath } from "@/lib/paths";
 
@@ -43,8 +43,9 @@ export default async function FeaturesPage({
   return (
     <>
       <section className="relative isolate overflow-hidden border-b border-border">
-        <GradientMesh />
-        <div className="mx-auto max-w-5xl px-4 pb-12 pt-16">
+        <BrandWash />
+        <BlueprintGrid origin="top center" />
+        <div className="relative mx-auto max-w-5xl px-4 pb-12 pt-16">
           <h1 className="font-heading text-4xl font-extrabold tracking-tight text-fg sm:text-5xl">
             {t("title")}
           </h1>

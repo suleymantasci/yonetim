@@ -1,6 +1,6 @@
 "use client";
 
-import type { PointerEvent, ReactNode } from "react";
+import { useId, type PointerEvent, type ReactNode } from "react";
 
 import { cn } from "../cn";
 
@@ -42,6 +42,84 @@ export function GradientMesh({ className }: { className?: string }) {
         }}
       />
     </div>
+  );
+}
+
+/**
+ * Vaziyet planı ızgarası — pazarlama bantlarının zemini.
+ *
+ * NEDEN GRADYAN LEKESİ DEĞİL: `GradientMesh` üç bulanık renk lekesidir ve
+ * bugün her SaaS açılış sayfasında aynı biçimde duruyor; hiçbir şey anlatmaz,
+ * yalnız "modern görünmeye" çalışır. Bu ızgara ise ürünün konusuna ait bir
+ * işaret: mimari vaziyet planı kâğıdı. İnce çizgi 32px, kalın çizgi 160px —
+ * kâğıt ölçeği gibi iki basamaklı.
+ *
+ * RENK: `currentColor`. Çağıran taraf `text-border` (açık bant) ya da
+ * `text-ink-border` (koyu bant) verir; ızgara temayla birlikte döner ve
+ * token dışına çıkmaz.
+ *
+ * MASKE: Izgara kenarlarda kesilmez, çözünür. Kesilseydi bandın sınırında
+ * ikinci bir çizgi oluşur, düzenin gerçek kenarlığıyla yarışırdı.
+ *
+ * HAREKET YOK: Zemin kaymaz. `gradient-drift` sürekli boyama üretiyordu;
+ * burada tek bir statik SVG var, hareket bütçesi ürün gösterimine kalıyor.
+ */
+export function BlueprintGrid({
+  className,
+  /** Maskenin odağı — ızgaranın en yoğun olduğu nokta. */
+  origin = "top left",
+}: {
+  className?: string;
+  origin?: "top left" | "top right" | "top center";
+}) {
+  // Aynı sayfada birden fazla bant olabilir; `pattern` kimlikleri çakışırsa
+  // ikinci ızgara birincinin desenini boyar.
+  const id = useId().replace(/:/g, "");
+  const at = origin === "top left" ? "12% 0%" : origin === "top right" ? "88% 0%" : "50% 0%";
+  // Maskede yalnız **alfa** okunur; renk kanalı hiç kullanılmaz. Sabit bir
+  // siyah yazmak yerine `currentColor`: hem token disiplini bozulmuyor hem de
+  // "bu bir renk değil, bir şablon" olduğu okunur kalıyor.
+  const mask = `radial-gradient(120% 95% at ${at}, currentColor 0%, currentColor 32%, transparent 78%)`;
+
+  return (
+    <div
+      aria-hidden
+      className={cn("pointer-events-none absolute inset-0 overflow-hidden text-border", className)}
+      style={{ maskImage: mask, WebkitMaskImage: mask }}
+    >
+      <svg className="absolute inset-0 h-full w-full" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <pattern id={`${id}-fine`} width="32" height="32" patternUnits="userSpaceOnUse">
+            <path d="M32 0H0V32" fill="none" stroke="currentColor" strokeWidth="1" opacity="0.5" />
+          </pattern>
+          <pattern id={`${id}-coarse`} width="160" height="160" patternUnits="userSpaceOnUse">
+            <path d="M160 0H0V160" fill="none" stroke="currentColor" strokeWidth="1" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill={`url(#${id}-fine)`} />
+        <rect width="100%" height="100%" fill={`url(#${id}-coarse)`} />
+      </svg>
+    </div>
+  );
+}
+
+/**
+ * Izgaranın altına giren tek marka yıkaması.
+ *
+ * `GradientMesh` üç leke basıyordu; burada tek bir konik olmayan yumuşak geçiş
+ * var ve köşeye sabitlenmiş. Amaç renk katmak, "aurora" yapmak değil.
+ */
+export function BrandWash({ className }: { className?: string }) {
+  return (
+    <div
+      aria-hidden
+      className={cn("pointer-events-none absolute inset-0 overflow-hidden", className)}
+      style={{
+        background:
+          "radial-gradient(80rem 40rem at 8% -20%, color-mix(in oklab, var(--color-primary) 12%, transparent) 0%, transparent 62%)," +
+          "radial-gradient(52rem 34rem at 96% -10%, color-mix(in oklab, var(--color-secondary) 10%, transparent) 0%, transparent 60%)",
+      }}
+    />
   );
 }
 

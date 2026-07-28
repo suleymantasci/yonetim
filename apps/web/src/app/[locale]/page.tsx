@@ -6,15 +6,18 @@ import { formatAmount, type Locale } from "@yonetim/i18n";
 import { STANDARD_PLANS, savingsVsCompetitorPct } from "@yonetim/pricing";
 import { faqSchema, jsonLdScript, softwareApplicationSchema } from "@yonetim/seo";
 import { Accordion, AccordionItem } from "@yonetim/ui";
-import { GradientMesh, Reveal, Stagger } from "@yonetim/ui/motion";
+import { BlueprintGrid, BrandWash, Reveal, Stagger } from "@yonetim/ui/motion";
 
 import { Link } from "@/i18n/navigation";
 import { getContent } from "@/content";
 import { richTags } from "@/components/rich-text";
 import { MODULE_KEYS } from "@/components/module-list";
 import { FeatureShowcase } from "@/components/home/feature-showcase";
+import { HeroFigure } from "@/components/home/hero-figure";
+import { Ledger } from "@/components/home/ledger";
 import { PricingPreview } from "@/components/home/pricing-preview";
 import { ProductMock } from "@/components/home/product-mock";
+import { StoryRow } from "@/components/home/story-row";
 import { getPathname } from "@/i18n/navigation";
 
 /** JSON-LD `featureList` anahtarları — metinler `marketing.home.schemaFeature.*`. */
@@ -53,6 +56,18 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
   const pricingHref = getPathname({ href: "/fiyatlandirma", locale: locale as Locale });
   const featuresHref = getPathname({ href: "/ozellikler", locale: locale as Locale });
 
+  /** Hero'nun altındaki rakam şeridi — üçü de üründen doğrulanabilir. */
+  const heroStats = [
+    { value: t("heroStat1Value", { savings }), label: t("heroStat1Label", { price: formatAmount(cheapest.yearlyPriceTl, locale) }) },
+    { value: t("heroStat2Value"), label: t("heroStat2Label") },
+    { value: t("heroStat3Value"), label: t("heroStat3Label") },
+  ];
+
+  const ledgerBefore = t("ledgerBefore").split("|");
+  const ledgerRows = t("ledgerAfter")
+    .split("|")
+    .map((after, index) => ({ before: ledgerBefore[index] ?? "", after }));
+
   return (
     <>
       <script
@@ -74,60 +89,165 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       />
 
       {/*
-        HERO — başlık, alt metin ve birincil buton **sunucuda** render edilir.
-        LCP öğesi buradaki `h1`; hidrasyonu beklemesi gerekmiyor. Hareket
-        yalnızca dekoratif zeminde ve ürün gösteriminde.
+        HERO — iki sütun, ortalanmış değil.
+
+        NEDEN ORTALANMIŞ DEĞİL: Ortalanmış başlık + rozet + iki buton + altında
+        arayüz mock'u, bugün her SaaS açılış sayfasının aynı dizilişi. Aynı
+        bilgiyi asimetrik yerleştirmek hem daha az yer kaplıyor hem de sağdaki
+        görsele "ilk ekranda" yer açıyor — sektörün (ve müşterinin karşılaştırdığı
+        rakiplerin) yaptığı da bu.
+
+        LCP öğesi `h1`; sunucuda render edilir, hidrasyonu beklemez. Hareket
+        yalnız sağdaki görselin üstündeki rozetlerde.
       */}
       <section className="relative isolate overflow-hidden border-b border-border">
-        <GradientMesh />
+        <BrandWash />
+        <BlueprintGrid />
 
-        <div className="mx-auto max-w-6xl px-4 pb-16 pt-16 sm:pb-24 sm:pt-24">
-          <div className="mx-auto max-w-3xl text-center">
-            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/80 px-3 py-1 text-xs font-semibold text-fg-muted backdrop-blur">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full rounded-full bg-success opacity-75 motion-safe:animate-[pulse-ring_2.4s_ease-out_infinite]" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-success" />
-              </span>
-              {t("trialBadge")}
-            </span>
+        {/* `relative`: konumlandırılmış dekor, konumlandırılmamış içeriğin
+            üstüne boyanır — ızgara çizgileri başlığın üstünden geçiyordu. */}
+        <div className="relative mx-auto max-w-6xl px-4 pb-16 pt-14 sm:pb-20 sm:pt-20">
+          <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,6.5fr)_minmax(0,5fr)] lg:gap-12">
+            <div>
+              {/*
+                Eski hâlinde burada nabız gibi atan yeşil noktalı bir hap vardı
+                ("30 gün ücretsiz · kredi kartı istemiyoruz"). O bileşen üretilmiş
+                her açılış sayfasında aynı biçimde duruyor ve iki şeyi birden
+                yanlış yapıyordu: yanıp sönen nokta "canlı veri" işaretidir, oysa
+                orada sabit bir pazarlama cümlesi vardı; deneme koşulu da karar
+                anına (butonun altına) değil sayfanın en tepesine konmuştu.
 
-            <h1 className="mx-auto mt-6 max-w-[19ch] font-heading text-4xl font-extrabold leading-[1.08] tracking-tight text-fg sm:text-6xl">
-              {t("heroTitle")}{" "}
-              <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                {t("heroTitleAccent")}
-              </span>
-            </h1>
+                Yerine geçen şey bir rozet değil, bir **künye**: ürünün hangi
+                mevzuata göre kurgulandığını söylüyor. Bu cümleyi yazabilmek için
+                ürünü bilmek gerekir — jenerik bir şablondan çıkmaz.
+              */}
+              <p className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.16em] text-fg-muted">
+                <span aria-hidden className="h-px w-8 shrink-0 bg-primary" />
+                {t("heroEyebrow")}
+              </p>
 
-            <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-fg-muted">
-              {t.rich("heroSubtitle", richTags)}
-            </p>
+              <h1 className="mt-5 max-w-[17ch] font-heading text-4xl font-extrabold leading-[1.06] tracking-tight text-fg sm:text-5xl xl:text-6xl">
+                {t("heroTitle")} <span className="text-primary">{t("heroTitleAccent")}</span>
+              </h1>
 
-            <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
-              <a
-                href={`${siteConfig.env.appUrl}/kayit`}
-                className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3.5 font-semibold text-primary-fg shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover hover:shadow-xl hover:shadow-primary/25"
-              >
-                {t("ctaPrimary")}
-                <ArrowRight aria-hidden className="h-4 w-4" />
-              </a>
-              <Link
-                href="/fiyatlandirma"
-                className="inline-flex items-center rounded-xl border border-border-strong bg-surface/70 px-6 py-3.5 font-semibold text-fg backdrop-blur transition-colors hover:bg-hover"
-              >
-                {t("ctaSecondary")}
-              </Link>
+              <p className="mt-5 max-w-xl text-lg leading-relaxed text-fg-muted">
+                {t.rich("heroSubtitle", richTags)}
+              </p>
+
+              <div className="mt-8 flex flex-wrap items-center gap-3">
+                <a
+                  href={`${siteConfig.env.appUrl}/kayit`}
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3.5 font-semibold text-primary-fg shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover hover:shadow-xl hover:shadow-primary/25"
+                >
+                  {t("ctaPrimary")}
+                  <ArrowRight aria-hidden className="h-4 w-4" />
+                </a>
+                <Link
+                  href="/fiyatlandirma"
+                  className="inline-flex items-center rounded-xl border border-border-strong bg-surface/70 px-6 py-3.5 font-semibold text-fg backdrop-blur transition-colors hover:bg-hover"
+                >
+                  {t("ctaSecondary")}
+                </Link>
+              </div>
+
+              {/* Deneme koşulu artık kararın yanında: buton, sonra koşul. */}
+              <p className="mt-4 text-sm text-fg-subtle">{t("ctaNote")}</p>
+
+              <ul className="mt-9 grid gap-5 border-t border-border pt-6 sm:grid-cols-3">
+                {heroStats.map((stat) => (
+                  <li key={stat.value}>
+                    <p className="font-heading text-lg font-bold tracking-tight text-fg">{stat.value}</p>
+                    <p className="mt-1 text-sm leading-snug text-fg-muted">{stat.label}</p>
+                  </li>
+                ))}
+              </ul>
             </div>
 
-            <p className="mt-4 text-sm text-fg-subtle">
-              {t.rich("priceNote", {
-                ...richTags,
-                savings,
-                price: formatAmount(cheapest.yearlyPriceTl, locale),
-              })}
-            </p>
+            <Reveal direction="left" delay={0.08}>
+              <HeroFigure
+                labels={{
+                  alt: t("heroImageAlt"),
+                  collectionRate: t("mock.collectionRate"),
+                  trend: t("mock.trend"),
+                  chatPrompt: t("mock.chatPrompt"),
+                  chatReply: t("mock.chatReply"),
+                }}
+              />
+            </Reveal>
           </div>
+        </div>
+      </section>
 
-          <Reveal className="mx-auto mt-14 max-w-4xl" delay={0.1}>
+      {/*
+        UYUM ŞERİDİ — künye bandı.
+
+        Aralarında boşluk bırakılmış ikon dizisi yerine hücreli bir şerit:
+        `gap-px` + zemin rengi, her hücrenin arasına saç teli çizgi koyuyor.
+        Ayraç `border-s` ile değil bu yolla çiziliyor çünkü kırılma noktası
+        başına ilk/son hücre istisnası yazmak gerekmiyor.
+      */}
+      <section className="border-b border-border" aria-label={t("trustTitle")}>
+        <ul className="mx-auto grid max-w-6xl gap-px bg-border sm:grid-cols-3 lg:grid-cols-6">
+          {TRUST.map(({ key, icon: Icon }) => (
+            <li
+              key={key}
+              className="flex items-center gap-2 bg-surface-sunken px-4 py-4 text-xs font-medium text-fg-muted"
+            >
+              <Icon aria-hidden className="h-4 w-4 shrink-0 text-primary" />
+              {t(key)}
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      {/* DEFTER — "bugün elle nasıl yürüyor" ↔ "panelde nereye düşüyor" */}
+      <section className="mx-auto max-w-6xl px-4 py-20">
+        <Reveal className="max-w-2xl">
+          <h2 className="font-heading text-3xl font-extrabold tracking-tight text-fg sm:text-4xl">
+            {t("ledgerTitle")}
+          </h2>
+          <p className="mt-3 text-fg-muted">{t("ledgerSubtitle")}</p>
+        </Reveal>
+
+        <Reveal className="mt-10">
+          <Ledger
+            beforeLabel={t("ledgerBeforeLabel")}
+            afterLabel={t("ledgerAfterLabel")}
+            rows={ledgerRows}
+          />
+        </Reveal>
+      </section>
+
+      {/*
+        PANEL — arayüz gösterimi, yanında ne gösterdiğini anlatan metin.
+
+        Mock hero'dan buraya taşındı: hero'da ürün ekranı göstermek yaygın ama
+        ilk ekranda ziyaretçinin bilmediği bir arayüzü açıklamasız göstermek
+        demek. Burada solda ne bakacağı yazıyor.
+      */}
+      <section className="border-y border-border bg-surface-sunken py-20">
+        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-14">
+          <Reveal>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+              {t("panelEyebrow")}
+            </p>
+            <h2 className="mt-3 font-heading text-3xl font-extrabold tracking-tight text-fg sm:text-4xl">
+              {t("panelTitle")}
+            </h2>
+            <p className="mt-4 leading-relaxed text-fg-muted">{t("panelBody")}</p>
+            <ul className="mt-6 space-y-2.5">
+              {t("panelPoints")
+                .split("|")
+                .map((point) => (
+                  <li key={point} className="flex gap-2.5 text-sm text-fg">
+                    <Check aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+                    <span>{point}</span>
+                  </li>
+                ))}
+            </ul>
+          </Reveal>
+
+          <Reveal direction="left" delay={0.08}>
             <ProductMock
               locale={locale}
               labels={{
@@ -151,36 +271,36 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         </div>
       </section>
 
-      {/* GÜVEN ŞERİDİ */}
-      <section className="border-b border-border bg-surface-sunken py-8" aria-label={t("trustTitle")}>
-        <ul className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-8 gap-y-3 px-4">
-          {TRUST.map(({ key, icon: Icon }) => (
-            <li key={key} className="flex items-center gap-2 text-sm font-medium text-fg-muted">
-              <Icon aria-hidden className="h-4 w-4 text-primary" />
-              {t(key)}
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      {/* PROBLEM → ÇÖZÜM */}
+      {/* KİMLER KULLANIYOR — zikzak şeritler */}
       <section className="mx-auto max-w-6xl px-4 py-20">
-        <Stagger className="grid gap-6 md:grid-cols-3" itemAs="div">
-          {([1, 2, 3] as const).map((index) => (
-            <article
-              key={index}
-              className="rounded-2xl border border-border bg-surface p-6 transition-colors hover:border-border-strong"
-            >
-              <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-primary-soft font-heading text-sm font-bold text-primary-soft-fg">
-                {index}
-              </span>
-              <h2 className="mt-4 font-heading text-lg font-bold text-fg">
-                {t(`problem${index}Title`)}
-              </h2>
-              <p className="mt-2 text-sm leading-relaxed text-fg-muted">{t(`problem${index}Body`)}</p>
-            </article>
-          ))}
-        </Stagger>
+        <Reveal className="max-w-2xl">
+          <h2 className="font-heading text-3xl font-extrabold tracking-tight text-fg sm:text-4xl">
+            {t("audienceTitle")}
+          </h2>
+          <p className="mt-3 text-fg-muted">{t("audienceSubtitle")}</p>
+        </Reveal>
+
+        <div className="mt-14 space-y-16 sm:space-y-24">
+          <Reveal>
+            <StoryRow
+              eyebrow={t("residentEyebrow")}
+              title={t("residentTitle")}
+              body={t("residentBody")}
+              points={t("residentPoints").split("|")}
+              image={{ src: "/images/mobile-app-slide.png", alt: t("residentImageAlt") }}
+            />
+          </Reveal>
+          <Reveal>
+            <StoryRow
+              reverse
+              eyebrow={t("siteEyebrow")}
+              title={t("siteTitle")}
+              body={t("siteBody")}
+              points={t("sitePoints").split("|")}
+              image={{ src: "/images/social-life-slide.png", alt: t("siteImageAlt") }}
+            />
+          </Reveal>
+        </div>
       </section>
 
       {/* ÖZELLİK GÖSTERİMİ */}
@@ -204,32 +324,41 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         </div>
       </section>
 
-      {/* MODÜLLER */}
+      {/*
+        MODÜL DİZİNİ.
+
+        Sekiz eşit kart yerine numaralı bir dizin. Gerekçe: kartların hepsi aynı
+        ağırlıkta olduğu için sayfa burada bir "doku"ya dönüşüyor ve içerik
+        okunmadan geçiliyordu. Dizin biçimi hem daha az yer kaplıyor hem de
+        listenin **tam** olduğunu (01…08) görünür kılıyor — bölümün iddiası
+        zaten bu: hiçbir modül pakete göre kısılmıyor.
+      */}
       <section className="mx-auto max-w-6xl px-4 py-20">
         <Reveal>
-          <h2 className="font-heading text-3xl font-extrabold tracking-tight text-fg sm:text-4xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+            {t("modulesIndexLabel")}
+          </p>
+          <h2 className="mt-3 font-heading text-3xl font-extrabold tracking-tight text-fg sm:text-4xl">
             {t("modulesTitle")}
           </h2>
           <p className="mt-3 max-w-2xl text-fg-muted">{t("modulesSubtitle")}</p>
         </Reveal>
 
-        <Stagger className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4" itemAs="div">
-          {MODULE_KEYS.map((key) => (
-            <article
-              key={key}
-              className="h-full rounded-2xl border border-border bg-surface p-5 transition-colors hover:border-primary-soft"
-            >
-              <h3 className="font-heading font-bold text-fg">{tModule(`${key}Title`)}</h3>
-              <ul className="mt-3 space-y-2 text-sm text-fg-muted">
-                {tModule(`${key}Items`)
-                  .split("|")
-                  .map((item) => (
-                    <li key={item} className="flex gap-2">
-                      <Check aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" />
-                      <span>{item}</span>
-                    </li>
-                  ))}
-              </ul>
+        <Stagger
+          className="mt-10 grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-2"
+          itemAs="div"
+        >
+          {MODULE_KEYS.map((key, index) => (
+            <article key={key} className="h-full bg-surface p-5 sm:p-6">
+              <div className="flex items-baseline gap-3">
+                <span aria-hidden className="font-heading text-xs font-bold tabular-nums text-fg-subtle">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <h3 className="font-heading font-bold text-fg">{tModule(`${key}Title`)}</h3>
+              </div>
+              <p className="mt-2 text-sm leading-relaxed text-fg-muted ps-8">
+                {tModule(`${key}Items`).split("|").join(" · ")}
+              </p>
             </article>
           ))}
         </Stagger>
@@ -297,8 +426,8 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
 
       {/* KAPANIŞ */}
       <section className="relative isolate overflow-hidden bg-ink px-4 py-20 text-ink-fg">
-        <GradientMesh className="opacity-40" />
-        <div className="mx-auto max-w-3xl text-center">
+        <BlueprintGrid className="text-ink-border" origin="top center" />
+        <div className="relative mx-auto max-w-3xl text-center">
           <h2 className="font-heading text-3xl font-extrabold tracking-tight sm:text-4xl">
             {t("ctaTitle")}
           </h2>

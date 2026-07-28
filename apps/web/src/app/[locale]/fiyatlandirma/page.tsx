@@ -9,7 +9,7 @@ import { BILLING_PERIODS, planForUnitCount, type BillingPeriod } from "@yonetim/
 import type { Locale } from "@yonetim/i18n";
 import { faqSchema, jsonLdScript, pageMeta } from "@yonetim/seo";
 import { Accordion, AccordionItem } from "@yonetim/ui";
-import { GradientMesh, Reveal } from "@yonetim/ui/motion";
+import { BlueprintGrid, BrandWash, Reveal } from "@yonetim/ui/motion";
 
 import { alternatePaths, localizedPath } from "@/lib/paths";
 import { DEFAULT_UNIT_COUNT } from "@/lib/pricing-stops";
@@ -85,9 +85,10 @@ export default async function PricingPage({
       />
 
       <section className="relative isolate overflow-hidden border-b border-border">
-        <GradientMesh />
+        <BrandWash />
+        <BlueprintGrid origin="top center" />
 
-        <div className="mx-auto max-w-4xl px-4 pb-14 pt-16 text-center">
+        <div className="relative mx-auto max-w-4xl px-4 pb-14 pt-16 text-center">
           <h1 className="font-heading text-4xl font-extrabold tracking-tight text-fg sm:text-5xl">
             {t("title")}
           </h1>

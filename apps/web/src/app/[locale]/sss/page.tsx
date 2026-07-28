@@ -6,7 +6,7 @@ import { siteConfig } from "@yonetim/config";
 import type { Locale } from "@yonetim/i18n";
 import { faqSchema, jsonLdScript, pageMeta } from "@yonetim/seo";
 import { Accordion, AccordionItem } from "@yonetim/ui";
-import { GradientMesh, Reveal } from "@yonetim/ui/motion";
+import { BlueprintGrid, BrandWash, Reveal } from "@yonetim/ui/motion";
 
 import { Link } from "@/i18n/navigation";
 import { alternatePaths, localizedPath } from "@/lib/paths";
@@ -44,8 +44,9 @@ export default async function FaqPage({ params }: { params: Promise<{ locale: st
       />
 
       <section className="relative isolate overflow-hidden border-b border-border">
-        <GradientMesh />
-        <div className="mx-auto max-w-3xl px-4 pb-12 pt-16 text-center">
+        <BrandWash />
+        <BlueprintGrid origin="top center" />
+        <div className="relative mx-auto max-w-3xl px-4 pb-12 pt-16 text-center">
           <h1 className="font-heading text-4xl font-extrabold tracking-tight text-fg sm:text-5xl">
             {t("title")}
           </h1>
