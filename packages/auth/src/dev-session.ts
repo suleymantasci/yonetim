@@ -2,22 +2,30 @@
  * Geliştirme yardımcısı: demo site için yönetici/sakin oluşturur ve oturum
  * çerezi basar. Yalnızca yerel test amaçlıdır (üretimde çalıştırılmamalı).
  *
+ * Neden `packages/db` değil de burada: betik hem şemaya hem `createSession`'a
+ * ihtiyaç duyuyor. `packages/db` içinde dururken `db → auth` bağımlılığı
+ * doğuruyordu ve `auth → db` zaten var olduğu için bu bir döngüydü. Katman
+ * sırası tek yönlü: `auth` `db`'nin üstünde durur. İkisini birden gerektiren
+ * bir betik de üstteki katmana aittir.
+ *
  * Kullanım:
- *   tsx src/dev-session.ts manager   → yönetici oturum token'ı
- *   tsx src/dev-session.ts resident  → sakin oturum token'ı
+ *   pnpm --filter @yonetim/auth dev:session manager   → yönetici oturum token'ı
+ *   pnpm --filter @yonetim/auth dev:session resident  → sakin oturum token'ı
  */
-import { randomUUID } from "node:crypto";
 import { and, eq, isNull } from "drizzle-orm";
 
-import { createSession } from "@yonetim/auth";
-import { currentPeriod, periodKey, tlToKurus } from "@yonetim/core";
-
-import { closeDb, withBypassRls } from "./client";
-import { loadRootEnv } from "../../../env-loader.mjs";
 import {
-  debts, duesPlans, expenses, expenseCategories, maintenanceRecords, maintenanceTemplates,
-  memberships, announcements, requests, tenants, unitOccupancies, units, users,
-} from "./schema/index";
+  closeDb,
+  memberships,
+  tenants,
+  unitOccupancies,
+  units,
+  users,
+  withBypassRls,
+} from "@yonetim/db";
+
+import { createSession } from "./session";
+import { loadRootEnv } from "../../../env-loader.mjs";
 
 loadRootEnv();
 
@@ -122,5 +130,3 @@ main().catch(async (e) => {
   await closeDb();
   process.exit(1);
 });
-
-export { randomUUID, debts, duesPlans, expenses, expenseCategories, maintenanceRecords, maintenanceTemplates, announcements, requests, currentPeriod, periodKey, tlToKurus };

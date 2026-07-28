@@ -21,8 +21,8 @@ pnpm dev                      # web :3000, app :3001
 Yerel oturum açmak için demo kullanıcı ve çerez üretin:
 
 ```bash
-pnpm --filter @yonetim/db dev:session manager    # yönetici
-pnpm --filter @yonetim/db dev:session resident   # sakin
+pnpm --filter @yonetim/auth dev:session manager    # yönetici
+pnpm --filter @yonetim/auth dev:session resident   # sakin
 # çıkan token'ı `yonetim_session` çerezi olarak kullanın
 ```
 

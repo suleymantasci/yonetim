@@ -9,6 +9,7 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
+    "dev:up": "pnpm db:up && turbo run dev",
     "lint": "eslint .",
     "typecheck": "turbo run typecheck",
     "test": "vitest run --exclude \"tests/integration/**\"",

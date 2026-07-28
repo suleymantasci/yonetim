@@ -71,10 +71,11 @@ module.exports = {
     },
     {
       name: "dongusel-bagimlilik-yok",
-      severity: "warn",
+      severity: "error",
       comment:
-        "Döngü modül sınırının bulanıklaştığının işareti. `warn`: bugün " +
-        "auth ↔ db arasında bilinen bir döngü var ve onu çözmek ayrı bir iş.",
+        "Döngü modül sınırının bulanıklaştığının işareti. Bilinen tek döngü " +
+        "(auth ↔ db) `dev-session` betiği `packages/auth`'a taşınarak kapandı; " +
+        "kural artık `error` — yenisinin sessizce eklenmesini engelliyor.",
       from: {},
       to: { circular: true },
     },

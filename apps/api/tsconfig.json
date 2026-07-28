@@ -55,6 +55,26 @@
     "strictPropertyInitialization": false,
     "types": ["node"]
   },
+  /**
+   * Yalnız `ts-node` (yani `pnpm dev`) için — `tsc` bunu yok sayar.
+   *
+   * Workspace paketleri `"type": "module"` ilan ediyor; bu, altlarındaki her
+   * `.ts` dosyasını Node'un gözünde ESM yapar ve ts-node'un CommonJS
+   * yükleyicisi bunları `require()` etmeyi reddeder (ERR_REQUIRE_ESM).
+   * Derlenmiş çıktıda sorun yok — `tsc` hepsini CJS'e çevirip `tsc-alias`
+   * yollarını düzeltiyor; kırılan yalnızca geliştirme yükleyicisiydi.
+   *
+   * `moduleTypes` package.json'daki `type` alanını dosya bazında ezer:
+   * geliştirmede de derlemedeki ile aynı modül biçimini kullanıyoruz.
+   * Alternatifi paketlerden `"type": "module"`u kaldırmaktı; o da Next
+   * uygulamalarının ESM çözümlemesini bozardı.
+   */
+  "ts-node": {
+    "moduleTypes": {
+      "src/**/*.ts": "cjs",
+      "../../packages/**/*.ts": "cjs"
+    }
+  },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist", "test"]
 }

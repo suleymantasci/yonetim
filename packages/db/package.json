@@ -13,8 +13,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/migrate.ts",
     "db:seed": "tsx src/seed.ts",
-    "db:studio": "drizzle-kit studio",
-    "dev:session": "tsx src/dev-session.ts"
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "drizzle-orm": "^0.38.3",
@@ -22,8 +21,7 @@
     "@yonetim/config": "workspace:*",
     "@yonetim/core": "workspace:*",
     "@yonetim/pricing": "workspace:*",
-    "@yonetim/campaigns": "workspace:*",
-    "@yonetim/auth": "workspace:*"
+    "@yonetim/campaigns": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.7.2",
