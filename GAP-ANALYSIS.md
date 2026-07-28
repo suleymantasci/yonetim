@@ -1,5 +1,10 @@
 # GAP-ANALYSIS.md — Eksik Özellikler & İyileştirme Yol Haritası
 
+> 📌 **Güncel durum için [`PROJE-DURUMU.md`](./PROJE-DURUMU.md)'ya bakın.** Bu
+> dosya 2026-07-26 tarihli ilk tespit turunu anlatır (tarihsel kayıt); hangi
+> maddelerin yapıldığı, hangi kararların değiştiği ve yeni özellik fikirleri
+> artık tek bir dosyada toplanıyor.
+
 > **Referanslar:**
 > - [`SPEC.md`](./SPEC.md) — ürün şartnamesi (her bölüm referans olarak anılır)
 > - [`README.md`](./README.md) — kurulum, mimari, kabul kriterleri özeti

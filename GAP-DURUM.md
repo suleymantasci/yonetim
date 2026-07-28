@@ -1,5 +1,10 @@
 # GAP-DURUM.md — Uygulama Durumu ve Alınan Kararlar
 
+> 📌 **Güncel durum için [`PROJE-DURUMU.md`](./PROJE-DURUMU.md)'ya bakın.** Bazı
+> kararlar burada alındıktan sonra `MIMARI-PLAN.md` ve uygulama sırasında
+> tekrar değişti (özellikle grafik motoru ve Radix kapsamı) — çelişkisiz
+> güncel tablo orada.
+
 > Bu dosya [`GAP-ANALYSIS.md`](./GAP-ANALYSIS.md) maddelerinin **hangilerinin
 > uygulandığını**, hangi mimari kararların alındığını ve GAP dokümanındaki
 > hatalı/eksik varsayımları kaydeder. GAP-ANALYSIS.md ister dokümanı olarak

@@ -1,5 +1,9 @@
 # UI Modernizasyon Planı — `apps/web` (landing) + `apps/app` (panel)
 
+> 📌 **Güncel durum için [`PROJE-DURUMU.md`](./PROJE-DURUMU.md)'ya bakın.** Bu
+> plan tamamlandı (Faz 0–2); bu dosya uygulama ayrıntıları, ölçümler ve
+> bulunan kusurların tam listesi için referans olarak kalıyor.
+
 > Durum: **Faz 0 tamam** (F0.3 dahil — grafik katmanı Recharts'a taşındı).
 > **Faz 1 tamam** — landing kabuğu, ana sayfa ve tüm alt sayfalar yeniden yazıldı.
 > **Faz 2 tamam** — panel kabuğu, grafikler, tablolar ve form/akış katmanı.

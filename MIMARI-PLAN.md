@@ -1,5 +1,10 @@
 # MIMARI-PLAN.md — Backend Katmanı, Servis İzolasyonu ve UI Yenilenmesi
 
+> 📌 **Güncel durum için [`PROJE-DURUMU.md`](./PROJE-DURUMU.md)'ya bakın.** Bu
+> plandaki Track A/B tamamlandı, Track C/D kısmen (ve C2'de ECharts yerine
+> Recharts seçildi — plandaki karar tersine çevrildi). Track E hâlâ ürün
+> kararı bekliyor. Ayrıntılı gerekçeler için bu dosya geçerli kalıyor.
+
 > Bu doküman [`GAP-DURUM.md`](./GAP-DURUM.md) §4'teki **yapılmayanlar** listesini ve
 > [`GAP-ANALYSIS.md`](./GAP-ANALYSIS.md) §7'deki teknik borcu tek bir mimari hedefe
 > bağlar. GAP-DURUM.md §2'de alınmış bazı kararlar burada **bilinçli olarak geri
