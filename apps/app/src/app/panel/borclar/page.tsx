@@ -93,7 +93,7 @@ export default async function DebtsPage({
   const tabs = (
     <Tabs
       activeKey={view}
-      linkComponent={Link as never}
+      linkComponent={Link}
       label={t("viewTabs")}
       items={[
         { key: "borc", label: t("viewDebts"), href: "/panel/borclar" },
@@ -381,7 +381,7 @@ export default async function DebtsPage({
                 total: data.meta.total,
               }),
             }}
-            linkComponent={Link as never}
+            linkComponent={Link}
           />
         </CardBody>
       </Card>

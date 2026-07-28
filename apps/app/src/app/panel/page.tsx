@@ -4,13 +4,15 @@ import { getTranslations } from "next-intl/server";
 
 import { hasPermission } from "@yonetim/auth/guard";
 import { siteConfig } from "@yonetim/config";
+import { HEALTHY_COLLECTION_RATE } from "@yonetim/dues";
 import {
   Alert,
   Card,
   CardBody,
   CardHeader,
   EmptyState,
-  Stat,
+  KpiCard,
+  pageActionClasses,
 } from "@yonetim/ui";
 
 import { dashboardResponse } from "@yonetim/contracts";
@@ -59,6 +61,27 @@ export default async function DashboardPage() {
 
   const net = summary.collectedThisMonthMinor - summary.expenseThisMonthMinor;
 
+  /**
+   * Tahsilatın bir önceki aya göre değişimi.
+   *
+   * Önceki ay sıfırsa oran tanımsız (∞) — rozet hiç gösterilmiyor. "%∞ artış"
+   * yazmak teknik olarak doğru, bilgi olarak değersiz.
+   */
+  const collectedSeries = charts?.monthly.collectedMinor ?? [];
+  const currentCollected = collectedSeries[collectedSeries.length - 1] ?? 0;
+  const previousCollected = collectedSeries[collectedSeries.length - 2] ?? 0;
+  const collectedDelta =
+    previousCollected > 0
+      ? {
+          ratio: (currentCollected - previousCollected) / previousCollected,
+          formatted: f.percent(
+            Math.abs((currentCollected - previousCollected) / previousCollected),
+            1,
+          ),
+          label: t("deltaPrevMonth"),
+        }
+      : undefined;
+
   // Hızlı işlemler yalnız yetkili olanlar için (GAP 4.3.4).
   const quickActions = [
     {
@@ -98,9 +121,7 @@ export default async function DashboardPage() {
             key={action.href}
             href={action.href}
             className={
-              action.primary
-                ? "inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-fg hover:bg-primary-hover"
-                : "inline-flex h-10 items-center gap-2 rounded-lg border border-border-strong bg-surface px-3 text-sm font-semibold text-fg hover:bg-hover"
+              action.primary ? pageActionClasses.primary : pageActionClasses.secondary
             }
           >
             {action.icon}
@@ -119,30 +140,52 @@ export default async function DashboardPage() {
         </div>
       ) : null}
 
+      {/*
+       * KPI şeridi: dört kart, ikisi gömülü trendle.
+       *
+       * Trend yalnız seri **varsa** çiziliyor; `charts` boş sitelerde `null`
+       * dönüyor ve o durumda kart sade sayıya düşüyor. Delta son iki ayın
+       * karşılaştırması — `KpiCard` yönün iyi mi kötü mü olduğunu bilmiyor,
+       * `positiveIsGood` ile söylüyoruz (tahsilatta artış iyi, borçta kötü).
+       */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Stat
+        <KpiCard
           label={t("totalReceivable")}
           value={f.money(summary.totalDebtMinor)}
           hint={ctx.tenantName}
           tone={summary.totalDebtMinor > 0 ? "warning" : "success"}
+          href="/panel/borclar"
+          linkComponent={Link}
         />
-        <Stat
+        <KpiCard
           label={t("overdueReceivable")}
           value={f.money(summary.overdueDebtMinor)}
           hint={t("overdueHint")}
           tone={summary.overdueDebtMinor > 0 ? "danger" : "success"}
+          href="/panel/borclar?durum=gecikmis"
+          linkComponent={Link}
         />
-        <Stat
+        <KpiCard
           label={t("collectedThisMonth")}
           value={f.money(summary.collectedThisMonthMinor)}
-          hint={t("accruedHint", {
-            amount: f.money(summary.accruedThisMonthMinor),
-          })}
+          hint={t("accruedHint", { amount: f.money(summary.accruedThisMonthMinor) })}
+          delta={collectedDelta}
+          trend={
+            charts
+              ? { values: charts.monthly.collectedMinor, label: t("chartCollected") }
+              : undefined
+          }
         />
-        <Stat
+        <KpiCard
           label={t("collectionRate")}
           value={f.percent(summary.collectionRate)}
-          tone={summary.collectionRate >= 0.85 ? "success" : "warning"}
+          tone={summary.collectionRate >= HEALTHY_COLLECTION_RATE ? "success" : "warning"}
+          hint={t("chartTargetLabel") + " " + f.percent(HEALTHY_COLLECTION_RATE)}
+          trend={
+            charts
+              ? { values: charts.monthly.collectionRatePct, label: t("collectionRate") }
+              : undefined
+          }
         />
       </div>
 
@@ -252,15 +295,27 @@ export default async function DashboardPage() {
               openKurus: charts.collectionSplit.openMinor,
               overdueKurus: charts.collectionSplit.overdueMinor,
             }}
+            collectionTarget={HEALTHY_COLLECTION_RATE}
             labels={{
               incomeExpenseTitle: t("chartIncomeExpense"),
               incomeExpenseHint: t("chartIncomeExpenseHint"),
               accrued: t("chartAccrued"),
               collected: t("chartCollected"),
+              outstanding: t("chartOutstanding"),
               expense: t("chartExpense"),
-              collectionRateTitle: t("chartCollectionRate"),
-              collectionRateHint: t("chartCollectionRateHint"),
+              mixTitle: t("chartMix"),
+              mixHint: t("chartMixHint"),
               rate: t("collectionRate"),
+              rateTitle: t("chartCollectionRate"),
+              rateHint: t("chartCollectionRateHint"),
+              targetTitle: t("chartTarget"),
+              targetHint: t("chartTargetHint"),
+              target: t("chartTargetLabel"),
+              aboveTarget: t("chartAboveTarget"),
+              belowTarget: t("chartBelowTarget"),
+              flowTitle: t("chartFlow"),
+              flowHint: t("chartFlowHint"),
+              step: t("chartStep"),
               agingTitle: t("chartAging"),
               agingHint: t("chartAgingHint"),
               agingBuckets: {

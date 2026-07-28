@@ -66,7 +66,7 @@ artık geçerli olmadığı:
 | # | Eski karar | Neden değişti |
 | --- | --- | --- |
 | **1** | react-hook-form yok; tek doğruluk kaynağı sunucudaki Zod | Gerekçe "aynı kuralı istemcide ikinci kez yazmak"tı. `packages/contracts` ile şema **artık tek nesne** ve iki taraf onu import ediyor. Duplikasyon gerekçesi ortadan kalktı. Sunucu hâlâ bağlayıcı otorite (§7). |
-| **2** | Grafik kütüphanesi yok; 816 satır elle SVG | Recharts'ın ~100 kB'ı gerekçeydi. Ama kalan yol haritası forecast bandı, takvim ısı haritası, gauge, yığılmış kırılım istiyor — elle SVG'de her biri yeni bir 200 satır. ECharts tree-shaken ve **decal (desen dolgu)** desteğiyle erişilebilirlik hedefini kütüphanenin kendisi taşıyor (§13). |
+| **2** | Grafik kütüphanesi yok; 816 satır elle SVG | Recharts'ın ~100 kB'ı gerekçeydi. Ama kalan yol haritası forecast bandı, yığılmış kırılım, waterfall, çok serili yatay sütun istiyor — elle SVG'de her biri yeni bir 200 satır ve her biri ayrı ayrı hatalıydı. **UI Faz 0.3'te uygulandı: motor Recharts** (ECharts değil — gerekçe §13). |
 | **3** | Radix yok; overlay ailesi elle (~250 satır) | Tam design system kararıyla birlikte odak tuzağı/ARIA bakımı Radix'e devrediliyor. |
 | **5** | "Server Action UI için, REST dış dünya için" | Artık **tek** yol var: REST. Server Action'lar korunuyor ama içleri SQL değil, API çağrısı (§9). |
 | **11** | Sakin API'sinde yazma ucu yok (KVKK md.10) | Bu karar **korunuyor** — ama gerekçesi değişiyor: artık yazma ucu var, yalnızca aydınlatma onayı kanıtı (`consent_version` + `consent_at` + metin sürümü) zorunlu alan. API anahtarı bunu sağlayamıyorsa 422 döner. |
@@ -830,28 +830,41 @@ sayfalarda `next/dynamic` ile yüklenir; panel iskeletine girmez.
 
 ---
 
-## 13. Grafik katmanı — neden ECharts
+## 13. Grafik katmanı — Recharts (uygulandı, UI Faz 0.3)
 
-Recharts daha kolay entegre olurdu. ECharts'ı seçmemin üç somut nedeni:
+Bu bölüm önce "neden ECharts" diyordu. **Uygulanan karar Recharts oldu**;
+gerekçeyi sessizce değiştirmemek için eski üç maddenin her birinin ne olduğunu
+yazıyorum:
 
-1. **`aria.decal` — desen dolgusu.** ECharts serilere otomatik desen atayabiliyor.
-   Bu, GAP-DURUM kararı 4'teki asıl sorunu (açık temada 3 seri rengi 3:1
-   kontrastın altında) *kütüphane seviyesinde* çözüyor: kimlik renkle değil
-   desenle de taşınıyor. Elle SVG'de bunu yazmak yeni bir proje.
-2. **Yol haritasının ihtiyacı.** Forecast güven bandı (5.4 bütçe simülatörü),
-   takvim ısı haritası (bakım/rezervasyon yoğunluğu), gauge (NPS, tahsilat oranı),
-   yığılmış kırılım (gider kategorileri), sankey (nakit akışı) — Recharts'ta bunların
-   yarısı yok.
-3. **Canvas render.** 200 daire × 12 ay veri setinde SVG DOM'u şişiyor; canvas
-   şişmiyor.
+1. **`aria.decal` (desen dolgusu) ECharts'ın kazancıydı** — açık temada üç seri
+   rengi 3:1'in altında kaldığı için kimliği desenle de taşımak. Bu sorun
+   burada **başka türlü** çözülü: `ChartFrame` lejantı ve **tablo görünümünü**
+   zorunlu tutuyor ("relief" kuralı), yani kimlik hiçbir zaman yalnız renge
+   bağlı değil. Deseni kütüphaneden almak güzel olurdu; olmadan da kural
+   sağlanıyor.
+2. **Yol haritasının ihtiyacı** — forecast bandı, yığılmış kırılım, waterfall,
+   çok serili yatay sütun, bullet. Recharts'ta ilk dördü doğrudan var;
+   bullet ve sparkline zaten kütüphane istemeyecek kadar basit ve
+   `chart/primitives.tsx`'te tek `<svg>` olarak duruyor (motorsuz, sunucuda
+   render edilir). Takvim ısı haritası **yapılmadı**: sözleşmede günlük
+   çözünürlükte veri yok, uydurmak yerine bırakıldı.
+3. **Canvas render** — 200 daire × 12 ay veri setinde SVG DOM'unun şişmesi.
+   Bugünkü ekranlarda seri başına ≤ 12 nokta var; ölçülmemiş bir sorun için
+   ödenecek bedel değildi.
 
-**Korunacak kurallar** (mevcut `chart.tsx` yorumundaki disiplin ECharts temasına
-taşınır): tek eksen — iki farklı ölçek asla iki y ekseninde; renk **seriye** bağlı,
+Buna karşılık Recharts'ın seçilme nedeni: React bileşen ağacı olarak
+yazılıyor, yani renkler `var(--color-chart-N)` **string'i** olarak geçebiliyor
+ve tema değişiminde CSS değişkeni kendiliğinden yeniden çözülüyor — canvas
+tabanlı bir motorda tema geçişi remount gerektirirdi.
+
+**Korunan kurallar** (eski `chart.tsx` yorumundaki disiplin aynen taşındı):
+tek eksen — iki farklı ölçek asla iki y ekseninde; renk **seriye** bağlı,
 sıralamaya değil; 2+ seride lejant zorunlu; her grafik `ChartFrame` içinde ve
 **tablo görünümü zorunlu**; marka laciverti seri rengi olarak kullanılmaz.
 
-`ChartFrame` API'si **aynı kalır** — içi ECharts'a döner. Böylece 24 sayfadaki
-kullanım yerleri değişmez.
+`ChartFrame` API'si **aynı kaldı**; çağrı yerleri değişmedi. Motorun bedeli
+(~95 kB, SSR yok) `chart/lazy.tsx`'te karşılanıyor: hidrasyon kapısı +
+grafikle birebir aynı yükseklikte iskelet (CLS bütçesi 0.1).
 
 ---
 
@@ -947,19 +960,23 @@ açılışta sayfa sıçrıyordu. Dış API aynı kaldı. Kalan primitifler (tab
 select, tooltip, dropdown) bugün **mevcut değil** — kullanıldıkları yerde
 Radix ile yazılmaları doğru olur, şimdi boş kabuk üretmek değil.
 
-**C2 ve C4 — bilinçli olarak YAPILMADI.** Bu iki faz, kod tabanında zaten
-verilmiş ve gerekçesi hâlâ geçerli olan iki kararı tersine çeviriyor:
+**C2 — YAPILDI (UI Faz 0.3), ama ECharts ile değil.** Karar tersine çevrildi ve
+gerekçe blokları aynı commit'te güncellendi (aşağıdaki kural gereği):
+`chart.tsx` silindi, yerine `chart/{palette,frame,primitives,marks,lazy}`
+geldi; motor **Recharts**. Neyin neden değiştiği §13'te; ölçülen kusurlar
+(çok serili yatay sütunun yutulması, sabit `viewBox`) `UI-MODERNIZASYON-PLANI.md`
+Faz 3 hata listesinde #5 ve #6'ydı.
+
+**C4 — bilinçli olarak YAPILMADI.** Bu faz, kod tabanında zaten verilmiş ve
+gerekçesi hâlâ geçerli olan bir kararı tersine çeviriyor:
 
 | Faz | Mevcut karar (kodda yazılı) | Neden hâlâ geçerli |
 | --- | --- | --- |
-| **C2** ECharts | `chart.tsx`: "harici grafik kütüphanesi yok" — dört form düz SVG ile ~400 satırda, sunucuda render edilebiliyor | ECharts ~340 kB (gzip ~100 kB) ve **istemci-only**; sunucuda render edilemediği için ilk boyamada grafik yeri boş kalır. Kazanç: daha zengin etkileşim. Bedel: bundle + SSR kaybı + `ChartFrame`'in zorunlu kıldığı tablo görünümünün yeniden kurulması |
 | **C4** react-hook-form | `form.ts`: "RHF kullanılmıyor" — React 19 `useActionState` ile doğrulama tek yerde (sunucuda, Zod ile), JS kapalıyken de çalışıyor | RHF aynı kuralları istemcide **ikinci kez** yazmayı, ~14 kB bundle'ı ve JS kapalıyken çalışmayan bir formu geri getirir. Kazanç: anlık alan doğrulaması — ki `packages/ui` alanlarında (TCKN/IBAN/telefon) zaten var |
 
-İkisi de yapılabilir işler; yapılmamalarının nedeni zorluk değil, **karşılığın
-bedelden küçük olması**. Bir ürün kararı bunları isterse (örneğin gerçek
-zamanlı grafik etkileşimi bir gereksinim hâline gelirse) tersine çevrilebilir
-— ama o zaman `chart.tsx` ve `form.ts`'teki gerekçe blokları da güncellenmeli,
-sessizce geçersiz bırakılmamalı.
+Yapılmamasının nedeni zorluk değil, **karşılığın bedelden küçük olması**. Bir
+ürün kararı bunu isterse tersine çevrilebilir — ama o zaman `form.ts`'teki
+gerekçe bloğu da güncellenmeli, sessizce geçersiz bırakılmamalı.
 
 **C3 — sıraya alındı.** TanStack Table'ın asıl kazancı sütun görünürlüğü,
 sanallaştırma ve karmaşık sıralama. Bugünkü tablolar sunucu sayfalamalı ve

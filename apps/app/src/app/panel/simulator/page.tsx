@@ -1,7 +1,7 @@
 import { getTranslations } from "next-intl/server";
 
 import { currentPeriod, tlToKurus } from "@yonetim/core";
-import { simulate } from "@yonetim/dues";
+import { HEALTHY_COLLECTION_RATE, simulate } from "@yonetim/dues";
 import {
   Alert,
   Card,
@@ -51,7 +51,7 @@ export default async function SimulatorPage({
   const collectionPct =
     num(params.tahsilat) ??
     Math.round(
-      (summary.collectionRate > 0 ? summary.collectionRate : 0.85) * 100,
+      (summary.collectionRate > 0 ? summary.collectionRate : HEALTHY_COLLECTION_RATE) * 100,
     );
   const inflationPct = num(params.enflasyon) ?? 35;
   const extraTl = num(params.ek) ?? 0;

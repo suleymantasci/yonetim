@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import {
   Alert,
@@ -44,6 +44,9 @@ export function ResidentForm({
   presetUnitId,
   cancelHref,
   submitLabel,
+  stayOnSuccess,
+  onCreated,
+  footer,
 }: {
   action: ServerAction<{ id: string }>;
   units: { id: string; number: string; blockName: string | null }[];
@@ -62,8 +65,13 @@ export function ResidentForm({
     hasTckn: boolean;
   };
   presetUnitId?: string;
-  cancelHref: string;
+  cancelHref?: string;
   submitLabel: string;
+  /** Çekmece içinde açıldığında: kayıt sonrası sayfa değiştirme. */
+  stayOnSuccess?: boolean;
+  onCreated?: (id: string) => void;
+  /** Varsayılan yapışkan alt bar yerine özel bir alt bar. */
+  footer?: ReactNode;
 }) {
   const t = useTranslations("app.residents");
   const tCommon = useTranslations("common");
@@ -83,6 +91,11 @@ export function ResidentForm({
       action={action}
       submitLabel={submitLabel}
       cancelHref={cancelHref}
+      stayOnSuccess={stayOnSuccess}
+      footer={footer}
+      onSuccess={(state) => {
+        if (state.data?.id) onCreated?.(state.data.id);
+      }}
     >
       {isEdit ? <input type="hidden" name="id" value={defaults.id} /> : null}
 

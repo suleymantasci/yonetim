@@ -318,7 +318,7 @@ export default async function UnitsPage({
                 total: data.meta.total,
               }),
             }}
-            linkComponent={Link as never}
+            linkComponent={Link}
           />
         </CardBody>
       </Card>

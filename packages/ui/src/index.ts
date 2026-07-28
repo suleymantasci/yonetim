@@ -18,9 +18,10 @@ export * from "./components/toast";
 export * from "./components/skeleton";
 export * from "./components/fields";
 export * from "./components/navigation";
+export * from "./components/page-header";
 export * from "./components/list-toolbar";
 export * from "./components/timeline";
-export * from "./components/chart";
+export * from "./components/chart/index";
 export * from "./components/error-state";
 
 /*

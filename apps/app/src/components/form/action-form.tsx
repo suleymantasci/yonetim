@@ -8,7 +8,7 @@ import {
 } from "react";
 import { useFormStatus } from "react-dom";
 
-import { Alert, Field, Spinner, useToast } from "@yonetim/ui";
+import { Alert, Field, Spinner, StickyFormBar, useToast } from "@yonetim/ui";
 
 import type { ActionState } from "@/lib/form";
 
@@ -50,6 +50,15 @@ export function ActionForm<T = undefined>({
   resetOnSuccess = false,
   /** Toast yerine form içinde başarı kutusu göster. */
   inlineSuccess = false,
+  /**
+   * Başarıda `redirectTo` izlenmesin — akış aynı ekranda sürüyor.
+   *
+   * Çekmece/modal içinde açılan formlar için: `createUnit` "detay sayfasına
+   * git" diyor, ama kullanıcı listeden bir çekmece açtıysa listede kalmak ve
+   * "şimdi bu birime sakin ekle" diyebilmek istiyor. Yönlendirme kararı
+   * sunucuda kalıyor (tek kaynak), onu **izleyip izlememe** kararı çağıranda.
+   */
+  stayOnSuccess = false,
   footer,
   className,
 }: {
@@ -65,6 +74,7 @@ export function ActionForm<T = undefined>({
   onSuccess?: (state: ActionState<T>) => void;
   resetOnSuccess?: boolean;
   inlineSuccess?: boolean;
+  stayOnSuccess?: boolean;
   footer?: ReactNode | ((state: ActionState<T>) => ReactNode);
   className?: string;
 }) {
@@ -85,7 +95,7 @@ export function ActionForm<T = undefined>({
       if (!inlineSuccess && state.message) toast.success(state.message);
       if (resetOnSuccess) formRef.current?.reset();
       onSuccess?.(state);
-      if (state.redirectTo) router.push(state.redirectTo);
+      if (state.redirectTo && !stayOnSuccess) router.push(state.redirectTo);
       else router.refresh();
       return;
     }
@@ -93,7 +103,7 @@ export function ActionForm<T = undefined>({
     // Hata: özet kutusuna odak taşı; alan hataları zaten alanların altında.
     if (state.message && !state.fieldErrors) toast.error(state.message);
     summaryRef.current?.focus();
-  }, [state, inlineSuccess, onSuccess, resetOnSuccess, router, toast]);
+  }, [state, inlineSuccess, onSuccess, resetOnSuccess, stayOnSuccess, router, toast]);
 
   const fieldErrors = state.fieldErrors ?? {};
   const formLevelErrors = fieldErrors._form ?? [];
@@ -124,7 +134,9 @@ export function ActionForm<T = undefined>({
         {typeof children === "function" ? children(state) : children}
 
         {(typeof footer === "function" ? footer(state) : footer) ?? (
-          <div className="sticky bottom-0 z-10 -mx-4 mt-6 flex flex-wrap items-center justify-end gap-2 border-t border-border bg-surface/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
+          // Yapışkan kaydet çubuğu `packages/ui`'deki `StickyFormBar`;
+          // burada ikinci bir kopyası duruyordu ve ikisi ayrışmıştı.
+          <StickyFormBar>
             {cancelHref ? (
               <a
                 href={cancelHref}
@@ -134,7 +146,7 @@ export function ActionForm<T = undefined>({
               </a>
             ) : null}
             <SubmitButton label={submitLabel} />
-          </div>
+          </StickyFormBar>
         )}
       </form>
     </FormContext.Provider>

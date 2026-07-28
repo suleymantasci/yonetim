@@ -4,7 +4,7 @@ import { Paperclip, Split } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 
-import { Badge, DataCard, SortableTh, tableClasses as tc } from "@yonetim/ui";
+import { Badge, DataTable, type DataColumn } from "@yonetim/ui";
 
 import { BulkSelection } from "@/components/list/bulk-selection";
 import { buildListHref, type ListParams } from "@/lib/list-params";
@@ -13,9 +13,12 @@ import { deleteExpenses, setExpenseStatus } from "./actions";
 /**
  * Gider tablosu.
  *
- * "Dağıtıldı" durumu ayrı bir sütun değil, satır sonundaki simge: yöneticinin
- * aradığı bilgi "hangi giderler henüz sakinlere yansımadı?" — o yüzden
- * dağıtılmamış giderler vurgulanır, dağıtılmışlar sakinleşir.
+ * "Dağıtıldı" durumu ayrı bir sütun değil, açıklamanın yanındaki simge:
+ * yöneticinin aradığı bilgi "hangi giderler henüz sakinlere yansımadı?" —
+ * o yüzden dağıtılmamış giderler vurgulanır, dağıtılmışlar sakinleşir.
+ *
+ * Tablo iskeleti `DataTable`'da; burada yalnız gidere özgü sütunlar ve
+ * onay/ödeme toplu işlemleri duruyor.
  */
 export interface ExpenseRowView {
   id: string;
@@ -106,178 +109,100 @@ export function ExpensesTable({
     },
   ];
 
-  if (rows.length === 0) {
-    return (
-      <p className="px-4 py-10 text-center text-sm text-fg-subtle">
-        {labels.empty}
-      </p>
-    );
-  }
+  const columns: DataColumn<ExpenseRowView>[] = [
+    {
+      key: "description",
+      header: labels.description,
+      primary: true,
+      render: (row) => (
+        <>
+          {row.description}
+          <span className="ml-1.5 inline-flex items-center gap-1 align-middle">
+            {row.hasAttachment ? (
+              <span title={labels.attachmentTooltip} className="text-fg-subtle">
+                <Paperclip aria-label={labels.attachmentTooltip} className="h-3.5 w-3.5" />
+              </span>
+            ) : null}
+            <span
+              title={row.distributed ? labels.distributedTooltip : labels.notDistributedTooltip}
+              className={row.distributed ? "text-success-fg" : "text-warning-fg"}
+            >
+              <Split
+                aria-label={
+                  row.distributed ? labels.distributedTooltip : labels.notDistributedTooltip
+                }
+                className="h-3.5 w-3.5"
+              />
+            </span>
+          </span>
+        </>
+      ),
+    },
+    {
+      key: "expenseDate",
+      header: labels.expenseDate,
+      sortKey: "expenseDate",
+      render: (row) => <span className="text-fg-muted">{row.expenseDate}</span>,
+    },
+    {
+      key: "category",
+      header: labels.category,
+      sortKey: "category",
+      render: (row) =>
+        row.categoryName ? (
+          <span className="inline-flex items-center gap-1.5">
+            <span
+              aria-hidden
+              className="h-2 w-2 shrink-0 rounded-sm border border-border"
+              // Kategori rengi kullanıcı verisi (veritabanından), token değil.
+              style={row.categoryColor ? { backgroundColor: row.categoryColor } : undefined}
+            />
+            {row.categoryName}
+          </span>
+        ) : (
+          <span className="text-fg-subtle">—</span>
+        ),
+    },
+    {
+      key: "vendor",
+      header: labels.vendor,
+      sortKey: "vendor",
+      render: (row) => <span className="text-fg-muted">{row.vendorName ?? "—"}</span>,
+    },
+    {
+      key: "amount",
+      header: labels.amount,
+      sortKey: "amount",
+      numeric: true,
+      render: (row) => <span className="font-medium">{row.amount}</span>,
+    },
+    { key: "vat", header: labels.vat, numeric: true, render: (row) => row.vat },
+    {
+      key: "status",
+      header: labels.status,
+      sortKey: "status",
+      hideInCard: true,
+      render: (row) => <Badge tone={row.statusTone}>{row.statusLabel}</Badge>,
+    },
+  ];
 
   return (
     <BulkSelection rows={rows} actions={actions}>
-      {({ isSelected, headerCheckbox, rowCheckbox }) => (
-        <>
-          <div className="hidden md:block">
-            <div className={tc.wrapper}>
-              <table className={tc.table} style={{ minWidth: 900 }}>
-                <thead className={tc.thead}>
-                  <tr>
-                    <th scope="col" className="w-10 px-4 py-2">
-                      {headerCheckbox}
-                    </th>
-                    <SortableTh
-                      label={labels.expenseDate}
-                      columnKey="expenseDate"
-                      activeKey={sort}
-                      direction={direction}
-                      hrefFor={hrefFor}
-                      linkComponent={Link as never}
-                    />
-                    <th scope="col" className={tc.th}>
-                      {labels.description}
-                    </th>
-                    <SortableTh
-                      label={labels.category}
-                      columnKey="category"
-                      activeKey={sort}
-                      direction={direction}
-                      hrefFor={hrefFor}
-                      linkComponent={Link as never}
-                    />
-                    <SortableTh
-                      label={labels.vendor}
-                      columnKey="vendor"
-                      activeKey={sort}
-                      direction={direction}
-                      hrefFor={hrefFor}
-                      linkComponent={Link as never}
-                    />
-                    <SortableTh
-                      label={labels.amount}
-                      columnKey="amount"
-                      activeKey={sort}
-                      direction={direction}
-                      hrefFor={hrefFor}
-                      align="right"
-                      linkComponent={Link as never}
-                    />
-                    <th scope="col" className={`${tc.th} text-right`}>
-                      {labels.vat}
-                    </th>
-                    <SortableTh
-                      label={labels.status}
-                      columnKey="status"
-                      activeKey={sort}
-                      direction={direction}
-                      hrefFor={hrefFor}
-                      linkComponent={Link as never}
-                    />
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((row) => (
-                    <tr
-                      key={row.id}
-                      className={`${tc.tr} ${isSelected(row.id) ? "bg-selected" : "hover:bg-hover"}`}
-                    >
-                      <td className="px-4 py-2.5">{rowCheckbox(row.id)}</td>
-                      <td className={tc.tdMuted}>{row.expenseDate}</td>
-                      <td className={tc.td}>
-                        <Link
-                          href={`/panel/giderler/${row.id}`}
-                          className="font-medium hover:underline"
-                        >
-                          {row.description}
-                        </Link>
-                        <span className="ml-1.5 inline-flex items-center gap-1 align-middle">
-                          {row.hasAttachment ? (
-                            <span
-                              title={labels.attachmentTooltip}
-                              className="text-fg-subtle"
-                            >
-                              <Paperclip
-                                aria-label={labels.attachmentTooltip}
-                                className="h-3.5 w-3.5"
-                              />
-                            </span>
-                          ) : null}
-                          <span
-                            title={
-                              row.distributed
-                                ? labels.distributedTooltip
-                                : labels.notDistributedTooltip
-                            }
-                            className={
-                              row.distributed
-                                ? "text-success-fg"
-                                : "text-warning-fg"
-                            }
-                          >
-                            <Split
-                              aria-label={
-                                row.distributed
-                                  ? labels.distributedTooltip
-                                  : labels.notDistributedTooltip
-                              }
-                              className="h-3.5 w-3.5"
-                            />
-                          </span>
-                        </span>
-                      </td>
-                      <td className={tc.td}>
-                        {row.categoryName ? (
-                          <span className="inline-flex items-center gap-1.5">
-                            <span
-                              aria-hidden
-                              className="h-2 w-2 shrink-0 rounded-sm border border-border"
-                              style={
-                                row.categoryColor
-                                  ? { backgroundColor: row.categoryColor }
-                                  : undefined
-                              }
-                            />
-                            {row.categoryName}
-                          </span>
-                        ) : (
-                          <span className="text-fg-subtle">—</span>
-                        )}
-                      </td>
-                      <td className={tc.tdMuted}>{row.vendorName ?? "—"}</td>
-                      <td className={`${tc.tdNum} font-medium`}>
-                        {row.amount}
-                      </td>
-                      <td className={tc.tdNum}>{row.vat}</td>
-                      <td className={tc.td}>
-                        <Badge tone={row.statusTone}>{row.statusLabel}</Badge>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="space-y-2 p-3 md:hidden">
-            {rows.map((row) => (
-              <DataCard
-                key={row.id}
-                title={row.description}
-                subtitle={row.categoryName ?? undefined}
-                href={`/panel/giderler/${row.id}`}
-                linkComponent={Link as never}
-                leading={rowCheckbox(row.id)}
-                badge={<Badge tone={row.statusTone}>{row.statusLabel}</Badge>}
-                rows={[
-                  { label: labels.amount, value: row.amount },
-                  { label: labels.expenseDate, value: row.expenseDate },
-                  { label: labels.vendor, value: row.vendorName ?? "—" },
-                  { label: labels.period, value: row.period },
-                ]}
-              />
-            ))}
-          </div>
-        </>
+      {({ isSelected, isBusy, headerCheckbox, rowCheckbox }) => (
+        <DataTable
+          columns={columns}
+          rows={rows}
+          sort={sort}
+          direction={direction}
+          hrefFor={hrefFor}
+          linkComponent={Link}
+          selection={{ isSelected, isBusy, headerCheckbox, rowCheckbox }}
+          rowHref={(row) => `/panel/giderler/${row.id}`}
+          cardSubtitle={(row) => row.categoryName ?? undefined}
+          cardBadge={(row) => <Badge tone={row.statusTone}>{row.statusLabel}</Badge>}
+          cardBreakpoint="lg"
+          empty={<p className="px-4 py-10 text-center text-sm text-fg-subtle">{labels.empty}</p>}
+        />
       )}
     </BulkSelection>
   );

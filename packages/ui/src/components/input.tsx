@@ -4,13 +4,29 @@ import type {
 
 import { cn } from "../cn";
 
+/**
+ * Ortak alan görünümü — UI Faz 2.4 (görsel katman; davranış değişmedi).
+ *
+ * Üç düzeltme:
+ *  · **Yükseklik `h-10`** — düğmeler zaten `h-10`; alan `py-2` ile 36px'te
+ *    kalıyordu ve yan yana duran "Ara" alanı ile "Filtrele" düğmesi bir
+ *    piksel kaymış görünüyordu.
+ *  · **`rounded-lg`** — kart, düğme ve çekmece `rounded-lg/xl` iken alanlar
+ *    `rounded` (4px) idi; tek uyumsuz yarıçap tüm formu eski gösteriyordu.
+ *  · **`aria-invalid` görsel karşılığı** — hata durumunda kenarlığı
+ *    `ActionForm`'daki `[&_input]:border-danger` seçicisi boyuyordu, yani
+ *    doğrulama görüntüsü form kabuğuna bağımlıydı. Artık alanın kendisi
+ *    `aria-invalid`'e tepki veriyor.
+ */
 const field =
-  "w-full rounded border border-border-strong bg-surface px-3 py-2 text-sm text-fg " +
-  "placeholder:text-fg-subtle focus:border-primary focus:outline-none focus:ring-2 " +
-  "focus:ring-ring/40 disabled:bg-surface-sunken disabled:text-fg-subtle";
+  "w-full rounded-lg border border-border-strong bg-surface px-3 py-2 text-sm text-fg " +
+  "transition-colors placeholder:text-fg-subtle hover:border-fg-subtle " +
+  "focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/40 " +
+  "aria-[invalid=true]:border-danger " +
+  "disabled:cursor-not-allowed disabled:bg-surface-sunken disabled:text-fg-subtle";
 
 export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
-  return <input className={cn(field, className)} {...props} />;
+  return <input className={cn(field, "h-10", className)} {...props} />;
 }
 
 export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
@@ -18,7 +34,7 @@ export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTex
 }
 
 export function Select({ className, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select className={cn(field, className)} {...props} />;
+  return <select className={cn(field, "h-10", className)} {...props} />;
 }
 
 export function Field({

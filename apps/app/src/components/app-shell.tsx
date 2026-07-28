@@ -5,11 +5,10 @@ import type { ReactNode } from "react";
 import { siteConfig } from "@yonetim/config";
 import type { Role, TenantStatus } from "@yonetim/core";
 import {
-  A11yMenu, Badge, Breadcrumb, ThemeToggle, type A11yPreferences, type Crumb,
-  type ThemePreference,
+  A11yMenu, Badge, BrandMark, PageHeader as UiPageHeader, ThemeToggle,
+  type A11yPreferences, type ThemePreference,
 } from "@yonetim/ui";
 
-import { LocaleSwitcher } from "@/components/locale-switcher";
 import { markAllNotificationsRead, markNotificationRead } from "@/components/shell/actions";
 import { CommandPalette, type PaletteEntry } from "@/components/shell/command-palette";
 import { NotificationBell } from "@/components/shell/notification-bell";
@@ -18,10 +17,13 @@ import {
 } from "@/components/shell/nav";
 import { ShellFrame } from "@/components/shell/shell-frame";
 import type { SidebarItem } from "@/components/shell/sidebar";
+import { UserMenu } from "@/components/shell/user-menu";
 import { formatters } from "@/lib/format";
 import {
   notificationCategory, notificationHref, type InAppNotification, type NavBadges,
 } from "@/lib/shell-data";
+
+type UiPageHeaderProps = Parameters<typeof UiPageHeader>[0];
 
 /** Rozet acil mi — renk kararı tek yerde. */
 const BADGE_TONE: Record<NavBadgeKey, "danger" | "warning" | "info"> = {
@@ -111,18 +113,27 @@ export async function AppShell({
     })),
   ];
 
+  /**
+   * Kenar çubuğu başlığı: gerçek marka işareti + **hangi sitedeyim** bilgisi.
+   *
+   * Önceki sürüm markanın baş harfini bir kutuya yazıyordu (`Y`); gerçek
+   * `BrandMark` zaten `packages/ui`'de duruyordu ve landing'de kullanılıyordu.
+   * Bir yönetici birden çok siteyi yönetebildiği için site adı en üstte ve
+   * durumu rozetle birlikte veriliyor — "yanlış sitede işlem yapmak" bu
+   * üründeki en pahalı kullanıcı hatası.
+   */
   const brandHeader = (
-    <div className="flex h-16 items-center gap-2 border-b border-border px-4">
+    <div className="flex h-16 items-center gap-2.5 border-b border-border px-4">
       <Link
         href="/panel"
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-fg"
+        className="shrink-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         aria-label={siteConfig.brand.shortName}
       >
-        {siteConfig.brand.shortName.charAt(0)}
+        <BrandMark size={32} />
       </Link>
       <div className="min-w-0">
-        <div className="truncate text-sm font-semibold text-fg">{tenantName}</div>
-        <div className="text-xs text-fg-subtle">
+        <div className="truncate text-sm font-semibold leading-tight text-fg">{tenantName}</div>
+        <div className="mt-0.5 text-[11px] leading-tight text-fg-subtle">
           {tEnum(`tenantStatus.${tenantStatus as TenantStatus}`)}
         </div>
       </div>
@@ -153,10 +164,16 @@ export async function AppShell({
       }}
       headerLeft={
         <>
-          <Link href="/panel" className="truncate font-heading font-bold text-fg lg:hidden">
+          {/*
+           * Palet `lg` altında tümüyle gizliydi — yani 26 sayfalık gezinmenin
+           * en hızlı yolu tabletlerde hiç yoktu. Artık `sm`'den itibaren
+           * görünüyor; dar ekranda düğme yalnız büyütece iniyor (kendi
+           * `sm:` sınıflarıyla), site adı ise yalnız en dar ekranda kalıyor.
+           */}
+          <Link href="/panel" className="truncate font-heading font-bold text-fg sm:hidden">
             {tenantName}
           </Link>
-          <div className="hidden lg:block">
+          <div className="hidden sm:block">
             <CommandPalette
               entries={paletteEntries}
               labels={{
@@ -208,17 +225,6 @@ export async function AppShell({
             }}
           />
 
-          <span className="hidden text-sm text-fg-muted xl:block">
-            {userName}
-            {primaryRole ? (
-              <span className="ml-2 rounded bg-surface-sunken px-1.5 py-0.5 text-[11px]">
-                {tEnum(`role.${primaryRole}`)}
-              </span>
-            ) : null}
-          </span>
-
-          <LocaleSwitcher className="hidden sm:inline-flex" />
-
           <A11yMenu
             initial={a11yPreferences}
             labels={{
@@ -232,6 +238,11 @@ export async function AppShell({
               },
               highContrast: t("shell.highContrast"),
               reducedMotion: t("shell.reducedMotion"),
+              density: t("shell.density"),
+              densityOption: {
+                comfortable: t("shell.densityOption.comfortable"),
+                compact: t("shell.densityOption.compact"),
+              },
             }}
           />
 
@@ -245,11 +256,14 @@ export async function AppShell({
             }}
           />
 
-          <form action="/api/oturum/cikis" method="post">
-            <button className="rounded-lg border border-border-strong px-3 py-1.5 text-sm text-fg hover:bg-hover">
-              {tCommon("action.logout")}
-            </button>
-          </form>
+          <UserMenu
+            userName={userName}
+            roleLabel={primaryRole ? tEnum(`role.${primaryRole}`) : undefined}
+            labels={{
+              trigger: t("shell.userMenu"),
+              logout: tCommon("action.logout"),
+            }}
+          />
         </>
       }
       banner={
@@ -278,42 +292,13 @@ function quickActionOwner(href: string): string {
 }
 
 /**
- * Sayfa başlığı bloğu — breadcrumb + başlık + açıklama + birincil aksiyon.
+ * Sayfa başlığı bloğu — artık `packages/ui`'de (`components/page-header.tsx`).
  *
- * GAP 4.3.1: her liste/detay sayfasının sağ üstünde birincil aksiyon
- * (`Yeni Birim`, `Yeni Gider`) ve derin sayfalarda breadcrumb bulunmalı.
+ * Burada yalnız Next `Link`'i enjekte eden ince bir sarmalayıcı kaldı: 40'a
+ * yakın sayfa `@/components/app-shell`'den `PageHeader` alıyor ve hepsini
+ * dolaşmak yerine ithal yolu korundu. Kırıntı yolunun `Link` kullanması
+ * gezinmenin istemci tarafında kalması için önemli.
  */
-export function PageHeader({
-  title,
-  description,
-  action,
-  breadcrumb,
-  meta,
-}: {
-  title: string;
-  description?: string;
-  action?: ReactNode;
-  breadcrumb?: Crumb[];
-  /** Başlığın yanında rozet/durum bilgisi. */
-  meta?: ReactNode;
-}) {
-  return (
-    <div className="mb-6">
-      {breadcrumb && breadcrumb.length > 0 ? (
-        <Breadcrumb items={breadcrumb} linkComponent={Link as never} />
-      ) : null}
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="font-heading text-2xl font-extrabold text-fg">{title}</h1>
-            {meta}
-          </div>
-          {description ? (
-            <p className="mt-1 max-w-2xl text-sm text-fg-muted">{description}</p>
-          ) : null}
-        </div>
-        {action ? <div className="flex flex-wrap items-center gap-2">{action}</div> : null}
-      </div>
-    </div>
-  );
+export function PageHeader(props: Omit<UiPageHeaderProps, "linkComponent">) {
+  return <UiPageHeader {...props} linkComponent={Link} />;
 }

@@ -6,9 +6,11 @@ import { useEffect, useRef, useState } from "react";
 import { cn } from "../cn";
 import {
   A11Y_COOKIE,
+  DENSITIES,
   FONT_SCALES,
   serializeA11y,
   type A11yPreferences,
+  type Density,
   type FontScale,
 } from "./a11y";
 
@@ -30,6 +32,8 @@ function apply(preferences: A11yPreferences): void {
   else root.removeAttribute("data-contrast");
   if (preferences.reducedMotion) root.setAttribute("data-motion", "reduced");
   else root.removeAttribute("data-motion");
+  if (preferences.density === "compact") root.setAttribute("data-density", "compact");
+  else root.removeAttribute("data-density");
   document.cookie = `${A11Y_COOKIE}=${encodeURIComponent(serializeA11y(preferences))};path=/;max-age=${
     60 * 60 * 24 * 365
   };samesite=lax`;
@@ -46,6 +50,8 @@ export function A11yMenu({
     scale: Record<FontScale, string>;
     highContrast: string;
     reducedMotion: string;
+    density: string;
+    densityOption: Record<Density, string>;
   };
 }) {
   const [open, setOpen] = useState(false);
@@ -110,6 +116,35 @@ export function A11yMenu({
                   )}
                 >
                   {labels.scale[scale]}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+
+          <fieldset className="mt-3 border-t border-border pt-3">
+            <legend className="text-xs font-semibold uppercase tracking-wide text-fg-subtle">
+              {labels.density}
+            </legend>
+            <div
+              className="mt-2 grid grid-cols-2 gap-1"
+              role="radiogroup"
+              aria-label={labels.density}
+            >
+              {DENSITIES.map((density) => (
+                <button
+                  key={density}
+                  type="button"
+                  role="radio"
+                  aria-checked={preferences.density === density}
+                  onClick={() => update({ density })}
+                  className={cn(
+                    "rounded border py-1.5 text-xs font-semibold",
+                    preferences.density === density
+                      ? "border-primary bg-primary-soft text-primary-soft-fg"
+                      : "border-border text-fg-muted hover:bg-hover",
+                  )}
+                >
+                  {labels.densityOption[density]}
                 </button>
               ))}
             </div>

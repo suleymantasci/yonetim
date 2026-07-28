@@ -193,3 +193,14 @@ function finalize(
 export const DUES_FORMULAS: readonly DuesFormula[] = [
   "equal", "land_share", "area", "person_count", "meter", "mixed", "custom",
 ];
+
+/**
+ * Sağlıklı sayılan aylık tahsilat oranı.
+ *
+ * KMK bir eşik tanımlamıyor; bu bir **ürün** eşiği: altına düşen bir sitede
+ * gecikme faizi ve icra süreci kaçınılmaz hâle geliyor. Sayı üç ekranda
+ * (kontrol paneli rozeti, hedef panosu, bütçe simülatörü) elle `0.85` olarak
+ * yazılıydı — birini değiştirip diğerini unutmak, aynı ekranda iki farklı
+ * "hedef" göstermek demekti.
+ */
+export const HEALTHY_COLLECTION_RATE = 0.85;

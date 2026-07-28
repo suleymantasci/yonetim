@@ -241,7 +241,7 @@ export default async function ResidentsPage({
                 total: data.meta.total,
               }),
             }}
-            linkComponent={Link as never}
+            linkComponent={Link}
           />
         </CardBody>
       </Card>

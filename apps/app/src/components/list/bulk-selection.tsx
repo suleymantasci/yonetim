@@ -1,7 +1,13 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useMemo, useState, useTransition, type ReactNode } from "react";
+import {
+  useMemo,
+  useOptimistic,
+  useState,
+  useTransition,
+  type ReactNode,
+} from "react";
 
 import { BulkActionBar, ConfirmDialog, SelectCheckbox, useToast } from "@yonetim/ui";
 
@@ -25,6 +31,8 @@ export function BulkSelection<T extends { id: string }>({
   /** Satır render'ı: seçim kutusu ve seçili durum enjekte edilir. */
   children: (helpers: {
     isSelected: (id: string) => boolean;
+    /** İşlem sunucuda sürerken bu satır iyimser olarak "işleniyor" durumunda. */
+    isBusy: (id: string) => boolean;
     toggle: (id: string) => void;
     headerCheckbox: ReactNode;
     rowCheckbox: (id: string) => ReactNode;
@@ -45,6 +53,21 @@ export function BulkSelection<T extends { id: string }>({
   const [pending, startTransition] = useTransition();
   const [confirming, setConfirming] = useState<string | null>(null);
 
+  /**
+   * İyimser "işleniyor" kümesi — GAP 4.6.1.
+   *
+   * Toplu işlem tek bir Server Action turu; yanıt gelene kadar tabloda
+   * hiçbir şey değişmiyordu ve kullanıcı düğmeye ikinci kez basıyordu.
+   * `useOptimistic` geçiş boyunca hedef satırları işaretliyor, geçiş
+   * bitince React kendiliğinden gerçek duruma dönüyor — ayrıca bir
+   * "temizle" çağrısı yok, dolayısıyla yarım kalmış bir yükleme durumu
+   * da olamıyor.
+   */
+  const [busyIds, markBusy] = useOptimistic<string[], string[]>(
+    [],
+    (_current, next) => next,
+  );
+
   const ids = useMemo(() => rows.map((row) => row.id), [rows]);
   const allSelected = ids.length > 0 && selected.length === ids.length;
 
@@ -59,6 +82,7 @@ export function BulkSelection<T extends { id: string }>({
     if (!action) return;
     const targets = [...selected];
     startTransition(async () => {
+      markBusy(targets);
       const result = await action.run(targets);
       if (result.ok) {
         toast.success(result.message);
@@ -76,6 +100,7 @@ export function BulkSelection<T extends { id: string }>({
     <>
       {children({
         isSelected: (id) => selected.includes(id),
+        isBusy: (id) => busyIds.includes(id),
         toggle,
         headerCheckbox: (
           <SelectCheckbox

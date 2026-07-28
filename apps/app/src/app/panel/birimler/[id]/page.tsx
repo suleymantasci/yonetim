@@ -171,7 +171,7 @@ export default async function UnitDetailPage({
       <div className="mb-4">
         <Tabs
           activeKey={tab}
-          linkComponent={Link as never}
+          linkComponent={Link}
           label={t("detailTabs")}
           items={[
             { key: "ozet", label: t("tabSummary"), href: tabHref("ozet") },

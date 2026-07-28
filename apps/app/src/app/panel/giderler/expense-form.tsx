@@ -35,6 +35,8 @@ export function ExpenseForm({
   cancelHref,
   submitLabel,
   canApprove,
+  stayOnSuccess,
+  onCreated,
 }: {
   categories: {
     id: string;
@@ -58,8 +60,11 @@ export function ExpenseForm({
     attachmentUrl: string | null;
     status: string;
   };
-  cancelHref: string;
+  cancelHref?: string;
   submitLabel: string;
+  /** Çekmece içinde açıldığında: kayıt sonrası sayfa değiştirme. */
+  stayOnSuccess?: boolean;
+  onCreated?: (id: string) => void;
   canApprove: boolean;
 }) {
   const t = useTranslations("app.expenses");
@@ -79,6 +84,10 @@ export function ExpenseForm({
       action={saveExpense}
       submitLabel={submitLabel}
       cancelHref={cancelHref}
+      stayOnSuccess={stayOnSuccess}
+      onSuccess={(state) => {
+        if (state.data?.id) onCreated?.(state.data.id);
+      }}
     >
       {defaults ? <input type="hidden" name="id" value={defaults.id} /> : null}
 

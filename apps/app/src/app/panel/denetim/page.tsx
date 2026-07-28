@@ -8,6 +8,7 @@ import {
   Card,
   CardBody,
   CardHeader,
+  DataTable,
   Pagination,
   tableClasses as tc,
 } from "@yonetim/ui";
@@ -105,79 +106,71 @@ export default async function AuditPage({
       <Card>
         <CardHeader title={t("recordsTitle", { count: data.meta.total })} />
         <CardBody className="p-0">
-          <div className={tc.wrapper}>
-            <table className={tc.table} style={{ minWidth: 860 }}>
-              <thead className={tc.thead}>
-                <tr>
-                  <th scope="col" className={tc.th}>
-                    {t("time")}
-                  </th>
-                  <th scope="col" className={tc.th}>
-                    {t("action")}
-                  </th>
-                  <th scope="col" className={tc.th}>
-                    {t("resource")}
-                  </th>
-                  <th scope="col" className={tc.th}>
-                    {t("actor")}
-                  </th>
-                  <th scope="col" className={tc.th}>
-                    {t("ip")}
-                  </th>
-                  <th scope="col" className={tc.th}>
-                    {t("note")}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.rows.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className={tc.empty}>
-                      {t("noRecords")}
-                    </td>
-                  </tr>
-                ) : (
-                  data.rows.map((row) => (
-                    <tr key={row.id} className={tc.tr}>
-                      <td className={tc.tdMuted}>
-                        {f.dateTime(row.createdAt)}
-                      </td>
-                      <td className={tc.td}>
-                        <Badge
-                          tone={
-                            row.action.includes("blocked")
-                              ? "danger"
-                              : "neutral"
-                          }
-                        >
-                          {row.action}
-                        </Badge>
-                        {row.changeCount > 0 ? (
-                          <span className="ml-2 text-xs text-fg-subtle">
-                            {t("changedFields", { count: row.changeCount })}
-                          </span>
-                        ) : null}
-                      </td>
-                      <td className={tc.td}>{row.resource}</td>
-                      <td className={tc.tdMuted}>
-                        {row.actorName ?? t("systemActor")}
-                        {/* Vekaleten işlem gizlenmiyor: kütüğün amacı tam da bu. */}
-                        {row.impersonatedBy ? (
-                          <Badge tone="warning">{t("impersonated")}</Badge>
-                        ) : null}
-                      </td>
-                      <td className={`${tc.tdMuted} tabular-nums`}>
-                        {row.ip ?? "—"}
-                      </td>
-                      <td className={`${tc.tdMuted} max-w-[280px] truncate`}>
-                        {row.reason ?? "—"}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+          {/*
+           * Denetim kütüğü salt okunur: seçim, sıralama bağlantısı ve satır
+           * aksiyonu yok. `DataTable` yine de kullanılıyor — yapışkan başlık,
+           * yoğunluk tercihi ve mobil kart görünümü buradan geliyor ve altı
+           * sütunlu bir kütüğü telefonda yana kaydırmak okunmuyordu.
+           */}
+          <DataTable
+            rows={data.rows}
+            caption={t("recordsTitle", { count: data.meta.total })}
+            cardBreakpoint="lg"
+            columns={[
+              {
+                key: "time",
+                header: t("time"),
+                primary: true,
+                render: (row) => (
+                  <span className="text-fg-muted">{f.dateTime(row.createdAt)}</span>
+                ),
+              },
+              {
+                key: "action",
+                header: t("action"),
+                render: (row) => (
+                  <>
+                    <Badge tone={row.action.includes("blocked") ? "danger" : "neutral"}>
+                      {row.action}
+                    </Badge>
+                    {row.changeCount > 0 ? (
+                      <span className="ml-2 text-xs text-fg-subtle">
+                        {t("changedFields", { count: row.changeCount })}
+                      </span>
+                    ) : null}
+                  </>
+                ),
+              },
+              { key: "resource", header: t("resource"), render: (row) => row.resource },
+              {
+                key: "actor",
+                header: t("actor"),
+                render: (row) => (
+                  <span className="text-fg-muted">
+                    {row.actorName ?? t("systemActor")}
+                    {/* Vekaleten işlem gizlenmiyor: kütüğün amacı tam da bu. */}
+                    {row.impersonatedBy ? (
+                      <Badge tone="warning">{t("impersonated")}</Badge>
+                    ) : null}
+                  </span>
+                ),
+              },
+              {
+                key: "ip",
+                header: t("ip"),
+                render: (row) => (
+                  <span className="tabular-nums text-fg-muted">{row.ip ?? "—"}</span>
+                ),
+              },
+              {
+                key: "note",
+                header: t("note"),
+                className: "max-w-[280px] truncate",
+                render: (row) => <span className="text-fg-muted">{row.reason ?? "—"}</span>,
+              },
+            ]}
+            empty={<p className={tc.empty}>{t("noRecords")}</p>}
+          />
           <Pagination
             page={params.page}
             pageCount={pageCount}
@@ -194,7 +187,7 @@ export default async function AuditPage({
                 total: data.meta.total,
               }),
             }}
-            linkComponent={Link as never}
+            linkComponent={Link}
           />
         </CardBody>
       </Card>

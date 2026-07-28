@@ -44,26 +44,31 @@ export function ShellFrame({
         <Sidebar {...sidebar} open={drawerOpen} onClose={() => setDrawerOpen(false)} />
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-border bg-surface/95 px-3 backdrop-blur sm:px-4">
+          <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-border bg-surface/85 px-3 backdrop-blur-md sm:px-4">
             <button
               type="button"
               onClick={() => setDrawerOpen(true)}
               aria-label={labels.openMenu}
               aria-expanded={drawerOpen}
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border-strong text-fg-muted hover:bg-hover hover:text-fg lg:hidden"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border-strong text-fg-muted hover:bg-hover hover:text-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:hidden"
             >
               <Menu aria-hidden className="h-5 w-5" />
             </button>
 
             {headerLeft}
 
-            <div className="ml-auto flex items-center gap-2">{headerRight}</div>
+            <div className="ml-auto flex items-center gap-1.5">{headerRight}</div>
           </header>
 
           {banner}
 
-          <main id="panel-content" className="flex-1 p-4 lg:p-6">
-            {children}
+          {/*
+           * İçerik ölçüsü sınırlı: 2560px'lik bir ekranda tabloyu duvardan
+           * duvara germek satır takibini imkânsızlaştırıyor. Sınır kabukta,
+           * sayfalarda değil — yoksa 40 sayfada tek tek unutulurdu.
+           */}
+          <main id="panel-content" className="flex-1 bg-canvas">
+            <div className="mx-auto w-full max-w-[1600px] p-4 lg:p-6">{children}</div>
           </main>
         </div>
       </div>

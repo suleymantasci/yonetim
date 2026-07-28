@@ -97,7 +97,8 @@
     "sortBy": "Sort by {column}",
     "rowSelect": "Select row",
     "chartAsTable": "Show as table",
-    "chartAsChart": "Show as chart"
+    "chartAsChart": "Show as chart",
+    "share": "Share of total"
   },
   "legal": {
     "allRightsReserved": "All rights reserved.",

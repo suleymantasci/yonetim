@@ -18,13 +18,24 @@ export interface Crumb {
   href?: string;
 }
 
-type AnchorLike = (props: {
+/**
+ * Enjekte edilen bağlantı bileşeninin tipi.
+ *
+ * Next'in `Link`'i bu tipe **doğrudan** uyar; çağrı yerlerindeki
+ * `linkComponent={Link as never}` kaçamağı (Faz 3 hata listesi #9) gereksizdi
+ * ve 11 dosyadan kaldırıldı. Kaçamağın maliyeti görünmezdi ama gerçekti:
+ * `as never` yalnız bu uyumsuzluğu değil, ileride oluşabilecek **her**
+ * uyumsuzluğu da susturuyordu.
+ */
+export type LinkLike = (props: {
   href: string;
   className?: string;
   children: ReactNode;
   "aria-current"?: "page";
   scroll?: boolean;
 }) => ReactNode;
+
+type AnchorLike = LinkLike;
 
 const defaultAnchor: AnchorLike = ({ href, className, children, ...rest }) => (
   <a href={href} className={className} {...rest}>
@@ -191,6 +202,7 @@ export function SortableTh({
   hrefFor,
   align = "left",
   linkComponent: Link = defaultAnchor,
+  className,
 }: {
   label: string;
   columnKey: string;
@@ -199,6 +211,8 @@ export function SortableTh({
   hrefFor: (key: string, direction: "asc" | "desc") => string;
   align?: "left" | "right";
   linkComponent?: AnchorLike;
+  /** Verilirse varsayılan hücre sınıflarının **yerine** geçer (`DataTable`). */
+  className?: string;
 }) {
   const active = activeKey === columnKey;
   const nextDirection: "asc" | "desc" = active && direction === "asc" ? "desc" : "asc";
@@ -207,7 +221,10 @@ export function SortableTh({
     <th
       scope="col"
       aria-sort={active ? (direction === "desc" ? "descending" : "ascending") : "none"}
-      className={cn("px-4 py-2 font-medium", align === "right" && "text-right")}
+      className={cn(
+        className ?? "px-[var(--row-px)] py-[var(--head-py)] font-medium",
+        align === "right" && "text-right",
+      )}
     >
       <Link
         href={hrefFor(columnKey, nextDirection)}

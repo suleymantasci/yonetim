@@ -64,9 +64,21 @@ Gerekçe: RHF eklemek aynı doğrulama kurallarını istemcide ikinci kez yazmak
 `packages/ui` alanlarının içinde (TCKN/IBAN/telefon), **bağlayıcı karar
 sunucuda**. Tek doğruluk kaynağı Zod şeması.
 
-**2. Grafik kütüphanesi kullanılmadı.** Recharts ~100 kB gzip getiriyor;
-ihtiyacımız olan dört form (çizgi, sütun, alan, halka) düz SVG ile yazıldı.
-Sonuç: sayfa başına toplam ~158 kB First Load JS.
+**2. ~~Grafik kütüphanesi kullanılmadı.~~ → GERİ ALINDI (UI Faz 0.3).**
+Eski gerekçe: Recharts ~100 kB gzip getiriyor; ihtiyacımız olan dört form
+(çizgi, sütun, alan, halka) düz SVG ile yazıldı — sayfa başına ~158 kB
+First Load JS.
+
+Neden geri alındı: elle yazılan ölçek **yanlış cevaplar veriyordu** —
+`BarChart({horizontal:true})` sessizce `series[0]` dışındaki serileri
+yutuyordu ve sabit `viewBox width=640` küçük ekranda eksen yazılarını da
+küçültüyordu. Üstelik her yeni form (yığılmış alan, waterfall, çok serili
+yatay sütun) yeni bir ölçek/eksen/tooltip kopyası demekti. Bugün motor
+**Recharts**; `packages/ui/src/components/chart/` üç halkaya bölündü ve
+motor `lazy.tsx` üzerinden, grafikle **birebir aynı yükseklikte** bir
+iskeletle yükleniyor. Kritik olan şey korundu: `ChartFrame`'in zorunlu tablo
+görünümü motoru hiç görmez (`chart/frame.tsx`), yani JS gelmese de veri
+okunabilir kalır. Ayrıntı: `UI-MODERNIZASYON-PLANI.md` §0.3.
 
 **3. Radix kullanılmadı.** Overlay ailesi (odak tuzağı, ESC, backdrop, ARIA)
 elle yazıldı — ~250 satır ve tek davranış kümesi.

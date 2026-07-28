@@ -67,7 +67,13 @@
       "xl": "XL"
     },
     "highContrast": "Yüksek karşıtlık",
-    "reducedMotion": "Hareketi azalt"
+    "reducedMotion": "Hareketi azalt",
+    "density": "Satır yoğunluğu",
+    "densityOption": {
+      "comfortable": "Rahat",
+      "compact": "Sıkışık"
+    },
+    "userMenu": "Hesap menüsü"
   },
   "login": {
     "title": "Giriş",
@@ -161,7 +167,19 @@
     "splitOverdue": "Gecikmiş",
     "chartMonth": "Ay",
     "chartBucket": "Aralık",
-    "chartTotal": "Toplam"
+    "chartTotal": "Toplam",
+    "chartOutstanding": "Tahsil edilmeyen",
+    "chartMix": "Tahsilat bileşimi",
+    "chartMixHint": "Her ayın tahakkuku, tahsil edilen ve edilmeyen olarak yığılır. Üst bandın kalınlaşması gecikmenin büyüdüğünü gösterir.",
+    "chartTargetLabel": "Hedef",
+    "chartAboveTarget": "Hedefin üzerinde",
+    "chartBelowTarget": "Hedefin altında",
+    "chartFlow": "Bu ayın nakit akışı",
+    "chartFlowHint": "Tahsilattan gider düşülerek nete varılır. Çubuklar bir öncekinin bittiği yerden başlar.",
+    "chartStep": "Adım",
+    "deltaPrevMonth": "geçen aya göre",
+    "chartTarget": "Hedefe karşı tahsilat",
+    "chartTargetHint": "Son üç ayın tahsilat oranı, hedef çizgisiyle birlikte. Çizgiyi geçen ay hedefi tutturmuş demektir."
   },
   "units": {
     "title": "Bağımsız Bölümler",
@@ -351,7 +369,11 @@
     "bulkPreviewSkipped": "Zaten var olduğu için atlanacak: {list}",
     "bulkConfirm": "Onayla ve {count} bölümü oluştur",
     "bulkEdit": "Ayarlara dön",
-    "bulkPreviewHint": "Bu liste sunucuda üretildi; kaydedilecek numaralar birebir bunlar."
+    "bulkPreviewHint": "Bu liste sunucuda üretildi; kaydedilecek numaralar birebir bunlar.",
+    "drawerCreatedTitle": "Bağımsız bölüm eklendi",
+    "drawerCreatedHint": "Akışı burada sürdürebilirsiniz — liste arkada açık kaldı.",
+    "drawerAddResident": "Bu birime sakin ekle",
+    "drawerAddAnother": "Bir birim daha ekle"
   },
   "residents": {
     "title": "Sakinler",
@@ -500,7 +522,10 @@
     },
     "consentVersion": "Sürüm {version}",
     "consentGranted": "Verildi",
-    "consentRevoked": "Geri alındı"
+    "consentRevoked": "Geri alındı",
+    "drawerCreatedTitle": "Sakin eklendi",
+    "drawerCreatedHint": "Akışı burada sürdürebilirsiniz — liste arkada açık kaldı.",
+    "drawerAddAnother": "Bir sakin daha ekle"
   },
   "duesPlans": {
     "title": "Aidat Planları",
@@ -920,7 +945,10 @@
     "periodInvalid": "Geçerli bir dönem seçin.",
     "formulaFellBack": "Seçilen formül için veri eksik (arsa payı / alan / kişi sayısı girilmemiş). Dağıtım eşit olarak yapılacak.",
     "distributedDescription": "{expense} — daire payı",
-    "distributedLabel": "daire payı"
+    "distributedLabel": "daire payı",
+    "drawerCreatedTitle": "Gider eklendi",
+    "drawerCreatedHint": "Akışı burada sürdürebilirsiniz — liste arkada açık kaldı.",
+    "drawerAddAnother": "Bir gider daha ekle"
   },
   "bank": {
     "title": "Banka & Mutabakat",

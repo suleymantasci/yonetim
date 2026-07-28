@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import {
   Alert,
@@ -30,6 +30,9 @@ export function UnitForm({
   defaults,
   cancelHref,
   submitLabel,
+  stayOnSuccess,
+  onCreated,
+  footer,
 }: {
   action: ServerAction<{ id: string }>;
   blocks: { id: string; name: string }[];
@@ -51,8 +54,13 @@ export function UnitForm({
     duesMultiplier: string;
     notes: string | null;
   };
-  cancelHref: string;
+  cancelHref?: string;
   submitLabel: string;
+  /** Çekmece içinde açıldığında: kayıt sonrası sayfa değiştirme. */
+  stayOnSuccess?: boolean;
+  onCreated?: (id: string) => void;
+  /** Varsayılan yapışkan alt bar yerine özel bir alt bar. */
+  footer?: ReactNode;
 }) {
   const t = useTranslations("app.units");
   const tEnum = useTranslations("enum");
@@ -79,6 +87,11 @@ export function UnitForm({
       action={action as ServerAction<{ id: string }>}
       submitLabel={submitLabel}
       cancelHref={cancelHref}
+      stayOnSuccess={stayOnSuccess}
+      footer={footer}
+      onSuccess={(state) => {
+        if (state.data?.id) onCreated?.(state.data.id);
+      }}
     >
       {defaults ? <input type="hidden" name="id" value={defaults.id} /> : null}
 

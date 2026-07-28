@@ -97,7 +97,8 @@
     "sortBy": "{column} sütununa göre sırala",
     "rowSelect": "Satırı seç",
     "chartAsTable": "Tablo olarak göster",
-    "chartAsChart": "Grafik olarak göster"
+    "chartAsChart": "Grafik olarak göster",
+    "share": "Toplamın payı"
   },
   "legal": {
     "allRightsReserved": "Tüm hakları saklıdır.",

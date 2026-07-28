@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  Activity, BadgeCheck, Banknote, Building2, CalendarClock, ClipboardList, Cog, FileText,
+  Activity, BadgeCheck, Banknote, Building2, CalendarClock, ChevronDown, ClipboardList, Cog, FileText,
   Gauge, Gavel, Handshake, LayoutDashboard, LineChart, Megaphone, MessageSquare, Pin, PinOff,
   Receipt, ScrollText, ShieldCheck, Sparkles, Truck, Users, Vote, Wallet, Wrench, X,
 } from "lucide-react";
@@ -203,14 +203,12 @@ export function Sidebar({
               type="button"
               onClick={() => toggleGroup(entry.group)}
               aria-expanded={!isCollapsed}
-              className="flex w-full items-center gap-1 rounded px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-fg-subtle hover:text-fg-muted"
+              className="flex w-full items-center gap-1 rounded px-2 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-fg-subtle transition-colors hover:text-fg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <span
+              <ChevronDown
                 aria-hidden
-                className={cn("transition-transform text-[9px]", isCollapsed && "-rotate-90")}
-              >
-                ▼
-              </span>
+                className={cn("h-3 w-3 transition-transform", isCollapsed && "-rotate-90")}
+              />
               {groupLabels[entry.group]}
               {isCollapsed && groupBadge > 0 ? (
                 <span className="ml-auto rounded-full bg-danger-soft px-1.5 text-[10px] font-bold text-danger-fg">
@@ -304,13 +302,17 @@ function SidebarLink({
         href={item.href}
         aria-current={active ? "page" : undefined}
         className={cn(
-          "flex items-center gap-2 rounded-lg py-1.5 pl-3 pr-8 text-sm transition-colors",
+          "flex items-center gap-2.5 rounded-lg py-[var(--row-py)] pl-3 pr-8 text-sm transition-colors",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
           active
             ? "bg-selected font-semibold text-fg before:absolute before:left-0 before:top-1/2 before:h-5 before:w-[3px] before:-translate-y-1/2 before:rounded-r before:bg-primary"
             : "text-fg-muted hover:bg-hover hover:text-fg",
         )}
       >
-        <Icon aria-hidden className="h-4 w-4 shrink-0" />
+        <Icon
+          aria-hidden
+          className={cn("h-4 w-4 shrink-0", active ? "text-primary" : "text-fg-subtle")}
+        />
         <span className="min-w-0 flex-1 truncate">{item.label}</span>
         {item.badgeCount && item.badgeCount > 0 ? (
           <span

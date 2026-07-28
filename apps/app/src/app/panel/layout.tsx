@@ -13,10 +13,20 @@ import { NAV_ITEMS } from "@/components/shell/nav";
 import { requireContext } from "@/lib/context";
 import { getInAppNotifications, getNavBadges } from "@/lib/shell-data";
 
+/**
+ * `modal` paralel rota yuvası — UI Faz 2.4.
+ *
+ * "Yeni kayıt" ekranları listeden açıldığında `@modal/(.)…/yeni` tarafından
+ * kesiliyor ve bir çekmecede açılıyor; doğrudan adrese gidildiğinde aynı
+ * `page.tsx` tam sayfa olarak çalışmaya devam ediyor. Gerekçe
+ * `components/route-drawer.tsx` başlığında.
+ */
 export default async function PanelLayout({
   children,
+  modal,
 }: {
   children: React.ReactNode;
+  modal: React.ReactNode;
 }) {
   const ctx = await requireContext();
   const cookieStore = await cookies();
@@ -49,6 +59,7 @@ export default async function PanelLayout({
       unreadNotificationCount={notifications.unreadCount}
     >
       {children}
+      {modal}
     </AppShell>
   );
 }

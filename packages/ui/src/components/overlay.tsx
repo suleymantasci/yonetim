@@ -202,6 +202,7 @@ export function ConfirmDialog({
   cancelLabel,
   tone = "danger",
   pending,
+  children,
 }: {
   open: boolean;
   onClose: () => void;
@@ -212,6 +213,8 @@ export function ConfirmDialog({
   cancelLabel: string;
   tone?: "danger" | "primary";
   pending?: boolean;
+  /** Açıklamanın ötesinde ek içerik (etkilenen kayıt listesi, gerekçe alanı). */
+  children?: ReactNode;
 }) {
   return (
     <Modal
@@ -246,7 +249,13 @@ export function ConfirmDialog({
         </>
       }
     >
-      <p className="text-sm text-fg-muted">{description}</p>
+      {/*
+       * Açıklama `description` yuvasından gelir; burada BİR KEZ DAHA yazılıyordu
+       * ve onay diyaloğunda aynı cümle iki kez görünüyordu (tarayıcıda ölçüldü:
+       * "Kayıtlar 30 gün çöp kutusunda kalır…" başlığın altında ve gövdede).
+       * Gövde artık yalnız çağıranın verdiği ek içeriği taşıyor.
+       */}
+      {children}
     </Modal>
   );
 }

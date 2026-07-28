@@ -67,7 +67,13 @@
       "xl": "XL"
     },
     "highContrast": "High contrast",
-    "reducedMotion": "Reduce motion"
+    "reducedMotion": "Reduce motion",
+    "density": "Row density",
+    "densityOption": {
+      "comfortable": "Comfortable",
+      "compact": "Compact"
+    },
+    "userMenu": "Account menu"
   },
   "login": {
     "title": "Sign in",
@@ -161,7 +167,19 @@
     "splitOverdue": "Overdue",
     "chartMonth": "Month",
     "chartBucket": "Bucket",
-    "chartTotal": "Total"
+    "chartTotal": "Total",
+    "chartOutstanding": "Not collected",
+    "chartMix": "Collection mix",
+    "chartMixHint": "Each month's accrual stacked as collected and not collected. A thickening upper band means arrears are growing.",
+    "chartTargetLabel": "Target",
+    "chartAboveTarget": "Above target",
+    "chartBelowTarget": "Below target",
+    "chartFlow": "This month's cash flow",
+    "chartFlowHint": "Expenses are subtracted from collections to reach net. Each bar starts where the previous one ended.",
+    "chartStep": "Step",
+    "deltaPrevMonth": "vs. previous month",
+    "chartTarget": "Collection against target",
+    "chartTargetHint": "Collection rate of the last three months against the target line. A bar past the line means the month met the target."
   },
   "units": {
     "title": "Units",
@@ -351,7 +369,11 @@
     "bulkPreviewSkipped": "Skipped because they already exist: {list}",
     "bulkConfirm": "Confirm and create {count} units",
     "bulkEdit": "Back to settings",
-    "bulkPreviewHint": "This list was generated on the server; these are exactly the numbers that will be saved."
+    "bulkPreviewHint": "This list was generated on the server; these are exactly the numbers that will be saved.",
+    "drawerCreatedTitle": "Unit added",
+    "drawerCreatedHint": "You can continue here — the list stayed open behind this panel.",
+    "drawerAddResident": "Add a resident to this unit",
+    "drawerAddAnother": "Add another unit"
   },
   "residents": {
     "title": "Residents",
@@ -500,7 +522,10 @@
     },
     "consentVersion": "Version {version}",
     "consentGranted": "Granted",
-    "consentRevoked": "Withdrawn"
+    "consentRevoked": "Withdrawn",
+    "drawerCreatedTitle": "Resident added",
+    "drawerCreatedHint": "You can continue here — the list stayed open behind this panel.",
+    "drawerAddAnother": "Add another resident"
   },
   "duesPlans": {
     "title": "Dues plans",
@@ -920,7 +945,10 @@
     "periodInvalid": "Select a valid period.",
     "formulaFellBack": "Data is missing for the chosen formula (land share / area / occupant count not entered). The distribution will fall back to equal shares.",
     "distributedDescription": "{expense} — unit share",
-    "distributedLabel": "unit share"
+    "distributedLabel": "unit share",
+    "drawerCreatedTitle": "Expense added",
+    "drawerCreatedHint": "You can continue here — the list stayed open behind this panel.",
+    "drawerAddAnother": "Add another expense"
   },
   "bank": {
     "title": "Bank & reconciliation",

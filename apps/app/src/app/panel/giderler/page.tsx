@@ -264,7 +264,7 @@ export default async function ExpensesPage({
                     total: data.meta.total,
                   }),
                 }}
-                linkComponent={Link as never}
+                linkComponent={Link}
               />
             </CardBody>
           </Card>
@@ -284,6 +284,7 @@ export default async function ExpensesPage({
                   amountLabel: fmt.money(row.amountMinor),
                 }))}
                 emptyText={tCommon("state.empty")}
+                shareLabel={tCommon("a11y.share")}
               />
             </CardBody>
           </Card>

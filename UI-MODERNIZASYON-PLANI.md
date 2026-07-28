@@ -1,8 +1,9 @@
 # UI Modernizasyon Planı — `apps/web` (landing) + `apps/app` (panel)
 
-> Durum: Faz 0 tamam (grafik katmanı hariç, o Faz 2'ye alındı). **Faz 1 tamam** —
-> landing kabuğu, ana sayfa ve tüm alt sayfalar yeniden yazıldı.
-> Sıradaki: F0.3 (grafik katmanı) ve Faz 2 (panel).
+> Durum: **Faz 0 tamam** (F0.3 dahil — grafik katmanı Recharts'a taşındı).
+> **Faz 1 tamam** — landing kabuğu, ana sayfa ve tüm alt sayfalar yeniden yazıldı.
+> **Faz 2 tamam** — panel kabuğu, grafikler, tablolar ve form/akış katmanı.
+> Sıradaki: Faz 3'ün kalan kalemleri (axe smoke testi, `pnpm lint` CI adımı).
 > Uygulama sırasında alınan kararlar için "Uygulama sırasında alınan revizyonlar".
 > İlgili belgeler: `MIMARI-PLAN.md` §12–15, `GAP-ANALYSIS.md` §4.5, `GAP-DURUM.md` §2.
 
@@ -78,6 +79,12 @@ ikinci kez yazmak, +14 kB ve JS kapalıyken çalışmayan form. İzin motion + g
 | R6 | **Kampanyalarda geri sayım yapılmadı.** Plan §1.3 "süreli kampanyada geri sayım" diyordu; `CAMPAIGN_TEMPLATES` yalnız şablon taşıyor, bitiş tarihi (`endsAt`) somut `Campaign` kaydında ve veritabanında. | Pazarlama sayfasına uydurma bir bitiş tarihi yazmak, sosyal kanıtta uydurma sayı yazmakla aynı şey. Yerine kampanyanın **ödülü** kartın en büyük öğesi yapıldı ve gerçek olan kısıt (`firstNTenants`, taahhüt süresi) koşullar listesinde gösterildi. |
 | R7 | **Okuma ilerleme çubuğu JS yerine CSS'te.** `animation-timeline: scroll()`; `useScroll` + `useSpring` kaldırıldı. | Ölçüldü: bu iki yardımcı **her route'un** paylaşılan parçasına ~6 kB ekliyordu (209 → 214,7 kB), çünkü hareket modülü kök layout'tan çekiliyor. Dekoratif bir çizgi için kabul edilemez. Destekleyemeyen tarayıcıda çubuk hiç görünmez. |
 | R8 | **`apps/web/src/components/motion` yüzeyi ikiye indirildi** (`m`, `AnimatePresence`). | Aynı ölçüm: bu modül paylaşılan parçada olduğu için buraya eklenen ve bir yerde kullanılan her yardımcı tüm route'ları büyütüyor. |
+| R9 | **Takvim ısı haritası yapılmadı.** Plan §0.3 ve §2.2 "tahsilat yoğunluğu (takvim ısı haritası)" diyordu. | `dashboardCharts` sözleşmesi **günlük çözünürlükte veri taşımıyor** (aylık seri, yaşlandırma kovaları, tahmin, kırılım). Panoyu kurmak için API'ye yeni bir alan eklemek gerekiyordu; uydurma günlük veriyle kurmak, sosyal kanıta uydurma müşteri sayısı yazmakla aynı şey olurdu. Yerine mevcut sözleşmeden türeyen iki yeni pano kondu: **waterfall** (ayın nakit akışı) ve **bullet** (hedefe karşı tahsilat). |
+| R10 | **`ssr:false` için `next/dynamic` yerine hidrasyon kapısı.** `chart/lazy.tsx` `useEffect` ile "hidre oldum" bayrağı kurup `React.lazy` + `Suspense` kullanıyor. | `next/dynamic` `packages/ui`'ye Next bağımlılığı sokardı; paket bugün Next'i hiç görmüyor ve `linkComponent` enjeksiyonu tam da bu yüzden var. Sonuç aynı (sunucuda hiç render edilmez, iskelet aynı yükseklikte), bağımlılık bir eksik. |
+| R11 | **Yoğunluk tercihi `localStorage`'da değil çerezde** — `yonetim_a11y` çerezine dördüncü alan (`dn0/dn1`) eklendi, `<html data-density>` sunucuda basılıyor. | Plan §2.3 `localStorage` diyordu. Yoğunluk **ilk HTML'de** doğru olmak zorunda: `localStorage` ancak hidrasyondan sonra okunur ve 50 satırlık bir tablo bir kare geniş, bir kare dar çizilirdi — CLS'in tanımı. Kolon görünürlüğü hâlâ `localStorage`: o ilk boyamayı kaydırmıyor. |
+| R12 | **`DataTable`'da yatay kaydırma kabı ve yapışkan ilk sütun yok.** Geniş tablo dar ekranda kaydırılmaz, karta düşer (`cardBreakpoint="lg"`). | `overflow-x: auto` `overflow-y`'yi de `auto` yapıp yeni bir kaydırma kutusu doğuruyor; o andan sonra `sticky top-16` görüş alanından değil kabın tepesinden ölçülüyor ve **yapışkan başlık sessizce ölüyor** (landing'de ölçülmüştü). İkisi aynı anda olmuyor; yapışkan başlık seçildi. Yatay kaydırma olmayınca "yapışkan ilk sütun"un çözdüğü sorun da kalmıyor. |
+| R13 | **`category-breakdown.tsx` Recharts'a taşınmadı**, doğrudan etiketli çubuk listesi olarak kaldı (pay yüzdesi eklendi). | Plan §2.2 "gerçek yatay sütuna" diyordu. Recharts'a çevirmek üç şeyi geri götürüyordu: uzun kategori adları 168px'lik kategori ekseninde kırpılıyor, tutar yalnız tooltip'te kalıyor ve sunucuda render edilen bir blok için `ssr:false` sınırı açmak gerekiyordu. |
+| R14 | **"Yeni kayıt" ekranları için intercepting + parallel route.** `@modal/(.)birimler/yeni`, `(.)sakinler/yeni`, `(.)giderler/yeni`. | Kullanıcının istediği akış ("bölüm ekle → hemen peşinden sakin ekle, aynı sayfa akışında") istemci state'inde tutulan bir modalla da kurulabilirdi — ama o zaman adres, geri tuşu ve paylaşılabilirlik kaybolurdu. Kesme yalnız istemci gezinmesinde devreye giriyor: adres `/panel/birimler/yeni` kalıyor, doğrudan açan kişi aynı `page.tsx`'i tam sayfa görüyor, liste unmount olmuyor. |
 
 ---
 
@@ -106,6 +113,20 @@ Planlanmamıştı; kod okunurken ya da ölçüm yapılırken ortaya çıktılar.
 | Karşılaştırma tablosu ekran okuyucuya **boş** görünüyordu | "Var" hücresi `<span aria-hidden>✓</span>`, "yok" hücresi yalnız `aria-hidden` bir tire içeriyordu; tablonun tamamı erişilebilirlik ağacında boş hücrelerdi | Düzeltildi: her hücrede işaretle birlikte okunabilir metin (`var`/`yok`) |
 | İki tabloda `overflow-x-auto` + `min-w-[…]` | Telefonda altı sütun yana kaydırılarak okunuyor, başlık satırı görüş alanından çıkınca hangi sayının ne olduğu kayboluyordu. Ayrıca yatay taşma kuralı dikey yapışmayı da `auto` yaptığı için `sticky` başlık sessizce ölürdü. | Düzeltildi: `md`/`lg` altında kart görünümü, üstünde kaydırma kabı olmayan tablo + `sticky top-16` başlık |
 | NPS ölçeğinde uç etiketi yoktu | Çıplak bir 0–10 satırında hangi ucun "iyi" olduğu belirsiz; yanlış yönde okunan bir NPS ölçeği veriyi sessizce bozar | Düzeltildi: `fieldset`/`legend` + iki uç etiketi |
+
+**Faz 0.3 + Faz 2 sırasında bulunanlar** (tarayıcıda `:3001`'de gezilirken):
+
+| Bulgu | Etki | Durum |
+|---|---|---|
+| **`ChartFrame` başlığında `flex-wrap`** | Uzun açıklamalı bir panoda görünüm anahtarı alt satıra düşüyor ve `justify-between` onu **sola** yaslıyordu; aynı ızgaradaki iki kartın anahtarı iki farklı yerde duruyordu. Ölçüldü: "Tahsilat bileşimi" sol altta, "Tahsilat oranı" sağ üstte. | Düzeltildi: `flex-wrap` kaldırıldı, başlık `min-w-0 flex-1`, anahtar `shrink-0` |
+| **Düz seri sparkline'ı kartın alt kenarına yapışık düz çizgi çiziyordu.** `span = max - min` sıfırken her nokta `height - 2`'ye düşüyor. | Sıfır tahsilatlı bir sitede "trend" gibi görünen şey aslında bir cetveldi — üstelik `tone="warning"` yüzünden kırmızı. | Düzeltildi: `max === min` → sparkline hiç çizilmez |
+| **`ReferenceLine` varsayılanı `ifOverflow="discard"`** | Hedef çizgisi (%85) verinin ölçeğinin dışında kaldığında **sessizce hiç çizilmiyordu** — yani tam da görülmesi gereken durumda (oran %0–4 iken) yoktu. | Düzeltildi: `ifOverflow="extendDomain"`; eksen hedefe kadar açılıyor |
+| **Tümü sıfır olan seride eksen beş kez "0" basıyordu** | Boş bir yaşlandırma panosunda x ekseni `0 0 0 0 0` görünüyordu. | Düzeltildi: sayısal eksenlerde `allowDecimals={false}` |
+| **`ConfirmDialog` açıklamayı iki kez basıyordu.** Metin hem `description` yuvasına hem gövdeye `<p>` olarak veriliyordu. | Silme onayında "Kayıtlar 30 gün çöp kutusunda kalır…" cümlesi üst üste iki kez görünüyordu. | Düzeltildi: gövde artık yalnız çağıranın verdiği ek içeriği taşıyor (`children`) |
+| `linkComponent={Link as never}` (11 dosya) | `as never` yalnız bu uyumsuzluğu değil, ileride oluşabilecek **her** uyumsuzluğu susturuyordu — üstelik Next'in `Link`'i `LinkLike`'a zaten uyuyordu, kaçamak gereksizdi. | Düzeltildi: tip `LinkLike` olarak dışa aktarıldı, 11 kaçamak kaldırıldı |
+| `0.85` tahsilat hedefi üç dosyada elle yazılıydı | Kontrol paneli rozeti, hedef panosu ve bütçe simülatörü aynı eşiği ayrı ayrı taşıyordu; birini değiştirip diğerini unutmak aynı ekranda iki farklı "hedef" göstermek demekti. | Düzeltildi: `HEALTHY_COLLECTION_RATE` (`@yonetim/dues`) |
+| Alanlar `h-10` değil `py-2` (36px) ve `rounded` (4px) idi | Yan yana duran "Ara" alanı ile "Filtrele" düğmesi bir piksel kaymış görünüyordu; kart/düğme/çekmece `rounded-lg/xl` iken tek uyumsuz yarıçap tüm formu eski gösteriyordu. | Düzeltildi: `h-10` + `rounded-lg` + `aria-invalid` görsel karşılığı |
+| `ActionForm` yapışkan kaydet çubuğunun ikinci bir kopyasını taşıyordu | `packages/ui`'deki `StickyFormBar` ile ayrışmıştı. | Düzeltildi: tek kaynak |
 
 ## Faz 0 — Ortak temel (`packages/ui`, `packages/config`)
 
@@ -181,16 +202,23 @@ Yeni ortak bileşenler (hepsi `reducedMotion` altında son durumu anında göste
 Süre/easing token'ları `tokens.css`'e girer (`--motion-fast/base/slow`, `--ease-out-expo` …) ki
 CSS ve JS animasyonlar aynı ritimde olsun.
 
-### 0.3 Grafik katmanı — Recharts geçişi
+### 0.3 Grafik katmanı — Recharts geçişi ✅
 
-`packages/ui/src/components/chart.tsx` (816 satır) üçe bölünür:
+`packages/ui/src/components/chart.tsx` (816 satır) silindi; yerine **beş** dosya:
 
 ```
-chart/frame.tsx    ChartFrame + ChartTable + seriesColor + CHART_SERIES_LIMIT
-                   ← tablo görünümü BURADA kalır; Recharts'a bağımlı değil
-chart/marks.tsx    "use client" — Recharts sarmalayıcıları
-chart/lazy.tsx     "use client" — next/dynamic(..., { ssr:false, loading: sabit yükseklikli iskelet })
+chart/palette.ts      renk sözleşmesi — motorsuz, sunucuda da okunur
+                      (seriesColor, CHART_SERIES_LIMIT, Series, sequentialColor, CHART_INK)
+chart/frame.tsx       "use client" — ChartFrame + ChartTable
+                      ← tablo görünümü BURADA kalır; Recharts'a bağımlı değil
+chart/primitives.tsx  motorsuz ilkeller: Sparkline, BulletChart (tek <svg>, sunucuda render)
+chart/marks.tsx       "use client" — Recharts sarmalayıcıları; barrel'dan dışa aktarılmaz
+chart/lazy.tsx        "use client" — hidrasyon kapısı + sabit yükseklikli iskelet (R10)
 ```
+
+Planda üç dosya vardı; beşe çıkmasının nedeni **motorlu ile motorsuzu ayırmak**:
+`palette.ts` ve `primitives.tsx` `"use client"` bile değil, dolayısıyla `KpiCard`
+gibi sunucu bileşenleri sparkline'ı Recharts'ı sayfaya sokmadan kullanabiliyor.
 
 **Korunacak sözleşmeler** (30'a yakın çağrı yeri kırılmasın diye dış API aynı kalır):
 `seriesColor(index)`, `CHART_SERIES_LIMIT = 6`, `Series {key,label,values,form}`, `ChartFrameProps`,
@@ -211,10 +239,23 @@ güncellenmeli, sessizce geçersiz bırakılmamalı."* Dokunulacaklar:
 `chart.tsx` başlığındaki "MİMARİ KARAR: harici grafik kütüphanesi yok" bloğu,
 `MIMARI-PLAN.md` §13 ve §14 Track C2 satırı, `GAP-DURUM.md` §2 karar #2.
 
-**Yeni grafik tipleri** (bugün olmayan, bu üründe karşılığı olan formlar):
-yığılmış alan (aidat tahsilat trendi), waterfall (gelir-gider akışı), bullet/target
-(tahsilat oranı hedefe karşı), yaşlandırma yığılmış sütun (0-30/30-60/60-90/90+ gün borç),
-takvim ısı haritası (günlük tahsilat yoğunluğu). Pasta/3B/çift eksen **yok**.
+**Yeni grafik tipleri.** Yapılanlar: `StackedAreaChart` (tahsilat bileşimi),
+`WaterfallChart` (gelir-gider akışı), `BulletChart` (hedefe karşı tahsilat),
+çok serili yatay `BarChart` (yaşlandırma — eski sürümün yuttuğu hata),
+`LineChart({ reference })` (hedef çizgisi). Takvim ısı haritası **yapılmadı** —
+gerekçe R9. Pasta/3B/çift eksen yok.
+
+**Yapılanlar (F0.3 kapanışı).**
+
+| İş | Durum |
+|---|---|
+| `chart.tsx` beş dosyaya bölündü, dış API korundu | ✅ 30'a yakın çağrı yeri değişmedi |
+| `BarChart({horizontal})` çok serili düzeltmesi (Faz 3 #5) | ✅ |
+| Sabit `viewBox width=640` → `ResponsiveContainer` (Faz 3 #6) | ✅ eksen yazıları artık ölçeklenmiyor |
+| `Sparkline` ölü kod değil (Faz 3 #8) | ✅ `KpiCard` içine gömüldü |
+| Tema token'ları `var(--color-chart-N)` string'i olarak geçiyor | ✅ `design-tokens.test.ts` yeşil |
+| Motor ilk yüke girmiyor | ✅ ölçüldü: 124 kB'lik Recharts parçası `bundle-budget.mjs`'te "gecikmeli" olarak raporlanıyor; en ağır panel route'u 175,8 kB (bütçe 250 kB) |
+| Gerekçe blokları güncellendi | ✅ `MIMARI-PLAN.md` §3/§13/§14-C2, `GAP-DURUM.md` §2 karar #2 |
 
 ### 0.4 Yeni el yapımı primitifler
 
@@ -320,7 +361,7 @@ mobil menü. Kullanıcının dediği gibi landing'de client render sorun değil 
 
 ---
 
-## Faz 2 — `apps/app` panel
+## Faz 2 — `apps/app` panel ✅
 
 ### 2.1 Kabuk
 
@@ -370,24 +411,33 @@ TanStack Table eklenmiyor: sayfa başına ≤50 satır, sanallaştırmanın çö
   grafikleri, uzun listeler).
 - Toplu aksiyonlarda `useOptimistic`; her modül için anlamlı `EmptyState`.
 
+**Yapılanlar (Faz 2 kapanışı).** Sapmalar için R9–R14'e bakın.
+
+| Alan | Ne yapıldı |
+|---|---|
+| **2.1 Kabuk** | Kenar çubuğunda gerçek `BrandMark` (sentetik "Y" harfi gitti), aktif öğede renkli ikon, grup başlıklarında `ChevronDown`. Üst bar yediden dört denetime indi: kimliğe bağlı olanlar (ad, rol, dil, çıkış) tek bir **kullanıcı menüsünde** toplandı — çıkış hâlâ gerçek `<form method="post">`. Komut paleti `lg` altında **tümüyle gizliydi**, artık `sm`'den itibaren var. İçerik `max-w-[1600px]` ile sınırlandı (sınır kabukta, 40 sayfada değil). **Yoğunluk tercihi** eklendi (`data-density`, R11); satır boşlukları `--row-py`/`--row-px`'ten okunuyor, `tableClasses` dahil. `PageHeader` `packages/ui`'ye taşındı, `pageActionClasses` ile düğme görünümü tek yerden. |
+| **2.2 Grafikler** | `dashboard-charts.tsx` altı panoya çıktı, hepsi **mevcut sözleşmeden**: gelir-gider (gruplu sütun), tahsilat bileşimi (yığılmış alan), tahsilat oranı (alan + hedef çizgisi), hedefe karşı tahsilat (bullet), yaşlandırma (çok serili yatay sütun), ayın nakit akışı (waterfall), tahsilat kırılımı (halka). KPI şeridi `Stat` → `KpiCard`: gömülü sparkline, önceki aya göre delta, yön kararı çağıranda (`positiveIsGood`). `category-breakdown` yerinde kaldı ve pay yüzdesi kazandı (R13). |
+| **2.3 Tablolar** | `DataTable` ölü kod olmaktan çıktı ve dört tablonun **gerçek** ihtiyacına göre yeniden yazıldı: yapışkan başlık (`top-16`), sıralama bağlantısı, sayısal hizalama + `tabular-nums`, yoğunluk, satır seçimi, iyimser "işleniyor" durumu, satır aksiyonları, mobil kart. `birimler`, `sakinler`, `borclar`, `giderler` ve `denetim` buna taşındı: dört tablo **1131 → 848 satır** (283 satır tekrar kalktı) ve kalan satırların hepsi o modüle **özgü** olan — hangi sütunlar, hangi toplu işlemler. Plan "~600 satır" diyordu; gerçek rakam daha küçük çünkü sütun tanımları render fonksiyonlarıyla birlikte duruyor, tekrar eden yalnız iskeletti. Korundu: `tableClasses` (25 dosya), `buildListHref`/`parseListParams`, URL'de liste durumu, sunucu sıralama/sayfalama, `SortableTh`'in `aria-sort`'u, `Pagination`'ın JS'siz çalışması. |
+| **2.4 Formlar ve durumlar** | Alan görünümü tazelendi (`h-10`, `rounded-lg`, `aria-invalid`), `StickyFormBar` tek kaynağa indi. **Akış içi çekmece** (R14): `/panel/{birimler,sakinler,giderler}/yeni` listeden açıldığında çekmecede açılıyor; kayıt sonrası çekmece kapanmıyor, "bu birime sakin ekle / bir tane daha ekle / detay / kapat" adımına geçiyor. Liste arkada duruyor ve `router.refresh()` ile tazeleniyor. Beş ağır route'a şekli sayfanın gerçek düzenine uyan `loading.tsx` (`ListPageSkeleton`, `DashboardSkeleton`); toplu işlemlerde `useOptimistic` ile satırlar "işleniyor" durumuna geçiyor. |
+
 ---
 
 ## Faz 3 — UI hataları, erişilebilirlik, kapılar
 
 ### Tespit edilen somut hatalar
 
-| # | Dosya | Sorun |
-|---|---|---|
-| 1 | `apps/web/src/components/site-header.tsx` | `lg` altında navigasyon tamamen kayboluyor, mobil menü yok |
-| 2 | `apps/web/` | `public/` dizini yok → `/logo-light.svg`, `/og-default.png`, `/favicon.ico` 404; `organizationSchema.logo` ve tüm OG görselleri kırık |
-| 3 | `apps/web/src/app/` | `not-found.tsx` / `error.tsx` yok → çerçevesiz Next varsayılanı |
-| 4 | `apps/web/src/components/site-footer.tsx` | rehber `href`'lerinde `@ts-expect-error` |
-| 5 | `packages/ui/src/components/chart.tsx` | `BarChart({horizontal:true})` `series[0]` dışını sessizce yutuyor |
-| 6 | `packages/ui/src/components/chart.tsx` | sabit `width=640` viewBox → küçük ekranda eksen yazıları da küçülüp okunmuyor |
-| 7 | `packages/ui/src/components/table.tsx` | `DataTable` ölü kod; davranış 4 tabloda kopyalanmış |
-| 8 | `packages/ui/src/components/chart.tsx` | `Sparkline` export ediliyor, hiç kullanılmıyor |
-| 9 | `apps/app` (30 yer) | `linkComponent={Link as never}` — jenerik `LinkLike` tipiyle giderilir |
-| 10 | `apps/app` | route seviyesi `Suspense`/streaming yok |
+| # | Dosya | Sorun | Durum |
+|---|---|---|---|
+| 1 | `apps/web/src/components/site-header.tsx` | `lg` altında navigasyon tamamen kayboluyor, mobil menü yok | ✅ Faz 1 |
+| 2 | `apps/web/` | `public/` dizini yok → `/logo-light.svg`, `/og-default.png`, `/favicon.ico` 404; `organizationSchema.logo` ve tüm OG görselleri kırık | ✅ Faz 0/1 |
+| 3 | `apps/web/src/app/` | `not-found.tsx` / `error.tsx` yok → çerçevesiz Next varsayılanı | ✅ Faz 1 |
+| 4 | `apps/web/src/components/site-footer.tsx` | rehber `href`'lerinde `@ts-expect-error` | ✅ Faz 1 |
+| 5 | `packages/ui/src/components/chart.tsx` | `BarChart({horizontal:true})` `series[0]` dışını sessizce yutuyor | ✅ F0.3 |
+| 6 | `packages/ui/src/components/chart.tsx` | sabit `width=640` viewBox → küçük ekranda eksen yazıları da küçülüp okunmuyor | ✅ F0.3 (`ResponsiveContainer`) |
+| 7 | `packages/ui/src/components/table.tsx` | `DataTable` ölü kod; davranış 4 tabloda kopyalanmış | ✅ F2.3 |
+| 8 | `packages/ui/src/components/chart.tsx` | `Sparkline` export ediliyor, hiç kullanılmıyor | ✅ F2.2 (`KpiCard`) |
+| 9 | `apps/app` (11 yer) | `linkComponent={Link as never}` — jenerik `LinkLike` tipiyle giderilir | ✅ F2.1 |
+| 10 | `apps/app` | route seviyesi `Suspense`/streaming yok | ✅ F2.4 (beş route'a `loading.tsx`) |
 
 ### Kapılar (yeni)
 
@@ -444,6 +494,24 @@ Elle kontrol listesi (her ikisi de her fazın sonunda):
 | Landing yeniden yazımı SEO regresyonu yaratır | Metadata/JSON-LD/sitemap sözleşmeleri kontrol listesinde; `i18n-keys` ve `content` testleri zaten kapı |
 | Belgelenmiş kararların sessizce geçersizleşmesi | `chart.tsx`, `MIMARI-PLAN.md` §13/§14-C2, `GAP-DURUM.md` §2 karar #2 aynı commit'te güncellenir |
 
+## Faz 2 doğrulaması — ne ölçüldü
+
+Kapılar: `vitest` 326/326, `eslint` 0 hata (10 önceden var olan uyarı), `depcruise`
+ihlal yok, `tsc` iki uygulamada da temiz, `next build` iki uygulamada da başarılı,
+`scripts/bundle-budget.mjs` tüm route'lar bütçe içinde.
+
+Tarayıcıda (`:3001`, gerçek API + tohumlanmış veritabanı) gezilenler: kontrol
+paneli (yedi pano, açık **ve** koyu tema), `/panel/birimler` (yapışkan başlık,
+sıralama, seçim, toplu silme + onay diyaloğu), **rahat ve sıkışık yoğunluk**,
+ve akış içi çekmece zinciri: listeden "Yeni bağımsız bölüm" → çekmece → kayıt →
+"bu birime sakin ekle" → sakin çekmecesi `?birim=` ön seçimiyle. Liste her adımda
+arkada açık kaldı ve kayıt sonrası kendiliğinden tazelendi. Test kaydı silindi.
+
+**Ölçülmedi:** 375px mobil kart görünümü, JS kapalı akış, klavye turu ve
+`data-font-scale="xl"` / `data-contrast="high"` kombinasyonları — kod yolları
+Faz 1'de doğrulananların aynısı ama panelde tarayıcıda görülmediler.
+
 ## Açık karar
 
-**Faz 0 başlamadan:** palet adayı A / B / C seçimi (bkz. §0.1). Diğer her şey planlanmış durumda.
+Yok. Palet adayı A uygulandı (bkz. R4). Kalan iş Faz 3'ün iki kalemi:
+`pnpm lint`'in CI adımı olması ve `jest-axe` smoke testi.
