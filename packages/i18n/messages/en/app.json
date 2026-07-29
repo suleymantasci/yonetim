@@ -1304,7 +1304,19 @@
       "in_app": "Visible only inside the app; the resident will not see it unless they open the app."
     },
     "body": "Message text",
-    "bodyPlaceholder": "Text to send to the resident…"
+    "bodyPlaceholder": "Text to send to the resident…",
+    "threads": "Conversations",
+    "awaitingReply": "Awaiting reply",
+    "awaitingReplyBadge": "Awaiting reply",
+    "youPrefix": "You:",
+    "messageCount": "{count} messages",
+    "unmatched": "Unmatched number",
+    "unmatchedHint": "This number is not linked to a resident record, so it cannot be replied to here. Add the resident with their phone number and later messages will land in their conversation.",
+    "reply": "Reply",
+    "replySectionHint": "Reply to {name}. The recipient is fixed; pick the channel and write the text.",
+    "replyNoPermission": "You do not have permission to reply.",
+    "threadEmptyTitle": "No conversation with this resident yet",
+    "threadEmptyDescription": "You can write the first message below."
   },
   "requests": {
     "title": "Requests & faults",

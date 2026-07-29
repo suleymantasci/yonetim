@@ -103,18 +103,56 @@ export const messageRow = z.object({
   createdAt: dateTime,
 });
 
+/** Konuşmanın muhatabı — sakin kaydıyla eşleşmemişse `id` yok. */
+export const messageCorrespondent = z.object({
+  id: uuid.nullable(),
+  name: z.string().nullable(),
+  /** "A Blok · 9" gibi; birden çok bağımsız bölüm varsa virgülle. */
+  unitLabel: z.string().nullable(),
+  phoneMasked: z.string().nullable(),
+});
+
+/**
+ * Yazışma başlığı — **mesaj değil kişi** satırı.
+ *
+ * Liste neden mesaj değil konuşma gösteriyor: yönetici "hangi mesaj geldi"
+ * diye değil "kime dönmem gerekiyor" diye bakıyor. Düz mesaj kütüğünde aynı
+ * sakinin beş mesajı beş satırdı ve hiçbirinde kimin yazdığı yazmıyordu;
+ * gelen kutusu olmayan bir gelen kutusuydu.
+ */
+export const messageThreadRow = z.object({
+  correspondent: messageCorrespondent,
+  channel: z.string(),
+  lastBody: z.string().nullable(),
+  lastDirection: z.string(),
+  lastAt: dateTime,
+  messageCount: z.number().int(),
+  /** Son söz sakinde — yönetimin dönmesi bekleniyor. */
+  awaitingReply: z.boolean(),
+});
+
 export const messageListResponse = z.object({
-  rows: z.array(messageRow),
+  threads: z.array(messageThreadRow),
   totals: z.object({
     inbound: z.number().int(),
     botHandled: z.number().int(),
     needsHuman: z.number().int(),
     /** Botun devraldığı gelen mesaj oranı (%) — otomasyonun gerçek etkisi. */
     botRatePct: z.number().int(),
+    /** Cevap bekleyen yazışma sayısı — yöneticinin iş listesi. */
+    awaitingReply: z.number().int(),
   }),
 });
 
 export type MessageListResponse = z.infer<typeof messageListResponse>;
+
+/** Tek sakinle yazışmanın tamamı — eskiden yeniye sıralı. */
+export const messageThreadDetail = z.object({
+  correspondent: messageCorrespondent,
+  rows: z.array(messageRow),
+});
+
+export type MessageThreadDetail = z.infer<typeof messageThreadDetail>;
 
 /* ------------------------------------------------------------------ *
  * Toplantılar ve karar defteri

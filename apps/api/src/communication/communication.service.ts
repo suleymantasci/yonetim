@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 
 import type {
@@ -7,10 +7,15 @@ import type {
   AnnouncementListResponse,
   MeetingListResponse,
   MessageListResponse,
+  MessageThreadDetail,
   PollListResponse,
 } from "@yonetim/contracts";
 
+import { maskPhone } from "@yonetim/core";
 import { filterContent, requiresIndividualDelivery } from "@yonetim/kvkk";
+
+/** Sakin kaydıyla eşleşmemiş mesajların ortak kovası — cevaplanamaz. */
+const UNMATCHED = "unmatched";
 
 import { AuditService } from "../governance/audit/audit.service";
 import { CommunicationRepository } from "./communication.repository";
@@ -159,25 +164,55 @@ export class CommunicationService {
     };
   }
 
+  /**
+   * Gelen kutusu — mesajlar **kişiye göre** kümelenir.
+   *
+   * Düz mesaj kütüğü yöneticinin sorusuna cevap vermiyordu: aynı sakinin beş
+   * mesajı beş ayrı satırdı, hiçbirinde kimin yazdığı görünmüyordu ve
+   * cevaplamanın yolu yoktu. Kümeleme burada yapılıyor çünkü karar veriye
+   * değil ekrana ait: SQL tarafında `DISTINCT ON` ile son mesajı çekmek aynı
+   * listeyi verirdi ama "cevap bekliyor mu" kararı yine burada olurdu.
+   */
   async messages(): Promise<MessageListResponse> {
-    const rows = await this.repo.messages();
+    const { rows, unitLabels } = await this.repo.messages();
 
-    const mapped = rows.map((r) => ({
-      id: r.id,
-      channel: r.channel,
-      direction: r.direction,
-      body: r.body,
-      intent: r.intent,
-      intentConfidence: r.intentConfidence,
-      handledByBot: r.handledByBot,
-      createdAt: r.createdAt,
-    }));
-
-    const inbound = mapped.filter((m) => m.direction === "in");
+    const inbound = rows.filter((m) => m.direction === "in");
     const botHandled = inbound.filter((m) => m.handledByBot);
 
+    // Sorgu yeniden eskiye sıralı; her anahtarın ilk görülen satırı en son
+    // mesajı. `count` ile ilerledikçe konuşmanın hacmi de birikiyor.
+    const threads = new Map<string, MessageListResponse["threads"][number]>();
+    for (const m of rows) {
+      const key = m.userId ?? UNMATCHED;
+      const existing = threads.get(key);
+      if (existing) {
+        existing.messageCount += 1;
+        continue;
+      }
+      threads.set(key, {
+        correspondent: {
+          id: m.userId,
+          name: m.userId
+            ? [m.firstName, m.lastName].filter(Boolean).join(" ") || null
+            : null,
+          unitLabel: m.userId ? (unitLabels.get(m.userId) ?? null) : null,
+          phoneMasked: m.phone ? maskPhone(m.phone) : null,
+        },
+        channel: m.channel,
+        lastBody: m.body,
+        lastDirection: m.direction,
+        lastAt: m.createdAt,
+        messageCount: 1,
+        // Son söz sakindeyse top yönetimde. Ayrı bir "okundu" tablosu yok;
+        // bu ölçü rozetin sorduğu şeye ("dönmem gereken var mı") yetiyor.
+        awaitingReply: m.direction === "in",
+      });
+    }
+
+    const threadRows = [...threads.values()];
+
     return {
-      rows: mapped,
+      threads: threadRows,
       totals: {
         inbound: inbound.length,
         botHandled: botHandled.length,
@@ -186,7 +221,23 @@ export class CommunicationService {
           inbound.length > 0
             ? Math.round((botHandled.length / inbound.length) * 100)
             : 0,
+        awaitingReply: threadRows.filter((t) => t.awaitingReply).length,
       },
+    };
+  }
+
+  async messageThread(userId: string): Promise<MessageThreadDetail> {
+    const { user, rows, unitLabels } = await this.repo.messageThread(userId);
+    if (!user) throw new NotFoundException("not_found");
+
+    return {
+      correspondent: {
+        id: user.id,
+        name: [user.firstName, user.lastName].filter(Boolean).join(" ") || null,
+        unitLabel: unitLabels.get(user.id) ?? null,
+        phoneMasked: user.phone ? maskPhone(user.phone) : null,
+      },
+      rows,
     };
   }
 

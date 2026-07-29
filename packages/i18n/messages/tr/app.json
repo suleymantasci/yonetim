@@ -1304,7 +1304,19 @@
       "in_app": "Yalnız uygulamada görünür; sakin uygulamayı açmazsa görmez."
     },
     "body": "Mesaj metni",
-    "bodyPlaceholder": "Sakine iletilecek metin…"
+    "bodyPlaceholder": "Sakine iletilecek metin…",
+    "threads": "Yazışmalar",
+    "awaitingReply": "Cevap bekleyen",
+    "awaitingReplyBadge": "Cevap bekliyor",
+    "youPrefix": "Siz:",
+    "messageCount": "{count} mesaj",
+    "unmatched": "Eşleşmemiş numara",
+    "unmatchedHint": "Bu numara bir sakin kaydıyla eşleşmedi; buradan cevap yazılamaz. Sakini kaydedip numarasını girin, sonraki mesajlar yazışmasına düşer.",
+    "reply": "Cevapla",
+    "replySectionHint": "{name} kişisine cevap. Alıcı sabit; kanal ve metni seçin.",
+    "replyNoPermission": "Cevap yazma yetkiniz yok.",
+    "threadEmptyTitle": "Bu sakinle henüz yazışma yok",
+    "threadEmptyDescription": "İlk mesajı aşağıdan yazabilirsiniz."
   },
   "requests": {
     "title": "Talepler & Arıza",

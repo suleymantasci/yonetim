@@ -24,12 +24,20 @@ const CHANNELS = ["whatsapp", "sms", "in_app"] as const;
  */
 export function MessageForm({
   residents,
+  recipient,
   submitLabel,
   layout,
   onCancel,
   onSent,
 }: {
-  residents: { id: string; name: string }[];
+  /** Alıcı seçilecekse liste; `recipient` verildiyse gereksiz. */
+  residents?: { id: string; name: string }[];
+  /**
+   * Muhatap sabitse (yazışma ekranından cevap) alıcı seçimi hiç
+   * gösterilmiyor: yanlış kişiye yazmanın en kolay yolu, cevap yazarken
+   * açık duran bir alıcı listesidir.
+   */
+  recipient?: { id: string; name: string };
   submitLabel: string;
   layout?: "page" | "modal";
   onCancel?: () => void;
@@ -49,17 +57,28 @@ export function MessageForm({
       onCancel={onCancel}
       onSuccess={onSent}
     >
-      <FormSection title={t("composeSection")} description={t("composeSectionHint")}>
-        <FormField name="userId" label={t("recipient")} required>
-          <Select name="userId" defaultValue="" required>
-            <option value="">{t("recipientPlaceholder")}</option>
-            {residents.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name}
-              </option>
-            ))}
-          </Select>
-        </FormField>
+      <FormSection
+        title={t("composeSection")}
+        description={
+          recipient
+            ? t("replySectionHint", { name: recipient.name })
+            : t("composeSectionHint")
+        }
+      >
+        {recipient ? (
+          <input type="hidden" name="userId" value={recipient.id} />
+        ) : (
+          <FormField name="userId" label={t("recipient")} required>
+            <Select name="userId" defaultValue="" required>
+              <option value="">{t("recipientPlaceholder")}</option>
+              {(residents ?? []).map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))}
+            </Select>
+          </FormField>
+        )}
 
         <FormField name="channel" label={t("channel")} required>
           <Select

@@ -110,8 +110,22 @@ export class CommunicationController {
 
   @Get("messages")
   @RequirePermission("message:read")
+  @ApiOperation({
+    summary: "Gelen kutusu — yazışmalar kişiye göre kümelenmiş",
+    description:
+      "Mesaj kütüğü değil konuşma listesi döner: her satır bir muhatap, " +
+      "son mesajı ve cevap bekleyip beklemediği. Sakin kaydıyla eşleşmemiş " +
+      "mesajlar tek bir `correspondent.id: null` başlığında toplanır.",
+  })
   messages() {
     return this.service.messages();
+  }
+
+  @Get("messages/:userId")
+  @RequirePermission("message:read")
+  @ApiOperation({ summary: "Tek sakinle yazışmanın tamamı" })
+  messageThread(@Param("userId", ParseUUIDPipe) userId: string) {
+    return this.service.messageThread(userId);
   }
 
   @Post("messages")

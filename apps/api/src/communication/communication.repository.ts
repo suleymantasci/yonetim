@@ -1,13 +1,18 @@
 import { Injectable } from "@nestjs/common";
-import { desc, eq, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 
 import {
   announcements,
+  blocks,
   meetingDecisions,
   meetings,
   messages,
   pollVotes,
   polls,
+  unitOccupancies,
+  units,
+  users,
+  type Database,
 } from "@yonetim/db";
 
 import { DbService } from "../infra/db/db.service";
@@ -53,10 +58,104 @@ export class CommunicationRepository {
     });
   }
 
-  async messages(limit = 150) {
-    return this.db.tx(async (tx) =>
-      tx.select().from(messages).orderBy(desc(messages.createdAt)).limit(limit),
-    );
+  /**
+   * Yazışma kütüğü + muhatabın kim olduğu.
+   *
+   * Kullanıcı adı `leftJoin` ile geliyor: `user_id` boş bir mesaj (tanınmayan
+   * numaradan gelen WhatsApp) listeden düşmemeli — yönetici onu da görmeli,
+   * yalnız cevaplayamaz.
+   */
+  async messages(limit = 300) {
+    return this.db.tx(async (tx) => {
+      const rows = await tx
+        .select({
+          id: messages.id,
+          userId: messages.userId,
+          channel: messages.channel,
+          direction: messages.direction,
+          body: messages.body,
+          intent: messages.intent,
+          intentConfidence: messages.intentConfidence,
+          handledByBot: messages.handledByBot,
+          createdAt: messages.createdAt,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          phone: users.phone,
+        })
+        .from(messages)
+        .leftJoin(users, eq(users.id, messages.userId))
+        .orderBy(desc(messages.createdAt))
+        .limit(limit);
+
+      const userIds = [...new Set(rows.map((r) => r.userId).filter((v): v is string => v !== null))];
+
+      return { rows, unitLabels: await this.unitLabels(tx, userIds) };
+    });
+  }
+
+  /** Tek sakinle yazışma. Sakin bulunamazsa `user` yok — servis 404 atar. */
+  async messageThread(userId: string, limit = 200) {
+    return this.db.tx(async (tx) => {
+      const [user] = await tx
+        .select({
+          id: users.id,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          phone: users.phone,
+        })
+        .from(users)
+        .where(and(eq(users.id, userId), isNull(users.deletedAt)))
+        .limit(1);
+
+      const rows = await tx
+        .select({
+          id: messages.id,
+          channel: messages.channel,
+          direction: messages.direction,
+          body: messages.body,
+          intent: messages.intent,
+          intentConfidence: messages.intentConfidence,
+          handledByBot: messages.handledByBot,
+          createdAt: messages.createdAt,
+        })
+        .from(messages)
+        .where(eq(messages.userId, userId))
+        .orderBy(messages.createdAt)
+        .limit(limit);
+
+      const unitLabels = user ? await this.unitLabels(tx, [userId]) : new Map<string, string>();
+
+      return { user, rows, unitLabels };
+    });
+  }
+
+  /** `userId` → "A Blok · 9" etiketi. Boş liste için sorgu açılmıyor. */
+  private async unitLabels(tx: Database, userIds: string[]) {
+    const labels = new Map<string, string>();
+    if (userIds.length === 0) return labels;
+
+    const rows = await tx
+      .select({
+        userId: unitOccupancies.userId,
+        number: units.number,
+        block: blocks.name,
+      })
+      .from(unitOccupancies)
+      .innerJoin(units, eq(units.id, unitOccupancies.unitId))
+      .leftJoin(blocks, eq(blocks.id, units.blockId))
+      .where(
+        and(
+          inArray(unitOccupancies.userId, userIds),
+          isNull(unitOccupancies.endDate),
+        ),
+      );
+
+    for (const r of rows) {
+      const label = [r.block, r.number].filter(Boolean).join(" · ");
+      const current = labels.get(r.userId);
+      labels.set(r.userId, current ? `${current}, ${label}` : label);
+    }
+    return labels;
   }
 
   async meetings(limit = 30) {
