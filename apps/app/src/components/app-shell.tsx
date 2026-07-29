@@ -33,6 +33,10 @@ const BADGE_TONE: Record<NavBadgeKey, "danger" | "warning" | "info"> = {
   kvkkPending: "warning",
   unmatchedBankTx: "warning",
   overdueMaintenance: "danger",
+  // İkisi de "birileri senden dönüş bekliyor": geciken bir iş değil ama
+  // bekleyen bir insan var. `danger` panik yaratır, `info` göz ardı edilir.
+  messagesAwaitingReply: "warning",
+  pendingAccessRequests: "warning",
 };
 
 export { NAV_ITEMS };

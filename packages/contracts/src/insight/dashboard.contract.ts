@@ -113,8 +113,8 @@ export type DashboardResponse = z.infer<typeof dashboardResponse>;
 /**
  * `GET /v1/panel/shell/badges` — sidebar sayaçları.
  *
- * Beş sayaç **tek sorgu turunda** toplanıyor: her menü öğesi için ayrı uç
- * çağırmak panelin her sayfasında beş gereksiz hop demekti.
+ * Sayaçlar **tek sorgu turunda** toplanıyor: her menü öğesi için ayrı uç
+ * çağırmak panelin her sayfasında bir avuç gereksiz hop demekti.
  *
  * `slaBreached` ve `overdueMaintenance` sunucuda `now()` ile hesaplanıyor.
  * Saati yanlış kurulmuş bir tarayıcı, "SLA aşıldı mı" sorusunu tam da yanlış
@@ -126,6 +126,21 @@ export const navBadges = z.object({
   kvkkPending: z.number().int(),
   unmatchedBankTx: z.number().int(),
   overdueMaintenance: z.number().int(),
+  /**
+   * Son sözü sakinde kalmış yazışma sayısı.
+   *
+   * Mesaj **adedi** değil, konuşma adedi: aynı sakinin arka arkaya yazdığı
+   * beş mesaj yöneticiye tek bir iş çıkarıyor. Adet sayılsaydı rozet "5"
+   * derdi, açan tek bir konuşma bulurdu.
+   */
+  messagesAwaitingReply: z.number().int(),
+  /**
+   * Bekleyen erişim talebi — `/kayit-talebi`'nden gelen onay kuyruğu.
+   *
+   * Bu kuyruğa bakılmadığında başvuran kişi hiçbir dönüş alamıyor: kayıt
+   * ekranı "yönetim onaylayınca giriş yapabilirsiniz" diyor ve orada kalıyor.
+   */
+  pendingAccessRequests: z.number().int(),
 });
 
 export type NavBadgesResponse = z.infer<typeof navBadges>;

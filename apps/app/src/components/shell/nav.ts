@@ -24,7 +24,9 @@ export type NavBadgeKey =
   | "slaBreached"
   | "kvkkPending"
   | "unmatchedBankTx"
-  | "overdueMaintenance";
+  | "overdueMaintenance"
+  | "messagesAwaitingReply"
+  | "pendingAccessRequests";
 
 /**
  * Menü öğesinin kime ait olduğu.
@@ -136,6 +138,21 @@ export const NAV_ITEMS: NavItem[] = [
   },
   { href: "/panel/birimler", key: "units", permission: "unit:read", group: "property" },
   { href: "/panel/sakinler", key: "residents", permission: "resident:read", group: "property" },
+  /*
+   * Onay kuyruğu **ayrı menü öğesi**: `/kayit-talebi`'nden gelen başvuru
+   * bugüne kadar hiçbir ekranda görünmüyordu. Uç (`resident:invite`) ve onay
+   * mantığı vardı, gidilecek yer yoktu — başvuran kişi de "yönetim
+   * onaylayınca giriş yapabilirsiniz" ekranında kalıyordu. Rozet buraya
+   * bakıyor; rozeti sakinler listesine asmak, tıklayanı talebi olmayan bir
+   * ekrana götürürdü.
+   */
+  {
+    href: "/panel/sakinler/talepler",
+    key: "accessRequests",
+    permission: "resident:invite",
+    group: "property",
+    badge: "pendingAccessRequests",
+  },
   { href: "/panel/gecis", key: "migration", permission: "unit:write", group: "property" },
   { href: "/panel/aidat", key: "duesPlans", permission: "dues:read", group: "finance" },
   { href: "/panel/borclar", key: "debts", permission: "debt:read", group: "finance" },
@@ -161,7 +178,15 @@ export const NAV_ITEMS: NavItem[] = [
   },
   { href: "/panel/anketler", key: "polls", permission: "poll:read", group: "communication" },
   { href: "/panel/toplantilar", key: "meetings", permission: "meeting:read", group: "communication" },
-  { href: "/panel/mesajlar", key: "messages", permission: "message:read", group: "communication" },
+  {
+    href: "/panel/mesajlar",
+    key: "messages",
+    permission: "message:read",
+    group: "communication",
+    // Yönetici gelen kutusuna girmedikçe yeni mesajdan haberdar olmuyordu;
+    // sakin ise cevap bekliyor. Rozet "dönmem gereken konuşma" sayısı.
+    badge: "messagesAwaitingReply",
+  },
   {
     href: "/panel/talepler",
     key: "requests",
