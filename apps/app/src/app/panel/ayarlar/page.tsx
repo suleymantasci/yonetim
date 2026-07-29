@@ -56,6 +56,7 @@ export default async function SettingsPage() {
     lateFeeMonthlyPct?: number | null;
     kvkkContactEmail?: string | null;
     whatsappOptInRequired?: boolean;
+    payment?: { onlineEnabled?: boolean; feePaidBy?: string };
     invoiceInfo?: {
       title?: string | null;
       taxNumber?: string | null;
@@ -98,6 +99,15 @@ export default async function SettingsPage() {
                     invoiceAddress: settings.invoiceInfo?.address ?? null,
                     whatsappOptInRequired:
                       settings.whatsappOptInRequired !== false,
+                    // Varsayılan **kapalı**: ayarı hiç görmemiş bir site
+                    // kartla tahsilatı açmış sayılmaz (API tarafındaki
+                    // `readPaymentSettings` ile aynı kural).
+                    onlinePaymentEnabled:
+                      settings.payment?.onlineEnabled === true,
+                    paymentFeePaidBy:
+                      settings.payment?.feePaidBy === "resident"
+                        ? "resident"
+                        : "management",
                   }}
                 />
               </CardBody>

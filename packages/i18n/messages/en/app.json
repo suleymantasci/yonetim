@@ -1888,7 +1888,17 @@
       "platform": "Via the platform account",
       "none": "—"
     },
-    "lastSuccessAt": "Last sent {date} · {count} messages in the last 30 days"
+    "lastSuccessAt": "Last sent {date} · {count} messages in the last 30 days",
+    "paymentSection": "Card collection",
+    "paymentSectionHint": "Whether residents can pay their dues by card. When off, the payment screen shows bank transfer details instead.",
+    "onlinePaymentEnabled": "Allow card payments",
+    "onlinePaymentEnabledHint": "Every collection incurs a provider commission. When off, residents can only pay by bank transfer. If the payment infrastructure is not configured, card payment cannot start even with this on.",
+    "paymentFeePaidBy": "Who covers the commission",
+    "paymentFeePaidByHint": "If the resident covers it, the commission appears as a separate line on the payment screen and is added to the charged amount; it is not applied to the balance.",
+    "feePayer": {
+      "management": "Site management",
+      "resident": "Resident"
+    }
   },
   "migration": {
     "title": "Data import",
@@ -2049,7 +2059,17 @@
     "payButton": "Pay {amount} securely",
     "noDebtTitle": "Nothing to pay",
     "noDebtBody": "You have no outstanding balance.",
-    "invalidAmount": "Invalid payment amount."
+    "invalidAmount": "Invalid payment amount.",
+    "onlineUnavailableTitle": "Card payment is currently off",
+    "onlineUnavailable": {
+      "not_enabled": "The site management has not enabled card payments yet. You can transfer your dues to the account below; you may ask your management to enable card payments.",
+      "provider_missing": "The payment infrastructure is unavailable right now. You can transfer your dues to the account below.",
+      "no_open_debt": "You have no outstanding balance."
+    },
+    "transferTitle": "Pay by bank transfer",
+    "transferDescription": "You can transfer your dues directly to the site account.",
+    "transferReference": "Write your unit number ({unit}) in the description field. Transfers without a description may not be applied to your balance because the unit cannot be identified.",
+    "noBankAccount": "The site management has not registered a bank account yet. Please contact your management to pay."
   },
   "admin": {
     "title": "Platform administration",
@@ -2216,7 +2236,8 @@
     },
     "daysLate": "{days} days late",
     "changesTitle": "Change history",
-    "changesDescription": "Every adjustment to your balance appears here and cannot be deleted."
+    "changesDescription": "Every adjustment to your balance appears here and cannot be deleted.",
+    "payAction": "Pay my balance"
   },
   "myPayments": {
     "title": "My Payments",

@@ -632,6 +632,44 @@ export type CertificateVerifyResult = z.infer<typeof certificateVerifyResult>;
  * tutarla tahsil edilen tutar arasında bir kuruş fark, şeffaflık vaadini
  * (Bölüm 1.2) bozardı. İki yerde hesaplamak o farkın kaçınılmaz yolu.
  */
+/**
+ * Kartla ödeme neden kapalı.
+ *
+ * Tek bir `available: false` yetmiyor: sakine "şu an kartla ödeyemezsiniz"
+ * demek, **neden** olduğunu söylemeden onu yöneticiye yönlendirmiyor.
+ *  - `not_enabled`: yönetim online tahsilatı açmamış (her tahsilat komisyon
+ *    doğuruyor, açmak yönetimin kararı).
+ *  - `provider_missing`: ayar açık ama sağlayıcı kimlik bilgileri kurulu
+ *    değil — bu bir yapılandırma eksiği, yönetim kararı değil.
+ *  - `no_open_debt`: ödenecek bir şey yok.
+ */
+export const portalPaymentUnavailableReason = z.enum([
+  "not_enabled",
+  "provider_missing",
+  "no_open_debt",
+]);
+
+/** Kart komisyonunu kim karşılıyor — site ayarı (`tenants.settings.payment`). */
+export const paymentFeePayer = z.enum(["management", "resident"]);
+
+export type PaymentFeePayer = z.infer<typeof paymentFeePayer>;
+
+/**
+ * Havale/EFT hedefi.
+ *
+ * IBAN **açık** dönüyor, maskeli değil (2026-07-29 kararı): aidat hesabının
+ * IBAN'ı zaten ilan panosunda ve aidat bildiriminde duyurulan bir bilgi, KMK
+ * yöneticiye aidatın nereye yatırılacağını bildirme yükümlülüğü veriyor.
+ * Maskelemek ekranı işlevsiz bırakırdı — sakin parayı gönderemez. Erişim
+ * denetim kütüğüne yazılıyor.
+ */
+export const portalBankTarget = z.object({
+  id: uuid,
+  bankName: z.string(),
+  accountName: z.string().nullable(),
+  iban: z.string().nullable(),
+});
+
 export const portalPaymentSummary = z.object({
   unit: z.object({ id: uuid, number: z.string() }).nullable(),
   tenantName: z.string(),
@@ -642,10 +680,18 @@ export const portalPaymentSummary = z.object({
     amountMinor: moneyMinor,
     platformFeeMinor: moneyMinor,
     processorFeeMinor: moneyMinor,
+    /** Tahsil edilecek tutar: komisyonu sakin ödüyorsa borçtan büyüktür. */
     totalMinor: moneyMinor,
     /** Komisyonu kim üstleniyor — ekrandaki bilgi notunu bu belirliyor. */
     paidBy: z.enum(["management", "resident"]),
   }),
+  /** Kartla ödeme bu site için mümkün mü, değilse neden. */
+  online: z.object({
+    available: z.boolean(),
+    reason: portalPaymentUnavailableReason.nullable(),
+  }),
+  /** Havale hedefleri — kartla ödeme kapalıyken tek yol bu. */
+  bankAccounts: z.array(portalBankTarget),
 });
 
 export type PortalPaymentSummary = z.infer<typeof portalPaymentSummary>;
@@ -657,10 +703,16 @@ export type PortalPaymentSummary = z.infer<typeof portalPaymentSummary>;
  * İstemciden tutar almak, ödenecek miktarı istemcinin belirlemesi demekti.
  */
 export const portalCheckoutResult = z.object({
-  /** Hosted checkout adresi — kart verisi hiçbir zaman bize gelmiyor (PCI-DSS). */
-  paymentPageUrl: z.string().nullable(),
-  /** Sağlayıcı yapılandırılmamışsa havale talimatına düşülür. */
-  fallback: z.enum(["bank_transfer"]).nullable(),
+  /**
+   * Hosted checkout adresi — kart verisi hiçbir zaman bize gelmiyor (PCI-DSS).
+   *
+   * Nullable değil: uç, kartla ödemenin mümkün olmadığı durumda hiç buraya
+   * gelmiyor (`online_payment_unavailable` ile reddediyor). Eskiden burada
+   * `fallback: "bank_transfer"` dönüyordu ve panel onu var olmayan bir
+   * `/odeme/havale` sayfasına yönlendiriyordu; havale bilgisi artık ödeme
+   * özetinin kendi içinde (`bankAccounts`).
+   */
+  paymentPageUrl: z.string(),
   conversationId: z.string(),
 });
 

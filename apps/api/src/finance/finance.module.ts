@@ -13,6 +13,7 @@ import { DebtController } from "./debt/debt.controller";
 import { DebtRepository } from "./debt/debt.repository";
 import { DebtService } from "./debt/debt.service";
 import { PortalPaymentController } from "./portal-payment/portal-payment.controller";
+import { PropertyModule } from "../property/property.module";
 
 /**
  * `finance` bağlamı — MIMARI-PLAN §6.4: aidat planı, borç, tahsilat, gider,
@@ -24,6 +25,9 @@ import { PortalPaymentController } from "./portal-payment/portal-payment.control
  * `integration` bağlamında — orası dış sistemle konuşan taraf.
  */
 @Module({
+  // Havale hedefinin IBAN'ı şifreli saklanıyor ve çözümü `PiiService`'te.
+  // İkinci bir çözme yolu açmak, anahtarın iki yerde kullanılması demekti.
+  imports: [PropertyModule],
   controllers: [
     DebtController,
     ExpenseController,

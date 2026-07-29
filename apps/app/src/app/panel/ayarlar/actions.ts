@@ -48,6 +48,8 @@ const settingsSchema = z.object({
   invoiceAddress: optionalText(500),
 
   whatsappOptInRequired: checkboxField,
+  onlinePaymentEnabled: checkboxField,
+  paymentFeePaidBy: z.enum(["management", "resident"]).default("management"),
 });
 
 export async function saveSettings(
@@ -82,6 +84,8 @@ export async function saveSettings(
           invoiceTaxOffice: input.invoiceTaxOffice ?? null,
           invoiceAddress: input.invoiceAddress ?? null,
           whatsappOptInRequired: input.whatsappOptInRequired,
+          onlinePaymentEnabled: input.onlinePaymentEnabled,
+          paymentFeePaidBy: input.paymentFeePaidBy,
         },
         z.object({ id: z.string().uuid() }),
       );

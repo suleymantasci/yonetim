@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
-import { Alert, FormSection, Input, Switch, Textarea } from "@yonetim/ui";
+import { Alert, FormSection, Input, Select, Switch, Textarea } from "@yonetim/ui";
 
 import { ActionForm, FormField } from "@/components/form/action-form";
 import { saveSettings } from "./actions";
@@ -24,6 +24,8 @@ export interface SettingsFormDefaults {
   invoiceTaxOffice: string | null;
   invoiceAddress: string | null;
   whatsappOptInRequired: boolean;
+  onlinePaymentEnabled: boolean;
+  paymentFeePaidBy: "management" | "resident";
 }
 
 /**
@@ -229,6 +231,36 @@ export function SettingsForm({
           description={t("whatsappOptInRequiredHint")}
           defaultChecked={defaults.whatsappOptInRequired}
         />
+      </FormSection>
+
+      {/*
+        ÖDEME AYARI NEDEN BURADA VE NEDEN VARSAYILAN KAPALI: kartla tahsilat
+        her işlemde sağlayıcı komisyonu doğuruyor. Yöneticinin haberi olmadan
+        açık gelmesi, siteye sormadan masraf yazmak olurdu. Kapalıyken sakin
+        ödeme ekranında havale bilgilerini görüyor — bugün zaten yaptığı şey.
+      */}
+      <FormSection
+        title={t("paymentSection")}
+        description={t("paymentSectionHint")}
+        columns={1}
+      >
+        <Switch
+          name="onlinePaymentEnabled"
+          label={t("onlinePaymentEnabled")}
+          description={t("onlinePaymentEnabledHint")}
+          defaultChecked={defaults.onlinePaymentEnabled}
+        />
+
+        <FormField
+          name="paymentFeePaidBy"
+          label={t("paymentFeePaidBy")}
+          hint={t("paymentFeePaidByHint")}
+        >
+          <Select name="paymentFeePaidBy" defaultValue={defaults.paymentFeePaidBy}>
+            <option value="management">{t("feePayer.management")}</option>
+            <option value="resident">{t("feePayer.resident")}</option>
+          </Select>
+        </FormField>
       </FormSection>
     </ActionForm>
   );

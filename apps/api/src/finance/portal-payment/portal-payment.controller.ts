@@ -18,6 +18,7 @@ import type {
 } from "@yonetim/contracts";
 import { errors, formatKurus } from "@yonetim/core";
 import {
+  bankAccounts,
   debts,
   payments,
   tenants,
@@ -33,6 +34,13 @@ import {
 
 import { AuditService } from "../../governance/audit/audit.service";
 import { DbService } from "../../infra/db/db.service";
+import { PiiService } from "../../property/resident/pii.service";
+import {
+  checkoutAmounts,
+  onlineAvailability,
+  readPaymentSettings,
+  type PaymentSettings,
+} from "./payment-policy";
 
 /**
  * Sakin ödemesi — `/v1/panel/portal/payment` (SPEC Bölüm 1.2 / 7.1).
@@ -50,11 +58,21 @@ export class PortalPaymentController {
   constructor(
     private readonly db: DbService,
     private readonly audit: AuditService,
+    /** IBAN çözümü — şifreli alanın tek çözüm noktası. */
+    private readonly pii: PiiService,
   ) {}
 
   @Get()
-  @ApiOperation({ summary: "Ödeme özeti — komisyon kırılımıyla" })
+  @ApiOperation({
+    summary: "Ödeme özeti — komisyon kırılımı, kanal uygunluğu ve havale hedefi",
+    description:
+      "Kartla ödeme iki koşula birden bağlı: yönetim online tahsilatı açmış " +
+      "olmalı **ve** sağlayıcı kimlik bilgileri kurulu olmalı. Koşul " +
+      "sağlanmıyorsa `online.available: false` ve sebebi döner; ekran o " +
+      "durumda havale hedeflerini gösterir.",
+  })
   async summary(): Promise<PortalPaymentSummary> {
+    const settings = await this.paymentSettings();
     const scope = await this.resolveScope();
 
     if (!scope) {
@@ -67,14 +85,16 @@ export class PortalPaymentController {
           platformFeeMinor: 0,
           processorFeeMinor: 0,
           totalMinor: 0,
-          paidBy: "management",
+          paidBy: settings.feePaidBy,
         },
+        online: { available: false, reason: "no_open_debt" },
+        bankAccounts: await this.bankTargets(),
       };
     }
 
     const fees = calculateFees({
       amountKurus: scope.total,
-      paidBy: "management",
+      paidBy: settings.feePaidBy,
     });
 
     return {
@@ -88,6 +108,10 @@ export class PortalPaymentController {
         totalMinor: fees.totalKurus,
         paidBy: fees.paidBy,
       },
+      online: onlineAvailability(settings, scope.total, isIyzicoConfigured()),
+      // Havale hedefleri kartla ödeme açıkken de dönüyor: sakin kartı yoksa
+      // ya da komisyonu doğurmak istemiyorsa havale hâlâ meşru bir yol.
+      bankAccounts: await this.bankTargets(),
     };
   }
 
@@ -103,9 +127,29 @@ export class PortalPaymentController {
     if (!ctx.userId) throw new ForbiddenException("user_context_required");
     const userId = ctx.userId;
 
+    const settings = await this.paymentSettings();
     const scope = await this.resolveScope();
     if (!scope || scope.total <= 0) {
       throw errors.validation("no_open_debt");
+    }
+
+    /*
+     * Uygunluk **burada da** sınanıyor, yalnız özet ucunda değil: ekranın
+     * düğmeyi gizlemesi bir kolaylık, kapı değil. Doğrudan bu uca istek atan
+     * bir istemci, yönetimin hiç açmadığı bir tahsilatı başlatıp siteye
+     * komisyon yazdırabilirdi.
+     */
+    const availability = onlineAvailability(
+      settings,
+      scope.total,
+      isIyzicoConfigured(),
+    );
+    if (!availability.available) {
+      // Sebep `details`'te: istemci "neden" sorusuna metin ayrıştırarak değil
+      // alan okuyarak cevap verebilmeli — mesaj kodu sözleşmede sabit kalıyor.
+      throw errors.validation("online_payment_unavailable", {
+        reason: availability.reason,
+      });
     }
 
     const limit = await rateLimit(RATE_LIMITS.payment, userId);
@@ -113,7 +157,7 @@ export class PortalPaymentController {
 
     const fees = calculateFees({
       amountKurus: scope.total,
-      paidBy: "management",
+      paidBy: settings.feePaidBy,
     });
     // `conversationId` hem sağlayıcı referansı hem idempotency anahtarı:
     // aynı kimlikle ikinci bir kayıt açılamıyor.
@@ -141,12 +185,6 @@ export class PortalPaymentController {
       reason: `Tutar: ${formatKurus(scope.total)}`,
     });
 
-    if (!isIyzicoConfigured()) {
-      // Sağlayıcı yapılandırılmadıysa banka havalesi talimatı gösterilir;
-      // kayıt yine açıldı, çünkü havaleyi de o referansla eşleştireceğiz.
-      return { paymentPageUrl: null, fallback: "bank_transfer", conversationId };
-    }
-
     const person = await this.db.bypass("payment:buyer", async (tx) => {
       const rows = await tx
         .select({
@@ -161,10 +199,15 @@ export class PortalPaymentController {
       return rows[0] ?? null;
     });
 
+    // `createCheckout` `paidPrice = amountKurus + platformFeeKurus` kuruyor;
+    // ikinci alan "borcun üstüne eklenip çekilecek tutar" demek. Ayrımın
+    // gerekçesi `checkoutAmounts` yorumunda.
+    const { surchargeKurus } = checkoutAmounts(fees);
+
     const checkout = await createCheckout({
       conversationId,
       amountKurus: scope.total,
-      platformFeeKurus: fees.platformFeeKurus,
+      platformFeeKurus: surchargeKurus,
       buyer: {
         id: userId,
         name: person?.firstName ?? "-",
@@ -197,11 +240,71 @@ export class PortalPaymentController {
       throw checkout.error;
     }
 
-    return {
-      paymentPageUrl: checkout.value.paymentPageUrl,
-      fallback: null,
-      conversationId,
-    };
+    return { paymentPageUrl: checkout.value.paymentPageUrl, conversationId };
+  }
+
+  /** Sitenin ödeme ayarı — `tenants.settings.payment`. */
+  private async paymentSettings(): Promise<PaymentSettings> {
+    const tenantId = this.db.ctx().tenantId;
+    const settings = await this.db.tx(async (tx) => {
+      const rows = await tx
+        .select({ settings: tenants.settings })
+        .from(tenants)
+        .where(eq(tenants.id, tenantId))
+        .limit(1);
+      return rows[0]?.settings as Record<string, unknown> | undefined;
+    });
+    return readPaymentSettings(settings);
+  }
+
+  /**
+   * Havale hedefleri — **açık IBAN** ile.
+   *
+   * Maskeli IBAN'la havale yapılamaz; bu ekranın tek işi sakinin parayı
+   * gönderebilmesi. Aidat hesabının IBAN'ı zaten ilan panosunda duyurulan
+   * bir bilgi (KMK yöneticiye aidatın nereye yatırılacağını bildirme
+   * yükümlülüğü veriyor), sakinden gizlenecek bir sır değil.
+   *
+   * Yine de erişim denetim kütüğüne yazılıyor: "gizli değil" ile "kim ne
+   * zaman gördü sorulamaz" aynı şey değil.
+   */
+  private async bankTargets(): Promise<PortalPaymentSummary["bankAccounts"]> {
+    const tenantId = this.db.ctx().tenantId;
+
+    const rows = await this.db.tx(async (tx) =>
+      tx
+        .select({
+          id: bankAccounts.id,
+          bankName: bankAccounts.bankName,
+          accountName: bankAccounts.accountName,
+          ibanEncrypted: bankAccounts.ibanEncrypted,
+        })
+        .from(bankAccounts)
+        .where(
+          and(
+            isNull(bankAccounts.deletedAt),
+            eq(bankAccounts.isActive, true),
+            eq(bankAccounts.purpose, "dues"),
+          ),
+        ),
+    );
+
+    if (rows.length > 0) {
+      await this.audit.record({
+        action: "portal.bank_account.viewed",
+        resource: "bank_account",
+        reason: `${rows.length} hesap`,
+      });
+    }
+
+    return rows.map((row) => ({
+      id: row.id,
+      bankName: row.bankName,
+      accountName: row.accountName,
+      // Çözülemeyen kayıt `null` dönüyor ve ekran "yönetime danışın" diyor;
+      // fırlatmak tek bozuk hesap yüzünden ödeme ekranını hiç açılmaz yapardı.
+      iban: this.pii.open(row.ibanEncrypted, tenantId),
+    }));
   }
 
   /**

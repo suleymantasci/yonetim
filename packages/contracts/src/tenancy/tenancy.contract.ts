@@ -79,6 +79,27 @@ export const tenantSettingsSave = z.object({
 
   /** WhatsApp gönderiminde açık rıza aransın mı. */
   whatsappOptInRequired: z.coerce.boolean().default(true),
+
+  /**
+   * Sakin kartla ödeme yapabilsin mi — **varsayılan kapalı**.
+   *
+   * Açık olması bir tercih değil bir **taahhüt**: her tahsilatta sağlayıcı
+   * komisyonu doğuyor ve o komisyonu birinin ödemesi gerekiyor. Yöneticinin
+   * bilgisi dışında açık gelmesi, siteye haber vermeden masraf yazmak olurdu.
+   * Sağlayıcı kimlik bilgileri platform tarafında kurulu değilse bu ayar açık
+   * olsa da ödeme başlatılamaz — iki koşul birlikte aranıyor.
+   */
+  onlinePaymentEnabled: z.coerce.boolean().default(false),
+
+  /**
+   * Kart komisyonunu kim karşılıyor.
+   *
+   * `management`: sakin borcunun tam tutarını öder, komisyonu site karşılar.
+   * `resident`: komisyon ödeme ekranında ayrı satır olarak gösterilir ve
+   * tahsil edilen tutara eklenir — ama **borca mahsup edilmez** (komisyon
+   * borcun bir parçası değil).
+   */
+  paymentFeePaidBy: z.enum(["management", "resident"]).default("management"),
 });
 
 export type TenantSettingsSave = z.infer<typeof tenantSettingsSave>;

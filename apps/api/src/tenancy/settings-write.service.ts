@@ -57,6 +57,10 @@ export class SettingsWriteService {
         lateFeeMonthlyPct: dto.lateFeeMonthlyPct ?? null,
         kvkkContactEmail: dto.kvkkContactEmail ?? null,
         whatsappOptInRequired: dto.whatsappOptInRequired,
+        payment: {
+          onlineEnabled: dto.onlinePaymentEnabled,
+          feePaidBy: dto.paymentFeePaidBy,
+        },
         invoiceInfo: {
           title: dto.invoiceTitle ?? null,
           taxNumber: dto.invoiceTaxNumber ?? null,

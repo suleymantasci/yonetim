@@ -1,8 +1,11 @@
+import { CreditCard } from "lucide-react";
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
 import { portalDebtsResponse } from "@yonetim/contracts";
 import {
-  Badge, Card, CardBody, CardHeader, EmptyState, Stat, tableClasses as tc,
+  Badge, Card, CardBody, CardHeader, EmptyState, Stat,
+  pageActionClasses, tableClasses as tc,
 } from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
@@ -41,7 +44,25 @@ export default async function MyDebtsPage() {
 
   return (
     <>
-      <PageHeader title={t("title")} description={t("description")} />
+      <PageHeader
+        title={t("title")}
+        description={t("description")}
+        /*
+         * Ödeme bağlantısı yalnız açık borç varken: borcu olmayan sakine
+         * "öde" demek, ekranı boşuna açtırmaktan başka bir şey değil.
+         * Hangi kanalların açık olduğuna (kart / havale) ödeme ekranı karar
+         * veriyor — burada o kararı ikinci kez vermek, iki ekranın
+         * ayrışmasının yolu olurdu.
+         */
+        action={
+          totals.outstandingMinor > 0 ? (
+            <Link href="/odeme" className={pageActionClasses.primary}>
+              <CreditCard aria-hidden className="h-4 w-4" />
+              {t("payAction")}
+            </Link>
+          ) : undefined
+        }
+      />
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Stat

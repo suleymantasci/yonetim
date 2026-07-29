@@ -72,6 +72,7 @@ const PORTAL_ENDPOINTS = [
   "/v1/panel/portal/profile",
   "/v1/panel/portal/management",
   "/v1/panel/portal/announcements",
+  "/v1/panel/portal/payment",
 ] as const;
 
 beforeAll(async () => {
@@ -259,6 +260,68 @@ describe.skipIf(!apiReachable)("sakin portalı — kapsam sınırı", () => {
     const { body } = await get("/v1/panel/portal/messages", aliceCookie);
     const bodies = (body.rows as { body: string | null }[]).map((r) => r.body);
     expect(bodies).toEqual(["Mesaj 1"]);
+  });
+
+  it("kartla ödeme varsayılan olarak kapalı ve sebebi söyleniyor", async () => {
+    // Site ayarında `payment` anahtarı hiç yok: yönetim online tahsilatı
+    // açmamış sayılır. Sakine "ödeyemezsiniz" demek yetmiyor — ne yapacağını
+    // söyleyen sebep de dönmeli.
+    const { body } = await get("/v1/panel/portal/payment", aliceCookie);
+    expect(body.online).toEqual({ available: false, reason: "not_enabled" });
+  });
+
+  it("ödeme özeti yalnız kendi dairesinin borcunu topluyor", async () => {
+    const alice = await get("/v1/panel/portal/payment", aliceCookie);
+    const bob = await get("/v1/panel/portal/payment", bobCookie);
+
+    expect((alice.body.fees as { amountMinor: number }).amountMinor).toBe(100_000);
+    expect((bob.body.fees as { amountMinor: number }).amountMinor).toBe(200_000);
+    // Komisyon yönetimde: sakinden borcun tam tutarı isteniyor, üstüne
+    // bir şey eklenmiyor.
+    expect((alice.body.fees as { totalMinor: number }).totalMinor).toBe(100_000);
+  });
+
+  it("yönetim açsa da sağlayıcı kurulu değilse sebep değişiyor", async () => {
+    /*
+     * İki katman ayrı ayrı çalışıyor mu: ayar açıldığında sebep artık
+     * "yönetiminiz açmamış" değil "altyapı yok" olmalı. Tek bir
+     * `available: false` bu ikisini ayırt edemezdi ve sakin, çözümü
+     * yöneticide olmayan bir sorun için yöneticiye giderdi.
+     *
+     * Test ortamında iyzico kimlik bilgileri yok — CI'da da yok, o yüzden
+     * beklenti sabit.
+     */
+    await withBypassRls("test:portal-enable-payment", async (tx) => {
+      await tx
+        .update(tenants)
+        .set({ settings: { payment: { onlineEnabled: true } } })
+        .where(eq(tenants.id, TENANT.id));
+    });
+
+    const { body } = await get("/v1/panel/portal/payment", aliceCookie);
+    expect(body.online).toEqual({ available: false, reason: "provider_missing" });
+
+    await withBypassRls("test:portal-reset-payment", async (tx) => {
+      await tx.update(tenants).set({ settings: {} }).where(eq(tenants.id, TENANT.id));
+    });
+  });
+
+  it("kartla ödeme kapalıyken ödeme başlatılamıyor", async () => {
+    // Ekranın düğmeyi gizlemesi kolaylık; kapı uçta. Doğrudan istek atan bir
+    // istemci, yönetimin hiç açmadığı tahsilatı başlatıp siteye komisyon
+    // yazdırabilirdi.
+    const res = await fetch(`${BASE}/v1/panel/portal/payment`, {
+      method: "POST",
+      headers: { ...asResident(aliceCookie), "content-type": "application/json" },
+      body: "{}",
+    });
+    const body = (await res.json()) as {
+      error?: { message?: string; details?: { reason?: string } };
+    };
+
+    expect(res.status).toBe(422);
+    expect(body.error?.message).toBe("online_payment_unavailable");
+    expect(body.error?.details?.reason).toBe("not_enabled");
   });
 
   it("sakin yönetim mesaj ucuna erişemiyor", async () => {

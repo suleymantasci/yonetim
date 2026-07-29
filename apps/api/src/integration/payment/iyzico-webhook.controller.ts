@@ -100,8 +100,23 @@ export class IyzicoWebhookController {
         ? await tx.select().from(debts).where(eq(debts.unitId, record.unitId))
         : [];
 
+      /*
+       * MAHSUP EDİLEN TUTAR `paidPrice` DEĞİL.
+       *
+       * `paidPrice` sağlayıcının **çektiği** tutar; komisyonu sakin
+       * karşılıyorsa borcun üstüne komisyon da eklenmiş oluyor. Onu olduğu
+       * gibi borçlara dağıtmak, sakine ödemediği kadar borç kapatmak —
+       * sitenin parasını komisyon olarak ikinci kez ödemesi demekti.
+       * Mahsup edilecek olan, ödeme açılırken kaydedilen borç tutarı.
+       *
+       * Yine de çekilen tutarla sınırlanıyor: sağlayıcı beklenenden azını
+       * tahsil ettiyse (kısmi iade, kur farkı) borca yazılabilecek olan
+       * gerçekten tahsil edilendir.
+       */
+      const settleable = Math.min(record.amountKurus, payment.paidPriceKurus);
+
       const allocation = allocatePayment(
-        payment.paidPriceKurus,
+        settleable,
         open
           .filter((d) => d.amountKurus + d.lateFeeKurus - d.paidKurus > 0)
           .map((d) => ({

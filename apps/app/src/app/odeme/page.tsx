@@ -40,10 +40,11 @@ export default async function PaymentPage() {
     );
   }
 
-  const { fees } = data;
+  const { fees, online } = data;
+  const transferable = data.bankAccounts.filter((a) => a.iban !== null);
 
   return (
-    <div className="mx-auto max-w-lg p-4 lg:p-6">
+    <div className="mx-auto max-w-lg space-y-4 p-4 lg:p-6">
       <Card>
         <CardHeader
           title={t("summaryTitle")}
@@ -61,23 +62,82 @@ export default async function PaymentPage() {
 
           <div className="border-t border-border pt-3">
             <Row label={t("debtAmount")} value={f.money(fees.amountMinor)} />
-            <Row label={t("platformFee")} value={f.money(fees.platformFeeMinor)} />
-            <Row label={t("processorFee")} value={f.money(fees.processorFeeMinor)} />
+            {/*
+              Komisyon satırları yalnız sakin ödüyorken anlamlı. Yönetim
+              karşılıyorsa "0,00 ₺ komisyon" yazmak, olmayan bir kalemi
+              varmış gibi gösterip ödenecek tutarı sorgulatırdı.
+            */}
+            {fees.paidBy === "resident" ? (
+              <>
+                <Row label={t("platformFee")} value={f.money(fees.platformFeeMinor)} />
+                <Row label={t("processorFee")} value={f.money(fees.processorFeeMinor)} />
+              </>
+            ) : null}
             <Row label={t("payableAmount")} value={f.money(fees.totalMinor)} strong />
           </div>
 
           <Alert tone="info">
             {fees.paidBy === "management" ? t("feeByManagement") : t("feeByResident")}
           </Alert>
-          <p className="text-xs text-fg-subtle">{t("securityNote")}</p>
         </CardBody>
-        <CardFooter>
-          <form action={startCheckout}>
-            <button className="w-full rounded-lg bg-primary px-5 py-3 font-semibold text-primary-fg hover:bg-primary-hover">
-              {t("payButton", { amount: f.money(fees.totalMinor) })}
-            </button>
-          </form>
-        </CardFooter>
+
+        {/*
+          Kartla ödeme kapalıysa düğme **hiç** render edilmiyor; devre dışı bir
+          düğme göstermek "belki çalışır" izlenimi verirdi. Sebep de yazılıyor:
+          "yönetiminiz açmamış" ile "şu an kullanılamıyor" sakinin atacağı
+          adımı belirliyor.
+        */}
+        {online.available ? (
+          <CardFooter className="flex-col items-stretch gap-2">
+            <form action={startCheckout}>
+              <button className="w-full rounded-lg bg-primary px-5 py-3 font-semibold text-primary-fg hover:bg-primary-hover">
+                {t("payButton", { amount: f.money(fees.totalMinor) })}
+              </button>
+            </form>
+            <p className="text-xs text-fg-subtle">{t("securityNote")}</p>
+          </CardFooter>
+        ) : online.reason !== "no_open_debt" ? (
+          <CardFooter>
+            <Alert tone="warning" title={t("onlineUnavailableTitle")}>
+              {t(`onlineUnavailable.${online.reason}`)}
+            </Alert>
+          </CardFooter>
+        ) : null}
+      </Card>
+
+      <Card>
+        <CardHeader title={t("transferTitle")} description={t("transferDescription")} />
+        <CardBody className="space-y-3 text-sm">
+          {transferable.length === 0 ? (
+            <Alert tone="warning">{t("noBankAccount")}</Alert>
+          ) : (
+            <>
+              {transferable.map((account) => (
+                <div key={account.id} className="rounded-lg border border-border p-3">
+                  <p className="font-medium text-fg">{account.bankName}</p>
+                  {account.accountName ? (
+                    <p className="text-xs text-fg-subtle">{account.accountName}</p>
+                  ) : (
+                    <p className="text-xs text-fg-subtle">{data.tenantName}</p>
+                  )}
+                  {/* `select-all`: dokunuşla tamamı seçiliyor — IBAN elle
+                      kopyalanırken en sık yapılan hata eksik seçmek. */}
+                  <p className="mt-1 select-all font-mono text-sm tabular-nums text-fg">
+                    {account.iban}
+                  </p>
+                </div>
+              ))}
+              {/*
+                Açıklamaya daire numarası: havale eşleştirmesi bugün elle
+                yapılıyor ve açıklamasız bir gönderi hangi daireye ait olduğu
+                bilinmeden hesapta bekliyor.
+              */}
+              <Alert tone="info">
+                {t("transferReference", { unit: data.unit.number })}
+              </Alert>
+            </>
+          )}
+        </CardBody>
       </Card>
     </div>
   );

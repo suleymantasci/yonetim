@@ -1888,7 +1888,17 @@
       "platform": "Platform hesabı üzerinden",
       "none": "—"
     },
-    "lastSuccessAt": "Son gönderim {date} · son 30 günde {count} mesaj"
+    "lastSuccessAt": "Son gönderim {date} · son 30 günde {count} mesaj",
+    "paymentSection": "Kartla tahsilat",
+    "paymentSectionHint": "Sakinlerin aidatlarını karttan ödeyebilmesi. Kapalıyken sakin ödeme ekranında havale bilgilerini görür.",
+    "onlinePaymentEnabled": "Kartla ödemeye izin ver",
+    "onlinePaymentEnabledHint": "Her tahsilatta sağlayıcı komisyonu doğar. Kapalıyken sakin yalnız havale/EFT ile ödeyebilir. Ödeme altyapısı kurulu değilse bu ayar açık olsa da kartla ödeme başlatılamaz.",
+    "paymentFeePaidBy": "Komisyonu kim karşılıyor",
+    "paymentFeePaidByHint": "Sakin karşılarsa komisyon ödeme ekranında ayrı satır olarak gösterilir ve tahsil edilen tutara eklenir; borca mahsup edilmez.",
+    "feePayer": {
+      "management": "Site yönetimi",
+      "resident": "Sakin"
+    }
   },
   "migration": {
     "title": "Veri Aktarımı",
@@ -2049,7 +2059,17 @@
     "payButton": "{amount} güvenli öde",
     "noDebtTitle": "Ödenecek borç yok",
     "noDebtBody": "Güncel borcunuz bulunmuyor.",
-    "invalidAmount": "Geçersiz ödeme tutarı."
+    "invalidAmount": "Geçersiz ödeme tutarı.",
+    "onlineUnavailableTitle": "Kartla ödeme şu an kapalı",
+    "onlineUnavailable": {
+      "not_enabled": "Site yönetimi kartla ödemeyi henüz açmamış. Aidatınızı aşağıdaki hesaba havale/EFT ile yatırabilirsiniz; kartla ödemeyi yönetiminizden talep edebilirsiniz.",
+      "provider_missing": "Ödeme altyapısı şu an kullanılamıyor. Aidatınızı aşağıdaki hesaba havale/EFT ile yatırabilirsiniz.",
+      "no_open_debt": "Ödenecek borcunuz bulunmuyor."
+    },
+    "transferTitle": "Havale / EFT ile ödeme",
+    "transferDescription": "Aidatınızı doğrudan site hesabına yatırabilirsiniz.",
+    "transferReference": "Açıklama alanına daire numaranızı ({unit}) yazın. Açıklamasız gönderiler hangi daireye ait olduğu anlaşılamadığı için borcunuza işlenemeyebilir.",
+    "noBankAccount": "Site yönetimi henüz bir banka hesabı tanımlamamış. Ödeme için yönetiminizle iletişime geçin."
   },
   "admin": {
     "title": "Platform Yönetimi",
@@ -2216,7 +2236,8 @@
     },
     "daysLate": "{days} gün gecikti",
     "changesTitle": "Değişiklik geçmişi",
-    "changesDescription": "Borcunuzda yapılan her değişiklik burada görünür ve silinemez."
+    "changesDescription": "Borcunuzda yapılan her değişiklik burada görünür ve silinemez.",
+    "payAction": "Borcumu öde"
   },
   "myPayments": {
     "title": "Ödemelerim",
