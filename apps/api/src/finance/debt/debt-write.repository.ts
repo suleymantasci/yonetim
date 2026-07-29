@@ -311,6 +311,14 @@ export class DebtWriteRepository {
           debtorUserId: firstDebt?.debtorUserId ?? null,
           amountKurus: dto.amountMinor,
           method: dto.method,
+          /*
+           * Nakit tahsilatın banka hesabı yok: hesap seçilmiş olsa bile
+           * `cash` yönteminde **yok sayılıyor**. Aksi hâlde kasaya giren
+           * para bir hesabın ekstresinde aranır ve mutabakat o hesapta
+           * kalıcı bir fark gösterirdi.
+           */
+          bankAccountId:
+            dto.method === "cash" ? null : (dto.bankAccountId ?? null),
           processor: "manual",
           status: "completed",
           paidAt: dto.paidAt,

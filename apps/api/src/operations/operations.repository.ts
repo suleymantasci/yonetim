@@ -1,18 +1,36 @@
 import { Injectable } from "@nestjs/common";
-import { asc, desc, eq, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
 
 import {
+  blocks,
   maintenanceRecords,
   maintenanceTemplates,
+  memberships,
   meterReadings,
   meters,
+  requestComments,
   requests,
   reservations,
   resources,
   units,
+  users,
 } from "@yonetim/db";
 
 import { DbService } from "../infra/db/db.service";
+
+/**
+ * Talep atanabilecek roller.
+ *
+ * Sakin rolleri (`owner`, `tenant_resident`) **yok**: talebi açan sakin
+ * olabilir ama çözmekle görevlendirilen yönetim tarafıdır. Sakine atama
+ * yapılabilseydi SLA sayacı, yönetimin sorumlu olmadığı bir sürede işlerdi.
+ */
+const ASSIGNABLE_ROLES = [
+  "manager",
+  "staff",
+  "company_admin",
+  "company_operator",
+] as const;
 
 /**
  * `operations` okuma sorguları — MIMARI-PLAN §8.5. SQL yalnız burada.
@@ -26,14 +44,83 @@ export class OperationsRepository {
   constructor(private readonly db: DbService) {}
 
   async requests(limit = 200) {
-    return this.db.tx(async (tx) =>
-      tx
-        .select()
+    return this.db.tx(async (tx) => {
+      const [rows, assignees, unitRows] = await Promise.all([
+        tx
+          .select()
+          .from(requests)
+          .where(isNull(requests.deletedAt))
+          .orderBy(desc(requests.createdAt))
+          .limit(limit),
+
+        // Atama ve daire seçenekleri aynı turda geliyor: ekran "liste + iki
+        // form" ve seçenekleri ayrı uçtan çekmek üç gidiş-dönüş demekti (§9a).
+        tx
+          .selectDistinctOn([users.id], {
+            id: users.id,
+            firstName: users.firstName,
+            lastName: users.lastName,
+            role: memberships.role,
+          })
+          .from(memberships)
+          .innerJoin(users, eq(users.id, memberships.userId))
+          .where(
+            and(
+              isNull(memberships.deletedAt),
+              isNull(users.deletedAt),
+              inArray(memberships.role, [...ASSIGNABLE_ROLES]),
+            ),
+          )
+          .orderBy(asc(users.id)),
+
+        tx
+          .select({
+            id: units.id,
+            number: units.number,
+            blockName: blocks.name,
+          })
+          .from(units)
+          .leftJoin(blocks, eq(blocks.id, units.blockId))
+          .where(isNull(units.deletedAt))
+          .orderBy(asc(units.number)),
+      ]);
+      return { rows, assignees, unitRows };
+    });
+  }
+
+  /** Tek talep + yorum akışı — düzenleme çekmecesini besleyen okuma. */
+  async requestDetail(id: string) {
+    return this.db.tx(async (tx) => {
+      const [row] = await tx
+        .select({
+          request: requests,
+          unitNumber: units.number,
+          assignedFirstName: users.firstName,
+          assignedLastName: users.lastName,
+        })
         .from(requests)
-        .where(isNull(requests.deletedAt))
-        .orderBy(desc(requests.createdAt))
-        .limit(limit),
-    );
+        .leftJoin(units, eq(units.id, requests.unitId))
+        .leftJoin(users, eq(users.id, requests.assignedToUserId))
+        .where(and(eq(requests.id, id), isNull(requests.deletedAt)))
+        .limit(1);
+      if (!row) return null;
+
+      const comments = await tx
+        .select({
+          id: requestComments.id,
+          body: requestComments.body,
+          isInternal: requestComments.isInternal,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          createdAt: requestComments.createdAt,
+        })
+        .from(requestComments)
+        .leftJoin(users, eq(users.id, requestComments.userId))
+        .where(eq(requestComments.requestId, id))
+        .orderBy(asc(requestComments.createdAt));
+
+      return { ...row, comments };
+    });
   }
 
   async maintenance(limit = 200) {

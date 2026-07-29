@@ -1,5 +1,8 @@
+import { Pencil, Plus } from "lucide-react";
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
+import { hasPermission } from "@yonetim/auth/guard";
 import { pollListResponse } from "@yonetim/contracts";
 import { QUORUM_RULES, type QuorumRule } from "@yonetim/dues";
 import { Badge, Card, CardBody, CardHeader, EmptyState } from "@yonetim/ui";
@@ -12,9 +15,10 @@ import { formatters } from "@/lib/format";
 export const dynamic = "force-dynamic";
 
 export default async function PollsPage() {
-  await requirePermission("poll:read");
+  const ctx = await requirePermission("poll:read");
   const t = await getTranslations("app.polls");
   const tEnum = await getTranslations("enum");
+  const tCommon = await getTranslations("common");
   const f = await formatters();
 
   // "Açık mı" sunucudan geliyor: oylamanın kapanışı bağlayıcı bir olay ve
@@ -24,9 +28,24 @@ export default async function PollsPage() {
     pollListResponse,
   );
 
+  const canWrite = hasPermission(ctx.roles, "poll:write");
+  const newPollButton = canWrite ? (
+    <Link
+      href="/panel/anketler/yeni"
+      className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-fg hover:bg-primary-hover"
+    >
+      <Plus aria-hidden className="h-4 w-4" />
+      {t("newPoll")}
+    </Link>
+  ) : null;
+
   return (
     <>
-      <PageHeader title={t("title")} description={t("description")} />
+      <PageHeader
+        title={t("title")}
+        description={t("description")}
+        action={newPollButton}
+      />
 
       <Card className="mb-4">
         <CardHeader title={t("quorumReference")} />
@@ -54,6 +73,7 @@ export default async function PollsPage() {
           title={t("emptyTitle")}
           description={t("emptyDescription")}
           steps={[t("emptyStep1"), t("emptyStep2"), t("emptyStep3")]}
+          action={newPollButton ?? undefined}
         />
       ) : (
         <Card>
@@ -70,6 +90,15 @@ export default async function PollsPage() {
                     <Badge tone="info">
                       {tEnum(`pollWeight.${p.weightMode}`)}
                     </Badge>
+                    {canWrite && !p.closedAt ? (
+                      <Link
+                        href={`/panel/anketler/${p.id}/duzenle`}
+                        aria-label={tCommon("action.edit")}
+                        className="rounded p-1 text-fg-subtle hover:bg-hover hover:text-fg"
+                      >
+                        <Pencil aria-hidden className="h-3.5 w-3.5" />
+                      </Link>
+                    ) : null}
                   </div>
                 </div>
                 <div className="mt-1 text-xs text-fg-subtle">

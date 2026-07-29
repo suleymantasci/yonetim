@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
+import { duesPlanRunResult } from "@yonetim/contracts";
+
 import { apiDelete, apiPatch, apiPost } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import {
@@ -195,4 +197,98 @@ export async function archiveDuesPlan(
 
   revalidatePath("/panel/aidat");
   return { ok: true, message: t("archived") };
+}
+
+/* ------------------------------------------------------------------ *
+ * Planı elle çalıştırma — PROJE-DURUMU §5.4
+ * ------------------------------------------------------------------ */
+
+const runSchema = z.object({
+  id: uuidField,
+  period: periodField,
+  /**
+   * Gönder butonunun `value`'su: "Önizle" boş bırakıyor, "Uygula" işaretliyor.
+   * İki ayrı eylem yazmak yerine tek eylem + niyet bayrağı, önizlemenin ve
+   * uygulamanın **aynı** kodu izlemesini garanti ediyor.
+   */
+  apply: checkboxField,
+});
+
+export interface DuesRunState {
+  period: string;
+  dryRun: boolean;
+  generated: number;
+  totalKurus: number;
+  skipped: boolean;
+  reason: string | null;
+  fellBackToEqual: boolean;
+}
+
+/**
+ * Aidat planını şimdi çalıştır.
+ *
+ * NEDEN VAR: plan bugüne kadar yalnız worker'ın cron'uyla, kendi takviminde
+ * çalışıyordu. Ayın ortasında kurulan bir sitede yönetici bir sonraki ayı
+ * beklemek zorunda kalıyor ve aynı borçları toplu borçlandırmadan elle
+ * giriyordu — yani plan hiç kullanılmıyordu (PROJE-DURUMU §5.4).
+ *
+ * Üretim mantığı `apps/api` üzerinden `packages/jobs`'taki **aynı** fonksiyona
+ * gidiyor; ikinci bir uygulama, elle çalıştırmayla cron'un ayrışması demekti.
+ */
+export async function runDuesPlan(
+  _previous: ActionState<DuesRunState>,
+  formData: FormData,
+): Promise<ActionState<DuesRunState>> {
+  return runAction(
+    {
+      permission: "dues:write",
+      schema: runSchema,
+      meta: { action: "dues_plan_run", resource: "dues_plan" },
+    },
+    formData,
+    async ({ input }) => {
+      const t = await getTranslations("app.duesPlans");
+
+      const result = await apiPost(
+        `/v1/panel/dues-plans/${input.id}/calistir`,
+        { period: input.period, dryRun: !input.apply },
+        duesPlanRunResult,
+      );
+
+      if (input.apply) {
+        revalidatePath("/panel/aidat");
+        revalidatePath("/panel/borclar");
+        revalidatePath("/panel");
+      }
+
+      const data: DuesRunState = {
+        period: result.period,
+        dryRun: result.dryRun,
+        generated: result.generated,
+        totalKurus: result.totalMinor,
+        skipped: result.skipped,
+        reason: result.reason,
+        fellBackToEqual: result.fellBackToEqual,
+      };
+
+      if (result.skipped) {
+        // Atlanmak bir hata değil: dönem plan aralığının dışında olabilir ya
+        // da bu dönem zaten üretilmiş olabilir. Sebebi sunucudan geliyor.
+        return okState(result.reason ?? t("runSkipped"), { data });
+      }
+
+      return okState(
+        result.dryRun
+          ? t("runPreview", {
+              count: result.generated,
+              total: (result.totalMinor / 100).toFixed(2),
+            })
+          : t("runApplied", {
+              count: result.generated,
+              total: (result.totalMinor / 100).toFixed(2),
+            }),
+        { data },
+      );
+    },
+  );
 }

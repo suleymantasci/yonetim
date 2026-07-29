@@ -129,6 +129,15 @@ export const QUICK_ACTIONS: QuickAction[] = [
   { href: "/panel/giderler/kategoriler", key: "expenseCategories", permission: "expense:write" },
   { href: "/panel/duyurular?compose=1", key: "newAnnouncement", permission: "announcement:write" },
   { href: "/panel/aidat/yeni", key: "newDuesPlan", permission: "dues:write" },
+  { href: "/panel/personel/yeni", key: "newStaff", permission: "staff:write" },
+  { href: "/panel/talepler/yeni", key: "newRequest", permission: "request:write" },
+  { href: "/panel/bakim/yeni", key: "newMaintenance", permission: "maintenance:write" },
+  { href: "/panel/sayaclar/okuma", key: "meterReading", permission: "meter:write" },
+  { href: "/panel/rezervasyon/yeni", key: "newReservation", permission: "reservation:write" },
+  { href: "/panel/anketler/yeni", key: "newPoll", permission: "poll:write" },
+  { href: "/panel/toplantilar/yeni", key: "newMeeting", permission: "meeting:write" },
+  { href: "/panel/mesajlar/yeni", key: "newMessage", permission: "message:write" },
+  { href: "/panel/banka/hesap/yeni", key: "newBankAccount", permission: "bank:write" },
 ];
 
 /**

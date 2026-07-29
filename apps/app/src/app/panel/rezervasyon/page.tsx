@@ -1,5 +1,8 @@
+import { CalendarPlus, Pencil, Plus } from "lucide-react";
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
+import { hasPermission } from "@yonetim/auth/guard";
 import { reservationListResponse } from "@yonetim/contracts";
 import { Badge, Card, CardBody, CardHeader, EmptyState } from "@yonetim/ui";
 
@@ -23,9 +26,10 @@ const STATUS_TONE: Record<
 };
 
 export default async function ReservationsPage() {
-  await requirePermission("reservation:read");
+  const ctx = await requirePermission("reservation:read");
   const t = await getTranslations("app.reservations");
   const tEnum = await getTranslations("enum");
+  const tCommon = await getTranslations("common");
   const f = await formatters();
 
   const { resources: res, rows } = await apiGet(
@@ -33,9 +37,56 @@ export default async function ReservationsPage() {
     reservationListResponse,
   );
 
+  const canWrite = hasPermission(ctx.roles, "reservation:write");
+  const canApprove = hasPermission(ctx.roles, "reservation:approve");
+
+  /*
+   * Tesis hiç tanımlanmamışsa birincil eylem **tesis tanımlamak**, rezervasyon
+   * almak değil: rezervasyon formu boş bir listeyle açılır ve kullanıcıyı
+   * çıkmaza sokardı.
+   */
+  const primaryAction = !canWrite ? null : res.length === 0 ? (
+    <Link
+      href="/panel/rezervasyon/tesis/yeni"
+      className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-fg hover:bg-primary-hover"
+    >
+      <Plus aria-hidden className="h-4 w-4" />
+      {t("newResource")}
+    </Link>
+  ) : (
+    <div className="flex flex-wrap items-center gap-2">
+      <Link
+        href="/panel/rezervasyon/yeni"
+        className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-fg hover:bg-primary-hover"
+      >
+        <CalendarPlus aria-hidden className="h-4 w-4" />
+        {t("newReservation")}
+      </Link>
+      <Link
+        href="/panel/rezervasyon/tesis/yeni"
+        className="inline-flex h-10 items-center gap-2 rounded-lg border border-border px-4 text-sm font-semibold text-fg hover:bg-hover"
+      >
+        <Plus aria-hidden className="h-4 w-4" />
+        {t("newResource")}
+      </Link>
+    </div>
+  );
+
   return (
     <>
-      <PageHeader title={t("title")} description={t("description")} />
+      <PageHeader
+        title={t("title")}
+        description={t("description")}
+        action={primaryAction}
+      />
+
+      {res.length === 0 ? (
+        <EmptyState
+          title={t("noResourcesTitle")}
+          description={t("noResourcesDescription")}
+          action={primaryAction ?? undefined}
+        />
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {res.map((r) => (
@@ -47,6 +98,17 @@ export default async function ReservationsPage() {
                   ? tEnum(`resourceKind.${r.kind}`)
                   : r.kind
               } · ${t("capacity", { count: r.capacity ?? "—" })}`}
+              action={
+                canWrite ? (
+                  <Link
+                    href={`/panel/rezervasyon/tesis/${r.id}/duzenle`}
+                    aria-label={tCommon("action.edit")}
+                    className="rounded p-1 text-fg-subtle hover:bg-hover hover:text-fg"
+                  >
+                    <Pencil aria-hidden className="h-3.5 w-3.5" />
+                  </Link>
+                ) : undefined
+              }
             />
             <CardBody className="space-y-1 text-sm">
               <div className="flex justify-between">
@@ -116,6 +178,14 @@ export default async function ReservationsPage() {
                       {tEnum(`reservationStatus.${r.status}`)}
                     </Badge>
                     <span className="tabular-nums">{f.money(r.feeMinor)}</span>
+                    {canApprove ? (
+                      <Link
+                        href={`/panel/rezervasyon/${r.id}/karar`}
+                        className="rounded-lg border border-border px-3 py-1 text-xs font-medium text-fg hover:bg-hover"
+                      >
+                        {t("decide")}
+                      </Link>
+                    ) : null}
                   </div>
                 </li>
               ))}

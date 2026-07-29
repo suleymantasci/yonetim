@@ -42,11 +42,29 @@ export function DebtForm({
   presetUnitId,
   defaultPeriod,
   cancelHref,
+  layout,
+  onCancel,
+  stayOnSuccess,
+  onCreated,
 }: {
   units: { id: string; number: string; blockName: string | null }[];
   presetUnitId?: string;
   defaultPeriod: string;
-  cancelHref: string;
+  cancelHref?: string;
+  /** `"modal"`: alanlar kayar, Vazgeç/Kaydet çubuğu çekmecenin altına sabitlenir. */
+  layout?: "page" | "modal";
+  onCancel?: () => void;
+  /** Çekmecede: kayıt sonrası sayfa değiştirme. */
+  stayOnSuccess?: boolean;
+  /**
+   * Oluşan **ilk** borcun kimliği.
+   *
+   * `createDebt` bir dizi döndürüyor çünkü "yarı yarıya" ve "hisseye göre"
+   * yükümlülük seçenekleri birden fazla borç kaydı üretiyor. Çekmecenin
+   * "detayı aç" bağlantısı için ilki yeterli — hepsini listelemek iki adımlı
+   * bir başarı ekranını üç adıma çıkarırdı.
+   */
+  onCreated?: (id: string) => void;
 }) {
   const t = useTranslations("app.debts");
   const tUnits = useTranslations("app.units");
@@ -64,6 +82,13 @@ export function DebtForm({
       action={createDebt}
       submitLabel={tCommon("action.create")}
       cancelHref={cancelHref}
+      layout={layout}
+      onCancel={onCancel}
+      stayOnSuccess={stayOnSuccess}
+      onSuccess={(state) => {
+        const first = state.data?.ids?.[0];
+        if (first) onCreated?.(first);
+      }}
     >
       <FormSection
         title={t("sectionTarget")}

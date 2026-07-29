@@ -70,6 +70,71 @@ export const bankOverviewResponse = z.object({
 export type BankOverviewResponse = z.infer<typeof bankOverviewResponse>;
 
 /* ------------------------------------------------------------------ *
+ * Banka hesabı — yazma
+ * ------------------------------------------------------------------ */
+
+/**
+ * Hesabın ne için tutulduğu.
+ *
+ * Ayrımın işlevi muhasebe değil **mutabakat**: aidat hesabına düşen bir
+ * havaleyle demirbaş hesabına düşeni aynı havuzda aramak, iki hesapta aynı
+ * gün aynı tutar olduğunda yanlış eşleşme üretiyordu.
+ */
+export const BANK_ACCOUNT_PURPOSES = [
+  "dues",
+  "expense",
+  "reserve",
+  "project",
+  "deposit",
+  "other",
+] as const;
+export const bankAccountPurpose = z.enum(BANK_ACCOUNT_PURPOSES);
+
+/**
+ * `POST /v1/panel/bank/hesaplar` (yeni),
+ * `PATCH /v1/panel/bank/hesaplar/:id` (güncelle).
+ *
+ * IBAN **açık gönderiliyor ama açık dönmüyor**: sunucu şifreleyip maskeli
+ * kopyayı ve blind index'i üretiyor. Panel IBAN'ı yalnız yazarken görüyor;
+ * okuma uçlarından yalnız maske geliyor (§9.1).
+ *
+ * `balanceMinor` **yok**: bakiye banka entegrasyonundan gelen bir gerçek,
+ * elle girilecek bir alan değil. Girilebilseydi ekrandaki rakam ekstreyle
+ * çelişebilir ve hangisinin doğru olduğu belirsizleşirdi.
+ */
+export const bankAccountSave = z.object({
+  bankName: z.string().trim().min(2).max(80),
+  /** TR IBAN — sunucu doğrular, şifreler ve maskeler. */
+  iban: z.string().trim().min(15).max(34),
+  accountName: z.string().trim().max(160).nullish(),
+  purpose: bankAccountPurpose.default("dues"),
+  isActive: z.coerce.boolean().default(true),
+});
+
+export type BankAccountSave = z.infer<typeof bankAccountSave>;
+
+export const bankAccountSaveResult = z.object({
+  id: uuid,
+  ibanMasked: z.string(),
+});
+
+export type BankAccountSaveResult = z.infer<typeof bankAccountSaveResult>;
+
+/** Düzenleme formunu dolduran tek satır — IBAN yine yalnız maskeli. */
+export const bankAccountDetail = z.object({
+  id: uuid,
+  bankName: z.string(),
+  ibanMasked: z.string(),
+  accountName: z.string().nullable(),
+  purpose: bankAccountPurpose,
+  isActive: z.boolean(),
+  /** Bu hesaba bağlı ödeme var mı — silme kararını etkiliyor. */
+  hasPayments: z.boolean(),
+});
+
+export type BankAccountDetail = z.infer<typeof bankAccountDetail>;
+
+/* ------------------------------------------------------------------ *
  * Veri göçü (rakip sistemden içe aktarma)
  * ------------------------------------------------------------------ */
 

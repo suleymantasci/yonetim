@@ -17,6 +17,7 @@ import {
 } from "@yonetim/ui";
 
 import {
+  bankOverviewResponse,
   debtDetail as debtDetailSchema,
   openDebtList,
   residentOptionList,
@@ -67,9 +68,18 @@ export default async function DebtDetailPage({
   const outstanding = total - debt.paidMinor;
   const overdue = debt.status !== "paid" && debt.dueDate.getTime() < Date.now();
 
-  const [openDebts, residents] = await Promise.all([
+  /*
+   * Banka hesapları tahsilat formundaki "hangi hesaba yattı" seçimi için.
+   *
+   * `bank:read` yetkisi olmayan bir kullanıcı (ör. yalnız `payment:create`
+   * yetkisi olan bir görevli) 403 alır; bu durumda liste boş geçiliyor ve
+   * form alanı yerine bilgilendirme gösteriliyor — tahsilat kaydı, hesap
+   * bilgisi olmadan da açılabilmeli.
+   */
+  const [openDebts, residents, bank] = await Promise.all([
     apiGet(`/v1/panel/debts/acik/${debt.unitId}`, openDebtList),
     apiGet("/v1/panel/residents/secenekler", residentOptionList),
+    apiGet("/v1/panel/bank", bankOverviewResponse).catch(() => null),
   ]);
 
   const timelineEntries: TimelineEntry[] = [
@@ -183,6 +193,12 @@ export default async function DebtDetailPage({
                 [person.firstName, person.lastName].filter(Boolean).join(" ") ||
                 person.id,
             }))}
+            bankAccounts={(bank?.accounts ?? [])
+              .filter((account) => account.isActive)
+              .map((account) => ({
+                id: account.id,
+                label: `${account.bankName}${account.ibanMasked ? ` · ${account.ibanMasked}` : ""}`,
+              }))}
             labels={{
               adjust: t("adjustAction"),
               adjustTitle: t("adjustTitle"),
@@ -207,6 +223,10 @@ export default async function DebtDetailPage({
               methodCard: tEnum("paymentMethod.card"),
               methodOffset: tEnum("paymentMethod.offset"),
               paidAt: tUnits("paidAt"),
+              bankAccount: t("bankAccount"),
+              bankAccountHint: t("bankAccountHint"),
+              bankAccountNone: t("bankAccountNone"),
+              noBankAccounts: t("noBankAccounts"),
               payer: t("payer"),
               payerHint: t("payerHint"),
               receiptNo: tUnits("receiptNo"),

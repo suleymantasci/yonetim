@@ -3,14 +3,18 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 
 import type {
   DuesPlanListResponse,
   DuesPlanRow,
+  DuesPlanRunRequest,
+  DuesPlanRunResult,
   DuesPlanSave,
 } from "@yonetim/contracts";
+import { currentPeriod, parsePeriodKey, periodKey } from "@yonetim/core";
 import { duesPlans, duesRuns } from "@yonetim/db";
+import { generateDuesForTenant } from "@yonetim/jobs";
 
 import { AuditService } from "../../governance/audit/audit.service";
 import { DbService } from "../../infra/db/db.service";
@@ -53,6 +57,85 @@ export class DuesPlanService {
         })),
       } as DuesPlanListResponse;
     });
+  }
+
+  /**
+   * Planı elle çalıştırır — PROJE-DURUMU §5.4.
+   *
+   * NEDEN GEREKLİ: plan bugüne kadar yalnız worker'ın cron'uyla çalışıyordu.
+   * Ayın ortasında kurulan bir sitede yönetici bir sonraki ayı beklemek
+   * zorunda kalıyor, bu yüzden aynı borçları toplu borçlandırmadan elle
+   * giriyordu — yani plan hiç kullanılmıyordu.
+   *
+   * ÜRETİM MANTIĞI **KOPYALANMIYOR**: `packages/jobs` içindeki aynı fonksiyon
+   * çağrılıyor. İkinci bir uygulama yazmak, elle çalıştırmayla cron'un
+   * zamanla ayrışması demekti — ve fark ancak yanlış tutarlar yazıldıktan
+   * sonra görülürdü.
+   *
+   * İdempotanslık `dues_runs` üzerindeki (plan, dönem) tekil indeksinden
+   * geliyor; burada ayrıca bir kilit gerekmiyor.
+   */
+  async run(
+    id: string,
+    dto: DuesPlanRunRequest,
+  ): Promise<DuesPlanRunResult> {
+    const ctx = this.db.ctx();
+    /*
+     * `parsePeriodKey` biçim bozuksa `null` döndürüyor. Sözleşme deseni
+     * zaten doğruluyor ama tip düzeyinde garanti yok; sessizce içinde
+     * bulunulan döneme düşmek yerine hata veriliyor — yanlış döneme borç
+     * üretmek, üretilmiş borçları geri almayı gerektirir.
+     */
+    const period = dto.period ? parsePeriodKey(dto.period) : currentPeriod();
+    if (!period) throw new BadRequestException("invalid:period");
+
+    // Plan gerçekten bu siteye ait mi — `generateDuesForTenant` tüm aktif
+    // planları koşturuyor, biz sonucundan yalnız bu planı süzeceğiz.
+    const plan = await this.db.tx(async (tx) => {
+      const rows = await tx
+        .select({ id: duesPlans.id, isActive: duesPlans.isActive })
+        .from(duesPlans)
+        .where(and(eq(duesPlans.id, id), isNull(duesPlans.deletedAt)))
+        .limit(1);
+      return rows[0] ?? null;
+    });
+    if (!plan) throw new NotFoundException("not_found");
+    if (!plan.isActive) {
+      throw new BadRequestException("invalid:plan_inactive");
+    }
+
+    const results = await generateDuesForTenant({
+      tenantId: ctx.tenantId,
+      period,
+      userId: ctx.userId ?? undefined,
+      dryRun: dto.dryRun,
+    });
+
+    const mine = results.find((r) => r.planId === id);
+    const outcome: DuesPlanRunResult = {
+      period: periodKey(period),
+      dryRun: dto.dryRun,
+      generated: mine?.generated ?? 0,
+      totalMinor: mine?.totalKurus ?? 0,
+      skipped: mine?.skipped ?? true,
+      reason: mine?.reason ?? null,
+      fellBackToEqual: mine?.fellBackToEqual ?? false,
+    };
+
+    // Önizleme hiçbir şey yazmıyor; kütüğe yalnız gerçek üretim geçiyor.
+    if (!dto.dryRun) {
+      await this.audit.record({
+        action: "dues_plan_run",
+        resource: "dues_plan",
+        resourceId: id,
+        diff: {
+          period: { from: null, to: outcome.period },
+          generated: { from: null, to: outcome.generated },
+        },
+      });
+    }
+
+    return outcome;
   }
 
   /** Tekil plan — liste ile **aynı** normalize şekilde döner (`*Minor`). */

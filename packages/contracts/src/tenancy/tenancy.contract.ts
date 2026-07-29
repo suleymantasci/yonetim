@@ -38,6 +38,105 @@ export const tenantSettingsResponse = z.object({
 
 export type TenantSettingsResponse = z.infer<typeof tenantSettingsResponse>;
 
+/**
+ * `PATCH /v1/panel/settings`.
+ *
+ * NE YOK, NEDEN YOK:
+ *  - `slug`: sitenin genel adresini (landing sayfası, QR kodlar, paylaşılan
+ *    bağlantılar) taşıyor. Değiştirmek basılmış her bağlantıyı kırardı;
+ *    gerçekten gerekiyorsa destek işi.
+ *  - `unitCount`: bağımsız bölüm sayısı `units` tablosundan **türeyen** bir
+ *    sayı. Elle girilebilseydi ekrandaki rakam gerçek daire sayısıyla
+ *    çelişir ve aidat dağıtımı hangi sayıyı kullandığını söyleyemezdi.
+ *  - `status`, `trialEndsAt`, `currentPeriodEnd`: abonelik durumu. Sitenin
+ *    kendi ayarı değil, faturalandırmanın sonucu.
+ *
+ * Gecikme oranı **üst sınırlı**: KMK md.20 aylık %5'i aşan gecikme
+ * tazminatına izin vermiyor ve sınırı forma bırakmak, kanuna aykırı bir
+ * oranın kaydedilebilmesi demekti.
+ */
+export const tenantSettingsSave = z.object({
+  name: z.string().trim().min(2).max(200),
+  city: z.string().trim().max(60).nullish(),
+  district: z.string().trim().max(60).nullish(),
+  neighborhood: z.string().trim().max(120).nullish(),
+  addressLine: z.string().trim().max(500).nullish(),
+  postalCode: z.string().trim().max(10).nullish(),
+
+  /** Aidat vade günü (ayın kaçı). 28 üstü, kısa aylarda kayardı. */
+  duesDueDayOfMonth: z.coerce.number().int().min(1).max(28).default(10),
+  lateFeeEnabled: z.coerce.boolean().default(true),
+  /** Aylık %. KMK md.20 üst sınırı 5. */
+  lateFeeMonthlyPct: z.coerce.number().min(0).max(5).nullish(),
+
+  /** KVKK başvurularının gideceği adres — veri sorumlusunun iletişim noktası. */
+  kvkkContactEmail: z.string().trim().email().max(255).nullish(),
+
+  invoiceTitle: z.string().trim().max(200).nullish(),
+  invoiceTaxNumber: z.string().trim().max(11).nullish(),
+  invoiceTaxOffice: z.string().trim().max(100).nullish(),
+  invoiceAddress: z.string().trim().max(500).nullish(),
+
+  /** WhatsApp gönderiminde açık rıza aransın mı. */
+  whatsappOptInRequired: z.coerce.boolean().default(true),
+});
+
+export type TenantSettingsSave = z.infer<typeof tenantSettingsSave>;
+
+/* ------------------------------------------------------------------ *
+ * Entegrasyon durumu — PROJE-DURUMU §5.5
+ * ------------------------------------------------------------------ */
+
+/**
+ * Bir entegrasyonun **gerçek** durumu.
+ *
+ * NEDEN VAR: ayarlar ekranı bugüne kadar `siteConfig.features` içindeki
+ * **derleme zamanı** sabitlerini gösteriyordu. "WhatsApp: aktif" rozeti
+ * "bu sitede WhatsApp bağlı" demiyordu, "bu üründe WhatsApp kodu var"
+ * diyordu — yöneticiye yanlış bilgi.
+ *
+ * `configured` kimlik bilgisinin tanımlı olup olmadığı, `state` ise ölçülen
+ * sonuç. İkisi ayrı çünkü "kimlik bilgisi var ama son gönderim başarısız"
+ * ile "hiç kurulmamış" farklı sorunlar ve farklı çözümler istiyor.
+ */
+export const INTEGRATION_STATES = [
+  "connected",
+  "not_configured",
+  "degraded",
+  "disabled",
+] as const;
+export const integrationState = z.enum(INTEGRATION_STATES);
+
+export const integrationStatusRow = z.object({
+  /** `whatsapp` | `sms` | `email` | `payment` | `bank` | `einvoice` | `kep` */
+  key: z.string(),
+  state: integrationState,
+  /** Kimlik bilgisi/anahtar tanımlı mı (ortam ya da site ayarı). */
+  configured: z.boolean(),
+  /**
+   * Kimlik bilgisi **site ayarından** mı geliyor, ortamdan mı.
+   *
+   * WhatsApp karma modelde (2026-07-29 kararı) ikisi de mümkün ve fark
+   * yöneticiye görünmeli: "bizim numaramızdan gidiyor" ile "sizin
+   * numaranızdan gidiyor" farklı sonuçlar doğuruyor.
+   */
+  scope: z.enum(["tenant", "platform", "none"]),
+  /** Son başarılı gönderim/senkron; hiç olmadıysa `null`. */
+  lastSuccessAt: dateTime.nullable(),
+  /** Son hata mesajı — `degraded` durumunda dolu. */
+  lastError: z.string().nullable(),
+  /** Bu kanaldan son 30 günde giden mesaj sayısı. */
+  sentLast30Days: z.number().int(),
+});
+
+export const integrationStatusResponse = z.object({
+  rows: z.array(integrationStatusRow),
+});
+
+export type IntegrationStatusResponse = z.infer<
+  typeof integrationStatusResponse
+>;
+
 /* ------------------------------------------------------------------ *
  * Personel
  * ------------------------------------------------------------------ */
@@ -86,6 +185,118 @@ export const staffListResponse = z.object({
 });
 
 export type StaffListResponse = z.infer<typeof staffListResponse>;
+
+/* ------------------------------------------------------------------ *
+ * Personel — yazma
+ * ------------------------------------------------------------------ */
+
+export const STAFF_ROLES = [
+  "kapici",
+  "guvenlik",
+  "temizlik",
+  "bahcivan",
+  "teknik",
+  "diger",
+] as const;
+export const staffRole = z.enum(STAFF_ROLES);
+
+/**
+ * `GET /v1/panel/staff/:id` — düzenleme formunu dolduran uç.
+ *
+ * Liste satırından (`staffRow`) farkı **telefonun ham gelmesi**: maskeli
+ * numarayla form doldurulamaz, kullanıcı kaydettiğinde maske numaranın
+ * yerine yazılırdı. Bu yüzden ayrı bir uç ve ayrı bir yetki kapısı değil ama
+ * ayrı bir **erişim kaydı**: tek satır okumak, listeyi taramaktan farklı bir
+ * niyettir.
+ *
+ * TCKN ve IBAN yine **gelmiyor** (§9.1) — yalnız kayıtlı olup olmadıkları.
+ * Formda boş bırakılan alan "değiştirme" anlamına geliyor, "sil" değil;
+ * silmek için ayrı bir kutucuk var (`clearTckn` / `clearIban`).
+ */
+export const staffDetail = z.object({
+  id: uuid,
+  fullName: z.string(),
+  role: staffRole,
+  phone: z.string().nullable(),
+  grossSalaryMinor: moneyMinor,
+  netSalaryMinor: moneyMinor,
+  sgkPremiumMinor: moneyMinor,
+  startedAt: dateTime,
+  endedAt: dateTime.nullable(),
+  annualLeaveDays: z.number().int(),
+  usedLeaveDays: z.number().int(),
+  advanceBalanceMinor: moneyMinor,
+  isActive: z.boolean(),
+  hasTckn: z.boolean(),
+  hasIban: z.boolean(),
+});
+
+export type StaffDetail = z.infer<typeof staffDetail>;
+
+/**
+ * `POST /v1/panel/staff` (yeni) ve `PATCH /v1/panel/staff/:id` (güncelle).
+ *
+ * TEK ŞEMA, İKİ UÇ: alanların hiçbiri yalnız oluşturmada ya da yalnız
+ * güncellemede anlamlı değil. İki ayrı şema, aynı doğrulamayı iki yerde
+ * tutmak olurdu — `debtBulkCreate`/`duesPlanSave` de aynı deseni izliyor.
+ *
+ * NET ÜCRET VE SGK **GİRİLİYOR, HESAPLANMIYOR**: gerçek bordro asgari geçim
+ * indirimi, kümülatif vergi matrahı, teşvik indirimleri ve SGK tavanına
+ * bağlı. Bunları burada hesaplamak, mali müşavirin ürettiği bordroyla
+ * çelişecek bir ikinci gerçek üretirdi. Track E'deki "personel bordrosu"
+ * kararı verilene kadar bu alanlar **kayıt**, hesap değil.
+ */
+export const staffSave = z
+  .object({
+    fullName: z.string().trim().min(3).max(160),
+    role: staffRole,
+    /** Ham numara; sunucu normalize ediyor. Maskeleme yalnız okumada. */
+    phone: z.string().trim().max(20).nullish(),
+    /** 11 hane; boş bırakılırsa mevcut kayıt korunur. */
+    tckn: z
+      .string()
+      .trim()
+      .regex(/^\d{11}$/, "TCKN 11 haneli olmalı.")
+      .nullish(),
+    /** Boş bırakılırsa mevcut kayıt korunur. */
+    iban: z.string().trim().max(34).nullish(),
+    /** Kayıtlı TCKN/IBAN'ı **sil** — boş alandan ayrı bir niyet. */
+    clearTckn: z.coerce.boolean().default(false),
+    clearIban: z.coerce.boolean().default(false),
+    grossSalaryMinor: z.coerce.number().int().min(0).default(0),
+    netSalaryMinor: z.coerce.number().int().min(0).default(0),
+    sgkPremiumMinor: z.coerce.number().int().min(0).default(0),
+    startedAt: dateTime,
+    /**
+     * Ayrılış tarihi. Doluysa kayıt otomatik pasife düşer — "ayrıldı ama hâlâ
+     * aktif" durumu aylık maliyet toplamını sessizce şişirirdi.
+     */
+    endedAt: dateTime.nullish(),
+    /** 4857 md.53: 1–5 yıl 14 gün, 5–15 yıl 20, 15+ yıl 26 (asgari). */
+    annualLeaveDays: z.coerce.number().int().min(0).max(365).default(14),
+    usedLeaveDays: z.coerce.number().int().min(0).max(365).default(0),
+    advanceBalanceMinor: z.coerce.number().int().min(0).default(0),
+  })
+  .refine((d) => !d.endedAt || d.endedAt >= d.startedAt, {
+    message: "Ayrılış tarihi işe giriş tarihinden önce olamaz.",
+    path: ["endedAt"],
+  })
+  .refine((d) => d.usedLeaveDays <= d.annualLeaveDays, {
+    // Kullanılan izin hakkı aşarsa "kalan izin" negatif çıkar ve ekranda
+    // anlamsız bir sayı olur; hatayı girişte yakalamak daha dürüst.
+    message: "Kullanılan izin, yıllık izin hakkını aşamaz.",
+    path: ["usedLeaveDays"],
+  })
+  .refine((d) => d.netSalaryMinor === 0 || d.netSalaryMinor <= d.grossSalaryMinor, {
+    message: "Net ücret brütten büyük olamaz.",
+    path: ["netSalaryMinor"],
+  });
+
+export type StaffSave = z.infer<typeof staffSave>;
+
+export const staffSaveResult = z.object({ id: uuid, fullName: z.string() });
+
+export type StaffSaveResult = z.infer<typeof staffSaveResult>;
 
 /* ------------------------------------------------------------------ *
  * Kıdem / ihbar tazminatı hesaplayıcı — rakip incelemesi §4.1

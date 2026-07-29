@@ -1,5 +1,8 @@
+import { Plus } from "lucide-react";
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
+import { hasPermission } from "@yonetim/auth/guard";
 import { siteConfig } from "@yonetim/config";
 import { requestListResponse } from "@yonetim/contracts";
 import {
@@ -27,7 +30,7 @@ const PRIORITY_TONE = {
 } as const;
 
 export default async function RequestsPage() {
-  await requirePermission("request:read");
+  const ctx = await requirePermission("request:read");
   const t = await getTranslations("app.requests");
   const tEnum = await getTranslations("enum");
   const f = await formatters();
@@ -39,6 +42,16 @@ export default async function RequestsPage() {
     requestListResponse,
   );
 
+  const newRequestButton = hasPermission(ctx.roles, "request:write") ? (
+    <Link
+      href="/panel/talepler/yeni"
+      className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-fg hover:bg-primary-hover"
+    >
+      <Plus aria-hidden className="h-4 w-4" />
+      {t("newRequest")}
+    </Link>
+  ) : null;
+
   return (
     <>
       <PageHeader
@@ -48,6 +61,7 @@ export default async function RequestsPage() {
           high: siteConfig.sla.high.hours,
           normal: siteConfig.sla.normal.hours,
         })}
+        action={newRequestButton}
       />
 
       <div className="grid gap-4 sm:grid-cols-4">
@@ -73,6 +87,7 @@ export default async function RequestsPage() {
                 title={t("emptyTitle")}
                 description={t("emptyDescription")}
                 steps={[t("emptyStep1"), t("emptyStep2"), t("emptyStep3")]}
+                action={newRequestButton}
               />
             </div>
           ) : (
@@ -108,7 +123,15 @@ export default async function RequestsPage() {
                     return (
                       <tr key={r.id} className={tc.tr}>
                         <td className={`${tc.td} font-mono text-xs`}>
-                          {r.code}
+                          {/* Kod bağlantı: satırın tamamını tıklanabilir yapmak
+                              kopyalanabilir metni (başlık, tutar) seçilemez
+                              hale getiriyordu. */}
+                          <Link
+                            href={`/panel/talepler/${r.id}`}
+                            className="text-primary hover:underline"
+                          >
+                            {r.code}
+                          </Link>
                         </td>
                         <td className={tc.td}>{r.title}</td>
                         <td className={tc.tdMuted}>

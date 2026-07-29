@@ -318,7 +318,8 @@
   },
   "feeUnit": {
     "hour": "saat",
-    "day": "gün"
+    "day": "gün",
+    "booking": "rezervasyon"
   },
   "jobStatus": {
     "pending": "Bekliyor",
@@ -347,5 +348,19 @@
     "kurul": "Kat malikleri kurulu",
     "yazili": "Toplantısız oybirliği",
     "yonetim": "Yönetim kararı"
+  },
+  "pollVisibility": {
+    "open": "Açık oylama",
+    "secret": "Gizli oylama"
+  },
+  "meetingKind": {
+    "ordinary": "Olağan",
+    "extraordinary": "Olağanüstü"
+  },
+  "meetingStatus": {
+    "planned": "Planlandı",
+    "held": "Yapıldı",
+    "cancelled": "İptal edildi",
+    "postponed": "Ertelendi"
   }
 }

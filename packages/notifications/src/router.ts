@@ -26,7 +26,17 @@ export type NotificationKind =
   | "debt_certificate"
   | "campaign"
   | "nps_survey"
-  | "reservation_confirmed";
+  | "reservation_confirmed"
+  /**
+   * Yöneticinin panelden tek kişiye yazdığı serbest mesaj.
+   *
+   * Kendi türü olmasının sebebi yönlendirme değil **maliyet ve izlenebilirlik**:
+   * `announcement` sayılsaydı elle yazılan bir mesaj duyuru istatistiklerine
+   * karışır ve "kaç duyuru yayımlandı" sorusu yanlış cevaplanırdı. Şablonu
+   * yalnız servis penceresi kapalıyken devreye giriyor; pencere açıkken
+   * serbest metin gidiyor.
+   */
+  | "manual_message";
 
 export interface RecipientProfile {
   userId: string;
@@ -65,6 +75,7 @@ const KIND_TEMPLATE: Record<NotificationKind, string> = {
   campaign: "kampanya_bildirim",
   nps_survey: "nps_anket",
   reservation_confirmed: "rezervasyon_onay",
+  manual_message: "yonetim_mesaji",
 };
 
 /** Bölüm 8.3 tahmini birim maliyetler (kuruş). */

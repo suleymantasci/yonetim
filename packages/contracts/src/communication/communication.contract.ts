@@ -61,6 +61,12 @@ export const pollRow = z.object({
   quorumRule: z.string(),
   visibility: z.string(),
   ownersOnly: z.boolean(),
+  /**
+   * Düzenleme formu bunu da okuyor. Listede gösterilmiyor ama taşınmazsa
+   * form varsayılanı `false` olur ve kaydeden herkes ayarı sessizce
+   * kapatırdı — eksik alanın en sinsi hâli.
+   */
+  allowMultiple: z.boolean(),
   opensAt: dateTime,
   closesAt: dateTime,
   closedAt: dateTime.nullable(),
@@ -218,6 +224,213 @@ export const announcementCreateResult = z.object({
 });
 
 export type AnnouncementCreateResult = z.infer<typeof announcementCreateResult>;
+
+/* ------------------------------------------------------------------ *
+ * Anket — yazma
+ * ------------------------------------------------------------------ */
+
+export const POLL_WEIGHT_MODES = ["equal", "land_share"] as const;
+export const pollWeightMode = z.enum(POLL_WEIGHT_MODES);
+
+export const POLL_VISIBILITIES = ["open", "secret"] as const;
+export const pollVisibility = z.enum(POLL_VISIBILITIES);
+
+export const QUORUM_RULES = [
+  "simple_majority",
+  "absolute_majority",
+  "two_thirds",
+  "four_fifths",
+  "unanimous",
+] as const;
+export const quorumRule = z.enum(QUORUM_RULES);
+
+/**
+ * `POST /v1/panel/communication/anketler`.
+ *
+ * SEÇENEK KİMLİKLERİ SUNUCUDA ÜRETİLİYOR: oy `option_id` ile saklanıyor ve
+ * istemcinin verdiği bir kimlik, düzenlemede yeniden üretilirse verilmiş
+ * oyları başka bir seçeneğe bağlardı.
+ *
+ * KMK VARSAYILANLARI: `ownersOnly` **açık** ve `weightMode` varsayılan
+ * `equal`. Kat Mülkiyeti Kanunu'nda oy hakkı kat malikinindir (md.31) ve her
+ * bağımsız bölüm bir oydur; arsa payı ağırlığı ancak yönetim planı öyle
+ * diyorsa geçerli. Varsayılanı tersine çevirmek, kanunun istisnasını kural
+ * haline getirirdi.
+ */
+export const pollSave = z
+  .object({
+    question: z.string().trim().min(5).max(500),
+    description: z.string().trim().max(4000).nullish(),
+    /** En az iki seçenek; tek seçenekli oylama oylama değildir. */
+    options: z.array(z.string().trim().min(1).max(200)).min(2).max(20),
+    weightMode: pollWeightMode.default("equal"),
+    quorumRule: quorumRule.default("simple_majority"),
+    visibility: pollVisibility.default("open"),
+    allowMultiple: z.coerce.boolean().default(false),
+    ownersOnly: z.coerce.boolean().default(true),
+    opensAt: dateTime,
+    closesAt: dateTime,
+    meetingId: uuid.nullish(),
+  })
+  .refine((d) => d.closesAt > d.opensAt, {
+    message: "Kapanış, açılıştan sonra olmalı.",
+    path: ["closesAt"],
+  });
+
+export type PollSave = z.infer<typeof pollSave>;
+
+/**
+ * Oylamayı kapat.
+ *
+ * Sonuç **kapatma anında hesaplanıp saklanıyor** (`result_json`): ağırlık
+ * modu ya da arsa payları sonradan değişirse geçmiş bir oylamanın sonucu
+ * değişmemeli. Sonucu her okumada yeniden hesaplamak, kapanmış bir kararı
+ * geriye dönük oynatılabilir kılardı.
+ */
+export const pollClose = z.object({
+  /** Erken kapatma gerekçesi — süresi dolmadan kapatılıyorsa zorunlu. */
+  reason: z.string().trim().max(1000).nullish(),
+});
+
+export type PollClose = z.infer<typeof pollClose>;
+
+export const pollResultOption = z.object({
+  id: z.string(),
+  label: z.string(),
+  votes: z.number().int(),
+  weight: z.string(),
+  pct: z.number(),
+});
+
+export const pollCloseResult = z.object({
+  id: uuid,
+  totalVotes: z.number().int(),
+  totalWeight: z.string(),
+  options: z.array(pollResultOption),
+  /** Yeter sayı kuralına göre kabul edilen seçenek; yoksa `null`. */
+  winnerOptionId: z.string().nullable(),
+  quorumMet: z.boolean(),
+});
+
+export type PollCloseResult = z.infer<typeof pollCloseResult>;
+
+export const pollSaveResult = z.object({ id: uuid });
+
+export type PollSaveResult = z.infer<typeof pollSaveResult>;
+
+/* ------------------------------------------------------------------ *
+ * Toplantı — yazma
+ * ------------------------------------------------------------------ */
+
+export const MEETING_KINDS = ["ordinary", "extraordinary"] as const;
+export const meetingKind = z.enum(MEETING_KINDS);
+
+export const MEETING_STATUSES = [
+  "planned",
+  "held",
+  "cancelled",
+  "postponed",
+] as const;
+export const meetingStatus = z.enum(MEETING_STATUSES);
+
+/**
+ * `POST /v1/panel/communication/toplantilar`.
+ *
+ * İKİNCİ ÇAĞRI (`secondCallAt`) AYRI BİR ALAN, otomatik hesaplanmıyor:
+ * KMK md.30 ilk toplantıda yeter sayı sağlanamazsa ikinci toplantıyı en erken
+ * yedi gün sonra öngörüyor ama tarihi çağrı metnine yazmak yönetimin işi.
+ * Otomatik doldurmak, kanuni asgariyi bir varsayılan sanmaya yol açardı.
+ */
+export const meetingSave = z
+  .object({
+    title: z.string().trim().min(3).max(200),
+    kind: meetingKind.default("ordinary"),
+    scheduledAt: dateTime,
+    secondCallAt: dateTime.nullish(),
+    location: z.string().trim().max(200).nullish(),
+    onlineUrl: z.string().trim().max(500).nullish(),
+    /** Gündem maddeleri — sırası korunur, numaralandırma ekranda. */
+    agenda: z.array(z.string().trim().min(1).max(500)).max(50).default([]),
+    status: meetingStatus.default("planned"),
+    minutesUrl: z.string().trim().max(500).nullish(),
+  })
+  .refine((d) => !d.secondCallAt || d.secondCallAt > d.scheduledAt, {
+    message: "İkinci toplantı, ilkinden sonra olmalı.",
+    path: ["secondCallAt"],
+  });
+
+export type MeetingSave = z.infer<typeof meetingSave>;
+
+export const meetingSaveResult = z.object({ id: uuid, title: z.string() });
+
+export type MeetingSaveResult = z.infer<typeof meetingSaveResult>;
+
+/**
+ * Toplantı kararı.
+ *
+ * NOT — bu tablo **karar defteri değil**: `decision_book_entries` site geneli
+ * sürekli numaralı ve ekleme-yalnızdır (§2.7). Buradaki numara toplantı
+ * içinde tekildir ve tutanağın kendi sırasını taşır. İkisi bilinçli ayrı.
+ */
+export const meetingDecisionSave = z.object({
+  title: z.string().trim().min(3).max(200),
+  body: z.string().trim().min(3).max(8000),
+  quorumRule: quorumRule.default("simple_majority"),
+  votesFor: z.coerce.number().min(0).default(0),
+  votesAgainst: z.coerce.number().min(0).default(0),
+  abstentions: z.coerce.number().min(0).default(0),
+  passed: z.coerce.boolean().default(false),
+  ledgerPageNo: z.coerce.number().int().min(1).max(99_999).nullish(),
+});
+
+export type MeetingDecisionSave = z.infer<typeof meetingDecisionSave>;
+
+export const meetingDecisionSaveResult = z.object({
+  id: uuid,
+  decisionNo: z.number().int(),
+});
+
+export type MeetingDecisionSaveResult = z.infer<
+  typeof meetingDecisionSaveResult
+>;
+
+/* ------------------------------------------------------------------ *
+ * Mesaj — gönderme
+ * ------------------------------------------------------------------ */
+
+export const MESSAGE_SEND_CHANNELS = ["whatsapp", "sms", "in_app"] as const;
+export const messageSendChannel = z.enum(MESSAGE_SEND_CHANNELS);
+
+/**
+ * `POST /v1/panel/communication/mesajlar` — tek kişiye mesaj.
+ *
+ * DUYURUDAN FARKI **muhatap**: duyuru bir kitleye, mesaj bir kişiye gider ve
+ * bu fark KVKK açısından belirleyici. Duyuru akışındaki toplu-kanal filtresi
+ * (bir kişinin borcunu herkese duyurmama) burada gerekmiyor; buradaki risk
+ * tersine, yanlış kişiye gönderim.
+ *
+ * `channel` **istek üzerine** seçiliyor ama WhatsApp'ta 24 saatlik servis
+ * penceresi kapalıysa sunucu şablona düşmek zorunda kalabilir; hangi kanalın
+ * gerçekten kullanıldığı yanıtta dönüyor.
+ */
+export const messageSend = z.object({
+  userId: uuid,
+  channel: messageSendChannel.default("whatsapp"),
+  body: z.string().trim().min(1).max(4000),
+});
+
+export type MessageSend = z.infer<typeof messageSend>;
+
+export const messageSendResult = z.object({
+  id: uuid,
+  /** Gerçekte kullanılan kanal — istenenden farklı olabilir. */
+  channel: z.string(),
+  queued: z.boolean(),
+  /** Gönderilemediyse sebep kodu (`no_phone`, `opted_out`, `window_closed`). */
+  blockedReason: z.string().nullable(),
+});
+
+export type MessageSendResult = z.infer<typeof messageSendResult>;
 
 /* ------------------------------------------------------------------ *
  * Uygulama içi bildirimler

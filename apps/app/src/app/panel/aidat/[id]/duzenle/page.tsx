@@ -1,14 +1,18 @@
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
+import { Layers } from "lucide-react";
+import Link from "next/link";
+
 import { blockListResponse, duesPlanRow } from "@yonetim/contracts";
 import { AppError, addMonths, currentPeriod, periodKey } from "@yonetim/core";
-import { Card, CardBody } from "@yonetim/ui";
+import { Alert, Card, CardBody, CardHeader } from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
 import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { DuesPlanForm } from "../../plan-form";
+import { RunPlanForm } from "../../run-plan-form";
 
 export const dynamic = "force-dynamic";
 
@@ -51,7 +55,8 @@ export default async function EditDuesPlanPage({
           { label: tCommon("action.edit") },
         ]}
       />
-      <Card className="max-w-3xl">
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card className="lg:col-span-2">
         <CardBody>
           <DuesPlanForm
             blocks={blocks.map((block) => ({ id: block.id, name: block.name }))}
@@ -79,6 +84,45 @@ export default async function EditDuesPlanPage({
           />
         </CardBody>
       </Card>
+
+        {/*
+          PLANI ÇALIŞTIRMA VE TOPLU BORÇ — PROJE-DURUMU §5.4.
+
+          Bu iki kutu buraya kondu çünkü kullanıcının sorusu tam buradaydı:
+          "plan oluştu, toplu borç girerken bu planı seçip uygulayabiliyor
+          muyum?" Cevap ikiye ayrılıyor ve ayrımı ekranın kendisi anlatıyor:
+          planı **çalıştırmak** dönemsel ve idempotent, plandan **toplu borç
+          üretmek** tek seferlik ve plana bağlı değil.
+        */}
+        <div className="space-y-4">
+          <Card>
+            <CardHeader title={t("runTitle")} description={t("runDescription")} />
+            <CardBody>
+              <RunPlanForm
+                planId={plan.id}
+                defaultPeriod={periodKey(currentPeriod())}
+              />
+            </CardBody>
+          </Card>
+
+          <Card>
+            <CardHeader
+              title={t("bulkFromPlanTitle")}
+              description={t("bulkFromPlanDescription")}
+            />
+            <CardBody className="space-y-3">
+              <Alert tone="info">{t("bulkFromPlanNotice")}</Alert>
+              <Link
+                href={`/panel/borclar/toplu?plan=${plan.id}`}
+                className="inline-flex h-10 items-center gap-2 rounded-lg border border-border px-4 text-sm font-semibold text-fg hover:bg-hover"
+              >
+                <Layers aria-hidden className="h-4 w-4" />
+                {t("bulkFromPlanAction")}
+              </Link>
+            </CardBody>
+          </Card>
+        </div>
+      </div>
     </>
   );
 }

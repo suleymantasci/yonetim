@@ -406,6 +406,19 @@ export const paymentCollect = z.object({
   unitId: uuid,
   amountMinor: z.coerce.number().int().positive(),
   method: paymentMethod,
+  /**
+   * Paranın girdiği banka hesabı — nakit dışı tahsilatta.
+   *
+   * NEDEN: `method` "havale" diyor ama hangi hesaba yattığını söylemiyordu.
+   * Site birden fazla hesap tutuyor ve mutabakat "bu ödeme hangi hesabın
+   * ekstresinde görünmeli" sorusunu cevaplayamıyordu; eşleştirme yalnız
+   * tutar ve tarihle yapıldığı için iki hesapta aynı gün aynı tutar varsa
+   * yanlış eşleşiyordu.
+   *
+   * Nakitte **boş**: kasaya giren paranın banka hesabı yok ve uydurma bir
+   * hesap seçtirmek mutabakatı kalıcı olarak bozardı.
+   */
+  bankAccountId: uuid.nullish(),
   paidAt: dateTime,
   payerUserId: uuid.optional(),
   receiptNo: z.string().trim().max(30).optional(),

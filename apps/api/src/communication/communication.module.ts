@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 
+import { CommunicationWriteService } from "./communication-write.service";
 import { CommunicationController } from "./communication.controller";
 import { CommunicationRepository } from "./communication.repository";
 import { CommunicationService } from "./communication.service";
@@ -18,7 +19,12 @@ import { WhatsappWebhookController } from "./whatsapp/whatsapp-webhook.controlle
     NotificationController,
     WhatsappWebhookController,
   ],
-  providers: [CommunicationService, CommunicationRepository, WhatsappBotService],
+  providers: [
+    CommunicationService,
+    CommunicationWriteService,
+    CommunicationRepository,
+    WhatsappBotService,
+  ],
   exports: [CommunicationService],
 })
 export class CommunicationModule {}

@@ -1,5 +1,8 @@
+import { Pencil, Plus } from "lucide-react";
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
+import { hasPermission } from "@yonetim/auth/guard";
 import { maintenanceListResponse } from "@yonetim/contracts";
 import {
   Alert,
@@ -21,9 +24,10 @@ import { formatters } from "@/lib/format";
 export const dynamic = "force-dynamic";
 
 export default async function MaintenancePage() {
-  await requirePermission("maintenance:read");
+  const ctx = await requirePermission("maintenance:read");
   const t = await getTranslations("app.maintenance");
   const tLib = await getTranslations("maintenance");
+  const tCommon = await getTranslations("common");
   const f = await formatters();
 
   // "Gecikti mi" ve "kaç gün kaldı" sunucu saatine göre hesaplanıyor; yasal
@@ -41,9 +45,24 @@ export default async function MaintenancePage() {
       ? tLib(`template.${code}.name`)
       : fallback;
 
+  const canWrite = hasPermission(ctx.roles, "maintenance:write");
+  const newRecordButton = canWrite ? (
+    <Link
+      href="/panel/bakim/yeni"
+      className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-fg hover:bg-primary-hover"
+    >
+      <Plus aria-hidden className="h-4 w-4" />
+      {t("newRecord")}
+    </Link>
+  ) : null;
+
   return (
     <>
-      <PageHeader title={t("title")} description={t("description")} />
+      <PageHeader
+        title={t("title")}
+        description={t("description")}
+        action={newRecordButton}
+      />
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Stat label={t("tracked")} value={String(totals.tracked)} />
@@ -77,6 +96,7 @@ export default async function MaintenancePage() {
                   title={t("emptyTitle")}
                   description={t("emptyDescription")}
                   steps={[t("emptyStep1"), t("emptyStep2"), t("emptyStep3")]}
+                  action={newRecordButton}
                 />
               </div>
             ) : (
@@ -93,6 +113,13 @@ export default async function MaintenancePage() {
                       <th scope="col" className={tc.th}>
                         {t("within30Days")}
                       </th>
+                      {canWrite ? (
+                        <th scope="col" className={`${tc.th} w-10`}>
+                          <span className="sr-only">
+                            {tCommon("action.edit")}
+                          </span>
+                        </th>
+                      ) : null}
                     </tr>
                   </thead>
                   <tbody>
@@ -131,6 +158,17 @@ export default async function MaintenancePage() {
                                 : t("daysRemaining", { days })}
                             </Badge>
                           </td>
+                          {canWrite ? (
+                            <td className={tc.td}>
+                              <Link
+                                href={`/panel/bakim/${r.id}/duzenle`}
+                                aria-label={tCommon("action.edit")}
+                                className="rounded p-1 text-fg-subtle hover:bg-hover hover:text-fg"
+                              >
+                                <Pencil aria-hidden className="h-3.5 w-3.5" />
+                              </Link>
+                            </td>
+                          ) : null}
                         </tr>
                       );
                     })}

@@ -50,6 +50,13 @@
       "when": 1785342300000,
       "tag": "0006_decision_book",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1785342400000,
+      "tag": "0007_payment_bank_account",
+      "breakpoints": true
     }
   ]
 }

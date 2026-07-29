@@ -1,5 +1,8 @@
+import { Pencil, Plus } from "lucide-react";
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
+import { hasPermission } from "@yonetim/auth/guard";
 import { bankOverviewResponse } from "@yonetim/contracts";
 import {
   Alert,
@@ -20,9 +23,10 @@ import { formatters } from "@/lib/format";
 export const dynamic = "force-dynamic";
 
 export default async function BankPage() {
-  await requirePermission("bank:read");
+  const ctx = await requirePermission("bank:read");
   const t = await getTranslations("app.bank");
   const tEnum = await getTranslations("enum");
+  const tCommon = await getTranslations("common");
   const f = await formatters();
 
   // IBAN yalnız maskeli geliyor; eşleştirme blind index ile sunucuda (§9.1).
@@ -33,9 +37,24 @@ export default async function BankPage() {
     totals,
   } = await apiGet("/v1/panel/bank", bankOverviewResponse);
 
+  const canWrite = hasPermission(ctx.roles, "bank:write");
+  const newAccountButton = canWrite ? (
+    <Link
+      href="/panel/banka/hesap/yeni"
+      className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-fg hover:bg-primary-hover"
+    >
+      <Plus aria-hidden className="h-4 w-4" />
+      {t("newAccount")}
+    </Link>
+  ) : null;
+
   return (
     <>
-      <PageHeader title={t("title")} description={t("description")} />
+      <PageHeader
+        title={t("title")}
+        description={t("description")}
+        action={newAccountButton}
+      />
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Stat label={t("accounts")} value={String(accounts.length)} />
@@ -68,6 +87,93 @@ export default async function BankPage() {
           ))}
         </div>
       ) : null}
+
+      {/*
+        Hesap listesi hareketlerden **ayrı** kart: modülün girişi burası ve
+        hiç hesap tanımlanmamışsa ekranın geri kalanı zaten boş kalıyor.
+        Boş listeyi hareketlerin arasına gömmek, "neden hiçbir şey yok"
+        sorusunu cevapsız bırakırdı.
+      */}
+      <Card className="mt-4">
+        <CardHeader
+          title={t("accountsTitle")}
+          description={t("accountsTitleHint")}
+        />
+        <CardBody className="p-0">
+          {accounts.length === 0 ? (
+            <div className="p-4">
+              <EmptyState
+                title={t("noAccountsTitle")}
+                description={t("noAccountsDescription")}
+                action={newAccountButton ?? undefined}
+              />
+            </div>
+          ) : (
+            <div className={tc.wrapper}>
+              <table className={tc.table} style={{ minWidth: 640 }}>
+                <thead className={tc.thead}>
+                  <tr>
+                    <th scope="col" className={tc.th}>
+                      {t("bankName")}
+                    </th>
+                    <th scope="col" className={tc.th}>
+                      {t("iban")}
+                    </th>
+                    <th scope="col" className={tc.th}>
+                      {t("purpose")}
+                    </th>
+                    <th scope="col" className={`${tc.th} text-right`}>
+                      {t("balance")}
+                    </th>
+                    {canWrite ? (
+                      <th scope="col" className={`${tc.th} w-10`}>
+                        <span className="sr-only">{tCommon("action.edit")}</span>
+                      </th>
+                    ) : null}
+                  </tr>
+                </thead>
+                <tbody>
+                  {accounts.map((a) => (
+                    <tr key={a.id} className={tc.tr}>
+                      <td className={`${tc.td} font-medium`}>
+                        {a.bankName}
+                        {a.accountName ? (
+                          <div className="text-xs text-fg-subtle">
+                            {a.accountName}
+                          </div>
+                        ) : null}
+                        {!a.isActive ? (
+                          <Badge tone="neutral">
+                            {tCommon("state.inactive")}
+                          </Badge>
+                        ) : null}
+                      </td>
+                      <td className={`${tc.tdMuted} font-mono text-xs`}>
+                        {a.ibanMasked ?? "—"}
+                      </td>
+                      <td className={tc.tdMuted}>
+                        {t(`purposeOption.${a.purpose}`)}
+                      </td>
+                      <td className={tc.tdNum}>{f.money(a.balanceMinor)}</td>
+                      {canWrite ? (
+                        <td className={tc.td}>
+                          <Link
+                            href={`/panel/banka/hesap/${a.id}/duzenle`}
+                            aria-label={tCommon("action.edit")}
+                            className="rounded p-1 text-fg-subtle hover:bg-hover hover:text-fg"
+                          >
+                            <Pencil aria-hidden className="h-3.5 w-3.5" />
+                          </Link>
+                        </td>
+                      ) : null}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardBody>
+      </Card>
 
       <Card className="mt-4">
         <CardHeader title={t("recentTransactions")} />

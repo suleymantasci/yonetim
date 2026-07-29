@@ -318,7 +318,8 @@
   },
   "feeUnit": {
     "hour": "hour",
-    "day": "day"
+    "day": "day",
+    "booking": "booking"
   },
   "jobStatus": {
     "pending": "Pending",
@@ -347,5 +348,19 @@
     "kurul": "General assembly",
     "yazili": "Unanimous written decision",
     "yonetim": "Management decision"
+  },
+  "pollVisibility": {
+    "open": "Open ballot",
+    "secret": "Secret ballot"
+  },
+  "meetingKind": {
+    "ordinary": "Ordinary",
+    "extraordinary": "Extraordinary"
+  },
+  "meetingStatus": {
+    "planned": "Planned",
+    "held": "Held",
+    "cancelled": "Cancelled",
+    "postponed": "Postponed"
   }
 }

@@ -38,6 +38,7 @@ export function DebtActionPanels({
   paidKurus,
   openDebts,
   residents,
+  bankAccounts,
   labels,
 }: {
   debtId: string;
@@ -48,6 +49,8 @@ export function DebtActionPanels({
   paidKurus: number;
   openDebts: { id: string; label: string; remaining: string }[];
   residents: { id: string; label: string }[];
+  /** Aktif banka hesapları — nakit dışı tahsilatta paranın girdiği hesap. */
+  bankAccounts: { id: string; label: string }[];
   labels: {
     adjust: string;
     adjustTitle: string;
@@ -72,6 +75,10 @@ export function DebtActionPanels({
     methodCard: string;
     methodOffset: string;
     paidAt: string;
+    bankAccount: string;
+    bankAccountHint: string;
+    bankAccountNone: string;
+    noBankAccounts: string;
     payer: string;
     payerHint: string;
     receiptNo: string;
@@ -84,6 +91,8 @@ export function DebtActionPanels({
 }) {
   const [adjusting, setAdjusting] = useState(false);
   const [collecting, setCollecting] = useState(false);
+  // Ödeme yöntemi banka hesabı alanının görünürlüğünü belirliyor.
+  const [method, setMethod] = useState("bank_transfer");
 
   return (
     <>
@@ -200,7 +209,12 @@ export function DebtActionPanels({
 
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField name="method" label={labels.method} required>
-                <Select name="method" defaultValue="bank_transfer" required>
+                <Select
+                  name="method"
+                  value={method}
+                  onChange={(event) => setMethod(event.target.value)}
+                  required
+                >
                   <option value="bank_transfer">{labels.methodTransfer}</option>
                   <option value="cash">{labels.methodCash}</option>
                   <option value="card">{labels.methodCard}</option>
@@ -211,6 +225,35 @@ export function DebtActionPanels({
                 <DateInput name="paidAt" defaultValue={today()} required />
               </FormField>
             </div>
+
+            {/*
+              BANKA HESABI YALNIZ NAKİT DIŞINDA SORULUYOR.
+
+              Nakit tahsilatın banka hesabı yok; sormak, kasaya giren para
+              için uydurma bir hesap seçtirmek olurdu ve o kayıt hiçbir
+              ekstrede görünmeyeceği için mutabakatta kalıcı bir fark
+              bırakırdı. Sunucu da `cash` yönteminde hesabı yok sayıyor.
+            */}
+            {method !== "cash" && bankAccounts.length > 0 ? (
+              <FormField
+                name="bankAccountId"
+                label={labels.bankAccount}
+                hint={labels.bankAccountHint}
+              >
+                <Select name="bankAccountId" defaultValue="">
+                  <option value="">{labels.bankAccountNone}</option>
+                  {bankAccounts.map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.label}
+                    </option>
+                  ))}
+                </Select>
+              </FormField>
+            ) : null}
+
+            {method !== "cash" && bankAccounts.length === 0 ? (
+              <Alert tone="info">{labels.noBankAccounts}</Alert>
+            ) : null}
 
             <FormField
               name="payerUserId"

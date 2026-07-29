@@ -119,3 +119,56 @@ export const duesPlanSave = z
 export type DuesPlanSave = z.infer<typeof duesPlanSave>;
 
 export const duesPlanTogglePatch = z.object({ isActive: z.coerce.boolean() });
+
+/* ------------------------------------------------------------------ *
+ * Planı elle çalıştırma — PROJE-DURUMU §5.4
+ * ------------------------------------------------------------------ */
+
+/**
+ * `POST /v1/panel/dues-plans/:id/calistir`.
+ *
+ * NEDEN VAR: plan bugüne kadar **yalnız** worker'ın cron'uyla, kendi
+ * takviminde çalışıyordu. Yeni kurulan bir sitede ya da ayın ortasında
+ * eklenen bir planda yönetici, bir sonraki ayı beklemek zorunda kalıyordu —
+ * ve bu yüzden aynı borçları toplu borçlandırma ekranından elle giriyordu,
+ * yani plan hiç kullanılmıyordu.
+ *
+ * GÜVENLİ, ÇÜNKÜ İDEMPOTENT: `dues_runs` üzerindeki (plan, dönem) tekil
+ * indeksi aynı dönemin iki kez üretilmesini zaten engelliyor. Düğmeye iki kez
+ * basmak ikinci bir borç dalgası üretmiyor, "bu dönem zaten üretilmiş"
+ * cevabı veriyor.
+ */
+export const duesPlanRunRequest = z.object({
+  /** Boş = içinde bulunulan dönem. */
+  period: z
+    .string()
+    .regex(/^\d{4}-(0[1-9]|1[0-2])$/)
+    .nullish(),
+  /**
+   * Yazmadan önce sonucu gör.
+   *
+   * Varsayılan **açık**: borç üretmek geri alınması pahalı bir iş (üretilen
+   * her borç sakine bildirim doğuruyor) ve önizlemesiz bir düğme, yanlış
+   * dönemi tek tıkla üretilebilir kılardı.
+   */
+  dryRun: z.coerce.boolean().default(true),
+});
+
+export type DuesPlanRunRequest = z.infer<typeof duesPlanRunRequest>;
+
+export const duesPlanRunResult = z.object({
+  period: z.string(),
+  dryRun: z.boolean(),
+  /** Bu plan için sonuç; plan aralık dışındaysa `skipped` olur. */
+  generated: z.number().int(),
+  totalMinor: moneyMinor,
+  skipped: z.boolean(),
+  reason: z.string().nullable(),
+  /**
+   * Formül uygulanamayıp eşit dağıtıma düşüldü mü (ör. arsa payı girilmemiş).
+   * Sessiz kalması, yanlış tutarların fark edilmeden yazılması demekti.
+   */
+  fellBackToEqual: z.boolean(),
+});
+
+export type DuesPlanRunResult = z.infer<typeof duesPlanRunResult>;

@@ -1,5 +1,8 @@
+import { Send } from "lucide-react";
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
+import { hasPermission } from "@yonetim/auth/guard";
 import { messageListResponse } from "@yonetim/contracts";
 import {
   Badge,
@@ -18,7 +21,7 @@ import { formatters } from "@/lib/format";
 export const dynamic = "force-dynamic";
 
 export default async function MessagesPage() {
-  await requirePermission("message:read");
+  const ctx = await requirePermission("message:read");
   const t = await getTranslations("app.messages");
   const tEnum = await getTranslations("enum");
   const f = await formatters();
@@ -29,9 +32,23 @@ export default async function MessagesPage() {
   );
   const botRate = totals.botRatePct / 100;
 
+  const newMessageButton = hasPermission(ctx.roles, "message:write") ? (
+    <Link
+      href="/panel/mesajlar/yeni"
+      className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-fg hover:bg-primary-hover"
+    >
+      <Send aria-hidden className="h-4 w-4" />
+      {t("newMessage")}
+    </Link>
+  ) : null;
+
   return (
     <>
-      <PageHeader title={t("title")} description={t("description")} />
+      <PageHeader
+        title={t("title")}
+        description={t("description")}
+        action={newMessageButton}
+      />
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Stat label={t("inbound")} value={String(totals.inbound)} />
@@ -56,6 +73,7 @@ export default async function MessagesPage() {
                 title={t("emptyTitle")}
                 description={t("emptyDescription")}
                 steps={[t("emptyStep1"), t("emptyStep2"), t("emptyStep3")]}
+                action={newMessageButton ?? undefined}
               />
             </div>
           ) : (

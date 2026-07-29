@@ -166,6 +166,22 @@ export const payments = pgTable(
      */
     debtorUserId: uuid("debtor_user_id").references(() => users.id, { onDelete: "set null" }),
     amountKurus: money("amount_kurus").notNull(),
+    /**
+     * Paranın girdiği hesap — nakit dışı tahsilatta hangi banka hesabına
+     * yattığı.
+     *
+     * NEDEN GEREKLİ: `method` "havale" diyor ama hangi hesaba yattığını
+     * söylemiyordu. Site birden fazla hesap tutuyor (aidat, demirbaş,
+     * proje) ve mutabakat "bu ödeme hangi hesabın ekstresinde görünmeli"
+     * sorusunu cevaplayamıyordu; eşleştirme yalnız tutar ve tarihle
+     * yapılıyor, iki hesapta aynı gün aynı tutar varsa yanlış eşleşiyordu.
+     *
+     * Nakit tahsilatta **null**: kasaya giren paranın banka hesabı yok ve
+     * uydurma bir hesap seçtirmek mutabakatı bozardı.
+     */
+    bankAccountId: uuid("bank_account_id").references(() => bankAccounts.id, {
+      onDelete: "set null",
+    }),
     /** Şeffaf komisyon göstergesi (Bölüm 1.2). */
     platformFeeKurus: money("platform_fee_kurus").notNull().default(0),
     processorFeeKurus: money("processor_fee_kurus").notNull().default(0),

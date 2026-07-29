@@ -2,42 +2,56 @@
   "compilerOptions": {
     "target": "ES2022",
     "lib": ["ES2022"],
+    /**
+     * `moduleResolution` bilerek yazılmıyor: TypeScript onu `module`dan türetir
+     * (CommonJS → node10). Açıkça yazmak TS 6'da "deprecated", TS 7'de
+     * "removed" hatası veriyor; türetilen değer ise sürümle birlikte kendini
+     * güncelliyor (TS 7'de bundler). Davranış bugünkü ile aynı.
+     *
+     * Node16/NodeNext'e geçiş bu ağaçta ayrı bir iş: paketler
+     * `"type": "module"` ilan ettiği için altlarındaki her `.ts` ESM sayılır,
+     * göreli importların `.js` uzantısı ister ve derlenen çıktı CJS Nest
+     * uygulamasından `require` edilemez hale gelir.
+     */
     "module": "CommonJS",
-    "moduleResolution": "Node",
     "outDir": "./dist",
     "rootDir": "../..",
-    "baseUrl": "../..",
     /**
      * Workspace paketleri kaynak TypeScript olarak yayınlanıyor (`main:
      * ./src/index.ts`). Next tarafında bunu `transpilePackages` çözüyordu;
      * Nest tarafında `paths` + `tsc-alias` çözüyor: tsc paketleri programa dahil
      * edip derliyor, tsc-alias da emit edilen JS'teki alias'ları göreli yola
      * çeviriyor. Böylece paketlere ayrı bir derleme adımı eklemek gerekmiyor.
+     *
+     * Yollar bu dosyanın bulunduğu dizine göre yazılıyor; `baseUrl` gerekmiyor
+     * (TS 4.1'den beri) ve o seçenek de TS 7'de kaldırıldı.
      */
     "paths": {
-      "@/*": ["apps/api/src/*"],
-      "@yonetim/config": ["packages/config/src/index.ts"],
-      "@yonetim/core": ["packages/core/src/index.ts"],
-      "@yonetim/core/crypto": ["packages/core/src/crypto.ts"],
-      "@yonetim/contracts": ["packages/contracts/src/index.ts"],
-      "@yonetim/contracts/shared": ["packages/contracts/src/_shared/index.ts"],
-      "@yonetim/db": ["packages/db/src/index.ts"],
-      "@yonetim/auth": ["packages/auth/src/index.ts"],
-      "@yonetim/auth/guard": ["packages/auth/src/guard.ts"],
-      "@yonetim/auth/cookie": ["packages/auth/src/cookie.ts"],
-      "@yonetim/auth/rate-limit": ["packages/auth/src/rate-limit.ts"],
-      "@yonetim/dues": ["packages/dues/src/index.ts"],
-      "@yonetim/pricing": ["packages/pricing/src/index.ts"],
-      "@yonetim/campaigns": ["packages/campaigns/src/index.ts"],
-      "@yonetim/kvkk": ["packages/kvkk/src/index.ts"],
-      "@yonetim/bank": ["packages/bank/src/index.ts"],
-      "@yonetim/payment": ["packages/payment/src/index.ts"],
-      "@yonetim/notifications": ["packages/notifications/src/index.ts"],
-      "@yonetim/whatsapp": ["packages/whatsapp/src/index.ts"],
-      "@yonetim/sms": ["packages/sms/src/index.ts"],
-      "@yonetim/emails": ["packages/emails/src/index.ts"],
-      "@yonetim/i18n": ["packages/i18n/src/index.ts"],
-      "@yonetim/jobs": ["packages/jobs/src/index.ts"]
+      "@/*": ["./src/*"],
+      "@yonetim/config": ["../../packages/config/src/index.ts"],
+      "@yonetim/core": ["../../packages/core/src/index.ts"],
+      "@yonetim/core/crypto": ["../../packages/core/src/crypto.ts"],
+      "@yonetim/contracts": ["../../packages/contracts/src/index.ts"],
+      "@yonetim/contracts/shared": [
+        "../../packages/contracts/src/_shared/index.ts"
+      ],
+      "@yonetim/db": ["../../packages/db/src/index.ts"],
+      "@yonetim/auth": ["../../packages/auth/src/index.ts"],
+      "@yonetim/auth/guard": ["../../packages/auth/src/guard.ts"],
+      "@yonetim/auth/cookie": ["../../packages/auth/src/cookie.ts"],
+      "@yonetim/auth/rate-limit": ["../../packages/auth/src/rate-limit.ts"],
+      "@yonetim/dues": ["../../packages/dues/src/index.ts"],
+      "@yonetim/pricing": ["../../packages/pricing/src/index.ts"],
+      "@yonetim/campaigns": ["../../packages/campaigns/src/index.ts"],
+      "@yonetim/kvkk": ["../../packages/kvkk/src/index.ts"],
+      "@yonetim/bank": ["../../packages/bank/src/index.ts"],
+      "@yonetim/payment": ["../../packages/payment/src/index.ts"],
+      "@yonetim/notifications": ["../../packages/notifications/src/index.ts"],
+      "@yonetim/whatsapp": ["../../packages/whatsapp/src/index.ts"],
+      "@yonetim/sms": ["../../packages/sms/src/index.ts"],
+      "@yonetim/emails": ["../../packages/emails/src/index.ts"],
+      "@yonetim/i18n": ["../../packages/i18n/src/index.ts"],
+      "@yonetim/jobs": ["../../packages/jobs/src/index.ts"]
     },
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,

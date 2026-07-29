@@ -39,8 +39,9 @@
       "@yonetim/ui": ["./packages/ui/src/index.ts"],
       "@yonetim/contracts": ["./packages/contracts/src/index.ts"],
       "@yonetim/contracts/shared": ["./packages/contracts/src/_shared/index.ts"]
-    },
-    "baseUrl": "."
+    }
+    // `baseUrl` yok: `paths` girdileri zaten bu dosyanın dizinine (depo kökü)
+    // göre yazılmış. TS 4.1'den beri gerekmiyor, TS 7'de ise kaldırıldı.
   },
   // Testlerin `.tsx` olanları da dahil: erişilebilirlik smoke testi bileşen
   // render ediyor ve JSX yazıyor. Yalnız `.ts` kapsanınca o dosya tip

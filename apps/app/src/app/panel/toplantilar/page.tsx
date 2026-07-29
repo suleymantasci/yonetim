@@ -1,5 +1,8 @@
+import { Pencil, Plus } from "lucide-react";
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
+import { hasPermission } from "@yonetim/auth/guard";
 import { meetingListResponse } from "@yonetim/contracts";
 import { type QuorumRule } from "@yonetim/dues";
 import { Badge, Card, CardBody, CardHeader, EmptyState } from "@yonetim/ui";
@@ -12,9 +15,10 @@ import { formatters } from "@/lib/format";
 export const dynamic = "force-dynamic";
 
 export default async function MeetingsPage() {
-  await requirePermission("meeting:read");
+  const ctx = await requirePermission("meeting:read");
   const t = await getTranslations("app.meetings");
   const tEnum = await getTranslations("enum");
+  const tCommon = await getTranslations("common");
   const f = await formatters();
 
   // Kararlar toplantıya gömülü geliyor: karar defteri toplantıdan ayrı
@@ -24,15 +28,31 @@ export default async function MeetingsPage() {
     meetingListResponse,
   );
 
+  const canWrite = hasPermission(ctx.roles, "meeting:write");
+  const newMeetingButton = canWrite ? (
+    <Link
+      href="/panel/toplantilar/yeni"
+      className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-fg hover:bg-primary-hover"
+    >
+      <Plus aria-hidden className="h-4 w-4" />
+      {t("newMeeting")}
+    </Link>
+  ) : null;
+
   return (
     <>
-      <PageHeader title={t("title")} description={t("description")} />
+      <PageHeader
+        title={t("title")}
+        description={t("description")}
+        action={newMeetingButton}
+      />
 
       {rows.length === 0 ? (
         <EmptyState
           title={t("emptyTitle")}
           description={t("emptyDescription")}
           steps={[t("emptyStep1"), t("emptyStep2"), t("emptyStep3")]}
+          action={newMeetingButton ?? undefined}
         />
       ) : (
         <div className="space-y-4">
@@ -45,13 +65,24 @@ export default async function MeetingsPage() {
                   title={m.title}
                   description={`${f.dateTime(m.scheduledAt)}${m.location ? ` · ${m.location}` : ""}`}
                   action={
-                    m.quorumMet === null ? (
-                      <Badge tone="neutral">{t("planned")}</Badge>
-                    ) : m.quorumMet ? (
-                      <Badge tone="success">{t("quorumMet")}</Badge>
-                    ) : (
-                      <Badge tone="danger">{t("quorumFailed")}</Badge>
-                    )
+                    <div className="flex items-center gap-2">
+                      {m.quorumMet === null ? (
+                        <Badge tone="neutral">{t("planned")}</Badge>
+                      ) : m.quorumMet ? (
+                        <Badge tone="success">{t("quorumMet")}</Badge>
+                      ) : (
+                        <Badge tone="danger">{t("quorumFailed")}</Badge>
+                      )}
+                      {canWrite ? (
+                        <Link
+                          href={`/panel/toplantilar/${m.id}/duzenle`}
+                          aria-label={tCommon("action.edit")}
+                          className="rounded p-1 text-fg-subtle hover:bg-hover hover:text-fg"
+                        >
+                          <Pencil aria-hidden className="h-3.5 w-3.5" />
+                        </Link>
+                      ) : null}
+                    </div>
                   }
                 />
                 <CardBody className="space-y-2 text-sm">

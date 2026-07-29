@@ -39,26 +39,46 @@ import {
  * "Zaten var olanları atla" varsayılan açık: aynı dönem için ikinci kez
  * çalıştırmak en sık yapılan hata ve çift borç en pahalı sonuç.
  */
+/**
+ * Bir aidat planından taşınan başlangıç değerleri.
+ *
+ * NEDEN KOPYALANIYOR, BAĞLANMIYOR: sihirbaz **tek seferlik** bir
+ * borçlandırma yapıyor; plana bağlanmış olsaydı üretilen borçlar planın
+ * dönemsel koşusuyla karışır ve `dues_runs` idempotanslığı iki farklı
+ * kaynaktan gelen aynı dönemi ayırt edemezdi. Plan burada bir **şablon**:
+ * alanları doldurur, sonra bağı kopar. Planın kendisini çalıştırmak için
+ * plan ekranındaki "şimdi çalıştır" var (PROJE-DURUMU §5.4).
+ */
+export interface BulkDebtPreset {
+  planName: string;
+  formula: string;
+  amountKurus: number;
+  dueDay: number;
+  blockIds: string[];
+}
+
 export function BulkDebtWizard({
   blocks,
   defaultPeriod,
   cancelHref,
+  preset,
 }: {
   blocks: { id: string; name: string }[];
   defaultPeriod: string;
   cancelHref: string;
+  preset?: BulkDebtPreset;
 }) {
   const t = useTranslations("app.debts");
   const tUnits = useTranslations("app.units");
   const tCommon = useTranslations("common");
   const tEnum = useTranslations("enum");
 
-  const [description, setDescription] = useState("");
+  const [description, setDescription] = useState(preset?.planName ?? "");
   const [kind, setKind] = useState<BulkDebtKind>("dues");
   const [period] = useState(defaultPeriod);
-  const [dueDay, setDueDay] = useState(10);
-  const [formula, setFormula] = useState("equal");
-  const [amountKurus, setAmountKurus] = useState(0);
+  const [dueDay, setDueDay] = useState(preset?.dueDay ?? 10);
+  const [formula, setFormula] = useState(preset?.formula ?? "equal");
+  const [amountKurus, setAmountKurus] = useState(preset?.amountKurus ?? 0);
   const [shareTarget, setShareTarget] = useState("owner");
   const [blockIds] = useState<string[]>([]);
   const [skipExisting, setSkipExisting] = useState(true);
@@ -99,6 +119,13 @@ export function BulkDebtWizard({
   return (
     <div className="grid gap-4 lg:grid-cols-5">
       <div className="lg:col-span-3">
+        {preset ? (
+          <div className="mb-4">
+            <Alert tone="info" title={t("presetTitle", { plan: preset.planName })}>
+              {t("presetBody")}
+            </Alert>
+          </div>
+        ) : null}
         <div className="rounded-lg border border-border bg-surface p-4 sm:p-6">
           <ActionForm
             action={createBulkDebts}

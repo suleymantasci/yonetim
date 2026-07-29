@@ -39,7 +39,16 @@
   korelasyonu, Web Vitals, bundle bütçesi CI kapısı var; OpenTelemetry/
   PostHog/Lighthouse CI **bilinçli olarak ertelendi** (gerekçe §4).
 - **Rakip incelemesi (Dijiyon + Yönetimcell, canlı demo) yeni özellik
-  adayları çıkardı** — bunlar henüz **yapılmadı**, §5'te tek listede.
+  adayları çıkardı** — bunlar henüz **yapılmadı**, §4'te tek listede.
+- **✅ 2026-07-29'da kapatılan büyük boşluk: panelin salt-okunur yarısı.**
+  10 modülde ekran ve okuma ucu vardı ama **yazma yolu hiç yoktu** — personel,
+  talep/arıza, bakım, sayaç, rezervasyon, anket, toplantı, mesaj, banka
+  hesabı, ayarlar. Onunun da yazma akışı yazıldı; ayrıca aidat planı ↔ toplu
+  borç bağlantısı kuruldu, eksik çekmece rotaları tamamlandı ve entegrasyon
+  rozetleri gerçek bağlantı durumuna bağlandı. Tespit, gerekçeler ve alınan
+  kararlar §5'te. **Açık kalan:** hukuk ve belge yükleme (ikisi de Track E'deki
+  bir ürün kararına bağlı) ve hâlâ boşta duran 9 yazma yetkisi — tek tek
+  gerekçeleriyle §5.1'de.
 - **Kalan büyük iş (Track E):** teknik altyapı hazır ama her biri bir ürün
   kararı bekliyor — PDF/KEP, bakım hatırlatma, sakin portalı kapsamı, göç
   sihirbazı, bordro kapsamı, landing builder (bkz. §6).
@@ -185,7 +194,8 @@ gözden geçirilmiş, bazıları uygulama sırasında **tekrar** değişmiştir.
 | ESLint yapılandırması | GAP-DURUM'da "eksik, kapsam dışı" not edildi | — | **Yapıldı** (Track A0'da, backend göçünün önkoşulu olarak) |
 
 **İptal edilen / ürün kararına takılıp bekleyen** (yapılmayacak değil, **henüz
-karar verilmedi**): §6'daki Track E listesi.
+karar verilmedi**): §6'daki Track E listesi. Bunlarla karıştırılmaması gereken
+**yarım kalmış uygulama** işleri §5'te.
 
 ---
 
@@ -245,7 +255,395 @@ maddelerle **çakışmayan/yeni** olanları önceliklendirir.
 
 ---
 
-## 5. Bekleyen ürün kararları (Track E — teknik altyapı hazır, karar bekliyor)
+## 5. Yarım kalan modüller — 2026-07-29 denetimi ve kapatılması ✅
+
+Bu bölüm §4'ten (yeni özellik fikirleri) ve §6'dan (ürün kararı bekleyenler)
+**ayrı** bir kategori: burada ne fikir eksik ne karar. Tablo var, okuma ucu
+var, ekran var — **yazma yolu hiç yazılmamış**tı. Panelde gezen biri için bu
+"sayfa açılıyor ama hiçbir şey yapamıyorum" olarak görünüyordu.
+
+**Durum:** §5.1–§5.6 tespitin kendisi (tarihsel kayıt olarak olduğu gibi
+duruyor), **§5.7 ne yapıldığını ve neden öyle yapıldığını** anlatıyor. Sıradaki
+işler için §5.2'deki tabloda hâlâ ❌ olan iki satıra bakın.
+
+### 5.1 Kanıt: tanımlı ama hiç kullanılmayan yetkiler
+
+Denetim anında `packages/core/src/rbac.ts` 74 yetki tanımlıyordu ve bunların
+**21'i** `apps/api` ile `apps/app` içinde **tek bir yerde bile geçmiyordu** —
+hepsi yazma yetkisi:
+
+```
+staff:write          request:write        request:assign
+maintenance:write    reservation:write    reservation:approve
+meter:write          bank:write           bank:reconcile
+poll:write           poll:vote            meeting:write
+message:write        legal:write          document:write
+settings:write       payment:refund       debt:forgive
+kvkk:manage          resident:invite      announcement:send_urgent
+```
+
+Bir yetkinin hiç kullanılmaması tesadüf değil, **o modülde yazma ucunun hiç
+yazılmadığının** kanıtı. RBAC bu modülleri baştan planlamış; uygulama yalnız
+okuma tarafında durmuştu.
+
+**2026-07-29 sonrası:** bu 21'in **12'si** artık gerçek uçlarda kullanılıyor
+(`staff:write`, `request:write`, `request:assign`, `maintenance:write`,
+`reservation:write`, `reservation:approve`, `meter:write`, `bank:write`,
+`poll:write`, `meeting:write`, `message:write`, `settings:write`).
+
+Kalan **9'u hâlâ kullanılmıyor** ve her biri ayrı bir sebeple — sayıyı
+"tamamlandı"ya yuvarlamamak için tek tek:
+
+| Yetki | Neden hâlâ boşta |
+| --- | --- |
+| `legal:write` | Hukuk modülü açık — Track E'deki PDF/KEP kararına bağlı |
+| `document:write` | Belge yükleme açık — dosya saklama politikası kararına bağlı |
+| `poll:vote` | Oy **verme** sakin portalında olacak; panel oylamayı açıyor ve kapatıyor, oy kullanmıyor (Track E, sakin portalı kapsamı) |
+| `bank:reconcile` | Elle eşleştirme arayüzü yazılmadı; hesap tanımı ve ödeme-hesap bağı bu turda geldi, eşleştirme ekranı §4.2'de duruyor |
+| `payment:refund` | İade akışı yok — iyzico iade çağrısı ve muhasebe karşılığı ayrı bir iş |
+| `debt:forgive` | Borç **silme/affetme** ayrı bir karar yüzeyi; bugün düzeltme (`debt:write` + gerekçe) üzerinden yapılıyor |
+| `kvkk:manage` | KVKK talep kapatma akışı okuma tarafında duruyor, yazma tarafı Track E'deki "KVKK gelen kutusu" ile gelecek |
+| `resident:invite` | Sakin daveti sakin portalıyla anlamlı; portal kapsamı kararı verilmeden davet göndermek boşluğa davet olurdu |
+| `announcement:send_urgent` | Acil durum override'ı `announcementCreate.isUrgent` üzerinden çalışıyor ama **ayrı yetkiye bağlanmadı**: bugün `announcement:write` olan herkes acil gönderebiliyor. Küçük ama gerçek bir yetki boşluğu — kapatılmalı |
+
+### 5.2 Modül-modül durum
+
+| Modül | Ekran | Okuma ucu | Yazma ucu | DB tablosu | Sonuç |
+| --- | --- | --- | --- | --- | --- |
+| ~~Personel `/panel/personel`~~ | ✅ | ✅ | ✅ **2026-07-29** | `staff`, `staff_attendance`, `staff_leaves` | **TAMAMLANDI** — bkz. §5.7 |
+| ~~Talep / arıza `/panel/talepler`~~ | ✅ | ✅ | ✅ **2026-07-29** | `requests`, `request_comments` | **TAMAMLANDI** — bkz. §5.7. (Arıza ayrı modül değil: `requests.category` alanı) |
+| ~~Bakım `/panel/bakim`~~ | ✅ | ✅ | ✅ **2026-07-29** | `maintenance_records`, `maintenance_templates` | **TAMAMLANDI** — bkz. §5.7 |
+| ~~Sayaçlar `/panel/sayaclar`~~ | ✅ | ✅ | ✅ **2026-07-29** | `meters`, `meter_readings` | **TAMAMLANDI** — bkz. §5.7. `meter` aidat formülü artık kullanılabilir |
+| ~~Rezervasyon `/panel/rezervasyon`~~ | ✅ | ✅ | ✅ **2026-07-29** | `reservations`, `resources` | **TAMAMLANDI** — bkz. §5.7. Tesis tanımı da eklendi |
+| ~~Anketler `/panel/anketler`~~ | ✅ | ✅ | ✅ **2026-07-29** | `polls`, `poll_votes` | **TAMAMLANDI** — bkz. §5.7 |
+| ~~Toplantılar `/panel/toplantilar`~~ | ✅ | ✅ | ✅ **2026-07-29** | `meetings`, `meeting_decisions` | **TAMAMLANDI** — bkz. §5.7. (Karar Defteri ayrı modül — §2.7) |
+| ~~Mesajlar `/panel/mesajlar`~~ | ✅ | ✅ | ✅ **2026-07-29** | `messages` | **TAMAMLANDI** — bkz. §5.7 |
+| ~~Banka `/panel/banka`~~ | ✅ | ✅ | ✅ **2026-07-29** | `bank_accounts`, `bank_transactions`, `reconciliation_issues` | **TAMAMLANDI** — bkz. §5.7. Ödemeye `bank_account_id` de eklendi (migration `0007`) |
+| ~~Ayarlar `/panel/ayarlar`~~ | ✅ | ✅ | ✅ **2026-07-29** | `tenants.settings` (JSONB) | **TAMAMLANDI** — bkz. §5.7. Entegrasyon rozetleri de gerçeğe bağlandı (§5.5) |
+| Hukuk `/panel/hukuk` | ✅ liste | `GET /v1/panel/legal` | ❌ | `legal_cases` | İcra/dava dosyası açılamıyor |
+| Belgeler `/panel/belgeler` | ✅ liste | `GET /v1/panel/documents` | ❌ | `documents` | Belge yüklenemiyor |
+
+**Denetim anındaki karşılaştırma:** yazma yolu tamam olan modüller birimler,
+sakinler, borçlar, giderler, aidat planları, duyurular, demirbaş, karar
+defteri, geçiş — yani 9 modül tam, 12 modül yarımdı.
+
+**Bugün:** 19 modül tam, **2 modül açık** (hukuk, belge yükleme) — ikisi de
+ürün kararına bağlı.
+
+### 5.3 Modal (çekmece) tutarsızlığı
+
+Karar: liste ekranından açılan oluşturma/düzenleme akışları **sayfa
+değiştirmeden çekmecede** açılmalı (§2.3 Faz 2, "akış-içi çekmece").
+Uygulama bunun yalnızca bir bölümünü kapsıyor.
+
+`apps/app/src/app/panel/@modal/` altında kesme (interception) rotası **olan**:
+
+- `(.)birimler/yeni`, `(.)birimler/[id]/duzenle`
+- `(.)sakinler/yeni`, `(.)sakinler/[id]/duzenle`
+- `(.)giderler/yeni`
+
+Kesme rotası **olmayan** (bu yüzden tam sayfaya atlıyordu — hepsi
+2026-07-29'da eklendi, bkz. §5.7 madde 9):
+
+- `/panel/borclar/yeni`, `/panel/borclar/toplu`, `/panel/borclar/[id]`
+- `/panel/aidat/yeni`, `/panel/aidat/[id]/duzenle`
+- `/panel/giderler/[id]/duzenle`, `/panel/giderler/kategoriler`
+- `/panel/birimler/toplu`, `/panel/sakinler/acil-durum`
+
+Not: `QUICK_ACTIONS` (komut paleti) bu adreslerin dördünü doğrudan
+gösteriyor — yani en kısa yol olarak sunulan akış aynı zamanda en kırık olanı.
+Desen hazır ve tekrarlanabilir (`RouteDrawer` + aynı server action'ı paylaşma);
+eksik olan yalnız dosyalar.
+
+### 5.4 Aidat planı ↔ toplu borçlandırma kopukluğu
+
+İki ayrı mekanizma var ve **birbirini tanımıyorlar**:
+
+| | Aidat planı (`/panel/aidat`) | Toplu borç (`/panel/borclar/toplu`) |
+| --- | --- | --- |
+| Ne | Tekrar eden borçlandırma **şablonu** (periyot, formül, vade, gecikme oranı, kapsam) | Tek seferlik toplu borçlandırma |
+| Nasıl çalışır | `apps/worker` → `dues.generate-monthly` job'ı her dönem başında aktif planları koşturur; `dues_runs` tablosu aynı dönemin iki kez üretilmesini engeller | Yönetici formu doldurur → önizleme → uygula |
+| Sözleşme | `duesPlanSave` | `debtBulkCreate` — içinde **`duesPlanId` alanı yok** |
+
+Sonuç, kullanıcının sorduğu şey: denetim anında **hayır**, toplu borç
+ekranında var olan bir planı seçip uygulayamıyordunuz. Plan yalnız worker'ın
+cron'uyla, kendi takviminde çalışıyordu; elle "şimdi çalıştır" düğmesi de
+yoktu. İki şey eksikti — **ikisi de 2026-07-29'da eklendi** (§5.7 madde 7b):
+
+1. **"Plandan doldur"** — seçilen planın formül/tutar/vade/kapsam alanlarını
+   toplu borç sihirbazına taşımak (tek seferlik sapma gerektiğinde).
+2. **"Planı şimdi çalıştır"** — `dues.generate-monthly`'yi tek plan/tek dönem
+   için elle tetiklemek. `dues_runs` idempotanslığı zaten koruduğu için
+   güvenli; altyapı (`POST /v1/panel/platform/jobs/:job/run`) da hazır.
+
+### 5.5 Ayarlar ve entegrasyonlar — "neye göre açık/kapalı?"
+
+Kullanıcının sorusu haklı ve cevabı rahatsız edici: **hiçbir şeye göre.**
+`/panel/ayarlar` içindeki entegrasyon rozetleri şu sabitten okunuyor:
+
+```ts
+const INTEGRATIONS = [
+  { key: "whatsapp", enabled: siteConfig.features.whatsappBot }, // = sabit true
+  { key: "sms",      enabled: siteConfig.features.smsNotify },
+  { key: "payment",  enabled: true },                            // elle true
+  { key: "bank",     enabled: siteConfig.features.bankIntegration },
+  { key: "einvoice", enabled: false },                           // elle false
+  { key: "kep",      enabled: false },                           // elle false
+];
+```
+
+`siteConfig.features.*` **derleme zamanı** sabitleri (`packages/config`), site
+başına değil tüm ürün için geçerli. Yani rozet "bu sitede WhatsApp bağlı"
+demiyor, "bu üründe WhatsApp özelliği kodda var" diyor. Yönetici için bu
+bilgi yanıltıcı. Gösterilmesi gereken: kimlik bilgisi tanımlı mı, webhook
+doğrulaması geçti mi, son mesaj ne zaman gitti.
+
+**WhatsApp numara modeli — açık bir ürün kararı, kodda örtük bir cevap var.**
+Bugünkü uygulama tek bir **platform numarası** varsayıyor:
+`packages/config/src/env.ts` içindeki `WHATSAPP_PHONE_NUMBER_ID`,
+`WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_APP_SECRET` süreç düzeyinde ortam
+değişkenleri — site başına alan yok, `tenants.settings` içinde de WhatsApp
+kimlik bilgisi tutulmuyor. Yani bugün: **tek numara, bizim numaramız, tüm
+siteler ortak.** Yönetici kendi numarasını giremez.
+
+Bu tercihin sonuçları (karar verilirken tartılması gerekenler):
+
+- *Tek platform numarası (bugünkü hâl):* kurulum sıfır, Meta iş doğrulaması
+  bir kez bizde. Ama gönderen adı sitenin değil bizim; sakin "bu mesaj kimden"
+  diye sorar ve şablon onayları ile mesaj kotası tüm siteler arasında paylaşılır
+  — bir sitenin şikâyet oranı diğerlerinin teslimatını düşürebilir.
+- *Site başına numara:* marka doğru görünür, kota ve itibar izole olur. Ama her
+  site için ayrı WABA + Meta doğrulaması gerekir; küçük bir apartman yönetimi
+  bunu yapmaz. Satın alma sürtünmesi ciddi.
+- *Karma:* varsayılan platform numarası, isteyen site kendi WABA'sını
+  bağlayabilir. `tenants.settings`'e opsiyonel WhatsApp kimlik bilgisi alanı
+  eklemeyi gerektirir; gönderim katmanı (`packages/notifications`) site
+  ayarı varsa onu, yoksa ortamı kullanır.
+
+**✅ KARAR (2026-07-29): karma model.** Varsayılan platform numarası kalıyor,
+site isterse kendi WABA'sını bağlayabiliyor. Uygulama gereksinimleri:
+
+1. `tenants.settings` (JSONB) içine opsiyonel `whatsapp` bölümü:
+   `phoneNumberId`, `accessToken`, `appSecret`, `verifyToken`. Token'lar
+   **şifreli** saklanmalı (`PiiService` ile aynı yol) — JSONB'de açık token,
+   yedeklerde ve log'larda açık token demektir.
+2. `packages/notifications` gönderim katmanı: site ayarı varsa onu, yoksa
+   ortam değişkenini kullanır. Seçimin **hangisi olduğu** gönderim kaydına
+   yazılmalı, yoksa teslimat sorunu ayıklanamaz.
+3. Gelen webhook'un hangi siteye ait olduğu artık numaradan çözülüyor:
+   `phoneNumberId` → tenant eşlemesi gerekli. Bugün tek numara olduğu için
+   bu adım yok.
+4. Ayarlar ekranı **gerçek bağlantı durumunu** gösterir: kimlik bilgisi
+   tanımlı mı, webhook doğrulaması geçti mi, son mesaj ne zaman gitti —
+   "aktif/pasif" sabiti değil.
+
+4. madde diğerlerinden bağımsız ve **hemen** yapılabilir: bugünkü ekran
+yöneticiye yanlış bilgi veriyor ve bu, numara modelinden bağımsız bir kusur.
+
+### 5.6 Sıra — bu bölümdeki işler hangi düzende yapılacak
+
+Sıralama bağımlılığa göre: personel önce, çünkü talep ataması ve demirbaş
+zimmeti personel kaydına bağlanıyor; banka hesabı ödemeden önce, çünkü
+ödemenin hangi hesaba girdiği hesap tanımı olmadan sorulamaz.
+
+| # | İş | Neden bu sırada |
+| --- | --- | --- |
+| ~~1~~ | ~~**Personel** yazma akışı~~ | ✅ **2026-07-29 tamamlandı** |
+| ~~2~~ | ~~**Talep / arıza** (kayıt, atama, durum, yorum)~~ | ✅ **2026-07-29 tamamlandı** |
+| ~~3~~ | ~~**Bakım** planlama/tamamlama~~ | ✅ **2026-07-29 tamamlandı** |
+| ~~4~~ | ~~**Sayaç** tanımı + okuma girişi~~ | ✅ **2026-07-29 tamamlandı** |
+| ~~5~~ | ~~**Rezervasyon** + onay~~ | ✅ **2026-07-29 tamamlandı** |
+| ~~6~~ | ~~**Banka hesabı tanımı** + ödemede hesap seçimi~~ | ✅ **2026-07-29 tamamlandı** |
+| ~~7~~ | ~~**Aidat planı ↔ toplu borç** bağlantısı (§5.4)~~ | ✅ **2026-07-29 tamamlandı** |
+| ~~8~~ | ~~**Ayarlar** yazma + entegrasyon gerçek durumu (§5.5)~~ | ✅ **2026-07-29 tamamlandı** |
+| ~~9~~ | ~~**Anket / toplantı / mesaj** yazma akışları~~ | ✅ **2026-07-29 tamamlandı** |
+| ~~10~~ | ~~**Modal kesme rotaları** (§5.3)~~ | ✅ **2026-07-29 tamamlandı** |
+
+Hukuk ve belge yükleme (§5.2 son iki satır) bu sıranın dışında bırakıldı:
+ikisi de Track E'deki bir ürün kararına (PDF/KEP sağlayıcısı, dosya saklama
+politikası) bağlı — bkz. §6.
+
+### 5.7 Tamamlananlar ve ortaya çıkan desen (2026-07-29)
+
+**1 — Personel.** Sözleşme `staffSave`/`staffDetail`; `POST/GET/PATCH/DELETE
+/v1/panel/staff/:id` + `StaffWriteService`; panelde form, tam sayfa `yeni` ve
+`[id]/duzenle`, her ikisinin çekmece sürümü, liste başlığında ekleme düğmesi,
+satır içi düzenleme, komut paletine hızlı işlem.
+
+Üç karar:
+- **Net ücret ve SGK girilir, hesaplanmaz.** Gerçek bordro asgari geçim
+  indirimi, kümülatif matrah ve teşviklere bağlı; burada hesaplamak mali
+  müşavirin bordrosuyla çelişecek ikinci bir gerçek üretirdi.
+- **TCKN/IBAN'da boş = dokunma.** Alanlar okuma ucundan hiç dönmediği için
+  formda her zaman boş görünüyor; boşluğu "sil" saymak, formu açıp kaydeden
+  herkesin kimlik bilgisini silmesi demekti. Silmek ayrı kutucuk.
+- **Ayrılış tarihi tek kaynak**, ayrı "aktif mi" anahtarı yok — ikisi birlikte
+  olsa "ayrıldı ama aktif" çelişkisi aylık maliyet toplamını şişirirdi.
+
+TCKN/IBAN şifrelemesi sakinlerdeki **aynı** `PiiService` üzerinden;
+`TenancyModule` bunun için `PropertyModule`'ü içeri alıyor. İkinci bir
+şifreleme yolu, anahtar döndürme gününde iki ayrı yerin güncellenmesi demekti.
+
+**2 — Talep / arıza.** `requestSave` / `requestStatusPatch` /
+`requestAssignPatch` / `requestCommentCreate` / `requestDetail`; beş yeni uç
+(`POST`, `GET :id`, `PATCH :id`, `PATCH :id/durum`, `PATCH :id/atama`,
+`POST :id/yorum`) + `RequestWriteService`; panelde form, tam sayfa detay
+(özet + düzenleme + eylemler), çekmece detay, liste bağlantıları.
+
+Dört karar:
+- **Kod ve SLA vadesi sunucuda.** Kod (`TLP-yyyy-nnnn`) site içinde tekil
+  olmalı; vade `siteConfig.sla`'daki söz ve ölçütü sunucunun saati.
+- **Öncelik değişince vade açılış anından yeniden hesaplanıyor**, "şimdi"den
+  değil. Aksi hâlde geciken bir talebin önceliğini yükseltmek gecikmeyi
+  silerdi — yükseltmenin cezası olmamalı ama ödülü de olmamalı.
+- **Durum formda değil ayrı uçta.** Geçişin yan etkileri (ilk yanıt, çözüm,
+  kapanış zamanı) form alanı olsalardı geçmişe dönük tarihle SLA ölçümü
+  anlamsızlaştırılabilirdi. `firstResponseAt` bir kez yazılıyor.
+- **Atama `request:assign` istiyor**, `request:write` değil: `staff` rolü
+  talep açıp güncelleyebilir ama kimin hangi işi yapacağına karar vermek
+  yönetimin işi. Sakin rollerine atama yapılamıyor — SLA sayacı yönetimin
+  sorumlu olmadığı bir sürede işlerdi.
+
+**3 — Bakım.** `maintenanceSave` / `maintenanceComplete` / `maintenanceDetail`;
+beş uç + `MaintenanceWriteService`; panelde plan formu, "yapıldı" formu, tam
+sayfa ve çekmece sürümleri. `maintenance.reminders` worker job'ı zaten
+yazılıydı — bu iş hazır boru hattının kapalı olan girişini açtı.
+
+- **Sıradaki vade yapıldığı tarihten ilerliyor**, planlanandan değil.
+  Planlanandan zincirlenseydi üç ay geciken bir bakım tamamlandığı anda "yine
+  gecikmiş" görünürdü.
+- **Plan düzenleme ile "yapıldı" ayrı formda**: son bakım tarihi yasal
+  denetimde sorulan şey ve planı düzelten biri onu yanlışlıkla
+  değiştirebilmemeli.
+- Şablon **doldurur, kilitlemez**: yasal şablon doğru başlangıç ama site
+  gerçeği farklı olabilir (iki asansör, sözleşmeye bağlı daha sık bakım).
+
+**4 — Sayaç.** `meterSave` / `meterReadingBatch` / `meterDetail`; beş uç +
+`MeterWriteService`; panelde tanım formu ve **dönemsel toplu okuma** ekranı.
+Bu modülün eksikliği tek bir ekranı değil bir **aidat formülünü** kapalı
+tutuyordu: `dues_plan.formula = "meter"` bu veriye bağımlıydı.
+
+- **Okuma girişi toplu ve tek işlem**: gerçek iş ayda bir binayı dolaşmak;
+  sayaç başına ayrı istek 60 daireli binada yarım kalmış bir tur demekti.
+- **Boş satır atlanır, sıfır sayılmaz.** Sıfır sayılsaydı okunamayan bir sayaç
+  "bu ay hiç kullanmadı" olur ve bir sonraki dönemde iki dönemlik tüketim tek
+  faturaya binerdi.
+- **Takılış endeksi okuma girildikten sonra kilitli**: değişebilseydi ilk
+  dönemin tüketimi geriye dönük değişir, faturası kesilmiş bir tutar sessizce
+  başka bir şeye dönüşürdü.
+- Negatif tüketim ve ani sıçrama **ayrı ayrı** işaretleniyor: sebepleri ve
+  çözümleri farklı, tek "şüpheli" etiketi yöneticiyi yalnız bırakırdı.
+
+**5 — Rezervasyon.** `resourceSave` / `reservationCreate` / `reservationDecide`;
+yedi uç + `ReservationWriteService`; panelde tesis formu, rezervasyon formu,
+karar ekranı, çekmece sürümleri. **Tesis tanımı da yoktu** — modülün girişi
+kapalıydı, ekran yalnız boş bir liste gösterebiliyordu.
+
+- **Ücret tarifeden ve süreden türüyor**, formda ücret alanı yok: aynı salon
+  iki sakine iki farklı fiyata verilemesin.
+- **Çakışma kontrolü yarı açık aralıkla** (`[start, end)`): bitişik iki
+  rezervasyon çakışma değil, yoksa arka arkaya kullanım imkânsız olurdu.
+  `pending` de yeri tutuyor — yönetici sonradan hakem olmak zorunda kalmasın.
+- **İptal edilmiş rezervasyon yeniden onaylanamıyor**: aradaki sürede o saat
+  başkasına verilmiş olabilir ve geri almak çakışma kontrolünü atlatmak olurdu.
+
+**6 — Anket / toplantı / mesaj.** `pollSave` / `pollClose` / `meetingSave` /
+`meetingDecisionSave` / `messageSend`; sekiz uç + `CommunicationWriteService`.
+
+- **Seçenek kimlikleri sunucuda ve düzenlemede korunuyor**: oylar `option_id`
+  ile saklandığı için kimlikleri baştan üretmek verilmiş oyları başka bir
+  seçeneğe bağlardı.
+- **Oylama sonucu kapatma anında hesaplanıp saklanıyor**: ağırlık modu ya da
+  arsa payları sonradan değişirse kapanmış bir kararın sonucu değişmemeli.
+- Yeter sayı tabanı kurala bağlı: `simple_majority` katılanlar üzerinden,
+  nitelikli çoğunluklar **tüm kat malikleri** üzerinden. Hepsini katılanlar
+  üzerinden hesaplamak, dört kişinin katıldığı toplantıda oybirliği kararı
+  almayı mümkün kılardı.
+- **WhatsApp 24 saatlik servis penceresi kapalıysa mesaj gönderilmiyor** ve
+  sebebi ekrana yazılıyor. "Gönderildi" deyip ulaşmaması, bu ekranın
+  verebileceği en pahalı yanlış bilgiydi.
+- İkinci toplantı tarihi (KMK md.30) **otomatik doldurulmuyor**: kanuni asgari
+  bir varsayılan değil.
+
+**7 — Banka hesabı + ödemede hesap seçimi.** `bankAccountSave` /
+`bankAccountDetail`; dört uç + `BankAccountWriteService`; **migration `0007`**
+ile `payments.bank_account_id`. Tek şema değişikliği gerektiren iş buydu.
+
+- Sorun: `method` "havale" diyordu ama **hangi hesaba** yattığını
+  söylemiyordu. Site birden fazla hesap tutuyor ve eşleştirme yalnız tutar ve
+  tarihle yapıldığı için iki hesapta aynı gün aynı tutar varsa yanlış
+  eşleşiyordu.
+- Kolon **nullable**: nakit tahsilatın banka hesabı yok ve uydurma bir hesap
+  seçtirmek mutabakatı kalıcı olarak bozardı. Sunucu `cash` yönteminde hesabı
+  zaten yok sayıyor.
+- IBAN **mod-97 kontrol basamağıyla** doğrulanıyor ve aynı IBAN ikinci kez
+  tanımlanamıyor (blind index): iki kayıt olsaydı gelen havale ikisiyle de
+  eşleşir ve mutabakat hangisine yazacağını bilemezdi.
+- Düzenlemede IBAN **yeniden giriliyor**: okuma uçları yalnız maskeyi
+  döndürüyor ve maskeyle doldurulmuş bir alan kaydedilseydi maske gerçek
+  IBAN'ın yerine yazılırdı.
+
+**7b — Aidat planı ↔ toplu borç (§5.4).** İki yönlü bağlantı kuruldu:
+
+- **"Planı şimdi çalıştır"** (`POST /v1/panel/dues-plans/:id/calistir`):
+  üretim mantığı `packages/jobs`'taki **aynı** fonksiyondan geliyor; ikinci bir
+  uygulama, elle çalıştırmayla cron'un zamanla ayrışması demekti. Önizleme
+  varsayılan açık — borç üretmek geri alınması pahalı bir iş ve üretilen her
+  borç sakine bildirim doğuruyor. İdempotanslık `dues_runs` (plan, dönem)
+  tekil indeksinden.
+- **"Plandan doldur"** (`/panel/borclar/toplu?plan=`): sihirbaz planın
+  formül/tutar/vade/kapsam alanlarını **kopyalıyor, bağlamıyor**. Plana
+  bağlansaydı üretilen borçlar planın dönemsel koşusuyla karışır ve
+  `dues_runs` idempotanslığı iki farklı kaynaktan gelen aynı dönemi ayırt
+  edemezdi. Ekran bu ayrımı kullanıcıya da anlatıyor.
+
+**8 — Ayarlar + entegrasyon durumu (§5.5).** `tenantSettingsSave` +
+`integrationStatusResponse`; `PATCH /v1/panel/settings` ve
+`GET /v1/panel/settings/entegrasyonlar` + `SettingsWriteService`.
+
+- `settings` JSONB **birleştiriliyor**, ezilmiyor: sözlükte formun bilmediği
+  anahtarlar da var (marka, landing görseli) ve nesneyi baştan yazmak onları
+  sessizce silerdi.
+- Gecikme oranı **%5 ile sınırlı** (KMK md.20); sınırı forma bırakmak kanuna
+  aykırı bir oranın aylarca uygulanabilmesi demekti. Vade günü en fazla 28 —
+  29–31 kısa aylarda kayardı.
+- `slug`, daire sayısı ve abonelik alanları **bilinçle düzenlenemez**: ilki
+  basılmış her bağlantıyı kırar, ikincisi `units` tablosundan türüyor,
+  üçüncüsü faturalandırmanın sonucu.
+- **Entegrasyon rozetleri artık gerçeği söylüyor.** Her satır üçünü ayırıyor:
+  kimlik bilgisi tanımlı mı, hangi kapsamdan geliyor (site ayarı / platform)
+  ve son gönderim ne zaman oldu. WhatsApp'ta `scope` karma modelin (2026-07-29
+  kararı) hangi numarasının kullanıldığını söylüyor. e-Fatura ve KEP "kapalı"
+  değil **"kurulmamış"** — "kapalı" demek onları açılabilir sanmaya yol açardı.
+
+**9 — Modal kesme rotaları (§5.3).** Eksik olanların hepsi eklendi:
+`borclar/yeni`, `aidat/yeni`, `aidat/[id]/duzenle`, `giderler/[id]/duzenle` —
+ve yeni gelen sekiz modülün tamamı zaten çekmece sürümüyle birlikte geldi.
+`DebtForm` ile `DuesPlanForm` bu iş sırasında çekmece-uyumlu hale getirildi
+(`layout="modal"`, `stayOnSuccess`).
+
+---
+
+**Kalan modüllerde tekrarlanacak desen:**
+
+1. `packages/contracts` — tek `*Save` şeması (oluşturma ve güncelleme aynı
+   şemayı paylaşır), ayrı `*Detail` (form doldurma), yan etkili geçişler için
+   ayrı `*Patch` şeması.
+2. `apps/api` — okuma servisinden ayrı `*-write.service.ts`; türetilmiş
+   değerler (kod, vade, zaman damgası) **istemciden alınmaz**.
+3. Seçenek listeleri (daire, görevli, kategori) liste ucunun yanıtına
+   eklenir — ekran ikinci çağrı yapmaz (§9a).
+4. `apps/app` — `*-form.tsx`, tam sayfa `yeni` + `[id]/duzenle`, **ve** her
+   ikisinin `@modal/(.)` çekmece sürümü, ortak `*-defaults.ts` eşleyici.
+5. Liste başlığına ekleme düğmesi (yetki kontrollü), `EmptyState`'e aynı
+   düğme, `QUICK_ACTIONS`'a hızlı işlem, tr+en çeviriler.
+
+Her adımda kapılar: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm arch`,
+`pnpm --filter @yonetim/app build`.
+
+---
+
+## 6. Bekleyen ürün kararları (Track E — teknik altyapı hazır, karar bekliyor)
 
 Bu maddeler **yapılmadı** çünkü kod değil, iş kararı eksik. Karar verilirse
 her biri artık tek modül işi (altyapı: contracts, worker, iptal/ilerleme hazır).
@@ -272,7 +670,7 @@ her biri artık tek modül işi (altyapı: contracts, worker, iptal/ilerleme haz
 
 ---
 
-## 6. Hâlâ açık, küçük teknik borçlar
+## 7. Hâlâ açık, küçük teknik borçlar
 
 - ~~`pnpm lint` CI adımı değil~~ → **kapatıldı** (§2.7): adım zaten vardı,
   eksik olan workflow dosyasının kurulmamış olmasıydı; `.github/workflows/ci.yml`
@@ -293,7 +691,7 @@ her biri artık tek modül işi (altyapı: contracts, worker, iptal/ilerleme haz
 
 ---
 
-## 7. Bu dosyayı güncel tutma kuralı
+## 8. Bu dosyayı güncel tutma kuralı
 
 Yeni bir karar alındığında veya bir madde tamamlandığında **önce burası**
 güncellenir; ayrıntılı gerekçe gerekiyorsa ilgili eski plan dosyasına link

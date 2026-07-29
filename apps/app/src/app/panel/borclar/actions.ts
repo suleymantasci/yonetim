@@ -360,6 +360,8 @@ const collectSchema = z.object({
     },
   ),
   paidAt: dateField,
+  /** Nakit dışı tahsilatta paranın girdiği hesap. */
+  bankAccountId: optionalUuidField,
   payerUserId: optionalUuidField,
   receiptNo: optionalText(30),
   /** Belirli borçlara öncelik verilsin (boşsa en eski vade önce). */
@@ -406,6 +408,7 @@ export async function collectPayment(
           unitId: input.unitId,
           amountMinor: input.amountKurus,
           method: input.method,
+          bankAccountId: input.bankAccountId ?? null,
           paidAt: input.paidAt,
           payerUserId: input.payerUserId,
           receiptNo: input.receiptNo,

@@ -4,9 +4,13 @@ import { InventoryController } from "./inventory/inventory.controller";
 import { InventoryService } from "./inventory/inventory.service";
 import { JobRunController } from "./job-run/job-run.controller";
 import { JobRunService } from "./job-run/job-run.service";
+import { MaintenanceWriteService } from "./maintenance-write.service";
+import { MeterWriteService } from "./meter-write.service";
 import { OperationsController } from "./operations.controller";
 import { OperationsRepository } from "./operations.repository";
 import { OperationsService } from "./operations.service";
+import { RequestWriteService } from "./request-write.service";
+import { ReservationWriteService } from "./reservation-write.service";
 
 /**
  * `operations` bağlamı — talep, bakım, rezervasyon, sayaç (MIMARI-PLAN §6.3).
@@ -21,6 +25,10 @@ import { OperationsService } from "./operations.service";
   providers: [
     OperationsService,
     OperationsRepository,
+    RequestWriteService,
+    MaintenanceWriteService,
+    MeterWriteService,
+    ReservationWriteService,
     JobRunService,
     InventoryService,
   ],

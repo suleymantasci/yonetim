@@ -29,7 +29,7 @@ export class OperationsService {
   constructor(private readonly repo: OperationsRepository) {}
 
   async requests(): Promise<RequestListResponse> {
-    const rows = await this.repo.requests();
+    const { rows, assignees, unitRows } = await this.repo.requests();
     const now = Date.now();
 
     const mapped = rows.map((r) => ({
@@ -66,6 +66,12 @@ export class OperationsService {
 
     return {
       rows: mapped,
+      assignees: assignees.map((a) => ({
+        id: a.id,
+        name: [a.firstName, a.lastName].filter(Boolean).join(" ").trim() || "—",
+        role: a.role,
+      })),
+      units: unitRows,
       totals: {
         open: open.length,
         breached: open.filter((r) => r.slaBreached).length,

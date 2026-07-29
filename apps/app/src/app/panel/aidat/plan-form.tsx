@@ -33,6 +33,10 @@ export function DuesPlanForm({
   defaultStartPeriod,
   cancelHref,
   submitLabel,
+  layout,
+  onCancel,
+  stayOnSuccess,
+  onSaved,
 }: {
   blocks: { id: string; name: string }[];
   defaults?: {
@@ -54,8 +58,14 @@ export function DuesPlanForm({
     notes: string | null;
   };
   defaultStartPeriod: string;
-  cancelHref: string;
+  cancelHref?: string;
   submitLabel: string;
+  /** `"modal"`: alanlar kayar, Vazgeç/Kaydet çubuğu çekmecenin altına sabitlenir. */
+  layout?: "page" | "modal";
+  onCancel?: () => void;
+  /** Çekmecede: kayıt sonrası sayfa değiştirme. */
+  stayOnSuccess?: boolean;
+  onSaved?: () => void;
 }) {
   const t = useTranslations("app.duesPlans");
   const tUnits = useTranslations("app.units");
@@ -70,6 +80,10 @@ export function DuesPlanForm({
       action={saveDuesPlan}
       submitLabel={submitLabel}
       cancelHref={cancelHref}
+      layout={layout}
+      onCancel={onCancel}
+      stayOnSuccess={stayOnSuccess}
+      onSuccess={onSaved}
     >
       {defaults ? <input type="hidden" name="id" value={defaults.id} /> : null}
 

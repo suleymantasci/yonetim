@@ -137,6 +137,7 @@ export class CommunicationService {
       quorumRule: r.quorumRule,
       visibility: r.visibility,
       ownersOnly: r.ownersOnly,
+      allowMultiple: r.allowMultiple,
       opensAt: r.opensAt,
       closesAt: r.closesAt,
       closedAt: r.closedAt,
