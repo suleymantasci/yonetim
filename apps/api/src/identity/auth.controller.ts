@@ -7,9 +7,11 @@ import {
   otpRequest,
   otpVerify,
   refreshRequest,
+  tenantSwitch,
   webLoginRequest,
   webLoginVerify,
   type AuthMe,
+  type TenantSwitch,
   type WebLoginRequest,
   type WebLoginVerify,
   type OtpRequest,
@@ -21,6 +23,7 @@ import { SESSION_COOKIE } from "@yonetim/auth/cookie";
 import { DbService } from "../infra/db/db.service";
 import { ZodBodyPipe } from "../infra/zod/zod-dto";
 import { AppContextService } from "./app-context.service";
+import { ContextResolver } from "./context-resolver.service";
 import { WebAuthService } from "./web-auth.service";
 import { Public } from "./decorators";
 import { MobileAuthService } from "./mobile-auth.service";
@@ -40,6 +43,7 @@ export class AuthController {
     private readonly db: DbService,
     private readonly appContext: AppContextService,
     private readonly web: WebAuthService,
+    private readonly contextResolver: ContextResolver,
   ) {}
 
   /* ---------------------------------------------------------------- *
@@ -84,6 +88,24 @@ export class AuthController {
   })
   async webLogout(@Req() req: Request): Promise<void> {
     await this.web.logout(readSessionCookie(req.headers.cookie));
+  }
+
+  @Post("web/switch-tenant")
+  @HttpCode(204)
+  @ApiOperation({
+    summary: "Aktif siteyi değiştir — yönetim şirketi konsolu",
+    description:
+      "Üyelik doğrulanır; üyesi olunmayan bir site 403 döner. Oturum " +
+      "önbelleği hemen düşürülür, yoksa yeni site en fazla önbellek TTL'i " +
+      "kadar gecikmeyle görünürdü.",
+  })
+  async switchTenant(
+    @Req() req: Request,
+    @Body(new ZodBodyPipe(tenantSwitch)) dto: TenantSwitch,
+  ): Promise<void> {
+    const token = readSessionCookie(req.headers.cookie);
+    await this.web.switchTenant(token, dto.tenantId);
+    if (token) await this.contextResolver.invalidateSession(token);
   }
 
   @Public()

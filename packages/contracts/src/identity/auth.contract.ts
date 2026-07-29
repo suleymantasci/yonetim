@@ -201,6 +201,17 @@ export const webLoginVerify = z.object({
 export type WebLoginVerify = z.infer<typeof webLoginVerify>;
 
 /**
+ * `POST /v1/auth/web/switch-tenant` — aktif siteyi değiştir.
+ *
+ * Slug değil **kimlik** alıyor: slug tenant'a özgü ama değiştirilebilir bir
+ * alan, kimlik ise sabit. Üyelik kontrolü sunucuda yapılıyor; bu şema yalnız
+ * biçimi doğruluyor.
+ */
+export const tenantSwitch = z.object({ tenantId: uuid });
+
+export type TenantSwitch = z.infer<typeof tenantSwitch>;
+
+/**
  * Oturum **jetonu** dönüyor, çerezin kendisi değil.
  *
  * Çerezi tarayıcıya `apps/app` yazıyor çünkü tarayıcı yalnız onun origin'ini

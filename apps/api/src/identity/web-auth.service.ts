@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, Logger } from "@nestjs/common";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import {
   consumeVerificationToken,
@@ -9,6 +9,8 @@ import {
   issueVerificationToken,
   RATE_LIMITS,
   rateLimit,
+  resolveSession,
+  switchTenant,
 } from "@yonetim/auth";
 import { siteConfig } from "@yonetim/config";
 import type {
@@ -17,7 +19,7 @@ import type {
   WebLoginVerify,
 } from "@yonetim/contracts";
 import { errors, normalizePhone } from "@yonetim/core";
-import { users } from "@yonetim/db";
+import { memberships, users } from "@yonetim/db";
 import { magicLinkEmail, sendEmail } from "@yonetim/emails";
 import { sendSms } from "@yonetim/sms";
 
@@ -185,5 +187,40 @@ export class WebAuthService {
   async logout(token: string | undefined): Promise<void> {
     if (!token) return;
     await destroySession(token);
+  }
+
+  /**
+   * Aktif siteyi değiştirir — yönetim şirketi konsolu (SPEC Bölüm 2.2).
+   *
+   * ÜYELİK **BURADA** DOĞRULANIYOR: `switchTenant` oturum satırını körlemesine
+   * güncelliyor, yani doğrulama atlanırsa kullanıcı hiç üyesi olmadığı bir
+   * siteyi aktif yapabilirdi. Bağlam çözücü sonradan üyelik arayıp reddederdi
+   * ama o noktada kullanıcı kilitli bir oturumda kalırdı — kontrol geçişin
+   * kendisinde olmalı.
+   *
+   * Oturum önbelleği çağıran uçta düşürülüyor; aksi halde yeni site en fazla
+   * `SESSION_CACHE_TTL` kadar gecikmeyle görünürdü.
+   */
+  async switchTenant(token: string | undefined, tenantId: string): Promise<void> {
+    if (!token) throw errors.unauthorized("session_required");
+
+    const session = await resolveSession(token);
+    if (!session) throw errors.unauthorized("session_required");
+
+    const member = await this.db.platform(async (tx) =>
+      tx
+        .select({ id: memberships.id })
+        .from(memberships)
+        .where(
+          and(
+            eq(memberships.userId, session.user.id),
+            eq(memberships.tenantId, tenantId),
+          ),
+        )
+        .limit(1),
+    );
+    if (!member[0]) throw errors.forbidden("not_a_member");
+
+    await switchTenant(token, tenantId);
   }
 }

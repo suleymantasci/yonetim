@@ -59,7 +59,8 @@
     "myRequests": "My Requests",
     "myMessages": "My Messages",
     "myProfile": "My Details",
-    "managementInfo": "Management Info"
+    "managementInfo": "Management Info",
+    "portfolio": "Portfolio"
   },
   "shell": {
     "impersonationWarning": "This session was opened by the support team on behalf of a user. Every action is additionally recorded.",
@@ -90,7 +91,8 @@
       "comfortable": "Comfortable",
       "compact": "Compact"
     },
-    "userMenu": "Account menu"
+    "userMenu": "Account menu",
+    "switchTenant": "Switch property"
   },
   "login": {
     "title": "Sign in",
@@ -2318,5 +2320,30 @@
     "ibanMaskedHint": "The IBAN is masked for security. Ask your manager for the full number.",
     "staffTitle": "Staff",
     "noStaff": "No staff recorded."
+  },
+  "portfolio": {
+    "title": "Portfolio",
+    "description": "Summary of the {count} properties you manage. Those needing attention come first.",
+    "tenantCount": "Properties",
+    "unitCount": "Units",
+    "outstanding": "Total balance",
+    "overdue": "Overdue",
+    "emptyTitle": "No properties yet",
+    "emptyDescription": "Properties appear here once you are a member of one.",
+    "col": {
+      "property": "Property",
+      "units": "Units",
+      "collectionRate": "Collection",
+      "overdue": "Overdue",
+      "attention": "Attention",
+      "action": "Action"
+    },
+    "current": "Current",
+    "viewing": "You are here",
+    "switch": "Switch",
+    "slaBreached": "{count} SLA breaches",
+    "overdueMaintenance": "{count} overdue maintenance",
+    "openRequests": "{count} open requests",
+    "footnote": "The list is built from {user}'s memberships."
   }
 }

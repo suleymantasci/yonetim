@@ -111,6 +111,17 @@ export const NAV_ITEMS: NavItem[] = [
   },
 
   /* ---------------------------------------------------------- yönetim */
+  // Portföy yalnız birden fazla site yönetenler için anlamlı; menüde herkese
+  // görünüyor ama tek siteli kullanıcıda ekran zaten tek satır gösterir.
+  // Ayrı bir izin açmak yerine `tenant:read` kullanılıyor — kapsamı sorgu
+  // belirliyor (yalnız üyesi olunan siteler), izin değil.
+  {
+    href: "/panel/portfoy",
+    key: "portfolio",
+    permission: "tenant:read",
+    group: "general",
+    audience: ["staff"],
+  },
   { href: "/panel/birimler", key: "units", permission: "unit:read", group: "property" },
   { href: "/panel/sakinler", key: "residents", permission: "resident:read", group: "property" },
   { href: "/panel/gecis", key: "migration", permission: "unit:write", group: "property" },

@@ -59,7 +59,8 @@
     "myRequests": "Taleplerim",
     "myMessages": "Mesajlarım",
     "myProfile": "Bilgilerim",
-    "managementInfo": "Yönetim Bilgileri"
+    "managementInfo": "Yönetim Bilgileri",
+    "portfolio": "Portföy"
   },
   "shell": {
     "impersonationWarning": "Bu oturum destek ekibi tarafından kullanıcı adına açılmıştır. Tüm işlemler ayrıca kayıt altına alınır.",
@@ -90,7 +91,8 @@
       "comfortable": "Rahat",
       "compact": "Sıkışık"
     },
-    "userMenu": "Hesap menüsü"
+    "userMenu": "Hesap menüsü",
+    "switchTenant": "Site değiştir"
   },
   "login": {
     "title": "Giriş",
@@ -2318,5 +2320,30 @@
     "ibanMaskedHint": "IBAN güvenlik gereği maskeli gösterilir. Tam numara için yöneticinize başvurun.",
     "staffTitle": "Personel",
     "noStaff": "Kayıtlı personel yok."
+  },
+  "portfolio": {
+    "title": "Portföy",
+    "description": "Yönettiğiniz {count} sitenin özeti. Dikkat gerektirenler üstte.",
+    "tenantCount": "Site",
+    "unitCount": "Bağımsız bölüm",
+    "outstanding": "Toplam borç",
+    "overdue": "Gecikmiş",
+    "emptyTitle": "Yönettiğiniz site yok",
+    "emptyDescription": "Bir siteye üye olduğunuzda burada görünecek.",
+    "col": {
+      "property": "Site",
+      "units": "Daire",
+      "collectionRate": "Tahsilat",
+      "overdue": "Gecikmiş",
+      "attention": "Dikkat",
+      "action": "İşlem"
+    },
+    "current": "Bakılan",
+    "viewing": "Buradasınız",
+    "switch": "Geç",
+    "slaBreached": "{count} SLA ihlali",
+    "overdueMaintenance": "{count} geciken bakım",
+    "openRequests": "{count} açık talep",
+    "footnote": "Liste {user} kullanıcısının üyeliklerine göre hazırlanır."
   }
 }

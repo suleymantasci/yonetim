@@ -49,8 +49,10 @@ export default async function PanelLayout({
 
   return (
     <AppShell
+      tenantId={ctx.tenantId}
       tenantName={ctx.tenantName}
       tenantStatus={ctx.tenantStatus}
+      memberships={ctx.memberships}
       userName={ctx.userName}
       roles={ctx.roles}
       allowedHrefs={allowedHrefs}

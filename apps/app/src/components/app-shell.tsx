@@ -16,6 +16,7 @@ import {
   NAV_GROUP_ORDER, NAV_ITEMS, QUICK_ACTIONS, type NavBadgeKey, type NavGroup,
 } from "@/components/shell/nav";
 import { ShellFrame } from "@/components/shell/shell-frame";
+import { TenantSwitcher } from "@/components/shell/tenant-switcher";
 import type { SidebarItem } from "@/components/shell/sidebar";
 import { UserMenu } from "@/components/shell/user-menu";
 import { formatters } from "@/lib/format";
@@ -46,6 +47,7 @@ export { NAV_ITEMS };
  */
 export async function AppShell({
   children,
+  tenantId,
   tenantName,
   tenantStatus,
   userName,
@@ -57,8 +59,10 @@ export async function AppShell({
   badges,
   notifications,
   unreadNotificationCount,
+  memberships,
 }: {
   children: ReactNode;
+  tenantId: string;
   tenantName: string;
   tenantStatus: string;
   userName: string;
@@ -70,6 +74,8 @@ export async function AppShell({
   badges: NavBadges;
   notifications: InAppNotification[];
   unreadNotificationCount: number;
+  /** Kullanıcının erişebildiği siteler — site değiştirici için. */
+  memberships: { id: string; slug: string; name: string }[];
 }) {
   const t = await getTranslations("app");
   const tCommon = await getTranslations("common");
@@ -114,14 +120,19 @@ export async function AppShell({
   ];
 
   /**
-   * Kenar çubuğu başlığı: gerçek marka işareti + **hangi sitedeyim** bilgisi.
+   * Kenar çubuğu başlığı: marka işareti + **hangi sitedeyim** bilgisi.
    *
-   * Önceki sürüm markanın baş harfini bir kutuya yazıyordu (`Y`); gerçek
-   * `BrandMark` zaten `packages/ui`'de duruyordu ve landing'de kullanılıyordu.
-   * Bir yönetici birden çok siteyi yönetebildiği için site adı en üstte ve
-   * durumu rozetle birlikte veriliyor — "yanlış sitede işlem yapmak" bu
-   * üründeki en pahalı kullanıcı hatası.
+   * "Yanlış sitede işlem yapmak" bu üründeki en pahalı kullanıcı hatası; site
+   * adı bu yüzden en üstte ve durumuyla birlikte duruyor.
+   *
+   * Birden fazla üyeliği olan kullanıcıda ad artık bir **seçici**: `memberships`
+   * ve `switchTenant()` baştan beri yazılıydı ama hiçbir ekrana bağlı değildi,
+   * yani çoklu site yöneten biri site değiştirmek için çıkış yapıp yeniden
+   * girmek zorundaydı. Tek üyelikte düz metin kalıyor — seçeneksiz bir açılır
+   * menü, olmayan bir karar sunmaktan başka işe yaramaz.
    */
+  const multiTenant = memberships.length > 1;
+
   const brandHeader = (
     <div className="flex h-16 items-center gap-2.5 border-b border-border px-4">
       <Link
@@ -131,12 +142,24 @@ export async function AppShell({
       >
         <BrandMark size={32} />
       </Link>
-      <div className="min-w-0">
-        <div className="truncate text-sm font-semibold leading-tight text-fg">{tenantName}</div>
-        <div className="mt-0.5 text-[11px] leading-tight text-fg-subtle">
-          {tEnum(`tenantStatus.${tenantStatus as TenantStatus}`)}
+      {multiTenant ? (
+        <TenantSwitcher
+          current={{ id: tenantId, name: tenantName }}
+          memberships={memberships}
+          labels={{
+            trigger: t("shell.switchTenant"),
+            portfolio: t("nav.portfolio"),
+            status: tEnum(`tenantStatus.${tenantStatus as TenantStatus}`),
+          }}
+        />
+      ) : (
+        <div className="min-w-0">
+          <div className="truncate text-sm font-semibold leading-tight text-fg">{tenantName}</div>
+          <div className="mt-0.5 text-[11px] leading-tight text-fg-subtle">
+            {tEnum(`tenantStatus.${tenantStatus as TenantStatus}`)}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 
