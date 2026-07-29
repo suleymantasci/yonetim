@@ -16,7 +16,7 @@ export default async function NewMessagePage() {
   const t = await getTranslations("app.messages");
 
   const residents = await apiGet(
-    "/v1/panel/residents/secenekler",
+    "/v1/panel/residents/options",
     residentOptionList,
   );
 

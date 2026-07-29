@@ -16,7 +16,7 @@ export default async function NewMessageModal() {
   const tCommon = await getTranslations("common");
 
   const residents = await apiGet(
-    "/v1/panel/residents/secenekler",
+    "/v1/panel/residents/options",
     residentOptionList,
   );
 

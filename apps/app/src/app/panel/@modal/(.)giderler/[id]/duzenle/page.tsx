@@ -40,7 +40,7 @@ export default async function EditExpenseModal({
         throw error;
       },
     ),
-    apiGet("/v1/panel/expenses/kategoriler", categoryTreeSchema),
+    apiGet("/v1/panel/expenses/categories", categoryTreeSchema),
   ]);
   if (!detail) notFound();
 

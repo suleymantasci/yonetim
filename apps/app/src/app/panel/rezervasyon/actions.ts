@@ -113,12 +113,12 @@ export async function saveResource(
 
       const result = input.id
         ? await apiPatch(
-            `/v1/panel/operations/rezervasyon/tesisler/${input.id}`,
+            `/v1/panel/operations/reservations/resources/${input.id}`,
             body,
             resourceSaveResult,
           )
         : await apiPost(
-            "/v1/panel/operations/rezervasyon/tesisler",
+            "/v1/panel/operations/reservations/resources",
             body,
             resourceSaveResult,
           );
@@ -174,7 +174,7 @@ export async function createReservation(
       const t = await getTranslations("app.reservations");
 
       const result = await apiPost(
-        "/v1/panel/operations/rezervasyon",
+        "/v1/panel/operations/reservations",
         {
           resourceId: input.resourceId,
           userId: input.userId,
@@ -223,7 +223,7 @@ export async function decideReservation(
       const t = await getTranslations("app.reservations");
 
       await apiPatch(
-        `/v1/panel/operations/rezervasyon/${input.id}/karar`,
+        `/v1/panel/operations/reservations/${input.id}/decision`,
         { decision: input.decision, reason: input.reason ?? null },
         z.object({ id: z.string().uuid(), status: z.string() }),
       );
@@ -245,7 +245,7 @@ export async function deleteResource(
   await requirePermission("reservation:write");
   const t = await getTranslations("app.reservations");
 
-  await apiDelete(`/v1/panel/operations/rezervasyon/tesisler/${id}`);
+  await apiDelete(`/v1/panel/operations/reservations/resources/${id}`);
   revalidatePath("/panel/rezervasyon");
 
   return { ok: true, message: t("resourceDeleted") };

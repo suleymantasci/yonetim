@@ -31,7 +31,7 @@ export default async function ExpenseCategoriesPage() {
   const fmt = await formatters();
 
   const { roots: tree } = await apiGet(
-    "/v1/panel/expenses/kategoriler",
+    "/v1/panel/expenses/categories",
     categoryTreeSchema,
   );
 

@@ -317,7 +317,7 @@ export async function addOccupancy(
       const t = await getTranslations("app.residents");
 
       await apiPost(
-        "/v1/panel/residents/ilgi",
+        "/v1/panel/residents/occupancy",
         {
           userId: input.userId,
           unitId: input.unitId,
@@ -381,7 +381,7 @@ export async function endOccupancy(
       const t = await getTranslations("app.residents");
 
       const result = await apiPatch(
-        `/v1/panel/residents/ilgi/${input.occupancyId}/bitir`,
+        `/v1/panel/residents/occupancy/${input.occupancyId}/end`,
         {
           endDate: input.endDate,
           transferTo: input.transferTo,
@@ -435,7 +435,7 @@ export async function removeResidents(ids: string[]): Promise<BulkResult> {
   if (targets.length === 0) return { ok: false, message: t("selectionEmpty") };
 
   const result = await apiPost(
-    "/v1/panel/residents/cikar",
+    "/v1/panel/residents/remove",
     { ids: targets },
     residentRemoveResult,
   );
@@ -484,7 +484,7 @@ export async function findResidentByTckn(
   if (tckn.replace(/\D+/g, "").length !== 11) return null;
 
   const result = await apiGet(
-    `/v1/panel/residents/tckn-arama?tckn=${encodeURIComponent(tckn)}`,
+    `/v1/panel/residents/tckn-lookup?tckn=${encodeURIComponent(tckn)}`,
     tcknLookupResult,
   );
   return result.found && result.id

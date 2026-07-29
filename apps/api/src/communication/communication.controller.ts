@@ -38,13 +38,13 @@ export class CommunicationController {
     private readonly write: CommunicationWriteService,
   ) {}
 
-  @Get("duyurular")
+  @Get("announcements")
   @RequirePermission("announcement:read")
   announcements() {
     return this.service.announcements();
   }
 
-  @Post("duyurular")
+  @Post("announcements")
   @RequirePermission("announcement:write")
   @ApiOperation({
     summary: "Duyuru oluştur — KVKK filtresi kapı olarak",
@@ -58,13 +58,13 @@ export class CommunicationController {
     return this.service.createAnnouncement(dto);
   }
 
-  @Get("anketler")
+  @Get("polls")
   @RequirePermission("poll:read")
   polls() {
     return this.service.polls();
   }
 
-  @Post("anketler")
+  @Post("polls")
   @RequirePermission("poll:write")
   @ApiOperation({
     summary: "Anket/oylama aç",
@@ -78,7 +78,7 @@ export class CommunicationController {
     return this.write.savePoll(dto);
   }
 
-  @Patch("anketler/:id")
+  @Patch("polls/:id")
   @RequirePermission("poll:write")
   @ApiOperation({
     summary: "Anketi güncelle",
@@ -91,7 +91,7 @@ export class CommunicationController {
     return this.write.savePoll(dto, id);
   }
 
-  @Post("anketler/:id/kapat")
+  @Post("polls/:id/close")
   @RequirePermission("poll:write")
   @ApiOperation({
     summary: "Oylamayı kapat ve sonucu sakla",
@@ -108,13 +108,13 @@ export class CommunicationController {
     return this.write.closePoll(id, dto);
   }
 
-  @Get("mesajlar")
+  @Get("messages")
   @RequirePermission("message:read")
   messages() {
     return this.service.messages();
   }
 
-  @Post("mesajlar")
+  @Post("messages")
   @RequirePermission("message:write")
   @ApiOperation({
     summary: "Tek kişiye mesaj gönder",
@@ -128,13 +128,13 @@ export class CommunicationController {
     return this.write.sendMessage(dto);
   }
 
-  @Get("toplantilar")
+  @Get("meetings")
   @RequirePermission("meeting:read")
   meetings() {
     return this.service.meetings();
   }
 
-  @Post("toplantilar")
+  @Post("meetings")
   @RequirePermission("meeting:write")
   @ApiOperation({
     summary: "Toplantı oluştur",
@@ -146,7 +146,7 @@ export class CommunicationController {
     return this.write.saveMeeting(dto);
   }
 
-  @Patch("toplantilar/:id")
+  @Patch("meetings/:id")
   @RequirePermission("meeting:write")
   @ApiOperation({ summary: "Toplantıyı güncelle" })
   updateMeeting(
@@ -163,7 +163,7 @@ export class CommunicationController {
    * (`/v1/panel/decision-book`, §2.7). Buradaki numara toplantı içinde
    * tekildir ve tutanağın kendi sırasını taşır.
    */
-  @Post("toplantilar/:id/kararlar")
+  @Post("meetings/:id/decisions")
   @RequirePermission("meeting:write")
   @ApiOperation({
     summary: "Toplantı tutanağına karar ekle",

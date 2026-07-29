@@ -78,11 +78,11 @@ export async function saveBankAccount(
 
       const result = input.id
         ? await apiPatch(
-            `/v1/panel/bank/hesaplar/${input.id}`,
+            `/v1/panel/bank/accounts/${input.id}`,
             body,
             bankAccountSaveResult,
           )
-        : await apiPost("/v1/panel/bank/hesaplar", body, bankAccountSaveResult);
+        : await apiPost("/v1/panel/bank/accounts", body, bankAccountSaveResult);
 
       revalidatePath("/panel/banka");
       // Tahsilat formundaki hesap listesi bu kayıttan besleniyor.
@@ -106,7 +106,7 @@ export async function deleteBankAccount(
   await requirePermission("bank:write");
   const t = await getTranslations("app.bank");
 
-  await apiDelete(`/v1/panel/bank/hesaplar/${id}`);
+  await apiDelete(`/v1/panel/bank/accounts/${id}`);
   revalidatePath("/panel/banka");
   revalidatePath("/panel/borclar");
 

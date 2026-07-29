@@ -36,7 +36,7 @@ export default async function BulkDebtPage({
   const planIdRaw = Array.isArray(query.plan) ? query.plan[0] : query.plan;
 
   const [{ rows: blocks }, plan] = await Promise.all([
-    apiGet("/v1/panel/units/bloklar", blockListResponse),
+    apiGet("/v1/panel/units/blocks", blockListResponse),
     // Geçersiz/yabancı bir kimlik sessizce yok sayılıyor: sihirbaz ön
     // doldurma olmadan da tam çalışan bir ekran ve bozuk bir bağlantı
     // yüzünden 404 göstermek kullanıcıyı boşuna durdururdu.

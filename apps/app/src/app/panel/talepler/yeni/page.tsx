@@ -20,7 +20,7 @@ export default async function NewRequestPage() {
   // Daire ve görevli seçenekleri liste ucundan geliyor (§9a): ayrı uçtan
   // çekmek aynı ekran için üçüncü bir gidiş-dönüş olurdu.
   const { units, assignees } = await apiGet(
-    "/v1/panel/operations/talepler",
+    "/v1/panel/operations/requests",
     requestListResponse,
   );
 

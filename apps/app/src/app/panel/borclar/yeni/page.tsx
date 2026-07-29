@@ -21,7 +21,7 @@ export default async function NewDebtPage({
   const t = await getTranslations("app.debts");
   const query = await searchParams;
 
-  const units = await apiGet("/v1/panel/units/secenekler", unitOptionList);
+  const units = await apiGet("/v1/panel/units/options", unitOptionList);
   const presetRaw = Array.isArray(query.birim) ? query.birim[0] : query.birim;
   const presetUnitId = units.some((unit) => unit.id === presetRaw)
     ? presetRaw

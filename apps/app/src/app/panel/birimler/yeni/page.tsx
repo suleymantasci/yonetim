@@ -17,7 +17,7 @@ export default async function NewUnitPage() {
   const t = await getTranslations("app.units");
   const tCommon = await getTranslations("common");
   const { rows: blocks } = await apiGet(
-    "/v1/panel/units/bloklar",
+    "/v1/panel/units/blocks",
     blockListResponse,
   );
 

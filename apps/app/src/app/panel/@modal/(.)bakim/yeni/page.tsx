@@ -17,7 +17,7 @@ export default async function NewMaintenanceModal() {
   const tCommon = await getTranslations("common");
 
   const { templates } = await apiGet(
-    "/v1/panel/operations/bakim",
+    "/v1/panel/operations/maintenance",
     maintenanceListResponse,
   );
 

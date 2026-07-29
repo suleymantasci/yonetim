@@ -49,7 +49,7 @@ export async function sendMessage(
       const t = await getTranslations("app.messages");
 
       const result = await apiPost(
-        "/v1/panel/communication/mesajlar",
+        "/v1/panel/communication/messages",
         {
           userId: input.userId,
           channel: input.channel,

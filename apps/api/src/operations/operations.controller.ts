@@ -61,7 +61,7 @@ export class OperationsController {
     private readonly reservationWrite: ReservationWriteService,
   ) {}
 
-  @Get("talepler")
+  @Get("requests")
   @RequirePermission("request:read")
   @ApiOperation({
     summary: "Talep listesi + SLA sayaçları",
@@ -73,7 +73,7 @@ export class OperationsController {
     return this.service.requests();
   }
 
-  @Post("talepler")
+  @Post("requests")
   @RequirePermission("request:write")
   @ApiOperation({
     summary: "Talep/arıza kaydı aç",
@@ -86,14 +86,14 @@ export class OperationsController {
     return this.requestWrite.save(dto);
   }
 
-  @Get("talepler/:id")
+  @Get("requests/:id")
   @RequirePermission("request:read")
   @ApiOperation({ summary: "Talep detayı + yorum akışı" })
   requestDetail(@Param("id", ParseUUIDPipe) id: string) {
     return this.requestWrite.detail(id);
   }
 
-  @Patch("talepler/:id")
+  @Patch("requests/:id")
   @RequirePermission("request:write")
   @ApiOperation({
     summary: "Talep kaydını güncelle",
@@ -109,7 +109,7 @@ export class OperationsController {
     return this.requestWrite.save(dto, id);
   }
 
-  @Patch("talepler/:id/durum")
+  @Patch("requests/:id/status")
   @RequirePermission("request:write")
   @ApiOperation({
     summary: "Talep durumunu değiştir",
@@ -133,7 +133,7 @@ export class OperationsController {
    * güncelleyebilir ama kimin hangi işi yapacağına karar vermek yönetimin
    * işi (`packages/core/rbac`).
    */
-  @Patch("talepler/:id/atama")
+  @Patch("requests/:id/assignment")
   @RequirePermission("request:assign")
   @ApiOperation({ summary: "Talebi bir görevliye ata (null: atamayı kaldır)" })
   assignRequest(
@@ -143,7 +143,7 @@ export class OperationsController {
     return this.requestWrite.assign(id, dto);
   }
 
-  @Post("talepler/:id/yorum")
+  @Post("requests/:id/comments")
   @RequirePermission("request:write")
   @ApiOperation({
     summary: "Talebe yorum ekle",
@@ -159,7 +159,7 @@ export class OperationsController {
     return this.requestWrite.addComment(id, dto);
   }
 
-  @Get("bakim")
+  @Get("maintenance")
   @RequirePermission("maintenance:read")
   @ApiOperation({
     summary: "Bakım planı + yasal şablon kütüphanesi",
@@ -171,7 +171,7 @@ export class OperationsController {
     return this.service.maintenance();
   }
 
-  @Post("bakim")
+  @Post("maintenance")
   @RequirePermission("maintenance:write")
   @ApiOperation({
     summary: "Bakım planı kaydı aç",
@@ -186,14 +186,14 @@ export class OperationsController {
     return this.maintenanceWrite.save(dto);
   }
 
-  @Get("bakim/:id")
+  @Get("maintenance/:id")
   @RequirePermission("maintenance:read")
   @ApiOperation({ summary: "Bakım planı detayı (düzenleme formu için)" })
   maintenanceDetail(@Param("id", ParseUUIDPipe) id: string) {
     return this.maintenanceWrite.detail(id);
   }
 
-  @Patch("bakim/:id")
+  @Patch("maintenance/:id")
   @RequirePermission("maintenance:write")
   @ApiOperation({ summary: "Bakım planını güncelle" })
   updateMaintenance(
@@ -209,7 +209,7 @@ export class OperationsController {
    * Aynı forma toplansaydı, planı düzelten biri son bakım tarihini de farkında
    * olmadan değiştirebilirdi; o tarih yasal denetimde sorulan şey.
    */
-  @Post("bakim/:id/yapildi")
+  @Post("maintenance/:id/complete")
   @RequirePermission("maintenance:write")
   @ApiOperation({
     summary: "Bakımı yapıldı olarak işaretle",
@@ -225,7 +225,7 @@ export class OperationsController {
     return this.maintenanceWrite.complete(id, dto);
   }
 
-  @Delete("bakim/:id")
+  @Delete("maintenance/:id")
   @RequirePermission("maintenance:write")
   @ApiOperation({
     summary: "Bakım planını kaldır (yalnız hatalı kayıt için)",
@@ -237,7 +237,7 @@ export class OperationsController {
     return this.maintenanceWrite.remove(id);
   }
 
-  @Get("rezervasyon")
+  @Get("reservations")
   @RequirePermission("reservation:read")
   reservations() {
     return this.service.reservations();
@@ -249,21 +249,21 @@ export class OperationsController {
    * Bu uç olmadan rezervasyon ekranı yalnız boş bir liste gösterebiliyordu:
    * `resources` tablosunun yazma yolu hiç yazılmamıştı.
    */
-  @Post("rezervasyon/tesisler")
+  @Post("reservations/resources")
   @RequirePermission("reservation:write")
   @ApiOperation({ summary: "Rezerve edilebilir tesis tanımla" })
   createResource(@Body(new ZodBodyPipe(resourceSave)) dto: ResourceSave) {
     return this.reservationWrite.saveResource(dto);
   }
 
-  @Get("rezervasyon/tesisler/:id")
+  @Get("reservations/resources/:id")
   @RequirePermission("reservation:read")
   @ApiOperation({ summary: "Tesis detayı (düzenleme formu için)" })
   resourceDetail(@Param("id", ParseUUIDPipe) id: string) {
     return this.reservationWrite.resourceDetail(id);
   }
 
-  @Patch("rezervasyon/tesisler/:id")
+  @Patch("reservations/resources/:id")
   @RequirePermission("reservation:write")
   @ApiOperation({ summary: "Tesisi güncelle" })
   updateResource(
@@ -273,7 +273,7 @@ export class OperationsController {
     return this.reservationWrite.saveResource(dto, id);
   }
 
-  @Delete("rezervasyon/tesisler/:id")
+  @Delete("reservations/resources/:id")
   @RequirePermission("reservation:write")
   @ApiOperation({
     summary: "Tesisi kaldır",
@@ -286,7 +286,7 @@ export class OperationsController {
     return this.reservationWrite.removeResource(id);
   }
 
-  @Post("rezervasyon")
+  @Post("reservations")
   @RequirePermission("reservation:write")
   @ApiOperation({
     summary: "Rezervasyon oluştur",
@@ -308,7 +308,7 @@ export class OperationsController {
    * `reservation:write`'tan ayrı: sakin (portal rolü) kendi adına rezervasyon
    * **talebi** açabiliyor ama onaylayan yönetim.
    */
-  @Patch("rezervasyon/:id/karar")
+  @Patch("reservations/:id/decision")
   @RequirePermission("reservation:approve")
   @ApiOperation({
     summary: "Rezervasyonu onayla / reddet / iptal et",
@@ -324,13 +324,13 @@ export class OperationsController {
     return this.reservationWrite.decide(id, dto);
   }
 
-  @Get("sayaclar")
+  @Get("meters")
   @RequirePermission("meter:read")
   meters() {
     return this.service.meters();
   }
 
-  @Post("sayaclar")
+  @Post("meters")
   @RequirePermission("meter:write")
   @ApiOperation({
     summary: "Sayaç tanımla",
@@ -343,14 +343,14 @@ export class OperationsController {
     return this.meterWrite.save(dto);
   }
 
-  @Get("sayaclar/:id")
+  @Get("meters/:id")
   @RequirePermission("meter:read")
   @ApiOperation({ summary: "Sayaç detayı (düzenleme formu için)" })
   meterDetail(@Param("id", ParseUUIDPipe) id: string) {
     return this.meterWrite.detail(id);
   }
 
-  @Patch("sayaclar/:id")
+  @Patch("meters/:id")
   @RequirePermission("meter:write")
   @ApiOperation({
     summary: "Sayacı güncelle",
@@ -373,7 +373,7 @@ export class OperationsController {
    * Gerçek iş ayda bir kez binayı dolaşıp bütün sayaçları okumak; sayaç
    * başına ayrı istek 60 daireli bir binada yarım kalmış bir tur demekti.
    */
-  @Post("sayaclar/okuma")
+  @Post("meters/readings")
   @RequirePermission("meter:write")
   @ApiOperation({
     summary: "Dönemsel sayaç okuması gir (toplu)",
@@ -389,7 +389,7 @@ export class OperationsController {
     return this.meterWrite.recordBatch(dto);
   }
 
-  @Delete("sayaclar/:id")
+  @Delete("meters/:id")
   @RequirePermission("meter:write")
   @ApiOperation({
     summary: "Sayacı kaldır (yalnız hatalı kayıt için)",

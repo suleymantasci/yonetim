@@ -86,7 +86,7 @@ export function UserMenu({
             <LocaleSwitcher className="w-full justify-center" />
           </div>
 
-          <form action="/api/oturum/cikis" method="post" className="mt-3">
+          <form action="/api/session/logout" method="post" className="mt-3">
             <button
               type="submit"
               className="flex w-full items-center gap-2 rounded-lg border border-border-strong px-3 py-2 text-sm font-semibold text-fg hover:bg-hover"

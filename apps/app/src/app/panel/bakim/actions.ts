@@ -76,12 +76,12 @@ export async function saveMaintenance(
 
       const result = input.id
         ? await apiPatch(
-            `/v1/panel/operations/bakim/${input.id}`,
+            `/v1/panel/operations/maintenance/${input.id}`,
             body,
             maintenanceSaveResult,
           )
         : await apiPost(
-            "/v1/panel/operations/bakim",
+            "/v1/panel/operations/maintenance",
             body,
             maintenanceSaveResult,
           );
@@ -127,7 +127,7 @@ export async function completeMaintenance(
       const t = await getTranslations("app.maintenance");
 
       const result = await apiPost(
-        `/v1/panel/operations/bakim/${input.id}/yapildi`,
+        `/v1/panel/operations/maintenance/${input.id}/complete`,
         {
           doneAt: input.doneAt,
           costMinor: input.costKurus,
@@ -159,7 +159,7 @@ export async function deleteMaintenance(
   await requirePermission("maintenance:write");
   const t = await getTranslations("app.maintenance");
 
-  await apiDelete(`/v1/panel/operations/bakim/${id}`);
+  await apiDelete(`/v1/panel/operations/maintenance/${id}`);
   revalidatePath("/panel/bakim");
 
   return { ok: true, message: t("deleted") };

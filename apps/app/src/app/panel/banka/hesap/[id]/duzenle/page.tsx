@@ -23,7 +23,7 @@ export default async function EditBankAccountPage({
   const tCommon = await getTranslations("common");
 
   const detail = await apiGet(
-    `/v1/panel/bank/hesaplar/${id}`,
+    `/v1/panel/bank/accounts/${id}`,
     bankAccountDetail,
   ).catch(() => null);
   if (!detail) notFound();

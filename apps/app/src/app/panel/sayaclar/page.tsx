@@ -29,7 +29,7 @@ export default async function MetersPage() {
   const f = await formatters();
 
   const { meters, readings, totals } = await apiGet(
-    "/v1/panel/operations/sayaclar",
+    "/v1/panel/operations/meters",
     meterListResponse,
   );
 

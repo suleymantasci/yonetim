@@ -55,7 +55,7 @@ export class ResidentController {
   }
 
   /** Combobox (borç/ödeme ekranları) — detaydan önce tanımlı olmalı. */
-  @Get("secenekler")
+  @Get("options")
   @RequirePermission("resident:read")
   options() {
     return this.service.options();
@@ -65,7 +65,7 @@ export class ResidentController {
    * Acil durum raporu — `/:id` deseninden **önce** tanımlı olmalı, aksi halde
    * "acil-durum" bir kimlik sanılır ve `ParseUUIDPipe` 400 döndürür.
    */
-  @Get("acil-durum")
+  @Get("emergency")
   @RequirePermission("resident:read")
   @ApiOperation({
     summary: "Acil durum listesi — kan grubu ve acil durum kişisi",
@@ -80,7 +80,7 @@ export class ResidentController {
     return this.service.emergencyReport();
   }
 
-  @Get("tckn-arama")
+  @Get("tckn-lookup")
   @RequirePermission("resident:read")
   @ApiOperation({
     summary: "TCKN çakışma kontrolü (blind index)",
@@ -117,7 +117,7 @@ export class ResidentController {
     return this.service.setWhatsappOptIn(dto.ids, dto.optIn);
   }
 
-  @Post("cikar")
+  @Post("remove")
   @RequirePermission("resident:write")
   @ApiOperation({
     summary: "Sakini siteden çıkar",
@@ -130,13 +130,13 @@ export class ResidentController {
     return this.service.remove(dto.ids);
   }
 
-  @Post("ilgi")
+  @Post("occupancy")
   @RequirePermission("resident:write")
   addOccupancy(@Body(new ZodBodyPipe(occupancyCreate)) dto: OccupancyCreate) {
     return this.service.addOccupancy(dto);
   }
 
-  @Patch("ilgi/:id/bitir")
+  @Patch("occupancy/:id/end")
   @RequirePermission("resident:write")
   @ApiOperation({
     summary: "İlişkiyi bitir ve kalan borcu devret",
@@ -158,7 +158,7 @@ export class ResidentController {
     return this.service.detail(id);
   }
 
-  @Get(":id/duzenle")
+  @Get(":id/edit")
   @RequirePermission("resident:write")
   @ApiOperation({
     summary: "Düzenleme formu ön dolgusu — ham telefon döner",

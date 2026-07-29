@@ -30,10 +30,10 @@ export default async function RequestDetailModal({
   const tCommon = await getTranslations("common");
 
   const [detail, options] = await Promise.all([
-    apiGet(`/v1/panel/operations/talepler/${id}`, requestDetail).catch(
+    apiGet(`/v1/panel/operations/requests/${id}`, requestDetail).catch(
       () => null,
     ),
-    apiGet("/v1/panel/operations/talepler", requestListResponse),
+    apiGet("/v1/panel/operations/requests", requestListResponse),
   ]);
   if (!detail) notFound();
 

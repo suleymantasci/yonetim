@@ -245,7 +245,7 @@ export const QUORUM_RULES = [
 export const quorumRule = z.enum(QUORUM_RULES);
 
 /**
- * `POST /v1/panel/communication/anketler`.
+ * `POST /v1/panel/communication/polls`.
  *
  * SEÇENEK KİMLİKLERİ SUNUCUDA ÜRETİLİYOR: oy `option_id` ile saklanıyor ve
  * istemcinin verdiği bir kimlik, düzenlemede yeniden üretilirse verilmiş
@@ -334,7 +334,7 @@ export const MEETING_STATUSES = [
 export const meetingStatus = z.enum(MEETING_STATUSES);
 
 /**
- * `POST /v1/panel/communication/toplantilar`.
+ * `POST /v1/panel/communication/meetings`.
  *
  * İKİNCİ ÇAĞRI (`secondCallAt`) AYRI BİR ALAN, otomatik hesaplanmıyor:
  * KMK md.30 ilk toplantıda yeter sayı sağlanamazsa ikinci toplantıyı en erken
@@ -402,7 +402,7 @@ export const MESSAGE_SEND_CHANNELS = ["whatsapp", "sms", "in_app"] as const;
 export const messageSendChannel = z.enum(MESSAGE_SEND_CHANNELS);
 
 /**
- * `POST /v1/panel/communication/mesajlar` — tek kişiye mesaj.
+ * `POST /v1/panel/communication/messages` — tek kişiye mesaj.
  *
  * DUYURUDAN FARKI **muhatap**: duyuru bir kitleye, mesaj bir kişiye gider ve
  * bu fark KVKK açısından belirleyici. Duyuru akışındaki toplu-kanal filtresi

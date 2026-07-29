@@ -145,7 +145,7 @@ ve §6'daki teknik borçlar uygulandı. Migration'lar `0003`–`0006`.
 | Borç kategorileri | `debt_kind` enum'una **Kira / Depozito / İdari Ceza** eklendi | `penalty` (yönetim kararı) ile `admin_fine` (kamu kurumu) bilinçli ayrı; itiraz mercileri farklı. Sırasında `DEBT_KINDS`'in **dört ayrı kopyası** bulundu ve sözleşmeye indirildi; `MANUAL_DEBT_KINDS` / `BULK_DEBT_KINDS` alt kümeleri derleme-zamanı tip iddiasıyla kilitlendi |
 | Riskli cari filtresi | `minOutstanding` (kuruş) eşiği; ekranda 500/1.000/2.000/5.000 ₺ hazır seçenek | Hem borç listesi hem daire özeti sekmesinde **aynı** anlamda |
 | Kan grubu + acil durum raporu | `users.blood_type` + `/panel/sakinler/acil-durum` | **KVKK md.6 özel nitelikli (sağlık) veri**: açık rıza olmadan yazılmıyor (`acik_riza_saglik`), rıza çekilince alan NULL'lanıyor, her okuma `data_category='saglik_bilgisi'` ile ayrı kütüğe geçiyor. Ayrı ekran/ayrı uç olmasının sebebi bu |
-| Kıdem/ihbar tazminatı | `packages/core/src/severance.ts` + 17 birim testi + `POST /v1/panel/staff/tazminat` + personel ekranı widget'ı | Kanunda sabit olanlar (30 gün/yıl, ihbar kademeleri, damga vergisi ‰7,59, kıdemin gelir vergisi istisnası) kodda; **yılda bir/iki kez değişenler** (kıdem tavanı, gelir vergisi oranı) `siteConfig.payroll`'da tarih damgalı ve ekranda gösteriliyor. Sonuç `isEstimate: true` — bordro değil |
+| Kıdem/ihbar tazminatı | `packages/core/src/severance.ts` + 17 birim testi + `POST /v1/panel/staff/severance` + personel ekranı widget'ı | Kanunda sabit olanlar (30 gün/yıl, ihbar kademeleri, damga vergisi ‰7,59, kıdemin gelir vergisi istisnası) kodda; **yılda bir/iki kez değişenler** (kıdem tavanı, gelir vergisi oranı) `siteConfig.payroll`'da tarih damgalı ve ekranda gösteriliyor. Sonuç `isEstimate: true` — bordro değil |
 | Demirbaş defteri | `inventory_items` + `/panel/demirbas` | Silme ucu **yok**: elden çıkan kalem `disposed`/`lost` ile düşülüyor. `disposed` ≠ `lost` ayrımı devir tesliminin asıl sorusu |
 | **Karar Defteri** | `decision_book_entries` + `/panel/karar-defteri` | Mevcut `meeting_decisions` yerine geçmiyordu: numara toplantı içinde tekildi, toplantısız kararı (md.32/son) taşıyamıyordu ve değiştirilebilirdi. Yeni defter **site geneli sürekli numaralı** ve **ekleme-yalnız** — DB trigger'ı UPDATE/DELETE'i engelliyor, düzeltme yeni kayıt olarak yazılıyor |
 | Bakiye trendi | Daire özeti satırlarında son 6 ayın ay sonu bakiyesi (sparkline) | Seri, `debts.created_at` ve `payments.paid_at` ayrı ayrı kesilerek **geçmişten yeniden kuruluyor**; mevcut bakiyeden türetilemez |
@@ -585,7 +585,7 @@ ile `payments.bank_account_id`. Tek şema değişikliği gerektiren iş buydu.
 
 **7b — Aidat planı ↔ toplu borç (§5.4).** İki yönlü bağlantı kuruldu:
 
-- **"Planı şimdi çalıştır"** (`POST /v1/panel/dues-plans/:id/calistir`):
+- **"Planı şimdi çalıştır"** (`POST /v1/panel/dues-plans/:id/run`):
   üretim mantığı `packages/jobs`'taki **aynı** fonksiyondan geliyor; ikinci bir
   uygulama, elle çalıştırmayla cron'un zamanla ayrışması demekti. Önizleme
   varsayılan açık — borç üretmek geri alınması pahalı bir iş ve üretilen her
@@ -599,7 +599,7 @@ ile `payments.bank_account_id`. Tek şema değişikliği gerektiren iş buydu.
 
 **8 — Ayarlar + entegrasyon durumu (§5.5).** `tenantSettingsSave` +
 `integrationStatusResponse`; `PATCH /v1/panel/settings` ve
-`GET /v1/panel/settings/entegrasyonlar` + `SettingsWriteService`.
+`GET /v1/panel/settings/integrations` + `SettingsWriteService`.
 
 - `settings` JSONB **birleştiriliyor**, ezilmiyor: sözlükte formun bilmediği
   anahtarlar da var (marka, landing görseli) ve nesneyi baştan yazmak onları

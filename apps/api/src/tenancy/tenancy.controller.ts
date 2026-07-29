@@ -66,7 +66,7 @@ export class TenancyController {
    * zamanı sabitlerini gösteriyordu: "WhatsApp: aktif" rozeti site hakkında
    * hiçbir şey söylemiyor, ürün hakkında konuşuyordu.
    */
-  @Get("settings/entegrasyonlar")
+  @Get("settings/integrations")
   @RequirePermission("settings:read")
   @ApiOperation({
     summary: "Entegrasyon bağlantı durumları",
@@ -169,7 +169,7 @@ export class TenancyController {
    * doğmadığı) bir sorgu dizesine sığmıyor ve senaryo denemesi bir kaynak
    * okuması değil. Hiçbir şey yazmıyor.
    */
-  @Post("staff/tazminat")
+  @Post("staff/severance")
   @RequirePermission("staff:payroll")
   @ApiOperation({
     summary: "Kıdem ve ihbar tazminatı hesabı (yaklaşık)",

@@ -28,10 +28,10 @@ export default async function EditMaintenancePage({
   const f = await formatters();
 
   const [detail, options] = await Promise.all([
-    apiGet(`/v1/panel/operations/bakim/${id}`, maintenanceDetail).catch(
+    apiGet(`/v1/panel/operations/maintenance/${id}`, maintenanceDetail).catch(
       () => null,
     ),
-    apiGet("/v1/panel/operations/bakim", maintenanceListResponse),
+    apiGet("/v1/panel/operations/maintenance", maintenanceListResponse),
   ]);
   if (!detail) notFound();
 

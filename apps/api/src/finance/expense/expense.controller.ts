@@ -41,13 +41,13 @@ export class ExpenseController {
     return this.service.list(q);
   }
 
-  @Get("kategoriler")
+  @Get("categories")
   @RequirePermission("expense:read")
   categories() {
     return this.service.categoryTree();
   }
 
-  @Post("kategoriler")
+  @Post("categories")
   @RequirePermission("expense:write")
   saveCategory(
     @Body(new ZodBodyPipe(expenseCategorySave)) dto: ExpenseCategorySave,
@@ -55,7 +55,7 @@ export class ExpenseController {
     return this.service.saveCategory(dto);
   }
 
-  @Delete("kategoriler/:id")
+  @Delete("categories/:id")
   @RequirePermission("expense:write")
   @ApiOperation({
     summary: "Kategori arşivleme",
@@ -67,7 +67,7 @@ export class ExpenseController {
     return this.service.archiveCategory(id);
   }
 
-  @Post("dagitim/onizleme")
+  @Post("allocation/preview")
   @RequirePermission("expense:read")
   previewDistribution(
     @Body(new ZodBodyPipe(expenseDistribute)) dto: ExpenseDistribute,
@@ -75,7 +75,7 @@ export class ExpenseController {
     return this.service.previewDistribution(dto);
   }
 
-  @Post("dagitim")
+  @Post("allocation")
   @RequirePermission("expense:approve")
   @ApiOperation({
     summary: "Gideri dairelere borç olarak yansıt",
@@ -93,7 +93,7 @@ export class ExpenseController {
     return this.service.distribute(dto, decodeDescription(label));
   }
 
-  @Patch("durum")
+  @Patch("status")
   @RequirePermission("expense:approve")
   setStatus(
     @Body(new ZodBodyPipe(expenseStatusPatch))
@@ -105,7 +105,7 @@ export class ExpenseController {
     return this.service.setStatus(dto.ids, dto.status);
   }
 
-  @Post("cop")
+  @Post("trash")
   @RequirePermission("expense:write")
   softDelete(@Body(new ZodBodyPipe(expenseIds)) dto: { ids: string[] }) {
     return this.service.softDelete(dto.ids);

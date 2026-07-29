@@ -23,7 +23,7 @@ export default async function NewResidentPage({
   const tCommon = await getTranslations("common");
   const query = await searchParams;
 
-  const units = await apiGet("/v1/panel/units/secenekler", unitOptionList);
+  const units = await apiGet("/v1/panel/units/options", unitOptionList);
   // Birim detayından "sakin ata" ile gelindiğinde birim ön seçili olur.
   const presetUnitRaw = Array.isArray(query.birim)
     ? query.birim[0]

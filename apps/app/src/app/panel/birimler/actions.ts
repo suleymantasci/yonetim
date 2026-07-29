@@ -297,7 +297,7 @@ export async function createUnitsBulk(
 
       if (!input.confirmed) {
         const preview = await apiPost(
-          "/v1/panel/units/toplu/onizleme",
+          "/v1/panel/units/bulk/preview",
           toBulkBody(input, false),
           unitBulkPreview,
         );
@@ -307,7 +307,7 @@ export async function createUnitsBulk(
       }
 
       const result = await apiPost(
-        "/v1/panel/units/toplu",
+        "/v1/panel/units/bulk",
         toBulkBody(input, true),
         unitBulkCreateResult,
       );
@@ -367,7 +367,7 @@ export async function softDeleteUnits(ids: string[]): Promise<BulkResult> {
   if (targets.length === 0) return { ok: false, message: t("selectionEmpty") };
 
   const result = await apiPost(
-    "/v1/panel/units/cop",
+    "/v1/panel/units/trash",
     { ids: targets },
     bulkResultSchema,
   );
@@ -383,7 +383,7 @@ export async function restoreUnits(ids: string[]): Promise<BulkResult> {
   if (targets.length === 0) return { ok: false, message: t("selectionEmpty") };
 
   const result = await apiPost(
-    "/v1/panel/units/geri-al",
+    "/v1/panel/units/restore",
     { ids: targets },
     bulkResultSchema,
   );
@@ -416,7 +416,7 @@ export async function bulkPatchUnits(
   if (!parsed.success) return { ok: false, message: t("selectionEmpty") };
 
   const result = await apiPatch(
-    "/v1/panel/units/toplu",
+    "/v1/panel/units/bulk",
     parsed.data,
     bulkResultSchema,
     {
@@ -492,9 +492,9 @@ export async function saveBlock(
       };
 
       if (input.id) {
-        await apiPatch(`/v1/panel/units/bloklar/${input.id}`, body, null);
+        await apiPatch(`/v1/panel/units/blocks/${input.id}`, body, null);
       } else {
-        await apiPost("/v1/panel/units/bloklar", body, createdSchema);
+        await apiPost("/v1/panel/units/blocks", body, createdSchema);
       }
 
       revalidatePath("/panel/birimler");
@@ -513,7 +513,7 @@ export async function softDeleteBlock(id: string): Promise<BulkResult> {
   const t = await getTranslations("app.units");
 
   try {
-    await apiDelete(`/v1/panel/units/bloklar/${id}`);
+    await apiDelete(`/v1/panel/units/blocks/${id}`);
   } catch (error) {
     const count = blockedUnitCount(error);
     if (count !== null)

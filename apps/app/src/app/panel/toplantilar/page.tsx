@@ -24,7 +24,7 @@ export default async function MeetingsPage() {
   // Kararlar toplantıya gömülü geliyor: karar defteri toplantıdan ayrı
   // anlam taşımıyor, iki uca bölmek ekranı iki çağrıya çıkarırdı.
   const { rows } = await apiGet(
-    "/v1/panel/communication/toplantilar",
+    "/v1/panel/communication/meetings",
     meetingListResponse,
   );
 

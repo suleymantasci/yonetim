@@ -86,8 +86,8 @@ export const REQUEST_STATUSES = [
 export const requestStatus = z.enum(REQUEST_STATUSES);
 
 /**
- * `POST /v1/panel/operations/talepler` (yeni),
- * `PATCH /v1/panel/operations/talepler/:id` (güncelle).
+ * `POST /v1/panel/operations/requests` (yeni),
+ * `PATCH /v1/panel/operations/requests/:id` (güncelle).
  *
  * `code` VE `slaDueAt` **GÖNDERİLMİYOR**, ikisi de sunucuda üretiliyor:
  *  - Kod site içinde sürekli ve tekil olmalı; istemciye bırakmak iki
@@ -245,8 +245,8 @@ export type MaintenanceListResponse = z.infer<typeof maintenanceListResponse>;
  * ------------------------------------------------------------------ */
 
 /**
- * `POST /v1/panel/operations/bakim` (yeni),
- * `PATCH /v1/panel/operations/bakim/:id` (güncelle).
+ * `POST /v1/panel/operations/maintenance` (yeni),
+ * `PATCH /v1/panel/operations/maintenance/:id` (güncelle).
  *
  * `lastDoneAt` ve `lastCostMinor` **burada yok**: "bakım yapıldı" bir kayıt
  * düzenlemesi değil, ayrı bir olay ve kendi ucu var (`:id/yapildi`). Aynı
@@ -273,7 +273,7 @@ export const maintenanceSave = z.object({
 export type MaintenanceSave = z.infer<typeof maintenanceSave>;
 
 /**
- * `POST /v1/panel/operations/bakim/:id/yapildi` — bakım yapıldı.
+ * `POST /v1/panel/operations/maintenance/:id/complete` — bakım yapıldı.
  *
  * SIRADAKİ VADE **YAPILDIĞI TARİHTEN** İLERLİYOR, planlanan tarihten değil.
  * Planlanandan zincirlenseydi üç ay geciken bir bakım tamamlandığı anda
@@ -543,8 +543,8 @@ export const METER_TYPES = [
 export const meterType = z.enum(METER_TYPES);
 
 /**
- * `POST /v1/panel/operations/sayaclar` (yeni),
- * `PATCH /v1/panel/operations/sayaclar/:id` (güncelle).
+ * `POST /v1/panel/operations/meters` (yeni),
+ * `PATCH /v1/panel/operations/meters/:id` (güncelle).
  *
  * `initialValue` SONRADAN DEĞİŞTİRİLEBİLİYOR ama yalnız **hiç okuma
  * girilmemişken**: ilk endeks tüketimin başlangıç noktası ve okuma girildikten

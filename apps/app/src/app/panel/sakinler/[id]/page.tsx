@@ -60,7 +60,7 @@ export default async function ResidentDetailPage({
   // KVKK erişim kaydını uç yazıyor (§8.4); burada ayrıca yazmak çift satır olurdu.
   const [detail, units] = await Promise.all([
     apiGet(`/v1/panel/residents/${id}`, residentDetailSchema).catch(() => null),
-    apiGet("/v1/panel/units/secenekler", unitOptionList),
+    apiGet("/v1/panel/units/options", unitOptionList),
   ]);
   if (!detail) notFound();
 

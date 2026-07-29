@@ -33,7 +33,7 @@ export default async function EditExpensePage({
         throw error;
       },
     ),
-    apiGet("/v1/panel/expenses/kategoriler", categoryTreeSchema),
+    apiGet("/v1/panel/expenses/categories", categoryTreeSchema),
   ]);
   const tree = categoryData.roots;
   if (!detail) notFound();

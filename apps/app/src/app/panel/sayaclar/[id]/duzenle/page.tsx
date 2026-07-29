@@ -23,8 +23,8 @@ export default async function EditMeterPage({
   const tCommon = await getTranslations("common");
 
   const [detail, units] = await Promise.all([
-    apiGet(`/v1/panel/operations/sayaclar/${id}`, meterDetail).catch(() => null),
-    apiGet("/v1/panel/units/secenekler", unitOptionList),
+    apiGet(`/v1/panel/operations/meters/${id}`, meterDetail).catch(() => null),
+    apiGet("/v1/panel/units/options", unitOptionList),
   ]);
   if (!detail) notFound();
 

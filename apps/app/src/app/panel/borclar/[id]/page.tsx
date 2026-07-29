@@ -77,8 +77,8 @@ export default async function DebtDetailPage({
    * bilgisi olmadan da açılabilmeli.
    */
   const [openDebts, residents, bank] = await Promise.all([
-    apiGet(`/v1/panel/debts/acik/${debt.unitId}`, openDebtList),
-    apiGet("/v1/panel/residents/secenekler", residentOptionList),
+    apiGet(`/v1/panel/debts/open/${debt.unitId}`, openDebtList),
+    apiGet("/v1/panel/residents/options", residentOptionList),
     apiGet("/v1/panel/bank", bankOverviewResponse).catch(() => null),
   ]);
 

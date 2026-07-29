@@ -91,8 +91,8 @@ export const BANK_ACCOUNT_PURPOSES = [
 export const bankAccountPurpose = z.enum(BANK_ACCOUNT_PURPOSES);
 
 /**
- * `POST /v1/panel/bank/hesaplar` (yeni),
- * `PATCH /v1/panel/bank/hesaplar/:id` (güncelle).
+ * `POST /v1/panel/bank/accounts` (yeni),
+ * `PATCH /v1/panel/bank/accounts/:id` (güncelle).
  *
  * IBAN **açık gönderiliyor ama açık dönmüyor**: sunucu şifreleyip maskeli
  * kopyayı ve blind index'i üretiyor. Panel IBAN'ı yalnız yazarken görüyor;

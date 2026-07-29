@@ -84,12 +84,12 @@ export async function saveMeter(
 
       const result = input.id
         ? await apiPatch(
-            `/v1/panel/operations/sayaclar/${input.id}`,
+            `/v1/panel/operations/meters/${input.id}`,
             body,
             meterSaveResult,
           )
         : await apiPost(
-            "/v1/panel/operations/sayaclar",
+            "/v1/panel/operations/meters",
             body,
             meterSaveResult,
           );
@@ -170,7 +170,7 @@ export async function recordMeterReadings(
   }
 
   const result = await apiPost(
-    "/v1/panel/operations/sayaclar/okuma",
+    "/v1/panel/operations/meters/readings",
     {
       period: header.data.period,
       readingDate: header.data.readingDate,
@@ -209,7 +209,7 @@ export async function deleteMeter(id: string): Promise<MeterMutationResult> {
   await requirePermission("meter:write");
   const t = await getTranslations("app.meters");
 
-  await apiDelete(`/v1/panel/operations/sayaclar/${id}`);
+  await apiDelete(`/v1/panel/operations/meters/${id}`);
   revalidatePath("/panel/sayaclar");
 
   return { ok: true, message: t("deleted") };

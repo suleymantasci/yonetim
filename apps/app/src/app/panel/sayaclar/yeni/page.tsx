@@ -19,7 +19,7 @@ export default async function NewMeterPage() {
   // Ortak combobox ucu (`unit:read`). Talep listesindeki daire dizisini
   // kullanmak cazipti ama o uç `request:read` istiyor: sayaç tanımlayan bir
   // kullanıcının talepleri görme yetkisi olmak zorunda değil.
-  const units = await apiGet("/v1/panel/units/secenekler", unitOptionList);
+  const units = await apiGet("/v1/panel/units/options", unitOptionList);
 
   return (
     <>

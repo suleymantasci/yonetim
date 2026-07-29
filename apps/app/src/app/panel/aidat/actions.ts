@@ -174,7 +174,7 @@ export async function toggleDuesPlan(
   await requirePermission("dues:write");
   const t = await getTranslations("app.duesPlans");
 
-  await apiPatch(`/v1/panel/dues-plans/${id}/durum`, { isActive }, null);
+  await apiPatch(`/v1/panel/dues-plans/${id}/status`, { isActive }, null);
 
   revalidatePath("/panel/aidat");
   return { ok: true, message: isActive ? t("activated") : t("deactivated") };
@@ -250,7 +250,7 @@ export async function runDuesPlan(
       const t = await getTranslations("app.duesPlans");
 
       const result = await apiPost(
-        `/v1/panel/dues-plans/${input.id}/calistir`,
+        `/v1/panel/dues-plans/${input.id}/run`,
         { period: input.period, dryRun: !input.apply },
         duesPlanRunResult,
       );

@@ -23,7 +23,7 @@ export default async function EditMeetingModal({
   const tCommon = await getTranslations("common");
 
   const { rows } = await apiGet(
-    "/v1/panel/communication/toplantilar",
+    "/v1/panel/communication/meetings",
     meetingListResponse,
   );
   const row = rows.find((r) => r.id === id);

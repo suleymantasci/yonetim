@@ -33,7 +33,7 @@ export default async function EditDuesPlanPage({
         throw error;
       },
     ),
-    apiGet("/v1/panel/units/bloklar", blockListResponse),
+    apiGet("/v1/panel/units/blocks", blockListResponse),
   ]);
   const blocks = blockList.rows;
 

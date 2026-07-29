@@ -17,7 +17,7 @@ export default async function NewDuesPlanModal() {
   const tCommon = await getTranslations("common");
 
   const { rows: blocks } = await apiGet(
-    "/v1/panel/units/bloklar",
+    "/v1/panel/units/blocks",
     blockListResponse,
   );
 

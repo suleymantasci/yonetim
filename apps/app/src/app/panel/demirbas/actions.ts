@@ -122,7 +122,7 @@ export async function setInventoryStatus(
   if (targets.length === 0) return { ok: false, message: t("selectionEmpty") };
 
   const result = await apiPatch(
-    "/v1/panel/inventory/durum",
+    "/v1/panel/inventory/status",
     { ids: targets, status },
     inventoryPatchResult,
   );

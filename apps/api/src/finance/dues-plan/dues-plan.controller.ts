@@ -52,7 +52,7 @@ export class DuesPlanController {
    * kurulan bir sitede yönetici bir sonraki ayı beklemek zorunda kalıyor ve
    * aynı borçları toplu borçlandırmadan elle giriyordu.
    */
-  @Post(":id/calistir")
+  @Post(":id/run")
   @RequirePermission("dues:write")
   @ApiOperation({
     summary: "Aidat planını şimdi çalıştır",
@@ -71,7 +71,7 @@ export class DuesPlanController {
     return this.service.run(id, dto);
   }
 
-  @Patch(":id/durum")
+  @Patch(":id/status")
   @RequirePermission("dues:write")
   toggle(
     @Param("id", ParseUUIDPipe) id: string,

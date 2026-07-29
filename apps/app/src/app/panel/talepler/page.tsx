@@ -38,7 +38,7 @@ export default async function RequestsPage() {
   // SLA sayaçları ve "aşıldı mı" işareti sunucudan geliyor: karşılaştırmanın
   // ölçütü sunucu saati olmalı (MIMARI-PLAN §9a).
   const { rows, totals } = await apiGet(
-    "/v1/panel/operations/talepler",
+    "/v1/panel/operations/requests",
     requestListResponse,
   );
 

@@ -20,7 +20,7 @@ export default async function NewMaintenancePage() {
   // Şablon kütüphanesi liste ucundan geliyor (§9a); site kendi şablonlarını
   // tanımlamadıysa yasal tohum listesi dönüyor ve `id: null` oluyor.
   const { templates } = await apiGet(
-    "/v1/panel/operations/bakim",
+    "/v1/panel/operations/maintenance",
     maintenanceListResponse,
   );
 

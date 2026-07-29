@@ -35,10 +35,10 @@ export default async function RequestDetailPage({
   const f = await formatters();
 
   const [detail, options] = await Promise.all([
-    apiGet(`/v1/panel/operations/talepler/${id}`, requestDetail).catch(
+    apiGet(`/v1/panel/operations/requests/${id}`, requestDetail).catch(
       () => null,
     ),
-    apiGet("/v1/panel/operations/talepler", requestListResponse),
+    apiGet("/v1/panel/operations/requests", requestListResponse),
   ]);
   if (!detail) notFound();
 

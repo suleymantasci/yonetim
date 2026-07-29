@@ -31,7 +31,7 @@ export default async function NewDebtModal({
   const tCommon = await getTranslations("common");
   const query = await searchParams;
 
-  const units = await apiGet("/v1/panel/units/secenekler", unitOptionList);
+  const units = await apiGet("/v1/panel/units/options", unitOptionList);
   const presetRaw = Array.isArray(query.birim) ? query.birim[0] : query.birim;
   const presetUnitId = units.some((unit) => unit.id === presetRaw)
     ? presetRaw

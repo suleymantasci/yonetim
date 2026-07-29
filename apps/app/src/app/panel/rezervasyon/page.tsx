@@ -33,7 +33,7 @@ export default async function ReservationsPage() {
   const f = await formatters();
 
   const { resources: res, rows } = await apiGet(
-    "/v1/panel/operations/rezervasyon",
+    "/v1/panel/operations/reservations",
     reservationListResponse,
   );
 

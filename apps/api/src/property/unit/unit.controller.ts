@@ -60,25 +60,25 @@ export class UnitController {
   }
 
   /** Combobox verisi — borç/gider ekranları da tüketiyor. */
-  @Get("secenekler")
+  @Get("options")
   @RequirePermission("unit:read")
   options() {
     return this.service.options();
   }
 
-  @Get("bloklar")
+  @Get("blocks")
   @RequirePermission("unit:read")
   blockList() {
     return this.blocks.list();
   }
 
-  @Post("bloklar")
+  @Post("blocks")
   @RequirePermission("unit:write")
   createBlock(@Body(new ZodBodyPipe(blockCreate)) dto: BlockCreate) {
     return this.blocks.create(dto);
   }
 
-  @Patch("bloklar/:id")
+  @Patch("blocks/:id")
   @RequirePermission("unit:write")
   updateBlock(
     @Param("id", ParseUUIDPipe) id: string,
@@ -87,7 +87,7 @@ export class UnitController {
     return this.blocks.update(id, dto);
   }
 
-  @Delete("bloklar/:id")
+  @Delete("blocks/:id")
   @RequirePermission("unit:write")
   deleteBlock(@Param("id", ParseUUIDPipe) id: string) {
     return this.blocks.softDelete(id);
@@ -97,13 +97,13 @@ export class UnitController {
    * Toplu üretim önizlemesi — hiçbir şey yazmaz, yeni blok bile açmaz.
    * GAP-DURUM kararı 8 burada somutlaşıyor.
    */
-  @Post("toplu/onizleme")
+  @Post("bulk/preview")
   @RequirePermission("unit:write")
   preview(@Body(new ZodBodyPipe(unitBulkCreate)) dto: UnitBulkCreate) {
     return this.service.preview(dto);
   }
 
-  @Post("toplu")
+  @Post("bulk")
   @RequirePermission("unit:write")
   @ApiOperation({
     summary: "Toplu birim üretimi",
@@ -113,7 +113,7 @@ export class UnitController {
     return this.service.bulkCreate(dto);
   }
 
-  @Patch("toplu")
+  @Patch("bulk")
   @RequirePermission("unit:write")
   bulkPatch(
     @Body(new ZodBodyPipe(unitBulkPatch)) dto: UnitBulkPatch,
@@ -122,13 +122,13 @@ export class UnitController {
     return this.service.bulkPatch(dto, reason);
   }
 
-  @Post("cop")
+  @Post("trash")
   @RequirePermission("unit:write")
   softDelete(@Body(new ZodBodyPipe(unitIds)) dto: { ids: string[] }) {
     return this.service.softDelete(dto.ids);
   }
 
-  @Post("geri-al")
+  @Post("restore")
   @RequirePermission("unit:write")
   restore(@Body(new ZodBodyPipe(unitIds)) dto: { ids: string[] }) {
     return this.service.restore(dto.ids);

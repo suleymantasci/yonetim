@@ -58,7 +58,7 @@ export class DebtController {
   }
 
   /** Denetim ekranı ve dashboard şeffaflık akışı — GAP 5.2. */
-  @Get("degisiklikler")
+  @Get("changes")
   @RequirePermission("debt:read")
   changes(
     @Query("limit", new DefaultValuePipe(50), ParseIntPipe) limit: number,
@@ -67,7 +67,7 @@ export class DebtController {
   }
 
   /** Borçlar ekranının "daire" sekmesi — satır = daire. */
-  @Get("daire-ozeti")
+  @Get("unit-summary")
   @RequirePermission("debt:read")
   @ApiOperation({
     summary: "Daire bazlı borç özeti + bakiye trendi",
@@ -83,13 +83,13 @@ export class DebtController {
   }
 
   /** Tahsilat formunun ihtiyacı: bir birimin açık borçları. */
-  @Get("acik/:unitId")
+  @Get("open/:unitId")
   @RequirePermission("debt:read")
   openDebts(@Param("unitId", ParseUUIDPipe) unitId: string) {
     return this.service.openDebts(unitId);
   }
 
-  @Post("toplu/onizleme")
+  @Post("bulk/preview")
   @RequirePermission("debt:write")
   @ApiOperation({
     summary: "Toplu borçlandırma önizlemesi",
@@ -101,19 +101,19 @@ export class DebtController {
     return this.service.preview(dto);
   }
 
-  @Post("toplu")
+  @Post("bulk")
   @RequirePermission("debt:write")
   bulkCreate(@Body(new ZodBodyPipe(debtBulkCreate)) dto: DebtBulkCreate) {
     return this.service.bulkCreate(dto);
   }
 
-  @Post("tahsilat")
+  @Post("collect")
   @RequirePermission("payment:create")
   collect(@Body(new ZodBodyPipe(paymentCollect)) dto: PaymentCollect) {
     return this.service.collect(dto);
   }
 
-  @Post("iptal")
+  @Post("cancel")
   @RequirePermission("debt:write")
   @ApiOperation({
     summary: "Borç iptali (soft-delete)",
@@ -127,7 +127,7 @@ export class DebtController {
     return this.service.cancel(dto.ids, dto.reason);
   }
 
-  @Patch("gecikme-muafiyeti")
+  @Patch("late-fee-waiver")
   @RequirePermission("debt:write")
   exempt(
     @Body(new ZodBodyPipe(debtExemptPatch))

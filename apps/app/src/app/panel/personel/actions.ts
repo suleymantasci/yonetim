@@ -200,7 +200,7 @@ export async function quoteSeverance(params: {
 
   try {
     const result = await apiPost(
-      "/v1/panel/staff/tazminat",
+      "/v1/panel/staff/severance",
       {
         staffId: params.staffId,
         endedAt: params.endedAt,

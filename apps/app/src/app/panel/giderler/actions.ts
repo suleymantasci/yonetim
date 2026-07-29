@@ -97,7 +97,7 @@ export async function saveExpenseCategory(
       const t = await getTranslations("app.expenses");
 
       const { id } = await apiPost(
-        "/v1/panel/expenses/kategoriler",
+        "/v1/panel/expenses/categories",
         {
           id: input.id,
           name: input.name,
@@ -143,7 +143,7 @@ export async function archiveExpenseCategory(id: string): Promise<BulkResult> {
   await requirePermission("expense:write");
   const t = await getTranslations("app.expenses");
 
-  const result = await apiDelete(`/v1/panel/expenses/kategoriler/${id}`).then(
+  const result = await apiDelete(`/v1/panel/expenses/categories/${id}`).then(
     (raw) => archiveResultSchema.parse(raw),
   );
 
@@ -250,7 +250,7 @@ export async function setExpenseStatus(
   if (targets.length === 0) return { ok: false, message: t("selectionEmpty") };
 
   const result = await apiPatch(
-    "/v1/panel/expenses/durum",
+    "/v1/panel/expenses/status",
     { ids: targets, status },
     expenseBulkResult,
   );
@@ -269,7 +269,7 @@ export async function deleteExpenses(ids: string[]): Promise<BulkResult> {
   if (targets.length === 0) return { ok: false, message: t("selectionEmpty") };
 
   const result = await apiPost(
-    "/v1/panel/expenses/cop",
+    "/v1/panel/expenses/trash",
     { ids: targets },
     expenseBulkResult,
   );
@@ -360,7 +360,7 @@ export async function distributeExpense(
       const t = await getTranslations("app.expenses");
 
       const result = await apiPost(
-        "/v1/panel/expenses/dagitim",
+        "/v1/panel/expenses/allocation",
         toDistributeBody(input, true),
         expenseDistributeResult,
         // API dile bağımsız (SPEC 4.2) ama ürettiği borç açıklaması kullanıcının
@@ -396,7 +396,7 @@ export async function previewDistribution(input: {
 
   try {
     const preview = await apiPost(
-      "/v1/panel/expenses/dagitim/onizleme",
+      "/v1/panel/expenses/allocation/preview",
       {
         expenseId: input.expenseId,
         formula: input.formula,

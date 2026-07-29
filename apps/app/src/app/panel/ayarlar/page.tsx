@@ -47,7 +47,7 @@ export default async function SettingsPage() {
 
   const [tenant, integrations] = await Promise.all([
     apiGet("/v1/panel/settings", tenantSettingsResponse),
-    apiGet("/v1/panel/settings/entegrasyonlar", integrationStatusResponse),
+    apiGet("/v1/panel/settings/integrations", integrationStatusResponse),
   ]);
 
   const settings = tenant.settings as {

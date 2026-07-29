@@ -83,7 +83,7 @@ export async function createAnnouncement(
   const data = parsed.data;
 
   const result = await apiPost(
-    "/v1/panel/communication/duyurular",
+    "/v1/panel/communication/announcements",
     {
       title: data.title,
       body: data.body,

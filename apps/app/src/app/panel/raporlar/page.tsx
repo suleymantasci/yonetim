@@ -25,7 +25,7 @@ export default async function ReportsPage() {
 
   const [{ summary }, { rows: unitDebts }] = await Promise.all([
     apiGet("/v1/panel/dashboard", dashboardResponse),
-    apiGet("/v1/panel/debts/daire-ozeti", unitDebtSummary),
+    apiGet("/v1/panel/debts/unit-summary", unitDebtSummary),
   ]);
 
   const paying = unitDebts.filter((u) => u.outstandingMinor === 0).length;

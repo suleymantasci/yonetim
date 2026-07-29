@@ -56,7 +56,7 @@ export default async function ResidentPortalPage() {
             {data.unit.number} · {tEnum(`ownership.${data.unit.relation}`)}
           </p>
         </div>
-        <form action="/api/oturum/cikis" method="post">
+        <form action="/api/session/logout" method="post">
           <button className="rounded-lg border border-border-strong px-3 py-1.5 text-sm text-fg hover:bg-hover">
             {tCommon("action.logout")}
           </button>

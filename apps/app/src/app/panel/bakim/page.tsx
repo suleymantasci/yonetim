@@ -37,7 +37,7 @@ export default async function MaintenancePage() {
     records,
     templates: library,
     totals,
-  } = await apiGet("/v1/panel/operations/bakim", maintenanceListResponse);
+  } = await apiGet("/v1/panel/operations/maintenance", maintenanceListResponse);
 
   /** Şablon kodu varsa çeviriden, yoksa kayıttaki serbest metinden okur. */
   const labelFor = (code: string | null, fallback: string) =>

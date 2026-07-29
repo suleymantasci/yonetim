@@ -23,7 +23,7 @@ export default async function MeterReadingPage() {
   const tEnum = await getTranslations("enum");
 
   const { meters, readings } = await apiGet(
-    "/v1/panel/operations/sayaclar",
+    "/v1/panel/operations/meters",
     meterListResponse,
   );
 

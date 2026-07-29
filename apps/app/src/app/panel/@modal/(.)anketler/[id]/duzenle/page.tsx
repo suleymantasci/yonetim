@@ -24,7 +24,7 @@ export default async function EditPollModal({
   const tCommon = await getTranslations("common");
 
   const { rows } = await apiGet(
-    "/v1/panel/communication/anketler",
+    "/v1/panel/communication/polls",
     pollListResponse,
   );
   const row = rows.find((r) => r.id === id);

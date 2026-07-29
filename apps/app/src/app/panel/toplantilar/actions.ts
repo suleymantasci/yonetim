@@ -94,12 +94,12 @@ export async function saveMeeting(
 
       const result = input.id
         ? await apiPatch(
-            `/v1/panel/communication/toplantilar/${input.id}`,
+            `/v1/panel/communication/meetings/${input.id}`,
             body,
             meetingSaveResult,
           )
         : await apiPost(
-            "/v1/panel/communication/toplantilar",
+            "/v1/panel/communication/meetings",
             body,
             meetingSaveResult,
           );
@@ -141,7 +141,7 @@ export async function addMeetingDecision(
       const t = await getTranslations("app.meetings");
 
       const result = await apiPost(
-        `/v1/panel/communication/toplantilar/${input.meetingId}/kararlar`,
+        `/v1/panel/communication/meetings/${input.meetingId}/decisions`,
         {
           title: input.title,
           body: input.body,

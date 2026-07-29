@@ -125,7 +125,7 @@ export const duesPlanTogglePatch = z.object({ isActive: z.coerce.boolean() });
  * ------------------------------------------------------------------ */
 
 /**
- * `POST /v1/panel/dues-plans/:id/calistir`.
+ * `POST /v1/panel/dues-plans/:id/run`.
  *
  * NEDEN VAR: plan bugüne kadar **yalnız** worker'ın cron'uyla, kendi
  * takviminde çalışıyordu. Yeni kurulan bir sitede ya da ayın ortasında

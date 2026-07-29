@@ -15,7 +15,7 @@ export default async function BulkUnitsPage() {
   await requirePermission("unit:write");
   const t = await getTranslations("app.units");
   const { rows: blocks } = await apiGet(
-    "/v1/panel/units/bloklar",
+    "/v1/panel/units/blocks",
     blockListResponse,
   );
 

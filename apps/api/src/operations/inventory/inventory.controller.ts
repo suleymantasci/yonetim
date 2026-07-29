@@ -46,7 +46,7 @@ export class InventoryController {
     return this.service.save(dto);
   }
 
-  @Patch("durum")
+  @Patch("status")
   @RequirePermission("inventory:write")
   @ApiOperation({
     summary: "Toplu durum değişikliği — yıl sonu sayımının çıktısı",

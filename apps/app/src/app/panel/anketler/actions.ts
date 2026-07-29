@@ -102,12 +102,12 @@ export async function savePoll(
 
       const result = input.id
         ? await apiPatch(
-            `/v1/panel/communication/anketler/${input.id}`,
+            `/v1/panel/communication/polls/${input.id}`,
             body,
             pollSaveResult,
           )
         : await apiPost(
-            "/v1/panel/communication/anketler",
+            "/v1/panel/communication/polls",
             body,
             pollSaveResult,
           );
@@ -144,7 +144,7 @@ export async function closePoll(
       const t = await getTranslations("app.polls");
 
       const result = await apiPost(
-        `/v1/panel/communication/anketler/${input.id}/kapat`,
+        `/v1/panel/communication/polls/${input.id}/close`,
         { reason: input.reason ?? null },
         pollCloseResult,
       );

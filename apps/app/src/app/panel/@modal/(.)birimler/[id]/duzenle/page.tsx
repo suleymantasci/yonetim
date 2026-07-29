@@ -33,7 +33,7 @@ export default async function EditUnitModal({
       if (error instanceof AppError && error.code === "not_found") notFound();
       throw error;
     }),
-    apiGet("/v1/panel/units/bloklar", blockListResponse),
+    apiGet("/v1/panel/units/blocks", blockListResponse),
   ]);
 
   const unit = detail.unit;

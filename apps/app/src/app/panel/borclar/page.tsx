@@ -160,7 +160,7 @@ export default async function DebtsPage({
     // Eşik iki görünümde de geçerli: sekme değiştiren yönetici aynı daralmış
     // listeyi görmeye devam etsin (sözleşmedeki `unitDebtSummaryQuery` notu).
     const { rows: unitRows } = await apiGet(
-      `/v1/panel/debts/daire-ozeti?${toQuery({ minOutstanding: riskThreshold })}`,
+      `/v1/panel/debts/unit-summary?${toQuery({ minOutstanding: riskThreshold })}`,
       unitDebtSummary,
     );
     return (

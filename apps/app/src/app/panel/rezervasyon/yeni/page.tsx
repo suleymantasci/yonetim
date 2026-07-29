@@ -21,9 +21,9 @@ export default async function NewReservationPage() {
   const tCommon = await getTranslations("common");
 
   const [list, residents, units] = await Promise.all([
-    apiGet("/v1/panel/operations/rezervasyon", reservationListResponse),
-    apiGet("/v1/panel/residents/secenekler", residentOptionList),
-    apiGet("/v1/panel/units/secenekler", unitOptionList),
+    apiGet("/v1/panel/operations/reservations", reservationListResponse),
+    apiGet("/v1/panel/residents/options", residentOptionList),
+    apiGet("/v1/panel/units/options", unitOptionList),
   ]);
 
   return (

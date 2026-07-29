@@ -26,10 +26,10 @@ export default async function EditResidentPage({
   // Ham telefonu yalnız bu uç döndürüyor (`resident:write` + ayrı KVKK kaydı):
   // maskeli değer forma yazılsaydı kaydetmek numarayı maskeyle ezerdi.
   const [detail, units] = await Promise.all([
-    apiGet(`/v1/panel/residents/${id}/duzenle`, residentEditForm).catch(
+    apiGet(`/v1/panel/residents/${id}/edit`, residentEditForm).catch(
       () => null,
     ),
-    apiGet("/v1/panel/units/secenekler", unitOptionList),
+    apiGet("/v1/panel/units/options", unitOptionList),
   ]);
   if (!detail) notFound();
 

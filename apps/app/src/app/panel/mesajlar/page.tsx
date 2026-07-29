@@ -27,7 +27,7 @@ export default async function MessagesPage() {
   const f = await formatters();
 
   const { rows, totals } = await apiGet(
-    "/v1/panel/communication/mesajlar",
+    "/v1/panel/communication/messages",
     messageListResponse,
   );
   const botRate = totals.botRatePct / 100;

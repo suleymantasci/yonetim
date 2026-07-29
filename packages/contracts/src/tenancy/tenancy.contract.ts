@@ -303,7 +303,7 @@ export type StaffSaveResult = z.infer<typeof staffSaveResult>;
  * ------------------------------------------------------------------ */
 
 /**
- * `POST /v1/panel/staff/tazminat`.
+ * `POST /v1/panel/staff/severance`.
  *
  * NİYE SUNUCUDA HESAPLANIYOR: girdilerin ikisi (işe giriş tarihi ve
  * giydirilmiş brüt ücret) `staff` tablosunda ve **panele hiç gitmiyor**

@@ -23,7 +23,7 @@ export default async function EditResourcePage({
   const tCommon = await getTranslations("common");
 
   const detail = await apiGet(
-    `/v1/panel/operations/rezervasyon/tesisler/${id}`,
+    `/v1/panel/operations/reservations/resources/${id}`,
     resourceDetail,
   ).catch(() => null);
   if (!detail) notFound();

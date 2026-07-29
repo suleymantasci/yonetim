@@ -19,7 +19,7 @@ export default async function AnnouncementsPage() {
   const f = await formatters();
 
   const { rows } = await apiGet(
-    "/v1/panel/communication/duyurular",
+    "/v1/panel/communication/announcements",
     announcementListResponse,
   );
 

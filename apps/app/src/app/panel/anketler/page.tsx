@@ -24,7 +24,7 @@ export default async function PollsPage() {
   // "Açık mı" sunucudan geliyor: oylamanın kapanışı bağlayıcı bir olay ve
   // ölçütü tarayıcı saati olamaz (MIMARI-PLAN §9a).
   const { rows } = await apiGet(
-    "/v1/panel/communication/anketler",
+    "/v1/panel/communication/polls",
     pollListResponse,
   );
 

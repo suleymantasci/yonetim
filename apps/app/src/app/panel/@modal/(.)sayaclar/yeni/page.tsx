@@ -15,7 +15,7 @@ export default async function NewMeterModal() {
   const t = await getTranslations("app.meters");
   const tCommon = await getTranslations("common");
 
-  const units = await apiGet("/v1/panel/units/secenekler", unitOptionList);
+  const units = await apiGet("/v1/panel/units/options", unitOptionList);
 
   return (
     <RouteDrawer

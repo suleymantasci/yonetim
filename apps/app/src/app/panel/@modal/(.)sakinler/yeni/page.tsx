@@ -28,7 +28,7 @@ export default async function NewResidentModal({
   const tCommon = await getTranslations("common");
   const query = await searchParams;
 
-  const units = await apiGet("/v1/panel/units/secenekler", unitOptionList);
+  const units = await apiGet("/v1/panel/units/options", unitOptionList);
   const presetUnitRaw = Array.isArray(query.birim) ? query.birim[0] : query.birim;
   const presetUnitId = units.some((unit) => unit.id === presetUnitRaw)
     ? presetUnitRaw

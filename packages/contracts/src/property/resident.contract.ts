@@ -435,7 +435,7 @@ export type TcknLookupResult = z.infer<typeof tcknLookupResult>;
  * ------------------------------------------------------------------ */
 
 /**
- * `GET /v1/panel/residents/acil-durum`.
+ * `GET /v1/panel/residents/emergency`.
  *
  * NİYE AYRI UÇ: acil durum listesi sakin listesinden **daha az** alan taşıyor
  * ama **daha hassas** olanı taşıyor (kan grubu). Aynı uca bir bayrak

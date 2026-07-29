@@ -17,7 +17,7 @@ export default async function NewRequestModal() {
   const tCommon = await getTranslations("common");
 
   const { units, assignees } = await apiGet(
-    "/v1/panel/operations/talepler",
+    "/v1/panel/operations/requests",
     requestListResponse,
   );
 

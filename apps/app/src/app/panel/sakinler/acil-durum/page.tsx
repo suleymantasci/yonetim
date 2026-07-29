@@ -40,7 +40,7 @@ export default async function EmergencyContactsPage() {
   const tCommon = await getTranslations("common");
 
   const data = await apiGet(
-    "/v1/panel/residents/acil-durum",
+    "/v1/panel/residents/emergency",
     emergencyReport,
   );
 

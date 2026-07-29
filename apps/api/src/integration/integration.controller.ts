@@ -48,7 +48,7 @@ export class IntegrationController {
    * Bu uç olmadan hesap tanımlanamıyor, dolayısıyla hareket de mutabakat da
    * boş kalıyordu: ekran çalışıyor gibi görünüp hiçbir şey yapamıyordu.
    */
-  @Post("bank/hesaplar")
+  @Post("bank/accounts")
   @RequirePermission("bank:write")
   @ApiOperation({
     summary: "Banka hesabı tanımla",
@@ -64,14 +64,14 @@ export class IntegrationController {
     return this.accounts.save(dto);
   }
 
-  @Get("bank/hesaplar/:id")
+  @Get("bank/accounts/:id")
   @RequirePermission("bank:write")
   @ApiOperation({ summary: "Banka hesabı detayı (düzenleme formu için)" })
   bankAccountDetail(@Param("id", ParseUUIDPipe) id: string) {
     return this.accounts.detail(id);
   }
 
-  @Patch("bank/hesaplar/:id")
+  @Patch("bank/accounts/:id")
   @RequirePermission("bank:write")
   @ApiOperation({ summary: "Banka hesabını güncelle" })
   updateBankAccount(
@@ -81,7 +81,7 @@ export class IntegrationController {
     return this.accounts.save(dto, id);
   }
 
-  @Delete("bank/hesaplar/:id")
+  @Delete("bank/accounts/:id")
   @RequirePermission("bank:write")
   @ApiOperation({
     summary: "Banka hesabını kaldır",

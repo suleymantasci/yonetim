@@ -100,11 +100,11 @@ export async function saveRequest(
 
       const result = input.id
         ? await apiPatch(
-            `/v1/panel/operations/talepler/${input.id}`,
+            `/v1/panel/operations/requests/${input.id}`,
             body,
             requestSaveResult,
           )
-        : await apiPost("/v1/panel/operations/talepler", body, requestSaveResult);
+        : await apiPost("/v1/panel/operations/requests", body, requestSaveResult);
 
       revalidatePath("/panel/talepler");
       return okState(t("saved", { code: result.code }), {
@@ -144,7 +144,7 @@ export async function setRequestStatus(
       const t = await getTranslations("app.requests");
 
       await apiPatch(
-        `/v1/panel/operations/talepler/${input.id}/durum`,
+        `/v1/panel/operations/requests/${input.id}/status`,
         {
           status: input.status,
           resolutionNote: input.resolutionNote ?? null,
@@ -180,7 +180,7 @@ export async function assignRequest(
       const t = await getTranslations("app.requests");
 
       await apiPatch(
-        `/v1/panel/operations/talepler/${input.id}/atama`,
+        `/v1/panel/operations/requests/${input.id}/assignment`,
         { assignedToUserId: input.assignedToUserId ?? null },
         z.object({ id: z.string().uuid() }),
       );
@@ -212,7 +212,7 @@ export async function commentOnRequest(
       const t = await getTranslations("app.requests");
 
       await apiPost(
-        `/v1/panel/operations/talepler/${input.id}/yorum`,
+        `/v1/panel/operations/requests/${input.id}/comments`,
         { body: input.body, isInternal: input.isInternal },
         z.object({ id: z.string().uuid() }),
       );

@@ -32,7 +32,7 @@ export default async function ReservationDecisionPage({
   const f = await formatters();
 
   const { rows, resources } = await apiGet(
-    "/v1/panel/operations/rezervasyon",
+    "/v1/panel/operations/reservations",
     reservationListResponse,
   );
   const row = rows.find((r) => r.id === id);

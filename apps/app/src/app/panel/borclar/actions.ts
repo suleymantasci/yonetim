@@ -227,7 +227,7 @@ export async function previewBulkDebts(
 
   try {
     const preview = await apiPost(
-      "/v1/panel/debts/toplu/onizleme",
+      "/v1/panel/debts/bulk/preview",
       toBulkBody(parsed.data),
       debtBulkPreview,
     );
@@ -264,7 +264,7 @@ export async function createBulkDebts(
       const t = await getTranslations("app.debts");
 
       const result = await apiPost(
-        "/v1/panel/debts/toplu",
+        "/v1/panel/debts/bulk",
         toBulkBody(input),
         debtBulkResult,
       );
@@ -403,7 +403,7 @@ export async function collectPayment(
       const t = await getTranslations("app.debts");
 
       const result = await apiPost(
-        "/v1/panel/debts/tahsilat",
+        "/v1/panel/debts/collect",
         {
           unitId: input.unitId,
           amountMinor: input.amountKurus,
@@ -462,7 +462,7 @@ export async function cancelDebts(
     return { ok: false, message: t("reasonTooShort") };
 
   const result = await apiPost(
-    "/v1/panel/debts/iptal",
+    "/v1/panel/debts/cancel",
     { ids: targets, reason },
     debtBulkResultSimple,
     { reason },
@@ -492,7 +492,7 @@ export async function setLateFeeExempt(
   if (targets.length === 0) return { ok: false, message: t("selectionEmpty") };
 
   const result = await apiPatch(
-    "/v1/panel/debts/gecikme-muafiyeti",
+    "/v1/panel/debts/late-fee-waiver",
     { ids: targets, exempt },
     debtBulkResultSimple,
   );

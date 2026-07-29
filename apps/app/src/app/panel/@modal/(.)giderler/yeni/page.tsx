@@ -18,7 +18,7 @@ export default async function NewExpenseModal() {
   const tCommon = await getTranslations("common");
 
   const { roots: tree } = await apiGet(
-    "/v1/panel/expenses/kategoriler",
+    "/v1/panel/expenses/categories",
     categoryTreeSchema,
   );
   // Ağacı düzleştir: form tek seviyeli `<select>` kullanıyor, girinti ile hiyerarşi verilir.

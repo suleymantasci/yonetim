@@ -29,7 +29,7 @@ export default async function EditDuesPlanModal({
         throw error;
       },
     ),
-    apiGet("/v1/panel/units/bloklar", blockListResponse),
+    apiGet("/v1/panel/units/blocks", blockListResponse),
   ]);
 
   // `appliesTo` ve `mixWeights` jsonb; şemasız geldikleri için okurken daraltılır.
