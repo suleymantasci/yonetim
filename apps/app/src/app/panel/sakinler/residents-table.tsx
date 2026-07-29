@@ -61,6 +61,8 @@ export function ResidentsTable({
     empty: string;
     removeTitle: string;
     removeDescription: string;
+    /** "Siteden çıkar" — kişinin kullanıcı kaydı silinmiyor, üyeliği kapanıyor. */
+    removeAction: string;
     optIn: string;
     optOut: string;
     multiUnitBadge: string;
@@ -82,14 +84,20 @@ export function ResidentsTable({
       label: labels.optOut,
       run: (ids: string[]) => setWhatsappOptIn(ids, false),
     },
+    /*
+     * "Sil" değil "Siteden çıkar": işlem kişinin `users` kaydını silmiyor,
+     * bu sitedeki üyeliğini ve daire ilişkilerini kapatıyor (kişi başka
+     * sitelerde kayıtlı olabilir). Onay metni bunu zaten anlatıyordu ama
+     * düğmede "Sil" yazması yöneticiye kişiyi tamamen sildiğini düşündürürdü.
+     */
     {
       key: "remove",
-      label: t("action.delete"),
+      label: labels.removeAction,
       tone: "danger" as const,
       confirm: {
         title: labels.removeTitle,
         description: labels.removeDescription,
-        confirmLabel: t("action.delete"),
+        confirmLabel: labels.removeAction,
       },
       run: removeResidents,
     },

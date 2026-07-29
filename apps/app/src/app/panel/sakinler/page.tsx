@@ -229,8 +229,12 @@ export default async function ResidentsPage({
               empty: tCommon("state.noResult"),
               removeTitle: t("removeTitle"),
               removeDescription: t("removeDescription"),
-              optIn: t("whatsappOptIn"),
-              optOut: t("whatsappOptOut"),
+              // Toplu işlem düğmeleri sütun etiketlerini kullanamaz: sütunda
+              // "İzinli" bir **durum**, düğmede ise ne yapacağını söylemeyen
+              // bir emir olur ("neyin izni?"). Fiil hâli ayrı anahtarlarda.
+              removeAction: t("removeAction"),
+              optIn: t("bulkOptIn"),
+              optOut: t("bulkOptOut"),
               multiUnitBadge: t("multiUnitBadge"),
             }}
           />

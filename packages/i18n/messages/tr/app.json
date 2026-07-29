@@ -562,7 +562,10 @@
     "statWithBloodType": "Kan grubu kayıtlı",
     "statWithEmergencyContact": "Acil durum kişisi kayıtlı",
     "statMissingBoth": "Bilgisi eksik",
-    "statMissingBothHint": "Ne kan grubu ne acil durum kişisi kayıtlı."
+    "statMissingBothHint": "Ne kan grubu ne acil durum kişisi kayıtlı.",
+    "bulkOptIn": "WhatsApp iznini aç",
+    "bulkOptOut": "WhatsApp iznini kapat",
+    "removeAction": "Siteden çıkar"
   },
   "duesPlans": {
     "title": "Aidat Planları",

@@ -562,7 +562,10 @@
     "statWithBloodType": "Blood type on file",
     "statWithEmergencyContact": "Emergency contact on file",
     "statMissingBoth": "Missing information",
-    "statMissingBothHint": "Neither blood type nor emergency contact on file."
+    "statMissingBothHint": "Neither blood type nor emergency contact on file.",
+    "bulkOptIn": "Turn on WhatsApp consent",
+    "bulkOptOut": "Turn off WhatsApp consent",
+    "removeAction": "Remove from site"
   },
   "duesPlans": {
     "title": "Dues plans",
