@@ -5,7 +5,7 @@ import {
   onlineAvailability,
   readPaymentSettings,
 } from "../apps/api/src/finance/portal-payment/payment-policy";
-import { calculateFees } from "../packages/payment/src/iyzico";
+import { calculateFees, type FeeRates } from "../packages/payment/src/iyzico";
 
 /**
  * Sakin ödemesinin iki kararı — PROJE-DURUMU §5.10.
@@ -17,102 +17,142 @@ import { calculateFees } from "../packages/payment/src/iyzico";
  */
 describe("ödeme ayarı okuma", () => {
   it("ayar hiç yoksa kartla tahsilat kapalı", () => {
-    expect(readPaymentSettings(undefined)).toEqual({
-      onlineEnabled: false,
-      feePaidBy: "management",
-    });
-    expect(readPaymentSettings({})).toEqual({
-      onlineEnabled: false,
-      feePaidBy: "management",
-    });
+    expect(readPaymentSettings(undefined)).toEqual({ onlineEnabled: false });
+    expect(readPaymentSettings({})).toEqual({ onlineEnabled: false });
   });
 
   it("JSONB'den gelen tanınmayan değerler güvenli tarafa düşüyor", () => {
     // Elle düzenlenmiş ya da eski sürümden kalmış bir kayıt her şeyi taşıyabilir.
-    expect(readPaymentSettings({ payment: "acik" })).toEqual({
+    expect(readPaymentSettings({ payment: "acik" })).toEqual({ onlineEnabled: false });
+    expect(readPaymentSettings({ payment: { onlineEnabled: "true" } })).toEqual({
       onlineEnabled: false,
-      feePaidBy: "management",
     });
-    expect(
-      readPaymentSettings({ payment: { onlineEnabled: "true", feePaidBy: "kimse" } }),
-    ).toEqual({ onlineEnabled: false, feePaidBy: "management" });
   });
 
-  it("açıkça verilen değerler okunuyor", () => {
+  it("eski kayıttaki feePaidBy alanı okunmuyor", () => {
+    // Seçenek kaldırıldı; eski sitelerin sözlüğünde kalmış olabilir. Okunsaydı
+    // "yönetim karşılasın" diyen bir kayıt bugünkü kuralı sessizce bozardı.
     expect(
-      readPaymentSettings({ payment: { onlineEnabled: true, feePaidBy: "resident" } }),
-    ).toEqual({ onlineEnabled: true, feePaidBy: "resident" });
+      readPaymentSettings({ payment: { onlineEnabled: true, feePaidBy: "management" } }),
+    ).toEqual({ onlineEnabled: true });
   });
 });
 
 describe("kartla ödeme uygunluğu", () => {
-  const open = { onlineEnabled: true, feePaidBy: "management" } as const;
-  const closed = { onlineEnabled: false, feePaidBy: "management" } as const;
+  const open = { onlineEnabled: true } as const;
+  const closed = { onlineEnabled: false } as const;
 
   it("yönetim açmadıysa sebep not_enabled", () => {
-    expect(onlineAvailability(closed, 10_000, true)).toEqual({
+    expect(onlineAvailability(closed, 10_000, true, true)).toEqual({
       available: false,
       reason: "not_enabled",
     });
   });
 
   it("ayar açık ama sağlayıcı kurulu değilse sebep provider_missing", () => {
-    expect(onlineAvailability(open, 10_000, false)).toEqual({
+    expect(onlineAvailability(open, 10_000, false, true)).toEqual({
       available: false,
       reason: "provider_missing",
+    });
+  });
+
+  it("komisyon oranı tanımsızsa sebep fee_not_configured", () => {
+    // Oran bilinmeden sakinden alınacak ek ücret hesaplanamıyor. Tahmini bir
+    // oranla tahsilat, siteye borcun tamamının geçeceği sözünü tutmamak olurdu.
+    expect(onlineAvailability(open, 10_000, true, false)).toEqual({
+      available: false,
+      reason: "fee_not_configured",
     });
   });
 
   it("borç yoksa diğer koşullara bakılmıyor", () => {
     // Sıra önemli: "ödenecek bir şey yok" derken "yönetiminiz kartla ödemeyi
     // açmamış" demek, sakini olmayan bir sorunla yöneticiye gönderirdi.
-    expect(onlineAvailability(closed, 0, false)).toEqual({
+    expect(onlineAvailability(closed, 0, false, false)).toEqual({
       available: false,
       reason: "no_open_debt",
     });
   });
 
-  it("her iki koşul da sağlanınca açık", () => {
-    expect(onlineAvailability(open, 10_000, true)).toEqual({
+  it("koşulların hepsi sağlanınca açık", () => {
+    expect(onlineAvailability(open, 10_000, true, true)).toEqual({
       available: true,
       reason: null,
     });
   });
 });
 
-describe("tahsil edilen ve borca mahsup edilen tutar", () => {
-  const amount = 100_000; // 1.000,00 ₺
+/**
+ * KURALIN KENDİSİ: aidat neyse siteye o geçer.
+ *
+ * Testler bir oran **varsaymıyor** — oranı parametre olarak veriyor ve her
+ * seferinde sağlayıcının o oranla keseceği komisyonu simüle edip siteye kalanı
+ * ölçüyor. Böylece sözleşme değişip oran güncellendiğinde de aynı güvence
+ * geçerli: hangi oran olursa olsun site borcun tamamını alıyor.
+ */
+function rates(processorPct: number, fixed: number, platformPct = 0): FeeRates {
+  return { processorPct, processorFixedKurus: fixed, platformPct };
+}
 
-  it("yönetim karşılıyorsa sakinden yalnız borç çekiliyor", () => {
-    const fees = calculateFees({ amountKurus: amount, paidBy: "management" });
-    expect(checkoutAmounts(fees)).toEqual({
-      settleKurus: amount,
-      surchargeKurus: 0,
-    });
-    expect(fees.totalKurus).toBe(amount);
+/** Sağlayıcının çekilen tutardan keseceği komisyon. */
+function providerCut(totalKurus: number, r: FeeRates): number {
+  return (totalKurus * r.processorPct) / 100 + r.processorFixedKurus;
+}
+
+describe("komisyon borcun üstüne ekleniyor, aidat siteye net geçiyor", () => {
+  const amount = 50_000; // 500,00 ₺
+
+  it("siteye geçen tutar borcun tamamı — hiçbir oranda eksilmiyor", () => {
+    for (const r of [
+      rates(3.49, 35),
+      rates(1.79, 0),
+      rates(0, 250),
+      rates(7.5, 199),
+      rates(2, 25, 1), // platform hizmet bedeli de varken
+    ]) {
+      const fees = calculateFees({ amountKurus: amount, rates: r });
+      const net = fees.totalKurus - providerCut(fees.totalKurus, r) - fees.platformFeeKurus;
+
+      // Asıl güvence: siteye borcun tamamı geçiyor. Yukarı yuvarlama yüzünden
+      // 1 kuruşa kadar fazla olabilir, **eksik olamaz**.
+      expect(net).toBeGreaterThanOrEqual(amount);
+      expect(net).toBeLessThan(amount + 1);
+    }
   });
 
-  it("sakin karşılıyorsa komisyon borcun üstüne ekleniyor ama borca yazılmıyor", () => {
-    const fees = calculateFees({ amountKurus: amount, paidBy: "resident" });
+  it("naif hesap (borcun komisyonunu üstüne eklemek) yetmezdi", () => {
+    // Komisyon çekilen tutar üzerinden alındığı için komisyonun kendisi de
+    // komisyona tabi. Bu test o farkı görünür tutuyor: brütleştirme
+    // kaldırılırsa aşağıdaki `naiveNet` kadar eksik tahsilat başlar.
+    const r = rates(3, 35);
+    const naiveTotal = amount + Math.round((amount * r.processorPct) / 100) + r.processorFixedKurus;
+    const naiveNet = naiveTotal - providerCut(naiveTotal, r);
+    expect(naiveNet).toBeLessThan(amount);
+
+    const fees = calculateFees({ amountKurus: amount, rates: r });
+    expect(fees.totalKurus).toBeGreaterThan(naiveTotal);
+  });
+
+  it("kalemler toplamı çekilecek tutarı kuruşu kuruşuna tutuyor", () => {
+    const fees = calculateFees({ amountKurus: 123_457, rates: rates(3.49, 35, 1.5) });
+    expect(fees.amountKurus + fees.platformFeeKurus + fees.processorFeeKurus).toBe(
+      fees.totalKurus,
+    );
+  });
+
+  it("borca yazılan tutar komisyondan etkilenmiyor", () => {
+    const fees = calculateFees({ amountKurus: amount, rates: rates(3.49, 35) });
     const { settleKurus, surchargeKurus } = checkoutAmounts(fees);
 
-    // Borca yazılan tutar komisyondan etkilenmiyor — asıl güvence bu.
     expect(settleKurus).toBe(amount);
     expect(surchargeKurus).toBe(fees.platformFeeKurus + fees.processorFeeKurus);
-    // Çekilen tutar = borç + komisyon.
     expect(settleKurus + surchargeKurus).toBe(fees.totalKurus);
     expect(fees.totalKurus).toBeGreaterThan(amount);
   });
 
-  it("komisyon oranı değişse de borca yazılan tutar sabit", () => {
-    const fees = calculateFees({
-      amountKurus: amount,
-      paidBy: "resident",
-      platformFeePct: 2,
-      processorPct: 5,
-      processorFixedKurus: 100,
-    });
-    expect(checkoutAmounts(fees).settleKurus).toBe(amount);
-    expect(checkoutAmounts(fees).surchargeKurus).toBe(2_000 + 5_000 + 100);
+  it("çözümsüz oran hesaplanmıyor", () => {
+    // %100 komisyonda hangi tutar çekilirse çekilsin siteye borç kalmıyor.
+    // Sessizce bir sayı üretmek, tutmayacağı belli bir tahsilat başlatmaktı.
+    expect(() => calculateFees({ amountKurus: amount, rates: rates(100, 0) })).toThrow();
   });
 });

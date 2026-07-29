@@ -57,10 +57,14 @@ export class SettingsWriteService {
         lateFeeMonthlyPct: dto.lateFeeMonthlyPct ?? null,
         kvkkContactEmail: dto.kvkkContactEmail ?? null,
         whatsappOptInRequired: dto.whatsappOptInRequired,
-        payment: {
-          onlineEnabled: dto.onlinePaymentEnabled,
-          feePaidBy: dto.paymentFeePaidBy,
-        },
+        /*
+         * `feePaidBy` bilerek yazılmıyor: komisyonu kimin karşılayacağı artık
+         * bir seçenek değil (aidat siteye net geçer, komisyon sakinden ek
+         * alınır). Eski kayıtlardaki alan `previous` üzerinden korunmuyor
+         * çünkü `payment` nesnesi bütün olarak yazılıyor — okuyan taraf
+         * (`readPaymentSettings`) alanı zaten görmezden geliyor.
+         */
+        payment: { onlineEnabled: dto.onlinePaymentEnabled },
         invoiceInfo: {
           title: dto.invoiceTitle ?? null,
           taxNumber: dto.invoiceTaxNumber ?? null,

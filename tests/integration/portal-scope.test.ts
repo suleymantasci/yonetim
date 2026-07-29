@@ -302,8 +302,12 @@ describe.skipIf(!apiReachable)("sakin portalı — kapsam sınırı", () => {
 
     expect((alice.body.fees as { amountMinor: number }).amountMinor).toBe(100_000);
     expect((bob.body.fees as { amountMinor: number }).amountMinor).toBe(200_000);
-    // Komisyon yönetimde: sakinden borcun tam tutarı isteniyor, üstüne
-    // bir şey eklenmiyor.
+    /*
+     * Test ortamında komisyon oranı tanımlı değil (CI'da da değil), o yüzden
+     * kırılım hiç hesaplanmıyor ve ödenecek tutar borcun kendisi. Uydurma bir
+     * oranla dolu bir kırılım göstermektense hesaplamamak: kartla ödeme zaten
+     * kapalı olduğu için bu tutarla bir tahsilat başlatılamıyor.
+     */
     expect((alice.body.fees as { totalMinor: number }).totalMinor).toBe(100_000);
   });
 

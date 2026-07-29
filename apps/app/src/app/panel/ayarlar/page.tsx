@@ -56,7 +56,7 @@ export default async function SettingsPage() {
     lateFeeMonthlyPct?: number | null;
     kvkkContactEmail?: string | null;
     whatsappOptInRequired?: boolean;
-    payment?: { onlineEnabled?: boolean; feePaidBy?: string };
+    payment?: { onlineEnabled?: boolean };
     invoiceInfo?: {
       title?: string | null;
       taxNumber?: string | null;
@@ -104,10 +104,6 @@ export default async function SettingsPage() {
                     // `readPaymentSettings` ile aynı kural).
                     onlinePaymentEnabled:
                       settings.payment?.onlineEnabled === true,
-                    paymentFeePaidBy:
-                      settings.payment?.feePaidBy === "resident"
-                        ? "resident"
-                        : "management",
                   }}
                 />
               </CardBody>

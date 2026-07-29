@@ -271,17 +271,15 @@ describe("devre kesici ve failover (SPEC 3.10 / 22)", () => {
 });
 
 describe("şeffaf komisyon (SPEC 1.2)", () => {
-  it("yönetim karşıladığında sakin ek ücret ödemez", () => {
-    const fees = calculateFees({ amountKurus: 125_000, paidBy: "management" });
-    expect(fees.totalKurus).toBe(125_000);
-    expect(fees.processorFeeKurus).toBeGreaterThan(0);
-    expect(fees.paidBy).toBe("management");
-  });
-
-  it("sakin karşıladığında komisyon eklenir ve ayrı gösterilir", () => {
-    const fees = calculateFees({ amountKurus: 125_000, paidBy: "resident", platformFeePct: 1 });
+  it("komisyon borcun üstüne eklenir ve ayrı gösterilir", () => {
+    const fees = calculateFees({
+      amountKurus: 125_000,
+      rates: { processorPct: 3.49, processorFixedKurus: 35, platformPct: 1 },
+    });
     expect(fees.totalKurus).toBeGreaterThan(125_000);
     expect(fees.platformFeeKurus).toBe(1_250);
+    // Borç tutarı kırılımda olduğu gibi duruyor: siteye geçecek olan bu.
+    expect(fees.amountKurus).toBe(125_000);
   });
 
   it("makbuz HTML'i komisyon bilgisini içerir", () => {

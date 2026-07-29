@@ -641,18 +641,17 @@ export type CertificateVerifyResult = z.infer<typeof certificateVerifyResult>;
  *    doğuruyor, açmak yönetimin kararı).
  *  - `provider_missing`: ayar açık ama sağlayıcı kimlik bilgileri kurulu
  *    değil — bu bir yapılandırma eksiği, yönetim kararı değil.
+ *  - `fee_not_configured`: sağlayıcı kurulu ama sözleşmedeki komisyon oranı
+ *    tanımlı değil. Oran bilinmeden sakinden alınacak ek ücret hesaplanamaz;
+ *    tahmini bir oranla tahsilat yapmak siteye eksik para geçirirdi.
  *  - `no_open_debt`: ödenecek bir şey yok.
  */
 export const portalPaymentUnavailableReason = z.enum([
   "not_enabled",
   "provider_missing",
+  "fee_not_configured",
   "no_open_debt",
 ]);
-
-/** Kart komisyonunu kim karşılıyor — site ayarı (`tenants.settings.payment`). */
-export const paymentFeePayer = z.enum(["management", "resident"]);
-
-export type PaymentFeePayer = z.infer<typeof paymentFeePayer>;
 
 /**
  * Havale/EFT hedefi.
@@ -676,14 +675,17 @@ export const portalPaymentSummary = z.object({
   items: z.array(
     z.object({ id: uuid, description: z.string(), outstandingMinor: moneyMinor }),
   ),
+  /**
+   * Kırılım: `amountMinor` siteye **net** geçecek borç, `totalMinor` karttan
+   * çekilecek tutar. Aradaki fark sakinden alınan ek ücret ve borca mahsup
+   * edilmiyor — aidat neyse siteye o geçiyor.
+   */
   fees: z.object({
     amountMinor: moneyMinor,
     platformFeeMinor: moneyMinor,
     processorFeeMinor: moneyMinor,
-    /** Tahsil edilecek tutar: komisyonu sakin ödüyorsa borçtan büyüktür. */
+    /** Tahsil edilecek tutar: borç + platform bedeli + sağlayıcı komisyonu. */
     totalMinor: moneyMinor,
-    /** Komisyonu kim üstleniyor — ekrandaki bilgi notunu bu belirliyor. */
-    paidBy: z.enum(["management", "resident"]),
   }),
   /** Kartla ödeme bu site için mümkün mü, değilse neden. */
   online: z.object({

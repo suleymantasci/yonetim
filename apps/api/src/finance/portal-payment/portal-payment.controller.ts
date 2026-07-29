@@ -30,6 +30,7 @@ import {
   calculateFees,
   createCheckout,
   isIyzicoConfigured,
+  iyzicoFeeRates,
 } from "@yonetim/payment";
 
 import { AuditService } from "../../governance/audit/audit.service";
@@ -66,13 +67,16 @@ export class PortalPaymentController {
   @ApiOperation({
     summary: "Ödeme özeti — komisyon kırılımı, kanal uygunluğu ve havale hedefi",
     description:
-      "Kartla ödeme iki koşula birden bağlı: yönetim online tahsilatı açmış " +
-      "olmalı **ve** sağlayıcı kimlik bilgileri kurulu olmalı. Koşul " +
-      "sağlanmıyorsa `online.available: false` ve sebebi döner; ekran o " +
-      "durumda havale hedeflerini gösterir.",
+      "Kartla ödeme üç koşula birden bağlı: yönetim online tahsilatı açmış " +
+      "olmalı, sağlayıcı kimlik bilgileri kurulu olmalı ve sözleşmedeki " +
+      "komisyon oranı tanımlı olmalı. Koşul sağlanmıyorsa " +
+      "`online.available: false` ve sebebi döner; ekran o durumda havale " +
+      "hedeflerini gösterir. Kırılımda `amountMinor` siteye net geçecek " +
+      "borç, `totalMinor` karttan çekilecek tutardır.",
   })
   async summary(): Promise<PortalPaymentSummary> {
     const settings = await this.paymentSettings();
+    const rates = iyzicoFeeRates();
     const scope = await this.resolveScope();
 
     if (!scope) {
@@ -85,17 +89,27 @@ export class PortalPaymentController {
           platformFeeMinor: 0,
           processorFeeMinor: 0,
           totalMinor: 0,
-          paidBy: settings.feePaidBy,
         },
         online: { available: false, reason: "no_open_debt" },
         bankAccounts: await this.bankTargets(),
       };
     }
 
-    const fees = calculateFees({
-      amountKurus: scope.total,
-      paidBy: settings.feePaidBy,
-    });
+    /*
+     * Oran bilinmiyorsa komisyon **sıfır gösterilmiyor**, kırılım hiç
+     * hesaplanmıyor: ödenecek tutar borcun kendisi olarak görünür ve kartla
+     * ödeme zaten kapalı olduğu için o tutarla bir tahsilat başlatılamaz.
+     * Uydurma bir oranla dolu bir kırılım göstermek, sakine tutmayacağımız
+     * bir sayı söylemek olurdu.
+     */
+    const fees = rates
+      ? calculateFees({ amountKurus: scope.total, rates })
+      : {
+          amountKurus: scope.total,
+          platformFeeKurus: 0,
+          processorFeeKurus: 0,
+          totalKurus: scope.total,
+        };
 
     return {
       unit: { id: scope.unitId, number: scope.unitNumber },
@@ -106,9 +120,13 @@ export class PortalPaymentController {
         platformFeeMinor: fees.platformFeeKurus,
         processorFeeMinor: fees.processorFeeKurus,
         totalMinor: fees.totalKurus,
-        paidBy: fees.paidBy,
       },
-      online: onlineAvailability(settings, scope.total, isIyzicoConfigured()),
+      online: onlineAvailability(
+        settings,
+        scope.total,
+        isIyzicoConfigured(),
+        rates !== null,
+      ),
       // Havale hedefleri kartla ödeme açıkken de dönüyor: sakin kartı yoksa
       // ya da komisyonu doğurmak istemiyorsa havale hâlâ meşru bir yol.
       bankAccounts: await this.bankTargets(),
@@ -128,6 +146,7 @@ export class PortalPaymentController {
     const userId = ctx.userId;
 
     const settings = await this.paymentSettings();
+    const rates = iyzicoFeeRates();
     const scope = await this.resolveScope();
     if (!scope || scope.total <= 0) {
       throw errors.validation("no_open_debt");
@@ -143,6 +162,7 @@ export class PortalPaymentController {
       settings,
       scope.total,
       isIyzicoConfigured(),
+      rates !== null,
     );
     if (!availability.available) {
       // Sebep `details`'te: istemci "neden" sorusuna metin ayrıştırarak değil
@@ -152,13 +172,14 @@ export class PortalPaymentController {
       });
     }
 
+    // `availability.available` zaten `rates !== null` demek; bu satır tipi
+    // daraltmak için ve tek amacı `rates!` yazmamak.
+    if (!rates) throw errors.internal("fee_rates_missing");
+
     const limit = await rateLimit(RATE_LIMITS.payment, userId);
     if (!limit.allowed) throw errors.rateLimited();
 
-    const fees = calculateFees({
-      amountKurus: scope.total,
-      paidBy: settings.feePaidBy,
-    });
+    const fees = calculateFees({ amountKurus: scope.total, rates });
     // `conversationId` hem sağlayıcı referansı hem idempotency anahtarı:
     // aynı kimlikle ikinci bir kayıt açılamıyor.
     const conversationId = randomUUID();
@@ -199,15 +220,15 @@ export class PortalPaymentController {
       return rows[0] ?? null;
     });
 
-    // `createCheckout` `paidPrice = amountKurus + platformFeeKurus` kuruyor;
-    // ikinci alan "borcun üstüne eklenip çekilecek tutar" demek. Ayrımın
-    // gerekçesi `checkoutAmounts` yorumunda.
+    // `createCheckout` `paidPrice = amountKurus + surchargeKurus` kuruyor:
+    // sepet (`price`) borcun kendisi, ek ücret onun üstünde. Ayrımın gerekçesi
+    // `checkoutAmounts` yorumunda.
     const { surchargeKurus } = checkoutAmounts(fees);
 
     const checkout = await createCheckout({
       conversationId,
       amountKurus: scope.total,
-      platformFeeKurus: surchargeKurus,
+      surchargeKurus,
       buyer: {
         id: userId,
         name: person?.firstName ?? "-",

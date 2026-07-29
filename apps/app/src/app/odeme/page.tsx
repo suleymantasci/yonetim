@@ -63,22 +63,31 @@ export default async function PaymentPage() {
           <div className="border-t border-border pt-3">
             <Row label={t("debtAmount")} value={f.money(fees.amountMinor)} />
             {/*
-              Komisyon satırları yalnız sakin ödüyorken anlamlı. Yönetim
-              karşılıyorsa "0,00 ₺ komisyon" yazmak, olmayan bir kalemi
-              varmış gibi gösterip ödenecek tutarı sorgulatırdı.
+              Komisyon satırları yalnız gerçekten bir ücret varken yazılıyor.
+              "0,00 ₺ komisyon" satırı, olmayan bir kalemi varmış gibi gösterip
+              ödenecek tutarı sorgulatırdı — kartla ödeme kapalıyken (oran
+              tanımsız) kırılım da hesaplanmamış oluyor.
             */}
-            {fees.paidBy === "resident" ? (
-              <>
-                <Row label={t("platformFee")} value={f.money(fees.platformFeeMinor)} />
-                <Row label={t("processorFee")} value={f.money(fees.processorFeeMinor)} />
-              </>
+            {fees.platformFeeMinor > 0 ? (
+              <Row label={t("platformFee")} value={f.money(fees.platformFeeMinor)} />
+            ) : null}
+            {fees.processorFeeMinor > 0 ? (
+              <Row label={t("processorFee")} value={f.money(fees.processorFeeMinor)} />
             ) : null}
             <Row label={t("payableAmount")} value={f.money(fees.totalMinor)} strong />
           </div>
 
-          <Alert tone="info">
-            {fees.paidBy === "management" ? t("feeByManagement") : t("feeByResident")}
-          </Alert>
+          {/*
+            Sakinin sorduğu soru "neden 500 değil de 517 ödüyorum": cevabı
+            aidatın tamamının siteye geçtiği. Tutarı yazmadan "komisyon
+            eklenmiştir" demek, farkın bir kısmının aidattan kesildiği
+            şüphesini bırakırdı.
+          */}
+          {fees.totalMinor > fees.amountMinor ? (
+            <Alert tone="info">
+              {t("feeAddedNote", { amount: f.money(fees.amountMinor) })}
+            </Alert>
+          ) : null}
         </CardBody>
 
         {/*

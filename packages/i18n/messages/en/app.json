@@ -1893,13 +1893,7 @@
     "paymentSection": "Card collection",
     "paymentSectionHint": "Whether residents can pay their dues by card. When off, the payment screen shows bank transfer details instead.",
     "onlinePaymentEnabled": "Allow card payments",
-    "onlinePaymentEnabledHint": "Every collection incurs a provider commission. When off, residents can only pay by bank transfer. If the payment infrastructure is not configured, card payment cannot start even with this on.",
-    "paymentFeePaidBy": "Who covers the commission",
-    "paymentFeePaidByHint": "If the resident covers it, the commission appears as a separate line on the payment screen and is added to the charged amount; it is not applied to the balance.",
-    "feePayer": {
-      "management": "Site management",
-      "resident": "Resident"
-    }
+    "onlinePaymentEnabledHint": "When on, residents can pay their dues by card. The full dues amount reaches the building's account; the provider commission is charged to the resident on top. If the payment provider or its commission rate is not configured, card payment cannot start even with this setting on."
   },
   "migration": {
     "title": "Data import",
@@ -2054,8 +2048,7 @@
     "platformFee": "Platform service fee",
     "processorFee": "Bank / POS commission",
     "payableAmount": "Amount payable",
-    "feeByManagement": "The bank commission is covered by the property management; the amount you pay is credited to your balance in full.",
-    "feeByResident": "The platform service fee and bank commission have been added to the debt amount.",
+    "feeAddedNote": "The full dues amount ({amount}) reaches the building's account. The card commission is added on top and is never deducted from your balance.",
     "securityNote": "3D Secure verification is mandatory for all payments. Your card details are never stored by us; the payment page is served by a licensed payment institution.",
     "payButton": "Pay {amount} securely",
     "noDebtTitle": "Nothing to pay",
@@ -2065,7 +2058,8 @@
     "onlineUnavailable": {
       "not_enabled": "The site management has not enabled card payments yet. You can transfer your dues to the account below; you may ask your management to enable card payments.",
       "provider_missing": "The payment infrastructure is unavailable right now. You can transfer your dues to the account below.",
-      "no_open_debt": "You have no outstanding balance."
+      "no_open_debt": "You have no outstanding balance.",
+      "fee_not_configured": "Card payment setup is not complete yet. You can pay your dues by bank transfer to the account below."
     },
     "transferTitle": "Pay by bank transfer",
     "transferDescription": "You can transfer your dues directly to the site account.",

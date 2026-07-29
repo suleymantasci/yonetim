@@ -1893,13 +1893,7 @@
     "paymentSection": "Kartla tahsilat",
     "paymentSectionHint": "Sakinlerin aidatlarını karttan ödeyebilmesi. Kapalıyken sakin ödeme ekranında havale bilgilerini görür.",
     "onlinePaymentEnabled": "Kartla ödemeye izin ver",
-    "onlinePaymentEnabledHint": "Her tahsilatta sağlayıcı komisyonu doğar. Kapalıyken sakin yalnız havale/EFT ile ödeyebilir. Ödeme altyapısı kurulu değilse bu ayar açık olsa da kartla ödeme başlatılamaz.",
-    "paymentFeePaidBy": "Komisyonu kim karşılıyor",
-    "paymentFeePaidByHint": "Sakin karşılarsa komisyon ödeme ekranında ayrı satır olarak gösterilir ve tahsil edilen tutara eklenir; borca mahsup edilmez.",
-    "feePayer": {
-      "management": "Site yönetimi",
-      "resident": "Sakin"
-    }
+    "onlinePaymentEnabledHint": "Açıkken sakin aidatını karttan ödeyebilir. Aidatın tamamı site hesabına geçer; sağlayıcı komisyonu sakinden ek olarak tahsil edilir. Ödeme altyapısı veya komisyon oranı kurulu değilse bu ayar açık olsa da kartla ödeme başlatılamaz."
   },
   "migration": {
     "title": "Veri Aktarımı",
@@ -2054,8 +2048,7 @@
     "platformFee": "Platform hizmet bedeli",
     "processorFee": "Banka / POS komisyonu",
     "payableAmount": "Ödenecek tutar",
-    "feeByManagement": "Banka komisyonu site yönetimi tarafından karşılanmaktadır; ödediğiniz tutar borcunuza birebir işlenir.",
-    "feeByResident": "Borç tutarına platform hizmet bedeli ve banka komisyonu eklenmiştir.",
+    "feeAddedNote": "Aidat tutarınızın tamamı ({amount}) site hesabına geçer. Kart komisyonu bu tutarın üstüne eklenir ve borcunuzdan düşülmez.",
     "securityNote": "Tüm ödemelerde 3D Secure doğrulaması zorunludur. Kart bilgileriniz sistemimizde saklanmaz; ödeme sayfası lisanslı ödeme kuruluşu tarafından sunulur.",
     "payButton": "{amount} güvenli öde",
     "noDebtTitle": "Ödenecek borç yok",
@@ -2065,7 +2058,8 @@
     "onlineUnavailable": {
       "not_enabled": "Site yönetimi kartla ödemeyi henüz açmamış. Aidatınızı aşağıdaki hesaba havale/EFT ile yatırabilirsiniz; kartla ödemeyi yönetiminizden talep edebilirsiniz.",
       "provider_missing": "Ödeme altyapısı şu an kullanılamıyor. Aidatınızı aşağıdaki hesaba havale/EFT ile yatırabilirsiniz.",
-      "no_open_debt": "Ödenecek borcunuz bulunmuyor."
+      "no_open_debt": "Ödenecek borcunuz bulunmuyor.",
+      "fee_not_configured": "Kartla ödeme kurulumu henüz tamamlanmamış. Aidatınızı aşağıdaki hesaba havale/EFT ile yatırabilirsiniz."
     },
     "transferTitle": "Havale / EFT ile ödeme",
     "transferDescription": "Aidatınızı doğrudan site hesabına yatırabilirsiniz.",

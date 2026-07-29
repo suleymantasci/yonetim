@@ -12,9 +12,14 @@ import {
 
 export interface CheckoutRequest {
   conversationId: string;
+  /** Borç tutarı — sepet toplamı, iyzico'nun `price` alanı. */
   amountKurus: Kurus;
-  /** Sakinden alınan platform hizmet bedeli (şeffaf gösterim — Bölüm 1.2). */
-  platformFeeKurus?: Kurus;
+  /**
+   * Borcun **üstüne** eklenip çekilecek ek ücret (platform bedeli + sağlayıcı
+   * komisyonu). `paidPrice = amountKurus + surchargeKurus` olur; sepet
+   * kalemleri değişmez, çünkü satılan şey hâlâ o borç.
+   */
+  surchargeKurus?: Kurus;
   buyer: {
     id: string;
     name: string;
@@ -102,7 +107,7 @@ async function post<T>(uriPath: string, body: unknown): Promise<Result<T>> {
 const tl = (k: Kurus) => kurusToTl(k).toFixed(2);
 
 export async function createCheckout(req: CheckoutRequest): Promise<Result<CheckoutSession>> {
-  const total = req.amountKurus + (req.platformFeeKurus ?? 0);
+  const total = req.amountKurus + (req.surchargeKurus ?? 0);
   const body = {
     locale: "tr",
     conversationId: req.conversationId,
@@ -205,44 +210,108 @@ export async function refundPayment(params: {
 }
 
 /**
+ * Komisyon oranları — **sözleşmeden**, koddan değil.
+ *
+ * Oran sağlayıcıya, aynı sağlayıcıda anlaşmaya, taksit sayısına ve kart tipine
+ * göre değişiyor. Koda gömülü bir oran ilk gün doğru olsa bile sözleşme
+ * yenilendiğinde sessizce yanlışa dönerdi; yanlış oranın bedeli her tahsilatta
+ * siteye eksik geçen para. Bu yüzden oran yapılandırmadan geliyor ve
+ * tanımlanmadığında kartla tahsilat açılmıyor (`iyzicoFeeRates`).
+ */
+export interface FeeRates {
+  /** Sağlayıcının **çekilen** tutar üzerinden aldığı oran (%). */
+  processorPct: number;
+  /** Sağlayıcının işlem başına aldığı sabit tutar (kuruş). */
+  processorFixedKurus: Kurus;
+  /** Platform hizmet bedeli (%), borç tutarı üzerinden. */
+  platformPct: number;
+}
+
+/**
+ * Yapılandırılmış iyzico komisyonu; eksik ya da anlamsızsa `null`.
+ *
+ * `%100` ve üstü bir oran matematiksel olarak çözümsüz: hangi tutar çekilirse
+ * çekilsin siteye borcun tamamı geçmez. Böyle bir değeri kabul edip sonra
+ * bölme sırasında patlamaktansa burada "bilinmiyor" saymak, hatayı ödeme
+ * anından yapılandırma anına çekiyor.
+ */
+export function iyzicoFeeRates(): FeeRates | null {
+  const c = serverEnv.iyzico();
+  if (c.commissionPct === undefined || c.commissionFixedKurus === undefined) {
+    return null;
+  }
+  if (c.commissionPct < 0 || c.commissionPct >= 100 || c.commissionFixedKurus < 0) {
+    return null;
+  }
+  return {
+    processorPct: c.commissionPct,
+    processorFixedKurus: c.commissionFixedKurus,
+    platformPct: serverEnv.platformFeePct(),
+  };
+}
+
+/**
  * Şeffaf komisyon hesabı — SPEC Bölüm 1.2.
- * Sakine ödeme ekranında "X ₺ platform ücreti + Y ₺ banka komisyonu" ayrı gösterilir.
+ *
+ * `amountKurus` siteye **net** geçecek olan (borcun kendisi), `totalKurus`
+ * karttan çekilecek olan. Aradaki fark sakinden alınan ek ücret ve borca
+ * mahsup edilmiyor.
  */
 export interface FeeBreakdown {
+  /** Borç tutarı — siteye net geçmesi gereken. */
   amountKurus: Kurus;
   platformFeeKurus: Kurus;
   processorFeeKurus: Kurus;
+  /** Karttan çekilecek tutar = borç + platform bedeli + sağlayıcı komisyonu. */
   totalKurus: Kurus;
-  /**
-   * Açıklama i18n katmanındadır: `app.payment.feeByManagement` veya
-   * `app.payment.feeByResident`.
-   */
-  paidBy: "resident" | "management";
 }
 
+/**
+ * KOMİSYON BORCUN ÜSTÜNE EKLENİR VE **BRÜTLEŞTİRİLİR**.
+ *
+ * Kural: aidat 500 ₺ ise siteye 500 ₺ geçer, komisyonu sakin öder. Naif yol —
+ * "500'ün komisyonunu hesapla, üstüne ekle" — bu kuralı tutturmuyor: sağlayıcı
+ * komisyonu **çekilen** tutar üzerinden alıyor, dolayısıyla komisyonun kendisi
+ * de komisyona tabi. %3 + 0,35 ₺ örneğinde:
+ *
+ *   naif:   çekilen 515,35 → sağlayıcı 15,81 alır → siteye 499,54 (54 kr eksik)
+ *   brüt:   çekilen 515,82 → sağlayıcı 15,82 alır → siteye 500,00 (tam)
+ *
+ * Denklem `çekilen − (oran × çekilen + sabit) − platform = borç`, çözümü
+ * `çekilen = (borç + platform + sabit) / (1 − oran)`.
+ *
+ * YUKARI YUVARLAMA (`ceil`) bilinçli: kuruş artığı sakinin lehine bölünürse
+ * siteye eksik geçer. En fazla 1 kuruş fazla tahsil ediliyor ve o kuruş da
+ * sitenin hesabına geçiyor — kimsenin cebinde kalmıyor.
+ */
 export function calculateFees(params: {
   amountKurus: Kurus;
-  /** Platform hizmet bedeli oranı (%). Varsayılan 0 — aidat tahsilatında ücret almıyoruz. */
-  platformFeePct?: number;
-  /** iyzico komisyonu: %3.49 + 0.35 ₺ (Bölüm 7.1). */
-  processorPct?: number;
-  processorFixedKurus?: Kurus;
-  /** Komisyonu sakin mi yönetim mi karşılıyor. */
-  paidBy?: "resident" | "management";
+  rates: FeeRates;
 }): FeeBreakdown {
-  const platform = roundHalfUp((params.amountKurus * (params.platformFeePct ?? 0)) / 100);
-  const processor =
-    roundHalfUp((params.amountKurus * (params.processorPct ?? 3.49)) / 100) +
-    (params.processorFixedKurus ?? 35);
+  const { amountKurus, rates } = params;
 
-  const paidBy = params.paidBy ?? "management";
-  const total = paidBy === "resident" ? params.amountKurus + platform + processor : params.amountKurus;
+  if (rates.processorPct < 0 || rates.processorPct >= 100) {
+    // Çağıran `iyzicoFeeRates` ile bunu zaten eliyor; buraya düşmek bir
+    // programlama hatası, sessizce bir tutar üretmek para hatası olurdu.
+    throw new Error(`[payment] Geçersiz komisyon oranı: ${rates.processorPct}`);
+  }
+  if (amountKurus <= 0) {
+    return { amountKurus: 0, platformFeeKurus: 0, processorFeeKurus: 0, totalKurus: 0 };
+  }
 
-  return {
-    amountKurus: params.amountKurus,
-    platformFeeKurus: platform,
-    processorFeeKurus: processor,
-    totalKurus: total,
-    paidBy,
-  };
+  const platformFeeKurus = roundHalfUp((amountKurus * rates.platformPct) / 100);
+  const totalKurus = Math.ceil(
+    (amountKurus + platformFeeKurus + rates.processorFixedKurus) /
+      (1 - rates.processorPct / 100),
+  );
+
+  /*
+   * Komisyon **artık** olarak yazılıyor, ayrıca hesaplanmıyor: böylece
+   * `borç + platform + komisyon === çekilen` her zaman kuruşu kuruşuna
+   * tutuyor. İki ayrı yuvarlamayla hesaplansaydı ekrandaki kalemler toplamı
+   * ödenecek tutarı tutmayabilirdi — şeffaflık vaadinin en görünür bozulması.
+   */
+  const processorFeeKurus = totalKurus - amountKurus - platformFeeKurus;
+
+  return { amountKurus, platformFeeKurus, processorFeeKurus, totalKurus };
 }

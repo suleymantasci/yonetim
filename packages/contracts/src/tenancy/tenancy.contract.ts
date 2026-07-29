@@ -83,23 +83,16 @@ export const tenantSettingsSave = z.object({
   /**
    * Sakin kartla ödeme yapabilsin mi — **varsayılan kapalı**.
    *
-   * Açık olması bir tercih değil bir **taahhüt**: her tahsilatta sağlayıcı
-   * komisyonu doğuyor ve o komisyonu birinin ödemesi gerekiyor. Yöneticinin
-   * bilgisi dışında açık gelmesi, siteye haber vermeden masraf yazmak olurdu.
-   * Sağlayıcı kimlik bilgileri platform tarafında kurulu değilse bu ayar açık
-   * olsa da ödeme başlatılamaz — iki koşul birlikte aranıyor.
+   * Açık olması bir tercih değil bir **taahhüt**: sakin borcunun üstünde bir
+   * tutar ödemeye başlıyor (komisyon ona yansıyor). Yöneticinin bilgisi
+   * dışında açık gelmesi, sakine sormadan ek ücret yazmak olurdu. Sağlayıcı
+   * kimlik bilgileri ve komisyon oranı platform tarafında kurulu değilse bu
+   * ayar açık olsa da ödeme başlatılamaz — koşullar birlikte aranıyor.
+   *
+   * Komisyonu kimin karşılayacağı **ayar değil**: aidat neyse siteye o geçer,
+   * komisyon sakinden ek olarak alınır (2026-07-29 kararı).
    */
   onlinePaymentEnabled: z.coerce.boolean().default(false),
-
-  /**
-   * Kart komisyonunu kim karşılıyor.
-   *
-   * `management`: sakin borcunun tam tutarını öder, komisyonu site karşılar.
-   * `resident`: komisyon ödeme ekranında ayrı satır olarak gösterilir ve
-   * tahsil edilen tutara eklenir — ama **borca mahsup edilmez** (komisyon
-   * borcun bir parçası değil).
-   */
-  paymentFeePaidBy: z.enum(["management", "resident"]).default("management"),
 });
 
 export type TenantSettingsSave = z.infer<typeof tenantSettingsSave>;

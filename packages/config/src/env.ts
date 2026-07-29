@@ -8,6 +8,22 @@ function optional(key: string): string | undefined {
   return v && v.length > 0 ? v : undefined;
 }
 
+/**
+ * Sayısal ortam değişkeni — **uydurma varsayılan yok**.
+ *
+ * Komisyon oranları buradan okunuyor ve tanımsız bırakıldığında `undefined`
+ * dönüyor: koda gömülü bir "%3.49" makul görünür ama sözleşmeye göre değişir,
+ * yanlış olduğunda da sessizce yanlış olur — her tahsilatta siteye eksik para
+ * geçer. Tanımsız oranı "bilinmiyor" saymak, kartla ödemeyi kapatıp havaleye
+ * düşürüyor; bilinmeyen bir oranla tahsilat yapmaktan iyisi bu.
+ */
+function optionalNumber(key: string): number | undefined {
+  const raw = optional(key);
+  if (raw === undefined) return undefined;
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : undefined;
+}
+
 function required(key: string, fallback?: string): string {
   const v = optional(key) ?? fallback;
   if (!v) {
@@ -46,6 +62,14 @@ export const serverEnv = {
     apiKey: optional("IYZICO_API_KEY"),
     secretKey: optional("IYZICO_SECRET_KEY"),
     baseUrl: optional("IYZICO_BASE_URL") ?? "https://sandbox-api.iyzipay.com",
+    /*
+     * Üye işyeri sözleşmesindeki komisyon: oran (%) + işlem başına sabit
+     * tutar (kuruş). İkisi de sözleşmeye özel — taksit, kart tipi ve ciroya
+     * göre değişiyor. Bu yüzden varsayılanı yok: tanımlanmadan kartla tahsilat
+     * açılmıyor (`iyzicoFeeRates`).
+     */
+    commissionPct: optionalNumber("IYZICO_COMMISSION_PCT"),
+    commissionFixedKurus: optionalNumber("IYZICO_COMMISSION_FIXED_KURUS"),
   }),
   paytr: () => ({
     merchantId: optional("PAYTR_MERCHANT_ID"),
@@ -89,6 +113,15 @@ export const serverEnv = {
     anthropicKey: optional("ANTHROPIC_API_KEY"),
     openaiKey: optional("OPENAI_API_KEY"),
   }),
+
+  /**
+   * Platformun kendi hizmet bedeli (%), aidat tutarı üzerinden.
+   *
+   * Sağlayıcı komisyonundan farklı olarak burada varsayılan **var ve sıfır**:
+   * bu bir tahmin değil, bizim kararımız — aidat tahsilatından pay almıyoruz.
+   * Değişirse ortam değişkeni ile açılır.
+   */
+  platformFeePct: () => optionalNumber("PLATFORM_FEE_PCT") ?? 0,
 } as const;
 
 export function isConfigured(values: Record<string, unknown>): boolean {

@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
-import { Alert, FormSection, Input, Select, Switch, Textarea } from "@yonetim/ui";
+import { Alert, FormSection, Input, Switch, Textarea } from "@yonetim/ui";
 
 import { ActionForm, FormField } from "@/components/form/action-form";
 import { saveSettings } from "./actions";
@@ -25,7 +25,6 @@ export interface SettingsFormDefaults {
   invoiceAddress: string | null;
   whatsappOptInRequired: boolean;
   onlinePaymentEnabled: boolean;
-  paymentFeePaidBy: "management" | "resident";
 }
 
 /**
@@ -234,10 +233,16 @@ export function SettingsForm({
       </FormSection>
 
       {/*
-        ÖDEME AYARI NEDEN BURADA VE NEDEN VARSAYILAN KAPALI: kartla tahsilat
-        her işlemde sağlayıcı komisyonu doğuruyor. Yöneticinin haberi olmadan
-        açık gelmesi, siteye sormadan masraf yazmak olurdu. Kapalıyken sakin
-        ödeme ekranında havale bilgilerini görüyor — bugün zaten yaptığı şey.
+        ÖDEME AYARI NEDEN BURADA VE NEDEN VARSAYILAN KAPALI: kartla tahsilatta
+        sakin borcunun üstünde bir tutar ödüyor (komisyon ona yansıyor).
+        Yöneticinin haberi olmadan açık gelmesi, sakine sormadan ek ücret
+        yazmak olurdu. Kapalıyken sakin ödeme ekranında havale bilgilerini
+        görüyor — bugün zaten yaptığı şey.
+
+        KOMİSYONU KİM ÖDER SEÇENEĞİ KALDIRILDI (2026-07-29): kural tek ve
+        seçeneksiz — aidat neyse siteye o geçer, komisyon sakinden ek alınır.
+        Seçenek olduğunda "yönetim karşılasın" seçen site, bütçesini kurduğu
+        aidatın bir kısmını komisyona yediriyordu.
       */}
       <FormSection
         title={t("paymentSection")}
@@ -250,17 +255,6 @@ export function SettingsForm({
           description={t("onlinePaymentEnabledHint")}
           defaultChecked={defaults.onlinePaymentEnabled}
         />
-
-        <FormField
-          name="paymentFeePaidBy"
-          label={t("paymentFeePaidBy")}
-          hint={t("paymentFeePaidByHint")}
-        >
-          <Select name="paymentFeePaidBy" defaultValue={defaults.paymentFeePaidBy}>
-            <option value="management">{t("feePayer.management")}</option>
-            <option value="resident">{t("feePayer.resident")}</option>
-          </Select>
-        </FormField>
       </FormSection>
     </ActionForm>
   );
