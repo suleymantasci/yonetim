@@ -20,6 +20,7 @@ import {
   paymentAllocations,
   payments,
   unitOccupancies,
+  unitOrder,
   units,
 } from "@yonetim/db";
 import {
@@ -503,7 +504,9 @@ async function selectTargetUnits(
     .from(units)
     .leftJoin(blocks, eq(blocks.id, units.blockId))
     .where(and(...conditions))
-    .orderBy(units.number);
+    // Kalan kuruş son birime yazıldığı için sıra sonucu etkiliyor; önizleme
+    // ve yazma aynı fonksiyonu çağırdığından ikisi birlikte değişiyor.
+    .orderBy(...unitOrder());
 }
 
 type TargetUnit = Awaited<ReturnType<typeof selectTargetUnits>>[number];

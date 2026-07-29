@@ -34,6 +34,7 @@ import {
   meters,
   payments,
   unitOccupancies,
+  unitOrder,
   units,
   users,
 } from "@yonetim/db";
@@ -54,8 +55,11 @@ import type { Database } from "./types";
 /** Ham SQL parçalarında kullanılacak nitelenmiş sütun referansı. */
 const METER_ID = sql.raw('"meters"."id"');
 
+/**
+ * `number` bilerek listede yok: daire numarası tek bir sütuna indirgenemiyor
+ * (blok + doğal sıra), `unitOrder()` ile ayrıca kuruluyor.
+ */
 const SORT_COLUMNS = {
-  number: units.number,
   floor: units.floor,
   area: units.areaM2,
   landShare: units.landShare,
@@ -74,8 +78,22 @@ export class UnitRepository {
   async list(q: UnitListQuery): Promise<UnitListResponse> {
     return this.db.tx(async (tx) => {
       const where = this.listWhere(q);
-      const orderColumn = SORT_COLUMNS[q.sort] ?? units.number;
-      const orderBy = q.dir === "desc" ? desc(orderColumn) : asc(orderColumn);
+
+      /*
+       * Varsayılan sıra **blok → daire**, ve daire doğal sırada: kullanıcı
+       * "A Blok 1, 2, 3 … B Blok 1, 2, 3" bekliyor. Metin sırası bunu
+       * `1, 10, 11, … 2, 20` yapıyordu (`unitOrder()` yorumuna bakın).
+       *
+       * Başka bir sütuna göre sıralandığında (kat, alan) blok/daire sırası
+       * **eşitlik bozucu** olarak arkada duruyor: aynı kattaki daireler yine
+       * kendi içinde düzgün sıralı geliyor. Ters sıra yalnız seçilen sütuna
+       * uygulanıyor — "kata göre azalan" isteyen biri dairelerin de tersten
+       * gelmesini istemiyor.
+       */
+      const orderColumn = SORT_COLUMNS[q.sort as keyof typeof SORT_COLUMNS];
+      const orderBy = orderColumn
+        ? [q.dir === "desc" ? desc(orderColumn) : asc(orderColumn), ...unitOrder()]
+        : unitOrder(q.dir);
 
       // Ekran bugün 5 ayrı sorgu yapıyor; burada hepsi tek transaction ve
       // tek turda. Panel tarafında karşılığı tek HTTP çağrısı (§9.2a).
@@ -86,7 +104,7 @@ export class UnitRepository {
             .from(units)
             .leftJoin(blocks, eq(blocks.id, units.blockId))
             .where(where)
-            .orderBy(orderBy, asc(units.id))
+            .orderBy(...orderBy, asc(units.id))
             .limit(q.perPage)
             .offset((q.page - 1) * q.perPage),
 
@@ -524,7 +542,7 @@ export class UnitRepository {
         .from(units)
         .leftJoin(blocks, eq(blocks.id, units.blockId))
         .where(isNull(units.deletedAt))
-        .orderBy(asc(blocks.sortOrder), asc(units.number)),
+        .orderBy(...unitOrder()),
     );
   }
 

@@ -232,8 +232,18 @@ export class ResidentRepository {
       if (q.sort === "outstanding")
         return b.outstandingMinor - a.outstandingMinor;
       if (q.sort === "unit") {
-        return (a.occupancies[0]?.unitNumber ?? "").localeCompare(
-          b.occupancies[0]?.unitNumber ?? "",
+        // Blok önce, sonra daire: "A Blok 1, 2 … B Blok 1, 2". Blok atlanırsa
+        // iki bloğun 1 numaralı daireleri yan yana gelir ve liste okunmaz olur.
+        // `numeric: true` daire numarasını doğal sıraya sokuyor (`2` < `10`).
+        const first = a.occupancies[0];
+        const second = b.occupancies[0];
+        const byBlock = (first?.blockName ?? "").localeCompare(
+          second?.blockName ?? "",
+          "tr",
+        );
+        if (byBlock !== 0) return byBlock;
+        return (first?.unitNumber ?? "").localeCompare(
+          second?.unitNumber ?? "",
           "tr",
           { numeric: true },
         );

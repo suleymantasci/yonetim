@@ -17,7 +17,9 @@ import {
   periodKey,
   toIstanbul,
 } from "@yonetim/core";
-import { blocks, debts, expenseCategories, expenses, units } from "@yonetim/db";
+import {
+  blocks, debts, expenseCategories, expenses, unitOrder, units,
+} from "@yonetim/db";
 import { distributeDues, type DuesFormula } from "@yonetim/dues";
 
 import { DbService } from "../../infra/db/db.service";
@@ -396,8 +398,11 @@ export class ExpenseWriteRepository {
       })
       .from(units)
       .leftJoin(blocks, eq(blocks.id, units.blockId))
-      .where(and(...conditions))
-      .orderBy(units.number);
+      // Sıra dağıtımın **sonucunu** etkiliyor: bölünemeyen kalan kuruş son
+      // birime yazılıyor. Doğal sıraya geçmek o kuruşun hangi daireye
+      // düştüğünü değiştirir; önizleme ve yazma aynı fonksiyonu çağırdığı
+      // için ikisi birlikte değişiyor, ayrışma olmuyor.
+      .orderBy(...unitOrder());
 
     if (targets.length === 0)
       throw new BadRequestException("validation_failed:no_target_units");

@@ -12,6 +12,8 @@ import {
   requests,
   reservations,
   resources,
+  unitNumberOrder,
+  unitOrder,
   units,
   users,
 } from "@yonetim/db";
@@ -82,7 +84,7 @@ export class OperationsRepository {
           .from(units)
           .leftJoin(blocks, eq(blocks.id, units.blockId))
           .where(isNull(units.deletedAt))
-          .orderBy(asc(units.number)),
+          .orderBy(...unitOrder()),
       ]);
       return { rows, assignees, unitRows };
     });
@@ -181,7 +183,10 @@ export class OperationsRepository {
           })
           .from(meters)
           .leftJoin(units, eq(units.id, meters.unitId))
-          .where(isNull(meters.deletedAt)),
+          .where(isNull(meters.deletedAt))
+          // Sayaç listesinde hiç sıra yoktu: satırlar veritabanının döndürdüğü
+          // rastgele düzende geliyordu. Daire numarası doğal sırada.
+          .orderBy(...unitNumberOrder()),
 
         tx
           .select({

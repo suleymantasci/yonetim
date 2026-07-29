@@ -21,6 +21,7 @@ import {
   duesPlans,
   paymentAllocations,
   payments,
+  unitOrder,
   units,
   users,
 } from "@yonetim/db";
@@ -52,10 +53,13 @@ interface UnitSummarySqlRow extends Record<string, unknown> {
   trend: string[] | null;
 }
 
+/**
+ * `unit` burada yok: daire numarası metin kolonu ve ham metin sırası
+ * `1, 10, 11, … 2` veriyor. Blok + doğal sıra `unitOrder()` ile kuruluyor.
+ */
 const SORT_COLUMNS = {
   dueDate: debts.dueDate,
   amount: debts.amountKurus,
-  unit: units.number,
   period: debts.period,
   status: debts.status,
   createdAt: debts.createdAt,
@@ -68,8 +72,12 @@ export class DebtRepository {
   async list(q: DebtListQuery): Promise<DebtListResponse> {
     const scoped = await this.db.tx(async (tx) => {
       const where = this.listWhere(q);
-      const orderColumn = SORT_COLUMNS[q.sort] ?? debts.dueDate;
-      const orderBy = q.dir === "asc" ? asc(orderColumn) : desc(orderColumn);
+      const orderColumn = SORT_COLUMNS[q.sort as keyof typeof SORT_COLUMNS];
+      const orderBy = orderColumn
+        ? [q.dir === "asc" ? asc(orderColumn) : desc(orderColumn)]
+        : q.sort === "unit"
+          ? unitOrder(q.dir)
+          : [desc(debts.dueDate)];
 
       const [rows, totalRow, blockRows, periodRows, totals] = await Promise.all(
         [
@@ -101,7 +109,7 @@ export class DebtRepository {
             .innerJoin(units, eq(units.id, debts.unitId))
             .leftJoin(blocks, eq(blocks.id, units.blockId))
             .where(where)
-            .orderBy(orderBy, asc(debts.id))
+            .orderBy(...orderBy, asc(debts.id))
             .limit(q.perPage)
             .offset((q.page - 1) * q.perPage),
 
@@ -426,9 +434,15 @@ export class DebtRepository {
         LEFT JOIN debts d ON d.unit_id = u.id AND d.deleted_at IS NULL AND d.status <> 'paid'
         LEFT JOIN trend t ON t.unit_id = u.id
         WHERE u.deleted_at IS NULL
-        GROUP BY u.id, u.number, b.name, t.series
+        GROUP BY u.id, u.number, b.name, b.sort_order, t.series
         ${havingClause}
-        ORDER BY outstanding DESC, u.number
+        -- Eşit borçta sıra blok → doğal daire numarası. Ham \`u.number\`
+        -- metin sırası veriyordu (\`1, 10, 11, … 2\`); \`b.sort_order\` bu
+        -- yüzden GROUP BY'a da eklendi.
+        ORDER BY outstanding DESC,
+                 b.sort_order, b.name,
+                 NULLIF(substring(u.number from '[0-9]+'), '')::numeric,
+                 u.number
       `);
 
       return (rows as unknown as UnitSummarySqlRow[]).map((row) => ({

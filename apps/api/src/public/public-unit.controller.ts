@@ -13,11 +13,11 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
-import { and, asc, eq, ilike, isNull, or, sql } from "drizzle-orm";
+import { and, eq, ilike, isNull, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { errors } from "@yonetim/core";
-import { blocks, units } from "@yonetim/db";
+import { blocks, unitOrder, units } from "@yonetim/db";
 
 import { RequirePermission } from "../identity/decorators";
 import { DbService } from "../infra/db/db.service";
@@ -91,7 +91,7 @@ export class PublicUnitController {
         .from(units)
         .leftJoin(blocks, eq(blocks.id, units.blockId))
         .where(where)
-        .orderBy(asc(units.number))
+        .orderBy(...unitOrder())
         .limit(page.pageSize)
         .offset((page.page - 1) * page.pageSize);
 
