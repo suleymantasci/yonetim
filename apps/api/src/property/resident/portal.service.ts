@@ -1,5 +1,7 @@
 import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
-import { and, count, desc, eq, gt, inArray, isNull, ne, sql } from "drizzle-orm";
+import {
+  and, count, desc, eq, gt, inArray, isNotNull, isNull, lte, ne, sql,
+} from "drizzle-orm";
 
 import { maskPhone } from "@yonetim/core";
 import type {
@@ -768,8 +770,13 @@ export class PortalService {
       .where(
         and(
           isNull(announcements.deletedAt),
-          sql`${announcements.publishedAt} IS NOT NULL`,
-          sql`${announcements.publishedAt} <= ${now}`,
+          // Tarih karşılaştırması ham `sql` şablonuyla yazılmamalı: drizzle'ın
+          // postgres-js sürücüsü şablon parametrelerini `unsafe()` üzerinden
+          // geçiriyor ve orada `Date` string'e çevrilmiyor — sorgu çalışma
+          // anında patlıyordu. `lte`/`isNotNull` değeri kolon tipine göre
+          // serileştiriyor.
+          isNotNull(announcements.publishedAt),
+          lte(announcements.publishedAt, now),
         ),
       )
       .orderBy(desc(announcements.publishedAt))
