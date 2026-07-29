@@ -71,6 +71,7 @@ export default defineConfig({
       "@yonetim/jobs": new URL("./packages/jobs/src/index.ts", import.meta.url).pathname,
       "@yonetim/auth": new URL("./packages/auth/src/index.ts", import.meta.url).pathname,
       "@yonetim/sms": new URL("./packages/sms/src/index.ts", import.meta.url).pathname,
+      "@yonetim/storage": new URL("./packages/storage/src/index.ts", import.meta.url).pathname,
       "@yonetim/emails": new URL("./packages/emails/src/index.ts", import.meta.url).pathname,
       "@yonetim/payment": new URL("./packages/payment/src/index.ts", import.meta.url).pathname,
       "@yonetim/i18n/routing": new URL("./packages/i18n/src/routing.ts", import.meta.url).pathname,

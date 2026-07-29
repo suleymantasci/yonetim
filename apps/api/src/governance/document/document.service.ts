@@ -16,6 +16,7 @@ import {
 } from "@yonetim/db";
 
 import { siteConfig } from "@yonetim/config";
+import { isStorageConfigured } from "@yonetim/storage";
 import { kvkkRiskScore, planErasure } from "@yonetim/kvkk";
 
 import { DbService } from "../../infra/db/db.service";
@@ -71,6 +72,9 @@ export class DocumentService {
         expiringSoon: mapped.filter((r) => r.expiringSoon).length,
         expired: mapped.filter((r) => r.expired).length,
       },
+      // Depo kurulu değilse ekran yükleme kutusunu hiç göstermiyor: devre
+      // dışı bir düğme "belki çalışır" izlenimi verirdi.
+      uploadEnabled: isStorageConfigured(),
     };
   }
 

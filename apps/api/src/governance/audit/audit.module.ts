@@ -6,8 +6,10 @@ import { AuditRepository } from "./audit.repository";
 import { AuditService } from "./audit.service";
 import { DecisionBookController } from "../decision-book/decision-book.controller";
 import { DecisionBookService } from "../decision-book/decision-book.service";
+import { DocumentWriteService } from "../document/document-write.service";
 import { DocumentController } from "../document/document.controller";
 import { DocumentService } from "../document/document.service";
+import { LegalWriteService } from "../document/legal-write.service";
 
 /**
  * Denetim global: her modül **yazabilmeli**, ama tek bir uygulama üzerinden.
@@ -24,6 +26,8 @@ import { DocumentService } from "../document/document.service";
     AuditReadService,
     AuditRepository,
     DocumentService,
+    DocumentWriteService,
+    LegalWriteService,
     // Karar defteri `governance` bağlamında: denetim kütüğü ve belge deposuyla
     // aynı yükümlülük ailesinden (kayıt tutma, hesap verme).
     DecisionBookService,

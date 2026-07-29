@@ -46,6 +46,7 @@
       "@yonetim/notifications": ["../../packages/notifications/src/index.ts"],
       "@yonetim/whatsapp": ["../../packages/whatsapp/src/index.ts"],
       "@yonetim/sms": ["../../packages/sms/src/index.ts"],
+      "@yonetim/storage": ["../../packages/storage/src/index.ts"],
       "@yonetim/emails": ["../../packages/emails/src/index.ts"],
       "@yonetim/i18n": ["../../packages/i18n/src/index.ts"],
       "@yonetim/jobs": ["../../packages/jobs/src/index.ts"]

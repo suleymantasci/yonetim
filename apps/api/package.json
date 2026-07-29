@@ -35,6 +35,7 @@
     "@yonetim/payment": "workspace:*",
     "@yonetim/pricing": "workspace:*",
     "@yonetim/sms": "workspace:*",
+    "@yonetim/storage": "workspace:*",
     "@yonetim/whatsapp": "workspace:*",
     "bullmq": "^5.81.2",
     "cookie": "^1.0.2",

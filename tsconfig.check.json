@@ -29,6 +29,7 @@
       "@yonetim/kvkk": ["./packages/kvkk/src/index.ts"],
       "@yonetim/whatsapp": ["./packages/whatsapp/src/index.ts"],
       "@yonetim/sms": ["./packages/sms/src/index.ts"],
+      "@yonetim/storage": ["./packages/storage/src/index.ts"],
       "@yonetim/emails": ["./packages/emails/src/index.ts"],
       "@yonetim/notifications": ["./packages/notifications/src/index.ts"],
       "@yonetim/payment": ["./packages/payment/src/index.ts"],

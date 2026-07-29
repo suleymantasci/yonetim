@@ -36,9 +36,71 @@ export const documentListResponse = z.object({
     expiringSoon: z.number().int(),
     expired: z.number().int(),
   }),
+  /**
+   * Dosya yüklenebiliyor mu — depo kurulu değilse ekran yükleme kutusunu hiç
+   * göstermiyor. Devre dışı bir düğme "belki çalışır" izlenimi verirdi.
+   */
+  uploadEnabled: z.boolean(),
+});
+
+/* --------------------------------------------------------- yükleme */
+
+export const documentCategory = z.enum([
+  "contract", "license", "meeting_minutes", "invoice", "maintenance_report",
+  "management_plan", "insurance", "legal", "kvkk", "identity", "other",
+]);
+
+/**
+ * Görünürlük — belgeyi kimin okuyabileceği.
+ *
+ * `managers` varsayılan: yanlış seçilen bir görünürlük, kimlik fotokopisini
+ * ya da sözleşmeyi sakine açmak demek. Unutulduğunda güvenli tarafa düşen
+ * varsayılan bu.
+ */
+export const documentVisibility = z.enum(["managers", "owners", "residents"]);
+
+/**
+ * 1. adım: yükleme adresi iste.
+ *
+ * Dosya API'den geçmiyor; tarayıcı imzalı adrese doğrudan yazıyor. Beyan
+ * edilen boyut ve tür burada **ön** kontrolden geçiyor (kullanıcıya erken
+ * hata için); gerçek kontrol yükleme bittikten sonra nesnenin kendisine
+ * bakılarak yapılıyor — imza gövdeyi kapsamadığı için beyan bağlayıcı değil.
+ */
+export const documentUploadUrlRequest = z.object({
+  fileName: z.string().trim().min(1).max(255),
+  contentType: z.string().trim().min(1).max(120),
+  sizeBytes: z.number().int().positive(),
+});
+
+export const documentUploadUrlResult = z.object({
+  /** Depodaki nesne anahtarı; 2. adımda kayıt bununla açılıyor. */
+  key: z.string(),
+  uploadUrl: z.string(),
+  expiresInSeconds: z.number().int(),
+});
+
+/** 2. adım: yükleme bittikten sonra kaydı aç. */
+export const documentCreate = z.object({
+  key: z.string().trim().min(1).max(300),
+  title: z.string().trim().min(1).max(200),
+  description: z.string().trim().max(2000).nullish(),
+  category: documentCategory.default("other"),
+  visibility: documentVisibility.default("managers"),
+  expiresAt: z.coerce.date().nullish(),
+});
+
+/** İndirme adresi — kısa ömürlü ve imzalı. */
+export const documentDownloadResult = z.object({
+  url: z.string(),
+  expiresInSeconds: z.number().int(),
 });
 
 export type DocumentListResponse = z.infer<typeof documentListResponse>;
+export type DocumentUploadUrlRequest = z.infer<typeof documentUploadUrlRequest>;
+export type DocumentUploadUrlResult = z.infer<typeof documentUploadUrlResult>;
+export type DocumentCreate = z.infer<typeof documentCreate>;
+export type DocumentDownloadResult = z.infer<typeof documentDownloadResult>;
 
 /* ------------------------------------------------------------------ *
  * Hukuk / icra takibi
@@ -97,6 +159,88 @@ export const legalCaseListResponse = z.object({
 });
 
 export type LegalCaseListResponse = z.infer<typeof legalCaseListResponse>;
+
+/* --------------------------------------------------- hukuk: yazma */
+
+/**
+ * İcra aşamaları — `legal_stage` enum'ının aynısı.
+ *
+ * Sıra kanuni akışı izliyor: ihtarname → tebligat → dava → ilam → icra →
+ * haciz → tahsilat. `closed` bir aşama değil bir son; ayrı uçla veriliyor
+ * (`close`), çünkü kapatmak gerekçe istiyor.
+ */
+export const legalStage = z.enum([
+  "warning_letter",
+  "notice_served",
+  "lawsuit",
+  "judgment",
+  "enforcement",
+  "seizure",
+  "collection",
+  "closed",
+]);
+
+/**
+ * Dosya açma.
+ *
+ * TUTAR GÖNDERİLMİYOR. Ana para, dairenin **açık borçlarından** sunucuda
+ * toplanıyor: istemciden alınsaydı ekranda gösterilen ile dosyaya yazılan
+ * ayrışabilirdi ve icra dosyasının tutarı, hakkında dava açılan rakam.
+ */
+export const legalCaseCreate = z.object({
+  unitId: uuid,
+  caseNo: z.string().trim().max(60).nullish(),
+  note: z.string().trim().max(1000).nullish(),
+});
+
+/**
+ * Dosya güncelleme — aşama, sıradaki işlem ve dosya numarası.
+ *
+ * Aşama değişikliği kütüğe (`legal_case_events`) **otomatik** yazılıyor:
+ * "bu dosya ne zaman icraya döndü" sorusunun cevabı, kimsenin ayrıca not
+ * girmesine bağlı olmamalı.
+ */
+export const legalCaseUpdate = z.object({
+  stage: legalStage.optional(),
+  caseNo: z.string().trim().max(60).nullish(),
+  nextActionAt: z.coerce.date().nullish(),
+  nextActionNote: z.string().trim().max(500).nullish(),
+  /** Aşama değişiminde kütüğe düşecek not. */
+  note: z.string().trim().max(1000).nullish(),
+});
+
+/** Elle olay/not ekleme — duruşma, tebligat, avukat görüşmesi. */
+export const legalEventCreate = z.object({
+  title: z.string().trim().min(1).max(200),
+  note: z.string().trim().max(2000).nullish(),
+  occurredAt: z.coerce.date().optional(),
+  documentUrl: z.string().trim().max(500).nullish(),
+});
+
+/**
+ * Para hareketi: masraf ya da tahsilat.
+ *
+ * İkisi tek uçta ve **artımlı**: mutlak tutar yazdırmak, iki yöneticinin aynı
+ * anda kaydettiği iki tahsilattan birinin diğerini ezmesi demekti. Artımlı
+ * yazma o yarışta ikisini de topluyor.
+ */
+export const legalAmountEntry = z.object({
+  kind: z.enum(["cost", "collection"]),
+  amountMinor: moneyMinor.refine((v) => v > 0, "Tutar sıfırdan büyük olmalı."),
+  note: z.string().trim().max(500).nullish(),
+});
+
+/** Dosya kapatma — gerekçe zorunlu. */
+export const legalCaseClose = z.object({
+  reason: z.string().trim().min(10).max(500),
+});
+
+export type LegalStage = z.infer<typeof legalStage>;
+export type LegalCaseCreate = z.infer<typeof legalCaseCreate>;
+export type LegalCaseUpdate = z.infer<typeof legalCaseUpdate>;
+export type LegalEventCreate = z.infer<typeof legalEventCreate>;
+export type LegalAmountEntry = z.infer<typeof legalAmountEntry>;
+export type LegalCaseClose = z.infer<typeof legalCaseClose>;
 
 /* ------------------------------------------------------------------ *
  * KVKK başvuruları

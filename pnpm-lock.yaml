@@ -143,6 +143,9 @@ importers:
       '@yonetim/sms':
         specifier: workspace:*
         version: link:../../packages/sms
+      '@yonetim/storage':
+        specifier: workspace:*
+        version: link:../../packages/storage
       '@yonetim/whatsapp':
         specifier: workspace:*
         version: link:../../packages/whatsapp
@@ -749,6 +752,19 @@ importers:
         version: 5.9.3
 
   packages/sms:
+    dependencies:
+      '@yonetim/config':
+        specifier: workspace:*
+        version: link:../config
+      '@yonetim/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
+  packages/storage:
     dependencies:
       '@yonetim/config':
         specifier: workspace:*

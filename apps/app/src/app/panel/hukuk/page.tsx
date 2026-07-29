@@ -12,15 +12,18 @@ import {
   tableClasses as tc,
 } from "@yonetim/ui";
 
+import { hasPermission } from "@yonetim/auth/guard";
+
 import { PageHeader } from "@/components/app-shell";
 import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
+import { CaseActions, OpenCaseButton } from "./case-actions";
 
 export const dynamic = "force-dynamic";
 
 export default async function LegalPage() {
-  await requirePermission("legal:read");
+  const ctx = await requirePermission("legal:read");
   const t = await getTranslations("app.legal");
   const tEnum = await getTranslations("enum");
   const f = await formatters();
@@ -33,6 +36,7 @@ export default async function LegalPage() {
     thresholdDays,
     totals,
   } = await apiGet("/v1/panel/legal", legalCaseListResponse);
+  const canWrite = hasPermission(ctx.roles, "legal:write");
 
   return (
     <>
@@ -79,6 +83,7 @@ export default async function LegalPage() {
                     <th scope="col" className={`${tc.th} text-right`}>
                       {t("recordCount")}
                     </th>
+                    {canWrite ? <th scope="col" className={tc.th} /> : null}
                   </tr>
                 </thead>
                 <tbody>
@@ -96,6 +101,18 @@ export default async function LegalPage() {
                         {c.oldestDue ? f.date(c.oldestDue) : "—"}
                       </td>
                       <td className={tc.tdNum}>{c.debtCount}</td>
+                      {canWrite ? (
+                        <td className={tc.td}>
+                          <OpenCaseButton
+                            unitId={c.unitId}
+                            unitLabel={
+                              c.blockName
+                                ? `${c.blockName} / ${c.unitNumber}`
+                                : (c.unitNumber ?? "")
+                            }
+                          />
+                        </td>
+                      ) : null}
                     </tr>
                   ))}
                 </tbody>
@@ -158,6 +175,11 @@ export default async function LegalPage() {
                       )}
                     </span>
                   </div>
+                  {/* Kapanmış dosyada işlem yok: aşama ilerletmek, tutar
+                      işlemek ve yeniden kapatmak anlamsız. */}
+                  {canWrite && !c.closedAt ? (
+                    <CaseActions caseId={c.id} stage={c.stage} />
+                  ) : null}
                 </li>
               ))}
             </ul>

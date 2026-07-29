@@ -10,28 +10,41 @@ import {
   EmptyState,
 } from "@yonetim/ui";
 
+import { hasPermission } from "@yonetim/auth/guard";
+
 import { PageHeader } from "@/components/app-shell";
 import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
+import { DocumentRowActions } from "./row-actions";
+import { UploadPanel } from "./upload-panel";
 
 export const dynamic = "force-dynamic";
 
 export default async function DocumentsPage() {
-  await requirePermission("document:read");
+  const ctx = await requirePermission("document:read");
   const t = await getTranslations("app.documents");
   const tEnum = await getTranslations("enum");
   const f = await formatters();
 
   // "Süresi doluyor" sunucu saatine göre hesaplanıyor (MIMARI-PLAN §9a).
-  const { rows, totals } = await apiGet(
+  const { rows, totals, uploadEnabled } = await apiGet(
     "/v1/panel/documents",
     documentListResponse,
   );
+  const canWrite = hasPermission(ctx.roles, "document:write");
 
   return (
     <>
       <PageHeader title={t("title")} description={t("description")} />
+
+      {canWrite ? (
+        <Card className="mb-4">
+          <CardBody>
+            <UploadPanel enabled={uploadEnabled} />
+          </CardBody>
+        </Card>
+      ) : null}
 
       {totals.expiringSoon > 0 ? (
         <div className="mb-4">
@@ -70,6 +83,7 @@ export default async function DocumentsPage() {
                     <Badge tone="neutral">
                       {tEnum(`documentVisibility.${d.visibility}`)}
                     </Badge>
+                    <DocumentRowActions id={d.id} canWrite={canWrite} />
                     {d.expiresAt ? (
                       <Badge
                         tone={
