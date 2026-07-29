@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { foldTurkish } from "@yonetim/core";
-import { cn } from "@yonetim/ui";
+import { CommandOverlay, cn } from "@yonetim/ui";
 
 /**
  * Komut paleti (⌘K / Ctrl+K) — GAP 4.3.1 / 4.4.2.
@@ -110,98 +110,78 @@ export function CommandPalette({
         </kbd>
       </button>
 
-      {open ? (
-        // Arkaplan yalnız fareyle kapatma kolaylığı sağlıyor; klavye yolu
-        // panelin kendisindeki Escape işleyicisi. Bu yüzden arkaplana rol
-        // vermek doğru olmaz — Track C1'de Radix Dialog bunu tümden devralıyor.
-        // eslint-disable-next-line jsx-a11y/no-static-element-interactions
-        <div
-          className="fixed inset-0 z-[70] flex items-start justify-center bg-overlay p-4 pt-[12vh] motion-safe:animate-[overlay-fade_120ms_ease-out]"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setOpen(false);
-          }}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label={labels.trigger}
-            className="w-full max-w-lg overflow-hidden rounded-xl border border-border bg-surface-raised shadow-2xl motion-safe:animate-[overlay-zoom_150ms_ease-out]"
-          >
-            <div className="flex items-center gap-2 border-b border-border px-3">
-              <Search aria-hidden className="h-4 w-4 shrink-0 text-fg-subtle" />
-              {/* eslint-disable-next-line jsx-a11y/no-autofocus -- palet açılışında odak beklenen davranış */}
-              <input autoFocus
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "ArrowDown") {
-                    event.preventDefault();
-                    setCursor((c) => Math.min(c + 1, results.length - 1));
-                  } else if (event.key === "ArrowUp") {
-                    event.preventDefault();
-                    setCursor((c) => Math.max(c - 1, 0));
-                  } else if (event.key === "Enter") {
-                    event.preventDefault();
-                    go(results[cursor]);
-                  } else if (event.key === "Escape") {
-                    event.preventDefault();
-                    setOpen(false);
-                  }
-                }}
-                placeholder={labels.placeholder}
-                aria-label={labels.placeholder}
-                aria-controls="command-palette-results"
-                className="w-full bg-transparent py-3 text-sm text-fg outline-none placeholder:text-fg-subtle"
-              />
-              <kbd className="shrink-0 rounded border border-border px-1.5 py-0.5 text-[10px] text-fg-subtle">
-                ESC
-              </kbd>
-            </div>
-
-            <ul
-              ref={listRef}
-              id="command-palette-results"
-              role="listbox"
-              className="max-h-80 overflow-y-auto py-1"
-            >
-              {results.length === 0 ? (
-                <li className="px-4 py-8 text-center text-sm text-fg-subtle">{labels.empty}</li>
-              ) : (
-                results.map((entry, index) => (
-                  <li key={entry.id}>
-                    <button
-                      type="button"
-                      role="option"
-                      aria-selected={index === cursor}
-                      onMouseEnter={() => setCursor(index)}
-                      onClick={() => go(entry)}
-                      className={cn(
-                        "flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm",
-                        index === cursor ? "bg-hover text-fg" : "text-fg-muted",
-                      )}
-                    >
-                      {entry.kind === "action" ? (
-                        <Plus aria-hidden className="h-4 w-4 shrink-0 text-primary" />
-                      ) : (
-                        <ArrowRight aria-hidden className="h-4 w-4 shrink-0 text-fg-subtle" />
-                      )}
-                      <span className="min-w-0 flex-1 truncate font-medium">{entry.label}</span>
-                      <span className="shrink-0 text-[11px] text-fg-subtle">{entry.group}</span>
-                      {index === cursor ? (
-                        <CornerDownLeft aria-hidden className="h-3.5 w-3.5 shrink-0 text-fg-subtle" />
-                      ) : null}
-                    </button>
-                  </li>
-                ))
-              )}
-            </ul>
-
-            <div className="border-t border-border bg-surface-sunken px-3 py-2 text-[11px] text-fg-subtle">
-              {labels.hintOpen}
-            </div>
-          </div>
+      <CommandOverlay open={open} onOpenChange={setOpen} label={labels.trigger}>
+        <div className="flex shrink-0 items-center gap-2 border-b border-border px-3">
+          <Search aria-hidden className="h-4 w-4 shrink-0 text-fg-subtle" />
+          {/* eslint-disable-next-line jsx-a11y/no-autofocus -- palet açılışında odak beklenen davranış */}
+          <input autoFocus
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "ArrowDown") {
+                event.preventDefault();
+                setCursor((c) => Math.min(c + 1, results.length - 1));
+              } else if (event.key === "ArrowUp") {
+                event.preventDefault();
+                setCursor((c) => Math.max(c - 1, 0));
+              } else if (event.key === "Enter") {
+                event.preventDefault();
+                go(results[cursor]);
+              }
+              // ESC artık Radix'in işi: odak tetikleyici düğmeye geri döner.
+            }}
+            placeholder={labels.placeholder}
+            aria-label={labels.placeholder}
+            aria-controls="command-palette-results"
+            className="w-full bg-transparent py-3.5 text-sm text-fg outline-none placeholder:text-fg-subtle"
+          />
+          <kbd className="shrink-0 rounded border border-border px-1.5 py-0.5 text-[10px] text-fg-subtle">
+            ESC
+          </kbd>
         </div>
-      ) : null}
+
+        <ul
+          ref={listRef}
+          id="command-palette-results"
+          role="listbox"
+          className="min-h-0 flex-1 overflow-y-auto py-1"
+        >
+          {results.length === 0 ? (
+            <li className="px-4 py-8 text-center text-sm text-fg-subtle">{labels.empty}</li>
+          ) : (
+            results.map((entry, index) => (
+              <li key={entry.id}>
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={index === cursor}
+                  onMouseEnter={() => setCursor(index)}
+                  onClick={() => go(entry)}
+                  className={cn(
+                    "flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm",
+                    index === cursor ? "bg-hover text-fg" : "text-fg-muted",
+                  )}
+                >
+                  {entry.kind === "action" ? (
+                    <Plus aria-hidden className="h-4 w-4 shrink-0 text-primary" />
+                  ) : (
+                    <ArrowRight aria-hidden className="h-4 w-4 shrink-0 text-fg-subtle" />
+                  )}
+                  <span className="min-w-0 flex-1 truncate font-medium">{entry.label}</span>
+                  <span className="shrink-0 text-[11px] text-fg-subtle">{entry.group}</span>
+                  {index === cursor ? (
+                    <CornerDownLeft aria-hidden className="h-3.5 w-3.5 shrink-0 text-fg-subtle" />
+                  ) : null}
+                </button>
+              </li>
+            ))
+          )}
+        </ul>
+
+        <div className="shrink-0 border-t border-border bg-surface-sunken px-3 py-2 text-[11px] text-fg-subtle">
+          {labels.hintOpen}
+        </div>
+      </CommandOverlay>
     </>
   );
 }

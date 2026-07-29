@@ -217,6 +217,54 @@ function VisuallyHiddenDescriptionOff() {
   return <Dialog.Description className="sr-only" />;
 }
 
+/**
+ * Komut paleti kabuğu — başlıksız, alt barsız, yalnız portal + backdrop.
+ *
+ * NEDEN AYRI BİR PARÇA: palet `Overlay`'in başlık/kapat/alt bar iskeletini
+ * istemiyor (arama alanının kendisi başlıktır), ama `Overlay`'in çözdüğü asıl
+ * şeye ihtiyacı var: **portal**. Palet panel kabuğunun içinde duruyordu ve
+ * kabuğun üst şeridinde `backdrop-blur` var; `backdrop-filter` bir öğeyi
+ * `fixed` torunları için içeren blok yapar, dolayısıyla `inset-0` verilmiş
+ * backdrop tüm ekran yerine yalnız 64 piksellik başlık şeridini kaplıyordu.
+ * `Dialog.Portal` içeriği `document.body`'ye taşıyarak bunu kökten bitirir;
+ * odak tuzağı, kaydırma kilidi, ESC ve dışarı tıklama da hazır gelir.
+ *
+ * Telefonda tam ekran, `sm`'den itibaren üstte duran ortalanmış bir panel.
+ */
+export function CommandOverlay({
+  open,
+  onOpenChange,
+  label,
+  children,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  /** Ekran okuyucuya verilen ad; görsel başlık yok. */
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-[70] bg-overlay backdrop-blur-[2px] motion-safe:animate-[overlay-fade_120ms_ease-out]" />
+        <Dialog.Content
+          className={cn(
+            "fixed inset-x-0 top-0 z-[70] mx-auto flex h-dvh w-full flex-col overflow-hidden",
+            "border-border bg-surface-raised shadow-2xl outline-none",
+            "sm:top-[10vh] sm:h-auto sm:max-h-[70dvh] sm:w-[min(40rem,calc(100%-2rem))]",
+            "sm:rounded-xl sm:border sm:ring-1 sm:ring-black/5",
+            "motion-safe:animate-[overlay-zoom_150ms_ease-out]",
+          )}
+        >
+          <Dialog.Title className="sr-only">{label}</Dialog.Title>
+          <Dialog.Description className="sr-only" />
+          {children}
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
 export function Modal(props: Omit<OverlayProps, "variant">) {
   return <Overlay {...props} variant="modal" />;
 }
