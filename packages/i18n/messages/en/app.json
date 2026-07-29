@@ -94,7 +94,8 @@
       "compact": "Compact"
     },
     "userMenu": "Account menu",
-    "switchTenant": "Switch property"
+    "switchTenant": "Switch property",
+    "impersonationExit": "Exit session"
   },
   "login": {
     "title": "Sign in",
@@ -1971,7 +1972,27 @@
     "paymentSection": "Card collection",
     "paymentSectionHint": "Whether residents can pay their dues by card. When off, the payment screen shows bank transfer details instead.",
     "onlinePaymentEnabled": "Allow card payments",
-    "onlinePaymentEnabledHint": "When on, residents can pay their dues by card. The full dues amount reaches the building's account; the provider commission is charged to the resident on top. If the payment provider or its commission rate is not configured, card payment cannot start even with this setting on."
+    "onlinePaymentEnabledHint": "When on, residents can pay their dues by card. The full dues amount reaches the building's account; the provider commission is charged to the resident on top. If the payment provider or its commission rate is not configured, card payment cannot start even with this setting on.",
+    "lifecycle": {
+      "title": "I'm done with this property",
+      "description": "Deactivating keeps all data, makes the property read-only and stops billing. You can restore it within {days} days.",
+      "currentStatus": "Status:",
+      "status": {
+        "open": "Open",
+        "archived": "Inactive"
+      },
+      "archivedTitle": "Property is inactive",
+      "archivedBody": "Deactivated by {by}. You have {days} days to restore it.",
+      "reasonLabel": "Why are you closing it?",
+      "reasonHint": "At least 10 characters. For whoever reads this decision months from now.",
+      "confirmLabel": "Type the property name to confirm: {name}",
+      "archiveEffects": "Dues generation, collection, announcements and messaging stop. Historical data stays readable.",
+      "archiveAction": "Deactivate property",
+      "archiveDone": "Property deactivated.",
+      "restoreReasonLabel": "Reason for restoring",
+      "restoreAction": "Restore property",
+      "restoreDone": "Property restored."
+    }
   },
   "migration": {
     "title": "Data import",
@@ -2171,7 +2192,8 @@
     "planCatalog": "Plan catalogue",
     "planCatalogDescription": "{count} plans defined",
     "impersonationTitle": "Impersonation policy",
-    "impersonationBody": "When a session is opened on behalf of a user, every action is separately written to the audit log and the user is notified."
+    "impersonationBody": "When a session is opened on behalf of a user, every action is separately written to the audit log and the user is notified.",
+    "manageAccounts": "Manage accounts"
   },
   "nps": {
     "thanks": "Thank you for your feedback."
@@ -2570,5 +2592,147 @@
     "closedTitle": "Concluded polls",
     "closedDescription": "Results of closed polls; calculated at closing time and unchanged afterwards.",
     "noResultYet": "The result has not been published yet."
+  },
+  "platformAccounts": {
+    "title": "Accounts",
+    "detailTitle": "Account detail",
+    "description": "Customer accounts, subscriptions, payments and add-on packages. Sorted by what needs attention.",
+    "backToOverview": "Back to platform overview",
+    "backToList": "Back to account list",
+    "totalAccounts": "Accounts",
+    "totalSites": "Properties",
+    "totalUnits": "Units",
+    "payingSites": "Active subscriptions",
+    "trialSites": "{count} in trial",
+    "outstanding": "Outstanding",
+    "paidTotal": "Collected: {amount}",
+    "searchLabel": "Search",
+    "searchHint": "Account or property name",
+    "statusLabel": "Property status",
+    "statusAll": "All",
+    "filter": "Filter",
+    "manage": "Manage",
+    "emptyTitle": "No accounts found",
+    "emptyDescription": "Adjust the search criteria and try again.",
+    "footnote": "Showing {shown} of {total} accounts.",
+    "noContact": "No contact details",
+    "noSubscription": "No subscription",
+    "noAddons": "No add-on packages purchased.",
+    "noInvoices": "No invoices issued.",
+    "noExpiry": "No expiry",
+    "neverLoggedIn": "Never logged in",
+    "overdueInvoices": "{count} overdue invoices",
+    "archivedShort": "{count} inactive",
+    "addonBadge": "{count} add-ons",
+    "trialUntil": "Trial: {date}",
+    "daysLeft": "{days} days left",
+    "dunningStep": "Dunning step {step}",
+    "cancelAtPeriodEnd": "Cancels at period end",
+    "kind": {
+      "company": "Management company",
+      "standalone": "Standalone property"
+    },
+    "col": {
+      "account": "Account",
+      "sites": "Properties",
+      "units": "Units",
+      "users": "Users",
+      "subscription": "Subscription",
+      "yearly": "Yearly",
+      "outstanding": "Outstanding",
+      "nextPeriod": "Period end",
+      "action": "Action",
+      "site": "Property",
+      "residents": "Residents",
+      "plan": "Plan",
+      "smsUsage": "SMS",
+      "periodEnd": "Period end",
+      "user": "User",
+      "roles": "Roles",
+      "lastLogin": "Last login",
+      "addon": "Add-on",
+      "remaining": "Remaining",
+      "price": "Amount",
+      "validUntil": "Valid until",
+      "invoiceNo": "Invoice no",
+      "invoiceStatus": "Status",
+      "total": "Amount",
+      "due": "Due",
+      "paid": "Paid"
+    },
+    "sitesTitle": "Properties",
+    "sitesDescription": "Properties linked to this account and their subscription state",
+    "usersTitle": "Users",
+    "usersDescription": "Manager and staff accounts — residents are not listed",
+    "addonsTitle": "Add-on packages",
+    "addonsDescription": "Purchased SMS and WhatsApp credits",
+    "invoicesTitle": "Invoices",
+    "invoicesDescription": "Last 50 SaaS invoices",
+    "recoveryWindowTitle": "Recovery window running",
+    "recoveryWindowItem": "{name}: can be restored within {days} days, then becomes eligible for permanent deletion.",
+    "extendTitle": "Extend subscription",
+    "extendDescription": "Extends the trial for trialing accounts and the period end for paid ones. Suspended accounts are reactivated.",
+    "extendDone": "Extended by {days} days.",
+    "addonGrantTitle": "Grant add-on package",
+    "addonGrantDescription": "Leave the amount at 0 to grant it free of charge; the record is marked as a gifted credit.",
+    "addonDone": "Granted an add-on package of {count} units.",
+    "tenantActionTitle": "Property lifecycle",
+    "tenantActionDescription": "Deactivate, restore or permanently delete a property.",
+    "tenantActionDone": {
+      "archive": "Property deactivated.",
+      "restore": "Property restored.",
+      "purge": "Property permanently deleted."
+    },
+    "accountActionTitle": "Account status",
+    "accountActionDescription": "All properties of the account are affected together.",
+    "accountActionScopeWarning": "This affects every property linked to the account; use the lifecycle section for a single property.",
+    "accountActionDone": {
+      "freeze": "{count} properties frozen.",
+      "activate": "{count} properties activated.",
+      "close": "{count} properties closed."
+    },
+    "impersonateTitle": "Sign in as customer",
+    "impersonateDescription": "To see what the customer sees. The session lasts 30 minutes and every action is logged separately.",
+    "impersonateWarning": "Every action you take during the session is recorded under the account owner's name and linked to you through the `impersonated_by` field.",
+    "impersonateDone": "Signed in as {name}.",
+    "noImpersonationTarget": "No user in this account can be impersonated.",
+    "purgeWarning": "Permanent deletion cannot be undone and only works on deactivated properties.",
+    "addonKind": {
+      "sms": "SMS credit",
+      "whatsapp": "WhatsApp message credit"
+    },
+    "addonSource": {
+      "purchase": "Purchase",
+      "campaign_gift": "Campaign",
+      "manual_grant": "Manual grant"
+    },
+    "action": {
+      "extend": "Extend",
+      "freeze": "Freeze",
+      "activate": "Activate",
+      "close": "Close account",
+      "applyAccountAction": "Apply",
+      "archive": "Deactivate",
+      "restore": "Restore",
+      "purge": "Delete permanently",
+      "applyTenantAction": "Apply",
+      "grantAddon": "Grant package",
+      "impersonate": "Sign in as user"
+    },
+    "field": {
+      "site": "Property",
+      "days": "Days",
+      "reason": "Reason",
+      "reasonHint": "At least 10 characters. Written to the audit log.",
+      "accountAction": "Action",
+      "tenantAction": "Action",
+      "addonKind": "Package type",
+      "quantity": "Quantity",
+      "addonPrice": "Amount (minor units)",
+      "addonPriceHint": "0 = free grant",
+      "validUntil": "Valid until",
+      "validUntilHint": "Empty = no expiry",
+      "targetUser": "User"
+    }
   }
 }

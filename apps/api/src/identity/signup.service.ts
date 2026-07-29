@@ -15,10 +15,13 @@ import {
   accessRequests,
   companies,
   memberships,
+  plans,
+  subscriptions,
   tenants,
   units,
   users,
 } from "@yonetim/db";
+import { planForUnitCount, planYearlyKurus } from "@yonetim/pricing";
 
 import { DbService } from "../infra/db/db.service";
 import { WebAuthService } from "./web-auth.service";
@@ -132,6 +135,12 @@ export class SignupService {
         isPrimary: true,
       });
 
+      await this.openTrialSubscription(tx, {
+        tenantId: tenant.id,
+        unitCount: dto.unitCount,
+        trialEndsAt: new Date(now.getTime() + trialDays * 86_400_000),
+      });
+
       return { tenantId: tenant.id, slug: tenant.slug, userId };
     });
 
@@ -226,6 +235,9 @@ export class SignupService {
     return this.db.bypass("signup:setup-tenant", async (tx) => {
       const slug = await this.uniqueSlug(tx, tenants, dto.propertyName);
       const now = new Date();
+      const trialEndsAt = new Date(
+        now.getTime() + siteConfig.billing.trial.durationDays * 86_400_000,
+      );
 
       // Kullanıcı zaten bir firmaya bağlıysa yeni site de o firmaya bağlanıyor;
       // yoksa portföy ekranı siteleri ayrı ayrı gösterirdi.
@@ -249,9 +261,7 @@ export class SignupService {
             companyId: existingCompany[0]?.companyId ?? null,
             status: "trial",
             trialStartedAt: now,
-            trialEndsAt: new Date(
-              now.getTime() + siteConfig.billing.trial.durationDays * 86_400_000,
-            ),
+            trialEndsAt,
           })
           .returning({ id: tenants.id, slug: tenants.slug })
       )[0]!;
@@ -275,8 +285,76 @@ export class SignupService {
         );
       }
 
+      await this.openTrialSubscription(tx, {
+        tenantId: tenant.id,
+        unitCount: dto.unitCount,
+        trialEndsAt,
+      });
+
       this.logger.log({ event: "setup.tenant_created", tenantId: tenant.id, locale });
       return { tenantId: tenant.id, slug: tenant.slug };
+    });
+  }
+
+  /**
+   * Deneme aboneliğini açar — site oluşturmanın ayrılmaz parçası.
+   *
+   * NEDEN BUGÜNE KADAR YOKTU VE NEDEN ÖNEMLİ: `subscriptions` tablosu
+   * baştan beri şemada duruyordu ama **hiçbir kod ona satır yazmıyordu**.
+   * Tenant'a `trial` + `trialEndsAt` yazılıyor, abonelik satırı açılmıyordu.
+   * Sonucu iki yerde görünüyordu: süper-admin panelindeki MRR/ARR kartları her
+   * koşulda 0 gösteriyordu (sorgu `subscriptions`'tan okuyor), ve deneme
+   * süresi dolan hesabı tanıyacak kayıt yoktu — faturalama job'ları neye
+   * bakacağını bilemezdi.
+   *
+   * Tenant'taki `trialEndsAt` ile buradaki `trialEndsAt` **bilinçli olarak
+   * aynı** ve tek çağrıda birlikte yazılıyor: tenant'ın durumu erişim
+   * kararlarının (panel açılır mı) kaynağı, aboneliğin durumu faturalamanın
+   * kaynağı. İkisini tek tabloya sıkıştırmak, "erişimi kes ama aboneliği
+   * dondur" gibi ayrı yaşayan durumları ifade edilemez hâle getirirdi.
+   *
+   * Plan `plans` tablosundan **koda göre** çözülüyor, kademe sırasına göre
+   * değil: `planForUnitCount` daire sayısından kademeyi biliyor, veritabanı da
+   * o kademenin id'sini tutuyor. Plan satırı yoksa (seed çalıştırılmamış)
+   * abonelik açılamaz — bu durumda kurulumu düşürmüyoruz, uyarı loglayıp
+   * geçiyoruz: site açamamak, faturalama kaydı eksik kalmasından daha kötü.
+   */
+  private async openTrialSubscription(
+    tx: Database,
+    params: { tenantId: string; unitCount: number; trialEndsAt: Date },
+  ): Promise<void> {
+    const definition = planForUnitCount(params.unitCount);
+    const priceKurus = planYearlyKurus(definition);
+
+    const planRow = await tx
+      .select({ id: plans.id })
+      .from(plans)
+      .where(eq(plans.code, definition.code))
+      .limit(1);
+
+    const planId = planRow[0]?.id;
+    if (!planId) {
+      this.logger.warn({
+        event: "subscription.plan_missing",
+        tenantId: params.tenantId,
+        planCode: definition.code,
+      });
+      return;
+    }
+
+    await tx.insert(subscriptions).values({
+      tenantId: params.tenantId,
+      planId,
+      status: "trialing",
+      billingPeriod: siteConfig.billing.defaultPeriod,
+      unitCountSnapshot: params.unitCount,
+      // Denemede tahsilat yok ama fiyat **biliniyor**: deneme bitiminde
+      // yöneticiye gösterilecek tutar bu satırdan okunuyor, o an yeniden
+      // hesaplanmıyor. Aksi hâlde araya fiyat artışı girerse kullanıcıya
+      // kayıt anında gösterilenden farklı bir tutar çıkardı.
+      priceKurus,
+      listPriceKurus: priceKurus,
+      trialEndsAt: params.trialEndsAt,
     });
   }
 

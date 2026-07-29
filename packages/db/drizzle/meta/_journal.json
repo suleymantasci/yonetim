@@ -64,6 +64,20 @@
       "when": 1785342500000,
       "tag": "0008_access_requests",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1785342600000,
+      "tag": "0009_tenant_lifecycle_addons",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1785342700000,
+      "tag": "0010_backfill_subscriptions",
+      "breakpoints": true
     }
   ]
 }

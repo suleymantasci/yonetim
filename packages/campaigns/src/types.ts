@@ -33,6 +33,20 @@ export interface CampaignAudience {
 export interface CampaignConditions {
   minUnitCount?: number;
   maxUnitCount?: number;
+  /**
+   * Hesabın yönettiği **site** sayısı eşiği — çoklu site indirimi
+   * (2026-07-29 kararı).
+   *
+   * NEDEN `minUnitCount` YETMİYORDU: daire sayısı bir sitenin büyüklüğünü
+   * ölçüyor, yönetim firmasının büyüklüğünü değil. Beş apartmanı olan bir
+   * firmanın her sitesi 20 dairelik olabilir; `minUnitCount: 100` koşulu bu
+   * firmayı kaçırırken tek bir 100 dairelik siteye indirim verirdi. Kademeli
+   * çoklu site indirimi ("5+ site, %15") tam olarak bu ayrımı istiyor.
+   *
+   * Abonelik site başına kaldığı için (2026-07-29) indirim de site başına
+   * uygulanıyor; eşik hesap genelinde ölçülüyor.
+   */
+  minTenantCount?: number;
   /** Taahhüt edilen yıl sayısı (örn. 3 yıl → ilk yıl ücretsiz). */
   commitsToYears?: number;
   /** Partner sözleşmesi (sayaç, enerji, banka ortaklıkları). */
@@ -126,6 +140,14 @@ export interface TenantSnapshot {
   usedCampaignIds: string[];
   /** Kayıt sırası (Erken Kuş kampanyası için). */
   signupRank?: number;
+  /**
+   * Hesabın (firmanın) yönettiği site sayısı — çoklu site indirimi için.
+   *
+   * Aday satın almaya değil **tenant anlık görüntüsüne** ait: kaç site
+   * yönettiği hesabın bugünkü durumu, o an satın alınan pakete bağlı değil.
+   * Tek site yöneten bağımsız yöneticide 1.
+   */
+  managedTenantCount?: number;
 }
 
 export interface ApplicableCampaign {

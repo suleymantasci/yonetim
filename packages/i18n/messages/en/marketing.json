@@ -249,6 +249,18 @@
         "headline": "Try it free for three months",
         "bullets": "Onboarding support included|Free data import"
       },
+      "coklu_site_5_plus": {
+        "name": "5+ Properties Discount",
+        "description": "A permanent discount on every subscription for companies managing five or more properties.",
+        "headline": "The bigger your portfolio, the lower the price",
+        "bullets": "10% permanent discount per property|Multi-property console in one screen|Stacks with other campaigns"
+      },
+      "coklu_site_15_plus": {
+        "name": "15+ Properties Discount",
+        "description": "The highest scale discount, for enterprise management companies with fifteen or more properties.",
+        "headline": "20% permanent discount for enterprise portfolios",
+        "bullets": "20% permanent discount per property|Priority support|Stacks with other campaigns"
+      },
       "gecis_kampanyasi": {
         "name": "We Cover You Until Your Contract Ends",
         "description": "For properties still under contract with another management software: free until that contract ends (up to 12 months).",

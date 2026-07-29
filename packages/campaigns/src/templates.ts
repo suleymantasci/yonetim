@@ -62,6 +62,39 @@ export const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
     stackable: false,
     defaultDurationDays: 180,
   },
+  /*
+   * Çoklu site indirimi — kademeli, 2026-07-29 kararı.
+   *
+   * NEDEN İKİ KADEME VE NEDEN `stackable: true`: yönetim firması indirimi
+   * ölçek indirimidir, kampanya değil. "İlk 6 ay bedava" gibi bir kazanım
+   * kampanyasının yerine geçmemeli — firma hem yeni müşteri kazanım
+   * kampanyasından hem ölçek indiriminden yararlanabilmeli. Bu yüzden
+   * yığılabilir; motorun `applyBestCampaign`'i yığılabilir olanları
+   * birleştiriyor.
+   *
+   * Eşikler `minTenantCount` üzerinden: `minUnitCount` firmanın büyüklüğünü
+   * ölçemiyor (bkz. `CampaignConditions.minTenantCount` gerekçesi).
+   */
+  {
+    key: "coklu_site_5_plus",
+    type: "x_percent_off",
+    audience: { segments: ["mgmt_company"] },
+    conditions: { minTenantCount: 5 },
+    reward: { type: "percent_off", value: 10, lifetime: true },
+    badge: "saving",
+    stackable: true,
+    defaultDurationDays: 730,
+  },
+  {
+    key: "coklu_site_15_plus",
+    type: "x_percent_off",
+    audience: { segments: ["mgmt_company"] },
+    conditions: { minTenantCount: 15 },
+    reward: { type: "percent_off", value: 20, lifetime: true },
+    badge: "saving",
+    stackable: true,
+    defaultDurationDays: 730,
+  },
   {
     key: "gecis_kampanyasi",
     type: "migration_credit",

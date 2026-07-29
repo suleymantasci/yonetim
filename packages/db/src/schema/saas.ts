@@ -102,6 +102,57 @@ export const invoices = pgTable(
   ],
 );
 
+/**
+ * Satın alınan ek paketler — SMS / WhatsApp mesaj kredisi (2026-07-29 kararı).
+ *
+ * NEDEN PLAN İÇİ KOTADAN AYRI: `plans.smsQuotaYearly` pakete gömülü hediye
+ * kotayı, `invoices.smsOverageCount` ise dönem sonunda faturalanan aşımı
+ * anlatıyor. İkisinin arasında bir şey yoktu: yönetici kotasını bitirdiğinde
+ * ya aşım ücretine razı olacaktı ya susacaktı — **önden kredi satın alma**
+ * yolu hiç yoktu. Süper-admin panelinde "bu hesabın hangi paketleri var"
+ * sorusu da bu yüzden cevaplanamıyordu.
+ *
+ * `remainingQuantity` türetilmiyor, **tutuluyor**: tüketim ayrı bir tabloya
+ * (`notifications`) yazılıyor ve kalanı her okumada oradan saymak, bildirim
+ * gönderirken kota kontrolünü tam da en sık çağrılan yolda ağırlaştırırdı.
+ * Sayaç `notifications` yazımıyla aynı işlemde düşüyor.
+ *
+ * `validUntil` NULLABLE: süresiz krediler (ör. göç kampanyasıyla verilen
+ * hediye bakiye) için son kullanma tarihi zorlamak, yalnız kampanya motorunun
+ * ödülünü ifade edemez hâle getirirdi.
+ */
+export const tenantAddons = pgTable(
+  "tenant_addons",
+  {
+    id: idCol(),
+    tenantId: uuid("tenant_id").notNull().references(() => tenants.id, { onDelete: "cascade" }),
+    /** 'sms' | 'whatsapp' — kanal başına ayrı bakiye. */
+    kind: varchar("kind", { length: 20 }).notNull(),
+    name: varchar("name", { length: 120 }).notNull(),
+    purchasedQuantity: integer("purchased_quantity").notNull(),
+    remainingQuantity: integer("remaining_quantity").notNull(),
+    unitPriceKurus: money("unit_price_kurus").notNull().default(0),
+    totalPriceKurus: money("total_price_kurus").notNull().default(0),
+    /** Faturası kesildiyse — hediye/kampanya kredisinde null. */
+    invoiceId: uuid("invoice_id").references(() => invoices.id, { onDelete: "set null" }),
+    /** 'purchase' | 'campaign_gift' | 'manual_grant' — nereden geldiği. */
+    source: varchar("source", { length: 20 }).notNull().default("purchase"),
+    validFrom: timestamp("valid_from", { withTimezone: true }).notNull().defaultNow(),
+    validUntil: timestamp("valid_until", { withTimezone: true }),
+    /** 'active' | 'depleted' | 'expired' | 'revoked'. */
+    status: varchar("status", { length: 20 }).notNull().default("active"),
+    /** Süper-admin elle tanımladıysa kim tanımladı. */
+    grantedBy: uuid("granted_by"),
+    note: text("note"),
+    ...timestamps,
+  },
+  (t) => [
+    index("idx_tenant_addons_tenant").on(t.tenantId),
+    /** Kredi düşerken "bu kanalda aktif paket var mı" sorgusu. */
+    index("idx_tenant_addons_tenant_kind_status").on(t.tenantId, t.kind, t.status),
+  ],
+);
+
 /** Kampanya tanımı — SPEC Bölüm 16.2 ile birebir. */
 export const campaigns = pgTable(
   "campaigns",

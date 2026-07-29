@@ -83,11 +83,28 @@ export class AuthController {
   @ApiOperation({
     summary: "Web oturumunu kapat",
     description:
-      "Oturum kaydı silinir. Yalnız çerezi düşürmek, çalınmış bir jetonu " +
-      "geçersiz kılmazdı — kararın kaydın kendisinde olması şart.",
+      "Oturum kaydı silinir **ve** oturum önbelleği düşürülür. Yalnız çerezi " +
+      "düşürmek, çalınmış bir jetonu geçersiz kılmazdı; yalnız kaydı silmek de " +
+      "yetmiyordu — önbellek jetonu TTL süresi kadar geçerli tutuyordu.",
   })
   async webLogout(@Req() req: Request): Promise<void> {
-    await this.web.logout(readSessionCookie(req.headers.cookie));
+    const token = readSessionCookie(req.headers.cookie);
+    await this.web.logout(token);
+    /*
+     * ÖNBELLEK DÜŞÜRME BURADA EKSİKTİ ve bu bir güvenlik açığıydı.
+     *
+     * `ContextResolver` oturumu çözdükten sonra kimliği Redis'te
+     * `SESSION_CACHE_TTL` (60 sn) boyunca tutuyor ve sonraki isteklerde
+     * veritabanına hiç bakmıyor. Yani `destroySession` satırı sildiği hâlde
+     * jeton bir dakika daha çalışıyordu: "çıkış yaptım" diyen kullanıcının
+     * jetonu, tam da onu ele geçirmiş birinin elinde hâlâ geçerliydi.
+     *
+     * `switch-tenant` bu düşürmeyi zaten yapıyordu — orada gerekçe yetkinin
+     * gecikmesiydi. Çıkışta gerekçe daha ağır ve atlanmıştı. Hata,
+     * impersonation çıkışının doğrulanması sırasında ortaya çıktı: silinen
+     * oturum hâlâ 200 dönüyordu.
+     */
+    if (token) await this.contextResolver.invalidateSession(token);
   }
 
   @Post("web/switch-tenant")

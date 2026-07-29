@@ -10,9 +10,20 @@ import type { Permission } from "@yonetim/core";
 
 export const PUBLIC_KEY = "yonetim:public";
 export const PERMISSION_KEY = "yonetim:permission";
+export const ALLOW_ARCHIVED_KEY = "yonetim:allow-archived";
 
 /** Kimlik gerektirmeyen uç — health, webhook, OpenAPI dokümanı. */
 export const Public = () => SetMetadata(PUBLIC_KEY, true);
+
+/**
+ * Pasif/arşiv sitede de çalışan yazma ucu — `TenantWritableGuard` muafiyeti.
+ *
+ * Yalnız **kurtarma** uçları için: "arşivi geri aç" isteği tanımı gereği
+ * arşivlenmiş bir siteye yazıyor, yani kuralın kendisi onu engellerdi. Muafiyet
+ * uç adından tahmin edilmiyor, burada açıkça beyan ediliyor — yol adı değişince
+ * sessizce kilitlenen bir kurtarma düğmesi bırakmamak için.
+ */
+export const AllowArchived = () => SetMetadata(ALLOW_ARCHIVED_KEY, true);
 
 /**
  * Yetki bildirimi. Rol yolu `hasPermission` ile, API anahtarı yolu `scopes`

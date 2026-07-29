@@ -111,6 +111,24 @@ export const siteConfig = {
     graceDaysAfterExpiry: 30,
     /** KDV oranı (SaaS hizmeti). */
     vatRate: 0.2,
+    /**
+     * Site arşivden geri alınabildiği süre (2026-07-29 kararı).
+     *
+     * Deneme sonrası 6 aylık bekletmeden **ayrı** bir pencere: orada karar
+     * kullanıcının değil, ödemenin yokluğunun sonucu; burada yönetici bilerek
+     * "bu siteyle işim bitti" diyor. Bilerek verilen karar için 6 ay gereksiz
+     * uzun, geri dönüş için 90 gün fazlasıyla yeterli.
+     *
+     * DİKKAT: bu değer yalnız **yeni** arşivlerin tarihini belirler. Arşivde
+     * bekleyen sitelerin tarihi `tenants.purge_after_at` sütununda saklı;
+     * burayı kısaltmak onlara verilmiş sözü geri almaz.
+     */
+    archiveRecoveryDays: 90,
+    /** Ek paket birim fiyatları (₺) — SMS aşım fiyatıyla aynı çizgide. */
+    addonUnitPrice: {
+      sms: 0.3,
+      whatsapp: 0.15,
+    },
     /** Dunning adımları (Bölüm 15.3) — gün: aksiyon. */
     dunningSteps: [
       { day: 1, action: "email" },

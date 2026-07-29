@@ -94,7 +94,8 @@
       "compact": "Sıkışık"
     },
     "userMenu": "Hesap menüsü",
-    "switchTenant": "Site değiştir"
+    "switchTenant": "Site değiştir",
+    "impersonationExit": "Geçişten çık"
   },
   "login": {
     "title": "Giriş",
@@ -1971,7 +1972,27 @@
     "paymentSection": "Kartla tahsilat",
     "paymentSectionHint": "Sakinlerin aidatlarını karttan ödeyebilmesi. Kapalıyken sakin ödeme ekranında havale bilgilerini görür.",
     "onlinePaymentEnabled": "Kartla ödemeye izin ver",
-    "onlinePaymentEnabledHint": "Açıkken sakin aidatını karttan ödeyebilir. Aidatın tamamı site hesabına geçer; sağlayıcı komisyonu sakinden ek olarak tahsil edilir. Ödeme altyapısı veya komisyon oranı kurulu değilse bu ayar açık olsa da kartla ödeme başlatılamaz."
+    "onlinePaymentEnabledHint": "Açıkken sakin aidatını karttan ödeyebilir. Aidatın tamamı site hesabına geçer; sağlayıcı komisyonu sakinden ek olarak tahsil edilir. Ödeme altyapısı veya komisyon oranı kurulu değilse bu ayar açık olsa da kartla ödeme başlatılamaz.",
+    "lifecycle": {
+      "title": "Bu siteyle işim bitti",
+      "description": "Siteyi pasife alırsanız veri silinmez, salt-okunur olur ve faturalama durur. {days} gün içinde geri açabilirsiniz.",
+      "currentStatus": "Durum:",
+      "status": {
+        "open": "Açık",
+        "archived": "Pasif"
+      },
+      "archivedTitle": "Site pasif durumda",
+      "archivedBody": "{by} tarafından pasife alındı. Geri açmak için {days} gününüz var.",
+      "reasonLabel": "Neden kapatıyorsunuz?",
+      "reasonHint": "En az 10 karakter. Aylar sonra bu kararı okuyacak kişi için.",
+      "confirmLabel": "Onaylamak için site adını yazın: {name}",
+      "archiveEffects": "Aidat üretimi, tahsilat, duyuru ve mesaj gönderimi durur. Geçmiş veriler okunmaya devam eder.",
+      "archiveAction": "Siteyi pasife al",
+      "archiveDone": "Site pasife alındı.",
+      "restoreReasonLabel": "Geri açma gerekçesi",
+      "restoreAction": "Siteyi geri aç",
+      "restoreDone": "Site geri açıldı."
+    }
   },
   "migration": {
     "title": "Veri Aktarımı",
@@ -2171,7 +2192,8 @@
     "planCatalog": "Paket kataloğu",
     "planCatalogDescription": "{count} plan tanımlı",
     "impersonationTitle": "Impersonation kuralı",
-    "impersonationBody": "Bir kullanıcı adına oturum açıldığında tüm işlemler ayrı olarak denetim kütüğüne yazılır ve ilgili kullanıcıya bildirim gönderilir."
+    "impersonationBody": "Bir kullanıcı adına oturum açıldığında tüm işlemler ayrı olarak denetim kütüğüne yazılır ve ilgili kullanıcıya bildirim gönderilir.",
+    "manageAccounts": "Hesapları yönet"
   },
   "nps": {
     "thanks": "Değerlendirmeniz için teşekkürler."
@@ -2570,5 +2592,147 @@
     "closedTitle": "Sonuçlanan oylamalar",
     "closedDescription": "Kapanan oylamaların sonucu; kapanış anında hesaplanır ve sonradan değişmez.",
     "noResultYet": "Sonuç henüz yayımlanmadı."
+  },
+  "platformAccounts": {
+    "title": "Hesaplar",
+    "detailTitle": "Hesap detayı",
+    "description": "Müşteri hesapları, abonelikleri, ödemeleri ve ek paketleri. Sıralama dikkat gerektirene göre.",
+    "backToOverview": "Platform özetine dön",
+    "backToList": "Hesap listesine dön",
+    "totalAccounts": "Hesap",
+    "totalSites": "Site",
+    "totalUnits": "Daire",
+    "payingSites": "Aktif abonelik",
+    "trialSites": "{count} deneme",
+    "outstanding": "Ödenmemiş",
+    "paidTotal": "Tahsil edilen: {amount}",
+    "searchLabel": "Ara",
+    "searchHint": "Hesap veya site adı",
+    "statusLabel": "Site durumu",
+    "statusAll": "Tümü",
+    "filter": "Filtrele",
+    "manage": "Yönet",
+    "emptyTitle": "Hesap bulunamadı",
+    "emptyDescription": "Arama ölçütlerini değiştirip yeniden deneyin.",
+    "footnote": "{total} hesabın {shown} tanesi gösteriliyor.",
+    "noContact": "İletişim bilgisi yok",
+    "noSubscription": "Abonelik yok",
+    "noAddons": "Satın alınmış ek paket yok.",
+    "noInvoices": "Kesilmiş fatura yok.",
+    "noExpiry": "Süresiz",
+    "neverLoggedIn": "Hiç giriş yapmadı",
+    "overdueInvoices": "{count} gecikmiş fatura",
+    "archivedShort": "{count} pasif",
+    "addonBadge": "{count} ek paket",
+    "trialUntil": "Deneme: {date}",
+    "daysLeft": "{days} gün kaldı",
+    "dunningStep": "Hatırlatma adımı {step}",
+    "cancelAtPeriodEnd": "Dönem sonunda iptal",
+    "kind": {
+      "company": "Yönetim firması",
+      "standalone": "Bağımsız site"
+    },
+    "col": {
+      "account": "Hesap",
+      "sites": "Site",
+      "units": "Daire",
+      "users": "Kullanıcı",
+      "subscription": "Abonelik",
+      "yearly": "Yıllık",
+      "outstanding": "Ödenmemiş",
+      "nextPeriod": "Dönem sonu",
+      "action": "İşlem",
+      "site": "Site",
+      "residents": "Sakin",
+      "plan": "Paket",
+      "smsUsage": "SMS",
+      "periodEnd": "Dönem sonu",
+      "user": "Kullanıcı",
+      "roles": "Roller",
+      "lastLogin": "Son giriş",
+      "addon": "Ek paket",
+      "remaining": "Kalan",
+      "price": "Tutar",
+      "validUntil": "Geçerlilik",
+      "invoiceNo": "Fatura no",
+      "invoiceStatus": "Durum",
+      "total": "Tutar",
+      "due": "Vade",
+      "paid": "Ödendi"
+    },
+    "sitesTitle": "Siteler",
+    "sitesDescription": "Bu hesaba bağlı siteler ve abonelik durumları",
+    "usersTitle": "Kullanıcılar",
+    "usersDescription": "Yönetici ve personel hesapları — sakinler listelenmez",
+    "addonsTitle": "Ek paketler",
+    "addonsDescription": "Satın alınan SMS ve WhatsApp kredileri",
+    "invoicesTitle": "Faturalar",
+    "invoicesDescription": "Son 50 SaaS faturası",
+    "recoveryWindowTitle": "Kurtarma penceresi işliyor",
+    "recoveryWindowItem": "{name}: {days} gün içinde geri açılabilir, sonra kalıcı silmeye uygun hâle gelir.",
+    "extendTitle": "Abonelik süresi uzat",
+    "extendDescription": "Denemedeki hesapta deneme süresi, ücretli hesapta dönem sonu ileriye alınır. Askıdaki hesap aktifleşir.",
+    "extendDone": "Süre {days} gün uzatıldı.",
+    "addonGrantTitle": "Ek paket tanımla",
+    "addonGrantDescription": "Tutarı 0 bırakırsanız bedelsiz tanımlanır ve kayıt hediye kredi olarak işaretlenir.",
+    "addonDone": "{count} adetlik ek paket tanımlandı.",
+    "tenantActionTitle": "Site yaşam döngüsü",
+    "tenantActionDescription": "Siteyi pasife al, geri aç veya kalıcı olarak sil.",
+    "tenantActionDone": {
+      "archive": "Site pasife alındı.",
+      "restore": "Site geri açıldı.",
+      "purge": "Site kalıcı olarak silindi."
+    },
+    "accountActionTitle": "Hesap durumu",
+    "accountActionDescription": "Hesabın tüm siteleri birlikte etkilenir.",
+    "accountActionScopeWarning": "Bu işlem hesaba bağlı bütün siteleri kapsar; tek bir site için yaşam döngüsü bölümünü kullanın.",
+    "accountActionDone": {
+      "freeze": "{count} site donduruldu.",
+      "activate": "{count} site aktifleştirildi.",
+      "close": "{count} site kapatıldı."
+    },
+    "impersonateTitle": "Hesaba geçiş",
+    "impersonateDescription": "Müşterinin gördüğü ekranı görmek için. Geçiş 30 dakika sürer ve her işlem denetim kütüğüne ayrı yazılır.",
+    "impersonateWarning": "Geçiş sırasında yaptığınız her işlem sizin adınızla değil, hesabın sahibinin adına kaydedilir ve `impersonated_by` alanıyla size bağlanır.",
+    "impersonateDone": "{name} hesabına geçildi.",
+    "noImpersonationTarget": "Bu hesapta geçiş yapılabilecek kullanıcı yok.",
+    "purgeWarning": "Kalıcı silme geri alınamaz ve yalnız pasife alınmış sitelerde çalışır.",
+    "addonKind": {
+      "sms": "SMS kredisi",
+      "whatsapp": "WhatsApp mesaj kredisi"
+    },
+    "addonSource": {
+      "purchase": "Satın alma",
+      "campaign_gift": "Kampanya",
+      "manual_grant": "Elle tanım"
+    },
+    "action": {
+      "extend": "Süreyi uzat",
+      "freeze": "Dondur",
+      "activate": "Aktifleştir",
+      "close": "Hesabı kapat",
+      "applyAccountAction": "Uygula",
+      "archive": "Pasife al",
+      "restore": "Geri aç",
+      "purge": "Kalıcı sil",
+      "applyTenantAction": "Uygula",
+      "grantAddon": "Paketi tanımla",
+      "impersonate": "Hesaba geç"
+    },
+    "field": {
+      "site": "Site",
+      "days": "Gün",
+      "reason": "Gerekçe",
+      "reasonHint": "En az 10 karakter. Denetim kütüğüne yazılır.",
+      "accountAction": "İşlem",
+      "tenantAction": "İşlem",
+      "addonKind": "Paket türü",
+      "quantity": "Adet",
+      "addonPrice": "Tutar (kuruş)",
+      "addonPriceHint": "0 = bedelsiz tanım",
+      "validUntil": "Son kullanma",
+      "validUntilHint": "Boş = süresiz",
+      "targetUser": "Kullanıcı"
+    }
   }
 }

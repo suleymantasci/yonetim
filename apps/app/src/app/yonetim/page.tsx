@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
 import { siteConfig } from "@yonetim/config";
@@ -53,11 +54,25 @@ export default async function AdminPage() {
             {siteConfig.brand.name} · {ctx.userName}
           </p>
         </div>
-        <form action="/api/session/logout" method="post">
-          <button className="rounded-lg border border-border-strong px-3 py-1.5 text-sm text-fg hover:bg-hover">
-            {tCommon("action.logout")}
-          </button>
-        </form>
+        <div className="flex items-center gap-2">
+          {/*
+            Özet ekranı sayıları gösteriyor ama tek bir müşteri hakkında hiçbir
+            şey söylemiyordu; süre uzatma, dondurma, hesaba geçiş gibi işlerin
+            hepsi bir hesabın üzerinde çalışıyor ve o hesaba ulaşmanın yolu
+            yoktu. Bu bağlantı ekranın eksik yarısını açıyor.
+          */}
+          <Link
+            href="/yonetim/hesaplar"
+            className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-accent-fg hover:opacity-90"
+          >
+            {t("manageAccounts")}
+          </Link>
+          <form action="/api/session/logout" method="post">
+            <button className="rounded-lg border border-border-strong px-3 py-1.5 text-sm text-fg hover:bg-hover">
+              {tCommon("action.logout")}
+            </button>
+          </form>
+        </div>
       </header>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

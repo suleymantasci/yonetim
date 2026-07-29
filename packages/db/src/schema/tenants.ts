@@ -39,6 +39,26 @@ export const tenants = pgTable(
     cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
     suspensionReason: text("suspension_reason"),
 
+    /**
+     * Site yaşam döngüsü — "yönetim bu siteyle işini bitirdi" hâli.
+     *
+     * `status = 'archived'` tek başına yetmiyordu: durum sütunu **ne** olduğunu
+     * söylüyor, **ne zaman** ve **kimin** kararıyla olduğunu söylemiyor. Geri
+     * kurtarma penceresini hesaplamak için ilkine, hesap verebilirlik için
+     * ikincisine ihtiyaç var.
+     *
+     * `purgeAfterAt` süreyi **satırın kendisinde** tutuyor, config'den
+     * hesaplanmıyor: pencere uzunluğu (bugün 90 gün) sonra değişirse, o sırada
+     * arşivde bekleyen sitelerin kendilerine söz verilen tarihi değişmemeli.
+     * Yöneticiye "90 gün içinde geri alabilirsin" denip 30 güne düşürülmesi,
+     * kurtarma sözünün ihlali olurdu.
+     */
+    archivedAt: timestamp("archived_at", { withTimezone: true }),
+    archivedBy: uuid("archived_by"),
+    purgeAfterAt: timestamp("purge_after_at", { withTimezone: true }),
+    /** Arşivden önceki durum — geri açarken hangi hâle dönüleceği. */
+    statusBeforeArchive: tenantStatusEnum("status_before_archive"),
+
     /** Hangi sistemden geçiş yapıldı (Bölüm 3.11). */
     migratedFrom: varchar("migrated_from", { length: 40 }),
     /** Public landing page yayında mı (Bölüm 6.14). */
@@ -52,6 +72,8 @@ export const tenants = pgTable(
     index("idx_tenants_period_end").on(t.currentPeriodEnd),
     index("idx_tenants_company").on(t.companyId),
     index("idx_tenants_city_district").on(t.city, t.district),
+    /** Tasfiye job'ı "süresi dolmuş arşiv" sorgusunu bu index'le tarıyor. */
+    index("idx_tenants_purge_after").on(t.purgeAfterAt),
   ],
 );
 

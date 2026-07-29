@@ -18,7 +18,17 @@ export const ROLES = [
 export type Role = (typeof ROLES)[number];
 
 export const PERMISSIONS = [
-  "tenant:read", "tenant:update", "tenant:delete", "tenant:billing",
+  /**
+   * `tenant:archive` ile `tenant:delete` bilerek ayrı:
+   *
+   * Arşivleme **geri alınabilir** ve kararı sitenin yöneticisine ait — "bu
+   * siteyle işim bitti" demek yönetimin kendi işi. Kalıcı tasfiye geri
+   * alınamaz ve platformun sorumluluğunda: yanlış basılan bir düğme yüzünden
+   * bir sitenin tüm aidat, borç ve karar defteri geçmişinin yok olması,
+   * yöneticiye verilebilecek bir yetki değil. Tek izinle ifade edilseydi,
+   * yöneticiye arşivleme hakkı vermek aynı anda silme hakkı vermek olurdu.
+   */
+  "tenant:read", "tenant:update", "tenant:archive", "tenant:delete", "tenant:billing",
   "unit:read", "unit:write",
   "resident:read", "resident:write", "resident:invite",
   "dues:read", "dues:write", "dues:simulate",
@@ -93,7 +103,7 @@ const RESIDENT_BASE: Permission[] = [
 ];
 
 const MANAGER_PERMS: Permission[] = [
-  "tenant:read", "tenant:update", "tenant:billing",
+  "tenant:read", "tenant:update", "tenant:archive", "tenant:billing",
   "unit:read", "unit:write",
   "resident:read", "resident:write", "resident:invite",
   "dues:read", "dues:write", "dues:simulate",
@@ -136,7 +146,11 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   ],
   company_admin: MANAGER_PERMS,
   company_operator: MANAGER_PERMS.filter(
-    (p) => !["tenant:billing", "debt:forgive", "payment:refund", "staff:payroll"].includes(p),
+    // `tenant:archive` operatörde yok: siteyi kapatmak firmanın ticari kararı,
+    // operasyon personelinin günlük işi değil.
+    (p) =>
+      !["tenant:archive", "tenant:billing", "debt:forgive", "payment:refund", "staff:payroll"]
+        .includes(p),
   ),
   manager: MANAGER_PERMS,
   // Denetçi karar defterini ve demirbaş listesini görmeden ibra denetimi

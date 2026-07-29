@@ -4,6 +4,7 @@ import { hasPermission } from "@yonetim/auth/guard";
 import { siteConfig } from "@yonetim/config";
 import {
   integrationStatusResponse,
+  tenantLifecycleState,
   tenantSettingsResponse,
 } from "@yonetim/contracts";
 import { Alert, Badge, Card, CardBody, CardHeader } from "@yonetim/ui";
@@ -12,6 +13,7 @@ import { PageHeader } from "@/components/app-shell";
 import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
+import { LifecycleCard } from "./lifecycle-card";
 import { SettingsForm } from "./settings-form";
 
 export const dynamic = "force-dynamic";
@@ -45,9 +47,10 @@ export default async function SettingsPage() {
   const tEnum = await getTranslations("enum");
   const f = await formatters();
 
-  const [tenant, integrations] = await Promise.all([
+  const [tenant, integrations, lifecycle] = await Promise.all([
     apiGet("/v1/panel/settings", tenantSettingsResponse),
     apiGet("/v1/panel/settings/integrations", integrationStatusResponse),
+    apiGet("/v1/panel/tenancy/lifecycle", tenantLifecycleState),
   ]);
 
   const settings = tenant.settings as {
@@ -66,6 +69,7 @@ export default async function SettingsPage() {
   };
 
   const canWrite = hasPermission(ctx.roles, "settings:write");
+  const canArchive = hasPermission(ctx.roles, "tenant:archive");
   const none = tCommon("state.none");
 
   return (
@@ -230,6 +234,18 @@ export default async function SettingsPage() {
           </Card>
         </div>
       </div>
+
+      {/*
+        Tehlikeli bölge en altta ve yalnız `tenant:archive` yetkisi olanlara:
+        firma operatörü günlük işini yaparken kapatma düğmesini görmemeli.
+        Sayfanın sonunda olması bilinçli — kazara tıklama olasılığını azaltan
+        en basit tasarım kararı, kaydırma mesafesi.
+      */}
+      {canArchive ? (
+        <div className="mt-6">
+          <LifecycleCard state={lifecycle} />
+        </div>
+      ) : null}
     </>
   );
 }

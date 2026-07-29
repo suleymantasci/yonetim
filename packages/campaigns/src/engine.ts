@@ -34,6 +34,17 @@ export function matchesConditions(
   const k = c.conditions;
   if (k.minUnitCount !== undefined && candidate.unitCount < k.minUnitCount) return false;
   if (k.maxUnitCount !== undefined && candidate.unitCount > k.maxUnitCount) return false;
+  /*
+   * Çoklu site eşiği. Varsayılan 1, `undefined` değil: site sayısı
+   * bilinmiyorsa "en az bir sitesi var" doğru varsayım (aksi hâlde tek siteli
+   * hesaplar `minTenantCount: 1` koşulunu bile geçemezdi).
+   */
+  if (
+    k.minTenantCount !== undefined &&
+    (tenant.managedTenantCount ?? 1) < k.minTenantCount
+  ) {
+    return false;
+  }
   if (k.commitsToYears !== undefined && (candidate.commitsToYears ?? 0) < k.commitsToYears) return false;
   if (k.referralCountRequired !== undefined && (candidate.referralCount ?? 0) < k.referralCountRequired) {
     return false;

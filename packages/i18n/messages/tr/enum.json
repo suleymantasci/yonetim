@@ -255,6 +255,14 @@
     "cancelled": "İptal",
     "archived": "Arşiv"
   },
+  "invoiceStatus": {
+    "draft": "Taslak",
+    "issued": "Kesildi",
+    "paid": "Ödendi",
+    "overdue": "Gecikti",
+    "void": "İptal",
+    "refunded": "İade"
+  },
   "migrationSource": {
     "apsiyon": "Apsiyon",
     "biyos": "Biyos",

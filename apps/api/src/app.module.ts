@@ -21,6 +21,7 @@ import { OperationsModule } from "./operations/operations.module";
 import { PermissionGuard } from "./identity/guards/permission.guard";
 import { RateLimitGuard } from "./identity/guards/rate-limit.guard";
 import { TenantContextGuard } from "./identity/guards/tenant-context.guard";
+import { TenantWritableGuard } from "./identity/guards/tenant-writable.guard";
 import { DbModule } from "./infra/db/db.module";
 import { HealthController } from "./infra/health/health.controller";
 import { ApiExceptionFilter } from "./infra/logging/api-exception.filter";
@@ -42,6 +43,11 @@ import { PublicModule } from "./public/public.module";
  *   1. `TenantContextGuard`  → kimlik çözülür, ALS'e yazılır
  *   2. `RateLimitGuard`      → kimliğe bağlı sayaç
  *   3. `PermissionGuard`     → `@RequirePermission` kontrolü
+ *   4. `TenantWritableGuard` → pasif/arşiv sitede yazma reddedilir
+ *
+ * Dördüncü guard en sonda: "yetkin var ama site pasif" mesajı, "yetkin yok"
+ * mesajının yerini almamalı. Yetki kararı önce verilir, yaşam döngüsü kararı
+ * onun üstüne biner.
  */
 @Module({
   imports: [
@@ -103,6 +109,7 @@ import { PublicModule } from "./public/public.module";
     { provide: APP_GUARD, useClass: TenantContextGuard },
     { provide: APP_GUARD, useClass: RateLimitGuard },
     { provide: APP_GUARD, useClass: PermissionGuard },
+    { provide: APP_GUARD, useClass: TenantWritableGuard },
   ],
 })
 export class AppModule {}

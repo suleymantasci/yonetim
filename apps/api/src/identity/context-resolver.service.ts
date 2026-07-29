@@ -70,6 +70,7 @@ export class ContextResolver {
     const identity: CachedIdentity = {
       tenantId: resolved.tenantId,
       tenantSlug: resolved.tenantSlug,
+      tenantStatus: resolved.tenantStatus,
       userId: session.user.id,
       roles,
       scopes: [],
@@ -96,6 +97,56 @@ export class ContextResolver {
     if (!client) return;
     const keys = await client.keys(`${prefix}*`).catch(() => [] as string[]);
     if (keys.length > 0) await this.redis.del(...keys);
+  }
+
+  /**
+   * Bir sitenin **tüm** oturum önbelleklerini düşürür.
+   *
+   * NEDEN GEREKLİ: `RequestContext.tenantStatus` bu önbellekten geliyor ve
+   * `TenantWritableGuard`'ın kararı ona dayanıyor. Site arşivlendiğinde
+   * önbellek düşürülmezse, o siteye bağlı herkes bir dakika daha yazmaya devam
+   * edebilirdi — kararın etkisi "birazdan" değil **anında** olmalı. Aynı gerek
+   * geri açmada da var, ters yönde: geri açılan sitede kullanıcı bir dakika
+   * daha "salt-okunur" duvarına çarpardı.
+   *
+   * Kaba kuvvet yerine hedefli: ham token'ları bilmiyoruz ama `sessions.token`
+   * zaten sha256 hash'i tutuyor ve önbellek anahtarı **aynı** hash'ten
+   * türüyor. Böylece Redis'i baştan sona taramak ya da `FLUSHDB` gibi başka
+   * kiracıları da etkileyen bir yola sapmak gerekmiyor.
+   *
+   * Oturumlar **silinmiyor**, yalnız önbellek düşüyor: amaç yetkiyi
+   * tazelemek, kullanıcıyı sistemden atmak değil. Arşivlenmiş sitede oturum
+   * açık kalıyor, çünkü yönetici geçmiş dönemin raporunu okumaya devam
+   * edebilmeli.
+   */
+  async invalidateTenantSessions(tenantId: string): Promise<void> {
+    const client = this.redis.raw();
+    if (!client) return;
+
+    const hashes = await this.db.bypass("ctx:tenant-session-hashes", async (tx) => {
+      const rows = await tx.execute<{ token: string }>(sql`
+        SELECT DISTINCT s.token
+        FROM sessions s
+        WHERE s.expires_at > now()
+          AND (
+            s.active_tenant_id = ${tenantId}
+            OR EXISTS (
+              SELECT 1 FROM memberships m
+              WHERE m.user_id = s.user_id
+                AND m.tenant_id = ${tenantId}
+                AND m.deleted_at IS NULL
+            )
+          )
+      `);
+      return (rows as unknown as Array<{ token: string }>).map((r) => r.token);
+    });
+
+    for (const hash of hashes) {
+      const keys = await client
+        .keys(`${SESSION_CACHE_PREFIX}${hash}:*`)
+        .catch(() => [] as string[]);
+      if (keys.length > 0) await this.redis.del(...keys);
+    }
   }
 
   /* ---------------------------------------------------------------- *
@@ -125,6 +176,7 @@ export class ContextResolver {
     return this.finish(req, {
       tenantId: resolved.tenantId,
       tenantSlug: resolved.tenantSlug,
+      tenantStatus: resolved.tenantStatus,
       userId: payload.sub,
       roles,
       scopes: [],
@@ -192,6 +244,7 @@ export class ContextResolver {
     return this.finish(req, {
       tenantId: tenant.id,
       tenantSlug: tenant.slug,
+      tenantStatus: tenant.status,
       apiKeyId: record.id,
       roles: [],
       scopes: Array.isArray(record.scopes)
@@ -217,7 +270,7 @@ export class ContextResolver {
 
     const tenant = await this.db.bypass("internal:tenant", async (tx) => {
       const rows = await tx
-        .select({ id: tenants.id, slug: tenants.slug })
+        .select({ id: tenants.id, slug: tenants.slug, status: tenants.status })
         .from(tenants)
         .where(and(eq(tenants.id, tenantId), isNull(tenants.deletedAt)))
         .limit(1);
@@ -228,6 +281,7 @@ export class ContextResolver {
     return this.finish(req, {
       tenantId: tenant.id,
       tenantSlug: tenant.slug,
+      tenantStatus: tenant.status,
       userId: headerValue(req, "x-internal-user") ?? undefined,
       roles: ["super_admin"] as Role[],
       scopes: [],
@@ -249,7 +303,12 @@ export class ContextResolver {
     userId: string,
     activeTenantId: string | null,
     slug: string | null,
-  ): Promise<{ tenantId: string; tenantSlug: string; roles: Role[] } | null> {
+  ): Promise<{
+    tenantId: string;
+    tenantSlug: string;
+    tenantStatus: string;
+    roles: Role[];
+  } | null> {
     return this.db.bypass("ctx:resolve-tenant", async (tx) => {
       let tenantId = activeTenantId;
 
@@ -275,7 +334,7 @@ export class ContextResolver {
       if (!tenantId) return null;
 
       const tenantRows = await tx
-        .select({ id: tenants.id, slug: tenants.slug })
+        .select({ id: tenants.id, slug: tenants.slug, status: tenants.status })
         .from(tenants)
         .where(and(eq(tenants.id, tenantId), isNull(tenants.deletedAt)))
         .limit(1);
@@ -296,6 +355,7 @@ export class ContextResolver {
       return {
         tenantId: tenant.id,
         tenantSlug: tenant.slug,
+        tenantStatus: tenant.status,
         roles: roleRows.map((r) => r.role as Role),
       };
     });
@@ -332,6 +392,7 @@ export class ContextResolver {
 interface CachedIdentity {
   tenantId: string;
   tenantSlug: string;
+  tenantStatus: string;
   userId: string;
   roles: Role[];
   scopes: Permission[];
@@ -360,7 +421,8 @@ function readBearer(req: Request): string | null {
  * eklemiyoruz: tek bir cookie okunuyor ve bu, istek nesnesine global bir
  * `cookies` alanı iliştirmekten daha az yüzey.
  */
-function readCookie(header: string | undefined, name: string): string | null {
+/** Çerez okuma — `PlatformController` de impersonation jetonu için kullanıyor. */
+export function readCookie(header: string | undefined, name: string): string | null {
   if (!header) return null;
   for (const part of header.split(";")) {
     const trimmed = part.trim();

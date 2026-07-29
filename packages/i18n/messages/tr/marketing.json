@@ -249,6 +249,18 @@
         "headline": "3 ay ücretsiz deneyin",
         "bullets": "Kurulum desteği dahil|Veri aktarımı ücretsiz"
       },
+      "coklu_site_5_plus": {
+        "name": "5+ Site İndirimi",
+        "description": "Beş ve üzeri site yöneten firmalara, her sitenin aboneliğinde kalıcı indirim.",
+        "headline": "Portföyünüz büyüdükçe fiyat düşüyor",
+        "bullets": "Her site için %10 kalıcı indirim|Tek ekrandan çoklu site konsolu|Diğer kampanyalarla birlikte kullanılabilir"
+      },
+      "coklu_site_15_plus": {
+        "name": "15+ Site İndirimi",
+        "description": "On beş ve üzeri site yöneten kurumsal yönetim firmaları için en yüksek ölçek indirimi.",
+        "headline": "Kurumsal portföye %20 kalıcı indirim",
+        "bullets": "Her site için %20 kalıcı indirim|Öncelikli destek|Diğer kampanyalarla birlikte kullanılabilir"
+      },
       "gecis_kampanyasi": {
         "name": "Sözleşmeniz Bitene Kadar Ücretler Bizden",
         "description": "Mevcut yönetim yazılımı sözleşmesi devam eden siteler: sözleşme bitene kadar (en fazla 12 ay) ücretsiz.",

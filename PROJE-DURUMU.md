@@ -918,6 +918,148 @@ bilgisi istenirse `messages`'a okuma damgası eklemek gerekir.
 
 ---
 
+## 5.10 Site yaşam döngüsü, abonelik yazma yolu ve süper-admin paneli (2026-07-30)
+
+Tetikleyen gözlem: süper-admin hesabıyla girişte `/kurulum`'a yönlendirildi
+(hesabın hiç sitesi yoktu), mecburen demo site eklendi ve **eklenen site bir
+daha kaldırılamadı**. Oradan çıkan denetim, üç ayrı boşluğu ortaya koydu.
+
+### 5.10.1 Kanıt: şema vardı, yazma yolu yoktu
+
+| Şemada duran | Yazan kod | Sonuç |
+| --- | --- | --- |
+| `tenant_status` içinde `archived`, `cancelled`; `tenants.archived*`, `cancelled_at`, `suspension_reason` | **yok** | Yönetici bir siteyle işini bitirdiğinde yapabileceği hiçbir şey yoktu |
+| `subscriptions` tablosunun tamamı | **yok** (tek geçtiği yer platform özetinin `SELECT`'i) | MRR/ARR kartları her koşulda 0; faturalama job'ları neye bakacağını bilemezdi |
+| `sessions.impersonated_by`, `audit_logs.impersonated_by`, `createSession({impersonatedBy})`, `impersonationAudit()` | **başlatan uç yok** | `/yonetim`'deki impersonation kutusu yalnız bilgi metniydi |
+
+Ayrıca **hiçbir kod yolu `tenant_status`'a bakmıyordu**: bir siteyi arşivlemek
+satırda etiket değiştirmekten öteye gitmeyecekti — faturalama durup erişim
+durmazsa ücretsiz sınırsız kullanım kapısı açılırdı.
+
+### 5.10.2 Alınan kararlar (2026-07-30)
+
+- **Abonelik site başına kalıyor.** Yönetim firmasına konsolide *abonelik*
+  değil, konsolide *görünüm* veriliyor. Firma indirimi kampanya motorundan
+  geçiyor.
+- **Üç seviye, iki sorumlu:** arşivle (yönetici, `tenant:archive`) → 90 gün
+  geri kurtarma → kalıcı sil (yalnız süper-admin, `tenant:delete`).
+  `tenant:archive` ile `tenant:delete` bilinçli ayrı: geri alınabilir bir karar
+  ile geri alınamaz bir imhayı tek yetkiyle ifade etmek, yöneticiye arşivleme
+  hakkı verirken geçmişi silme hakkı vermek olurdu.
+- **Ek paket satışı var:** `tenant_addons` (SMS / WhatsApp kredisi).
+
+### 5.10.3 Yapılanlar
+
+**Şema (`0009`, `0010`)** — `tenants`'a `archived_at/archived_by/
+purge_after_at/status_before_archive`; `tenant_addons` tablosu (bakiye negatife
+düşemez, CHECK constraint). `purge_after_at` süreyi **satırda** tutuyor: config
+sonradan kısaltılsa da arşivde bekleyen siteye verilmiş tarih değişmiyor.
+`status_before_archive`: geri açış "aktif yap" değil "eski hâline döndür" —
+denemedeyken arşivlenen site geri açıldığında ücretliye geçmiyor.
+`0010` tek seferlik dolgu: aboneliksiz kalmış eski siteler için abonelik satırı
+üretiyor (plan daire sayısından, durum siteden türüyor).
+
+**`TenantWritableGuard`** (4. global guard) — pasif/arşiv/iptal sitede
+**yazma** reddediliyor (`tenant_read_only:<durum>`), okuma serbest kalıyor
+(geçmiş rapor, borç dökümü, karar defteri okunmaya devam ediyor). Platform
+rolleri muaf; kurtarma uçları `@AllowArchived()` ile açıkça beyan ediliyor.
+`RequestContext.tenantStatus` bunun için eklendi ve durum değişince o sitenin
+oturum önbellekleri düşürülüyor — yoksa arşivleme 60 sn gecikmeli etkili olurdu.
+
+**Abonelik yazma yolu** — `signup.service` hem `/kayit` hem `/kurulum`'da
+`trialing` abonelik açıyor. MRR sorgusu düzeltildi: `trialing` çıkarıldı
+(deneme fiyatı satırda dolu ama gelir değil), `past_due`/`grace` eklendi.
+
+**Süper-admin paneli** — `/yonetim/hesaplar` (liste, aciliyete göre sıralı) ve
+`/yonetim/hesaplar/[key]` (siteler + abonelik + SMS kotası, kullanıcılar,
+faturalar, ek paketler, aksiyonlar). "Hesap" birimi ne kullanıcı ne tenant:
+`companies` satırları + firmaya bağlı **olmayan** siteler tek listede
+(`company:<id>` / `tenant:<id>` anahtarı). Aksiyonlar: süre uzat, ek paket
+tanımla, hesabı dondur/aktifleştir/kapat, siteyi arşivle/geri aç/kalıcı sil,
+hesaba geç. **Hepsinde gerekçe zorunlu** (≥10 karakter, denetim kütüğüne).
+
+**Impersonation** — 30 dk ömürlü oturum, hedef kullanıcının üyeliği şart,
+platform kullanıcısına ve kendine geçiş yasak. Yöneticinin kendi jetonu ayrı
+bir çerezde (`yonetim_admin_session`) saklanıyor; kabuktaki uyarı bandına
+"geçişten çık" düğmesi eklendi (JS'siz de çalışan `<form>`).
+
+**Çoklu site indirimi** — `CampaignConditions.minTenantCount` +
+`TenantSnapshot.managedTenantCount`; `coklu_site_5_plus` (%10) ve
+`coklu_site_15_plus` (%20) şablonları, `stackable: true` (ölçek indirimi,
+kazanım kampanyasının yerine geçmemeli).
+
+### 5.10.4 Uçlar veritabanına karşı koşuldu — üç hata orada çıktı
+
+§5.9.1'in dersi uygulandı: her uç gerçek veriye karşı çağrıldı ve **statik
+kapılardan geçen üç hata** ancak orada göründü.
+
+1. **`memberships` join'i toplamları çarpıyordu** — 24 daireli, 3 üyelikli site
+   72 daire ve 3 katı fiyat gösteriyordu. `COUNT(DISTINCT)` kendini koruyor,
+   `SUM` korumuyor: toplamların yanında satır çoğaltan join durmamalı.
+   Kullanıcı sayımı hesap düzeyinde ayrı CTE'ye taşındı.
+2. **`= ANY(${dizi}::uuid[])` geçersiz SQL üretiyordu** — Drizzle diziyi tek
+   dizi parametresine değil virgüllü parametre listesine açıyor. `uuidList()`
+   yardımcısı eklendi (boş listede `IN (NULL)`; koşulu düşürmek tüm platformun
+   verisini döndürürdü).
+3. **`sql` şablonuna gömülü `Date`** — §5.9.1'deki hatanın aynısı tekrarlandı.
+   Zaman damgaları `now()`'a, kurtarma penceresi SQL `interval`'ına taşındı;
+   bu ayrıca tek transaction'daki satırlara aynı damgayı veriyor.
+4. **Ham SQL zaman damgalarını `Date` değil `string` döndürüyor** — bu dördüncü
+   hata ilk turda **kaçtı**, çünkü yalnız arşivlenmiş sitede tetikleniyordu:
+   `tx.execute` satırları `as unknown as` ile elle tiplenmiş ve o tipler
+   `Date` diyordu; sözleşme tarafı `z.coerce.date()` ile metni sessizce
+   düzelttiği için her şey çalışıyor görünüyordu. Üzerinde **aritmetik** yapan
+   tek yer `daysLeft()` idi ve `purge_after_at` boşken erken dönüyordu — alan
+   ilk kez arşivde dolduğunda `getTime is not a function` ile 500 verdi ve
+   hata `/yonetim/hesaplar/[key]` ekranını açılamaz yaptı. Ham satır tipleri
+   `RawTimestamp = Date | string | null` ile gerçeği söyleyecek hâle getirildi,
+   dönüşüm `toDate()` ile eşleme sınırında yapılıyor (yanıt artık ISO taşıyor).
+   Kod tabanının kalanı tarandı: ham SQL ile tarih aritmetiğini birleştiren
+   başka yer yok — `document.service` ve `context-resolver` query builder
+   kullanıyor, yani gerçek `Date` alıyorlar.
+
+   **Ders:** `as unknown as` ile elle tiplenen her satır bir **iddia**, kanıt
+   değil. Bu yolda tip kontrolü koruma sağlamıyor; testin nullable alanların
+   **dolu** olduğu durumu da kapsaması gerekiyor.
+
+### 5.10.5 Yol boyunca kapatılan mevcut açık
+
+**Çıkış oturum önbelleğini düşürmüyordu.** `POST /v1/auth/web/logout`
+`destroySession` çağırıyor ama Redis'teki çözülmüş kimlik 60 sn daha
+yaşadığı için jeton çıkıştan sonra bir dakika geçerli kalıyordu — dosyanın
+kendi açıklaması ("yalnız çerezi düşürmek çalınmış jetonu geçersiz kılmaz")
+tam bu yüzden geçerli değildi. `switch-tenant` bu düşürmeyi zaten yapıyordu,
+çıkışta atlanmıştı. Hata impersonation çıkışını doğrularken görüldü (silinen
+oturum hâlâ 200 dönüyordu); iki yer birden düzeltildi.
+
+### 5.10.6 Sırada
+
+- **Faturalama job'larının handler'ı hâlâ yok.** `billing.trial-expiry`,
+  `billing.dunning`, `billing.renewal` tanımlı (`packages/jobs/src/definitions.ts`)
+  ve saf hesap fonksiyonları yazılı (`packages/jobs/src/dunning.ts`) ama worker
+  tarafında karşılıkları yok. Yani **deneme süresi dolan hesap hâlâ kendiliğinden
+  askıya alınmıyor**; askı ancak süper-admin panelinden elle yapılıyor. Abonelik
+  satırı artık var, yani bu iş artık yazılabilir durumda.
+- **`billing.archive-purge` job'ı yok.** `LifecycleService.purgeCandidates()`
+  süresi dolmuş arşivleri listeliyor ama kimse çağırmıyor; silme kararı bilinçle
+  insanda bırakıldı, ancak kuyruğa düşürecek job yazılmalı.
+- **Kampanya/kupon yazma yolu yok.** Motor, tablolar ve şablonlar hazır;
+  kampanya oluşturma ve kupon uygulama uçları hâlâ yazılmadı — yani çoklu site
+  indirimi tanımlı ama **panelden aktive edilemiyor**.
+- **Ek paket bakiyesi düşmüyor.** `tenant_addons.remaining_quantity` tutuluyor
+  ama bildirim gönderimi onu azaltmıyor; `packages/notifications` tarafına
+  düşme adımı eklenmeli.
+- **Bu bölüm için entegrasyon testi yok.** Uçlar elle (curl + psql) doğrulandı;
+  `tests/integration`'a yaşam döngüsü ve platform uçları için duman testi
+  eklenmeli. §5.10.4'teki dört hata da tam olarak bu testin yakalayacağı
+  türden — ve dördüncüsü testin **arşivlenmiş** bir siteyi de kapsaması
+  gerektiğini gösteriyor: "her uç 200" yetmiyor, nullable alanların dolu
+  olduğu durum ayrıca kurulmalı.
+- `0009` ve `0010` **yerel** veritabanında çalıştırıldı (0008 dâhil, o da
+  üretimde çalışmamıştı); üretime uygulanmadı.
+
+---
+
 ## 6. Bekleyen ürün kararları (Track E — teknik altyapı hazır, karar bekliyor)
 
 Bu maddeler **yapılmadı** çünkü kod değil, iş kararı eksik. Karar verilirse
@@ -928,6 +1070,7 @@ her biri artık tek modül işi (altyapı: contracts, worker, iptal/ilerleme haz
 | Borcu Yoktur PDF + KEP | KEP sağlayıcısı (PTT/TNB?), PDF saklama politikası, Türkçe font lisansı |
 | Bakım hatırlatma (T-30/-15/-7/-0/+3) | Hatırlatma kime gidecek (yönetici mi görevli mi), kanal önceliği |
 | ~~Sakin portalı kapsamı~~ | **karara bağlandı** (§5.8.2): görüntüleme + talep açma + yazışma yapıldı; **oylama ve ödeme** hâlâ açık (§5.8.7) |
+| ~~Site kapatma / abonelik birimi / ek paket~~ | **karara bağlandı** (§5.10.2): abonelik site başına; arşiv → 90 gün → kalıcı silme; `tenant_addons` ile SMS/WhatsApp kredisi satılıyor |
 | Sakin IBAN görünürlüğü | "Yönetim bilgileri" ekranı IBAN'ı maskeli gösteriyor (yönetim ekranıyla aynı çizgi), ama ekranın amacı "nereye yatıracağım". Açık IBAN gösterilecek mi? |
 | Göç sihirbazı (Excel import) | Kabul edilecek şablonlar, çakışma politikası (üzerine yaz / atla / sor) |
 | Personel bordrosu | Tam SGK/vergi hesabı mı, yalnız kayıt mı |

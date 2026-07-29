@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
-import { apiPatch } from "@/lib/api/server";
+import { tenantLifecycleResult } from "@yonetim/contracts";
+
+import { apiPatch, apiPost } from "@/lib/api/server";
 import {
   checkboxField,
   decimalField,
@@ -95,6 +97,83 @@ export async function saveSettings(
       revalidatePath("/panel/borclar");
 
       return okState(t("saved"), { data: { id: result.id } });
+    },
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * Site yaşam döngüsü — pasife al / geri aç (2026-07-29 kararı)
+ * ------------------------------------------------------------------ */
+
+const lifecycleSchema = z.object({
+  reason: requiredText(10, 500),
+});
+
+/**
+ * Siteyi arşive alır.
+ *
+ * `confirmation` alanı **şemada yok ve olmamalı**: sitenin adını yazdırma
+ * istemci tarafında bir yavaşlatıcı, sunucu tarafında bir güvenlik kontrolü
+ * değil. Sunucuya taşınsaydı, adı bilen herkesin geçebileceği bir kapı
+ * görünümü verirdi; gerçek kapı `tenant:archive` izni ve o RBAC'ta.
+ */
+export async function archiveTenant(
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  // Değişken adı `t` DEĞİL: bu dosyada iki namespace var (`app.settings` ve
+  // `app.settings.lifecycle`) ve ikisini aynı adla açmak, anahtarların hangi
+  // sözlükten okunduğunu okuyan için belirsiz yapıyor —
+  // `tests/i18n-keys.test.ts` de statik taramada aynı belirsizliğe düşüyor.
+  const tLifecycle = await getTranslations("app.settings.lifecycle");
+
+  return runAction(
+    {
+      permission: "tenant:archive",
+      schema: lifecycleSchema,
+      meta: { action: "tenant_archive", resource: "tenant" },
+    },
+    formData,
+    async ({ input }) => {
+      await apiPost(
+        "/v1/panel/tenancy/lifecycle/archive",
+        { reason: input.reason },
+        tenantLifecycleResult,
+        { reason: input.reason },
+      );
+      // Kabuk site durumunu gösteriyor ve artık salt-okunur rozeti taşıyacak.
+      revalidatePath("/panel", "layout");
+      return okState(tLifecycle("archiveDone"));
+    },
+  );
+}
+
+export async function restoreTenant(
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  // Değişken adı `t` DEĞİL: bu dosyada iki namespace var (`app.settings` ve
+  // `app.settings.lifecycle`) ve ikisini aynı adla açmak, anahtarların hangi
+  // sözlükten okunduğunu okuyan için belirsiz yapıyor —
+  // `tests/i18n-keys.test.ts` de statik taramada aynı belirsizliğe düşüyor.
+  const tLifecycle = await getTranslations("app.settings.lifecycle");
+
+  return runAction(
+    {
+      permission: "tenant:archive",
+      schema: lifecycleSchema,
+      meta: { action: "tenant_restore", resource: "tenant" },
+    },
+    formData,
+    async ({ input }) => {
+      await apiPost(
+        "/v1/panel/tenancy/lifecycle/restore",
+        { reason: input.reason },
+        tenantLifecycleResult,
+        { reason: input.reason },
+      );
+      revalidatePath("/panel", "layout");
+      return okState(tLifecycle("restoreDone"));
     },
   );
 }

@@ -1,6 +1,10 @@
 import { Module } from "@nestjs/common";
 
 import { PropertyModule } from "../property/property.module";
+import { ImpersonationService } from "./impersonation.service";
+import { LifecycleController } from "./lifecycle.controller";
+import { LifecycleService } from "./lifecycle.service";
+import { PlatformAccountsService } from "./platform-accounts.service";
 import { PlatformController } from "./platform.controller";
 import { PortfolioController } from "./portfolio.controller";
 import { SettingsWriteService } from "./settings-write.service";
@@ -18,8 +22,20 @@ import { TenancyService } from "./tenancy.service";
  */
 @Module({
   imports: [PropertyModule],
-  controllers: [TenancyController, PlatformController, PortfolioController],
-  providers: [TenancyService, StaffWriteService, SettingsWriteService],
-  exports: [TenancyService],
+  controllers: [
+    TenancyController,
+    LifecycleController,
+    PlatformController,
+    PortfolioController,
+  ],
+  providers: [
+    TenancyService,
+    StaffWriteService,
+    SettingsWriteService,
+    LifecycleService,
+    PlatformAccountsService,
+    ImpersonationService,
+  ],
+  exports: [TenancyService, LifecycleService],
 })
 export class TenancyModule {}

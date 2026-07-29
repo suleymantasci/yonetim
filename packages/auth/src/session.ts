@@ -42,11 +42,23 @@ export async function createSession(params: {
   device?: string;
   impersonatedBy?: string;
   rememberMe?: boolean;
+  /**
+   * Özel ömür (dakika) — `rememberMe`'yi ve 12 saatlik varsayılanı ezer.
+   *
+   * Impersonation için var: süper-admin bir müşteri hesabına geçtiğinde o
+   * oturumun 12 saat yaşaması, kapatmayı unutulan bir tarayıcı sekmesinin
+   * müşteri verisine yarım gün açık kalması demekti. Süre sınırını çağıran
+   * tarafın vermesi, oturum modülünün "bu oturum ne işe yarıyor" bilgisini
+   * taşımasından iyi.
+   */
+  expiresInMinutes?: number;
 }): Promise<{ token: string; expiresAt: Date }> {
   const token = randomToken(32);
-  const expiresAt = params.rememberMe
-    ? addDays(new Date(), SESSION_MAX_DAYS)
-    : addHours(new Date(), 12);
+  const expiresAt = params.expiresInMinutes
+    ? new Date(Date.now() + params.expiresInMinutes * 60_000)
+    : params.rememberMe
+      ? addDays(new Date(), SESSION_MAX_DAYS)
+      : addHours(new Date(), 12);
 
   await withBypassRls("auth:create-session", async (tx) => {
     await tx.insert(sessions).values({

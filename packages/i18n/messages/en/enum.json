@@ -255,6 +255,14 @@
     "cancelled": "Cancelled",
     "archived": "Archived"
   },
+  "invoiceStatus": {
+    "draft": "Draft",
+    "issued": "Issued",
+    "paid": "Paid",
+    "overdue": "Overdue",
+    "void": "Void",
+    "refunded": "Refunded"
+  },
   "migrationSource": {
     "apsiyon": "Apsiyon",
     "biyos": "Biyos",

@@ -295,8 +295,20 @@ export async function AppShell({
       }
       banner={
         impersonated ? (
-          <div className="bg-warning px-4 py-2 text-sm font-semibold text-accent-fg">
-            {t("shell.impersonationWarning")}
+          /*
+           * Bant artık bir çıkış yolu taşıyor. Eskiden yalnız uyarı metniydi
+           * ve geçişten dönmenin tek yolu çıkış yapıp yeniden giriş yapmaktı —
+           * yani destek ekibi her müşteri bakışının sonunda kendi oturumunu
+           * kaybediyordu. Düğme `<form>` içinde: JS kapalıyken de çalışıyor ve
+           * geçişten çıkmak, kabuğun en güvenilir olması gereken işlevi.
+           */
+          <div className="flex flex-wrap items-center justify-between gap-2 bg-warning px-4 py-2 text-sm font-semibold text-accent-fg">
+            <span>{t("shell.impersonationWarning")}</span>
+            <form action="/api/session/impersonate/stop" method="post">
+              <button className="rounded-lg border border-accent-fg/40 px-3 py-1 text-xs font-bold hover:bg-accent-fg/10">
+                {t("shell.impersonationExit")}
+              </button>
+            </form>
           </div>
         ) : null
       }
