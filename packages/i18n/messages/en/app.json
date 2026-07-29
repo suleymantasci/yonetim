@@ -1154,7 +1154,8 @@
     "bodyTooShort": "The content must be at least 10 characters.",
     "channelRequired": "Select at least one channel.",
     "sending": "Sending…",
-    "draft": "Draft"
+    "draft": "Draft",
+    "urgentForbidden": "You do not have permission to send urgent announcements. You can publish it without the urgent flag."
   },
   "polls": {
     "title": "Polls & voting",

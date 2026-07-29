@@ -7,11 +7,11 @@ import {
 import { Reflector } from "@nestjs/core";
 import { ClsService } from "nestjs-cls";
 
-import { hasPermission } from "@yonetim/auth";
 import type { Permission } from "@yonetim/core";
 
 import type { ClsStore } from "../../infra/cls/request-context";
 import { PERMISSION_KEY, PUBLIC_KEY } from "../decorators";
+import { grants } from "../permission";
 
 /**
  * `@RequirePermission('unit:read')` — MIMARI-PLAN §8.5.
@@ -49,11 +49,7 @@ export class PermissionGuard implements CanActivate {
     const ctx = this.cls.get("ctx");
     if (!ctx) throw new ForbiddenException("forbidden");
 
-    const granted = required.every((permission) =>
-      ctx.source === "api_key"
-        ? ctx.scopes.includes(permission)
-        : hasPermission(ctx.roles, permission),
-    );
+    const granted = required.every((permission) => grants(ctx, permission));
 
     if (!granted)
       throw new ForbiddenException(`forbidden:${required.join(",")}`);

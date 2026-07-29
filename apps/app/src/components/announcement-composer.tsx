@@ -17,7 +17,12 @@ const AUDIENCES = ["all", "owners", "tenants", "new_residents"] as const;
 const CHANNELS = ["whatsapp", "sms", "email", "in_app"] as const;
 
 /** Duyuru oluşturucu — canlı KVKK kontrolü (SPEC Bölüm 6.4). */
-export function AnnouncementComposer() {
+export function AnnouncementComposer({
+  /** `announcement:send_urgent` — acil kutusu tüm kanalları açtığı için ayrı. */
+  canSendUrgent,
+}: {
+  canSendUrgent: boolean;
+}) {
   const t = useTranslations("app.announcements");
   const tEnum = useTranslations("enum");
   const tKvkk = useTranslations("kvkk");
@@ -84,12 +89,14 @@ export function AnnouncementComposer() {
             </fieldset>
           </div>
 
-          <label className="flex items-center gap-2 text-sm text-fg">
-            <input type="checkbox" name="isUrgent" />
-            <span>
-              <strong>{t("urgentLabel")}</strong> — {t("urgentDescription")}
-            </span>
-          </label>
+          {canSendUrgent ? (
+            <label className="flex items-center gap-2 text-sm text-fg">
+              <input type="checkbox" name="isUrgent" />
+              <span>
+                <strong>{t("urgentLabel")}</strong> — {t("urgentDescription")}
+              </span>
+            </label>
+          ) : null}
 
           {checking ? <p className="text-xs text-fg-subtle">{t("checking")}</p> : null}
 

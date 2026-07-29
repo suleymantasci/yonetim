@@ -38,7 +38,16 @@ export default async function AnnouncementsPage() {
       <PageHeader title={t("title")} description={t("description")} />
 
       <div className={canCompose ? "grid gap-4 lg:grid-cols-2" : "mx-auto max-w-3xl"}>
-        {canCompose ? <AnnouncementComposer /> : null}
+        {/*
+          Acil kutusu ayrı yetkiye bağlı: işaretlendiğinde sakinin kanal
+          tercihi geçersiz kalıyor ve WhatsApp/SMS/e-posta/uygulama içi
+          bildirimin hepsi açılıyor. Yetkisi olmayana gösterilmiyor —
+          sunucu da ayrıca reddediyor, ekran yalnız boşa doldurulacak bir
+          kutuyu göstermiyor.
+        */}
+        {canCompose ? (
+          <AnnouncementComposer canSendUrgent={can(ctx, "announcement:send_urgent")} />
+        ) : null}
 
         <Card>
           <CardHeader

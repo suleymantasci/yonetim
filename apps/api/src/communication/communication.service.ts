@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 
 import type {
@@ -18,6 +22,8 @@ import { filterContent, requiresIndividualDelivery } from "@yonetim/kvkk";
 const UNMATCHED = "unmatched";
 
 import { AuditService } from "../governance/audit/audit.service";
+import { grants } from "../identity/permission";
+import { DbService } from "../infra/db/db.service";
 import { CommunicationRepository } from "./communication.repository";
 
 /** `communication` iş akışı — MIMARI-PLAN §8.5, §9a. */
@@ -27,6 +33,8 @@ export class CommunicationService {
     private readonly repo: CommunicationRepository,
     private readonly audit: AuditService,
     private readonly events: EventEmitter2,
+    /** Yalnız `ctx()` için: acil duyuru yetkisi isteğin içeriğine bağlı. */
+    private readonly db: DbService,
   ) {}
 
   /**
@@ -40,6 +48,24 @@ export class CommunicationService {
   async createAnnouncement(
     dto: AnnouncementCreate,
   ): Promise<AnnouncementCreateResult> {
+    /*
+     * Acil durum **ayrı bir yetki** — `announcement:write` yetmiyor.
+     *
+     * `isUrgent` yalnız bir rozet değil: aşağıdaki override sakinin kanal
+     * tercihini geçersiz kılıp WhatsApp, SMS, e-posta ve uygulama içi
+     * bildirimin **hepsini** açıyor. Yani duyuru yazabilen herkes, gecenin
+     * bir yarısı bütün sakinlerin telefonunu çaldırabiliyordu. Yetki
+     * `packages/core/rbac.ts` içinde tanımlıydı ama hiçbir yerde
+     * kullanılmıyordu (PROJE-DURUMU §5.1).
+     *
+     * Kontrol dekoratörle yapılamıyor: aynı uç hem sıradan hem acil duyuru
+     * oluşturuyor, fark gövdedeki bayrakta. Karar bu yüzden burada, ama
+     * "kim neye sahip" sorusunu guard ile **aynı** fonksiyon cevaplıyor.
+     */
+    if (dto.isUrgent && !grants(this.db.maybeCtx(), "announcement:send_urgent")) {
+      throw new ForbiddenException("forbidden:announcement:send_urgent");
+    }
+
     // Acil durum override'ı tüm kanalları açar (SPEC 6.4): yangın/su baskını
     // duyurusunun kanal tercihine takılması kabul edilebilir değil.
     const channels = dto.isUrgent

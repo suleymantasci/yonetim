@@ -1154,7 +1154,8 @@
     "bodyTooShort": "İçerik en az 10 karakter olmalı.",
     "channelRequired": "En az bir kanal seçin.",
     "sending": "Gönderiliyor…",
-    "draft": "Taslak"
+    "draft": "Taslak",
+    "urgentForbidden": "Acil duyuru gönderme yetkiniz yok. Duyuruyu acil işaretlemeden yayınlayabilirsiniz."
   },
   "polls": {
     "title": "Anketler & Oylama",

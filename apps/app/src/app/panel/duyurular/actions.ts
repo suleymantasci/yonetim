@@ -8,7 +8,7 @@ import { announcementCreateResult } from "@yonetim/contracts";
 import { filterContent, type FindingSeverity } from "@yonetim/kvkk";
 
 import { apiPost } from "@/lib/api/server";
-import { requirePermission } from "@/lib/context";
+import { can, requirePermission } from "@/lib/context";
 
 /**
  * Duyuru oluşturma — SPEC Bölüm 6.4 (KVKK filtresi zorunlu).
@@ -59,7 +59,7 @@ export async function createAnnouncement(
   _prev: AnnouncementState,
   formData: FormData,
 ): Promise<AnnouncementState> {
-  await requirePermission("announcement:write");
+  const ctx = await requirePermission("announcement:write");
   const t = await getTranslations("app.announcements");
 
   const parsed = schema.safeParse({
@@ -81,6 +81,16 @@ export async function createAnnouncement(
   }
 
   const data = parsed.data;
+
+  /*
+   * Acil bayrağı ayrı yetki: sakinin kanal tercihini geçersiz kılıp tüm
+   * kanalları açıyor. Sunucu da reddediyor; buradaki kontrol ham 403 yerine
+   * anlaşılır bir mesaj vermek için — formu doldurmuş kullanıcıya "bilinmeyen
+   * hata" demek, neyi düzelteceğini söylememek olurdu.
+   */
+  if (data.isUrgent && !can(ctx, "announcement:send_urgent")) {
+    return { ok: false, message: t("urgentForbidden") };
+  }
 
   const result = await apiPost(
     "/v1/panel/communication/announcements",
