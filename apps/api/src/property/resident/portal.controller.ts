@@ -1,181 +1,177 @@
-import { Controller, ForbiddenException, Get } from "@nestjs/common";
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
 
-import type { PortalOverview } from "@yonetim/contracts";
 import {
-  announcements,
-  debtChanges,
-  debts,
-  payments,
-  tenants,
-  unitOccupancies,
-  units,
-} from "@yonetim/db";
+  portalCommentCreate,
+  portalMessageCreate,
+  portalProfileUpdate,
+  portalRequestCreate,
+  type PortalAnnouncementsResponse,
+  type PortalCommentCreate,
+  type PortalDebtsResponse,
+  type PortalManagement,
+  type PortalMessageCreate,
+  type PortalMessagesResponse,
+  type PortalPaymentsResponse,
+  type PortalProfile,
+  type PortalProfileUpdate,
+  type PortalRequestCreate,
+  type PortalRequestDetail,
+  type PortalRequestsResponse,
+  type PortalSummary,
+} from "@yonetim/contracts";
 
-import { DbService } from "../../infra/db/db.service";
+import { RequirePermission } from "../../identity/decorators";
+import { ZodBodyPipe } from "../../infra/zod/zod-dto";
+import { PortalService } from "./portal.service";
 
 /**
- * Sakin self-servis portalı — `/v1/panel/portal/me` (SPEC Faz 2 / Bölüm 6.1).
+ * Sakin self-servis portalı — `/v1/panel/portal/*` (SPEC Faz 2 / Bölüm 6.1).
  *
- * `@RequirePermission` YOK ve bilinçli: sakinin `debt:read` izni yok, olması
- * da gerekmiyor. Kapsamı izin değil **sorgu** kısıtlıyor — dönen her satır
- * oturumdaki kullanıcının kendi dairesinden. İzin adı eklemek, sakine
- * "borçları okuyabilir" demek olurdu ki bu paneldeki tüm borçları kapsar.
+ * İZİNLER NEDEN `*_own`: sakinin `debt:read` ya da `message:read` izni yok ve
+ * olmamalı; o izinler site genelindeki yönetim uçlarını açar. Sakine "kendi
+ * borcunu görsün" derken tüm sitenin borcunu açmamak için ayrı izin adları
+ * kullanılıyor (`packages/core/src/rbac.ts` RESIDENT_BASE).
  *
- * Aktif daire oturumdan bulunuyor; istemci `unitId` gönderemiyor. Gönderebilse
- * sakin komşusunun kimliğini yazıp onun borcunu görürdü.
+ * Kapsam ayrıca **sorguyla** da daraltılıyor: servis hiçbir metotta dışarıdan
+ * `unitId`/`userId` almıyor, hepsini oturumdan çözüyor. İzin ile sorgu
+ * birbirinin yedeği — biri unutulursa diğeri hâlâ tutuyor.
  */
 @ApiTags("panel/portal")
 @Controller("v1/panel/portal")
 export class PortalController {
-  constructor(private readonly db: DbService) {}
+  constructor(private readonly service: PortalService) {}
 
   @Get("me")
+  @RequirePermission("debt:read_own")
   @ApiOperation({
-    summary: "Sakin portalı — borç, ödeme, düzeltme ve duyurular tek yanıtta",
+    summary: "Sakin ana ekranı — borç özeti, sıradaki vade ve duyurular",
   })
-  async me(): Promise<PortalOverview> {
-    const ctx = this.db.ctx();
-    if (!ctx.userId) throw new ForbiddenException("user_context_required");
-    const userId = ctx.userId;
+  summary(): Promise<PortalSummary> {
+    return this.service.summary();
+  }
 
-    return this.db.tx(async (tx) => {
-      const tenantRows = await tx
-        .select({ name: tenants.name })
-        .from(tenants)
-        .where(eq(tenants.id, ctx.tenantId))
-        .limit(1);
-      const tenantName = tenantRows[0]?.name ?? "";
+  @Get("debts")
+  @RequirePermission("debt:read_own")
+  @ApiOperation({
+    summary: "Kendi borç dökümüm",
+    description:
+      "Düzeltmeler yalnız `visible_to_resident` olanlar; yönetimin iç notu " +
+      "niteliğindeki değişiklikler dönmez.",
+  })
+  debts(): Promise<PortalDebtsResponse> {
+    return this.service.debts();
+  }
 
-      const occ = await tx
-        .select({
-          unitId: unitOccupancies.unitId,
-          number: units.number,
-          relation: unitOccupancies.relation,
-        })
-        .from(unitOccupancies)
-        .innerJoin(units, eq(units.id, unitOccupancies.unitId))
-        .where(
-          and(
-            eq(unitOccupancies.userId, userId),
-            isNull(unitOccupancies.endDate),
-          ),
-        )
-        .limit(1);
+  @Get("payments")
+  @RequirePermission("payment:read_own")
+  @ApiOperation({ summary: "Kendi ödeme geçmişim" })
+  payments(): Promise<PortalPaymentsResponse> {
+    return this.service.payments();
+  }
 
-      const unit = occ[0];
-      if (!unit) {
-        // Daire yok = hata değil, durum: yeni taşınmış sakin kaydı henüz
-        // eşleştirilmemiş olabilir. Ekran bunu anlatan bir boş durum gösteriyor.
-        return {
-          unit: null,
-          tenantName,
-          totals: {
-            outstandingMinor: 0,
-            overdueMinor: 0,
-            lastPaymentMinor: null,
-          },
-          debts: [],
-          changes: [],
-          announcements: [],
-        };
-      }
+  @Get("requests")
+  @RequirePermission("request:read_own")
+  @ApiOperation({ summary: "Kendi taleplerim" })
+  requests(): Promise<PortalRequestsResponse> {
+    return this.service.requests();
+  }
 
-      const debtRows = await tx
-        .select()
-        .from(debts)
-        .where(and(eq(debts.unitId, unit.unitId), isNull(debts.deletedAt)))
-        .orderBy(desc(debts.dueDate))
-        .limit(24);
+  @Get("requests/:id")
+  @RequirePermission("request:read_own")
+  @ApiOperation({
+    summary: "Talep detayı ve yazışma",
+    description:
+      "Başkasının talebi 404 döner — 403 dönmek kaydın varlığını sızdırırdı. " +
+      "`is_internal` yorumlar listede yer almaz.",
+  })
+  requestDetail(@Param("id", ParseUUIDPipe) id: string): Promise<PortalRequestDetail> {
+    return this.service.requestDetail(id);
+  }
 
-      const paymentRows = await tx
-        .select({ amountKurus: payments.amountKurus })
-        .from(payments)
-        .where(
-          and(
-            eq(payments.unitId, unit.unitId),
-            eq(payments.status, "completed"),
-          ),
-        )
-        .orderBy(desc(payments.paidAt))
-        .limit(1);
+  @Post("requests")
+  @RequirePermission("request:write")
+  @ApiOperation({
+    summary: "Talep aç",
+    description: "Talep kodu ve daire bağlantısı sunucuda üretilir.",
+  })
+  createRequest(
+    @Body(new ZodBodyPipe(portalRequestCreate)) dto: PortalRequestCreate,
+  ) {
+    return this.service.createRequest(dto);
+  }
 
-      const changes = await tx
-        .select()
-        .from(debtChanges)
-        .where(
-          and(
-            eq(debtChanges.unitId, unit.unitId),
-            // Yalnız sakine açık düzeltmeler: iç not niteliğindeki değişiklikler
-            // portalda görünmüyor (GAP 4.1.6).
-            eq(debtChanges.visibleToResident, true),
-          ),
-        )
-        .orderBy(desc(debtChanges.createdAt))
-        .limit(20);
+  @Post("requests/:id/comments")
+  @RequirePermission("request:write")
+  @ApiOperation({ summary: "Talebe yorum ekle" })
+  addComment(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body(new ZodBodyPipe(portalCommentCreate)) dto: PortalCommentCreate,
+  ) {
+    return this.service.addComment(id, dto);
+  }
 
-      const announcementRows = await tx
-        .select({
-          id: announcements.id,
-          title: announcements.title,
-          body: announcements.body,
-          publishedAt: announcements.publishedAt,
-        })
-        .from(announcements)
-        .where(
-          and(
-            isNull(announcements.deletedAt),
-            sql`${announcements.publishedAt} IS NOT NULL`,
-          ),
-        )
-        .orderBy(desc(announcements.publishedAt))
-        .limit(5);
+  @Get("messages")
+  @RequirePermission("message:read_own")
+  @ApiOperation({
+    summary: "Yönetimle yazışmam",
+    description:
+      "Yönetim ucunun (`/v1/panel/communication/messages`) aksine yalnız " +
+      "oturumdaki kullanıcının mesajlarını döndürür.",
+  })
+  messages(): Promise<PortalMessagesResponse> {
+    return this.service.messages();
+  }
 
-      // "Vadesi geçti mi" kararı sunucu saatiyle: tarayıcının saati yanlışsa
-      // sakin borcunu gecikmemiş sanardı.
-      const now = new Date();
-      const open = debtRows.filter((d) => d.status !== "paid");
-      const outstanding = open.reduce(
-        (a, d) => a + (d.amountKurus + d.lateFeeKurus - d.paidKurus),
-        0,
-      );
-      const overdue = open
-        .filter((d) => d.dueDate < now)
-        .reduce((a, d) => a + (d.amountKurus + d.lateFeeKurus - d.paidKurus), 0);
+  @Post("messages")
+  @RequirePermission("message:write")
+  @ApiOperation({ summary: "Yönetime mesaj gönder" })
+  sendMessage(
+    @Body(new ZodBodyPipe(portalMessageCreate)) dto: PortalMessageCreate,
+  ) {
+    return this.service.sendMessage(dto);
+  }
 
-      return {
-        unit: {
-          id: unit.unitId,
-          number: unit.number,
-          relation: unit.relation,
-        },
-        tenantName,
-        totals: {
-          outstandingMinor: outstanding,
-          overdueMinor: overdue,
-          lastPaymentMinor: paymentRows[0]?.amountKurus ?? null,
-        },
-        debts: debtRows.map((d) => ({
-          id: d.id,
-          description: d.description,
-          dueDate: d.dueDate,
-          amountMinor: d.amountKurus,
-          lateFeeMinor: d.lateFeeKurus,
-          paidMinor: d.paidKurus,
-          status: d.status,
-          overdue: d.status !== "paid" && d.dueDate < now,
-        })),
-        changes: changes.map((c) => ({
-          id: c.id,
-          changeType: c.changeType,
-          oldAmountMinor: Number(c.oldAmountKurus ?? 0),
-          newAmountMinor: Number(c.newAmountKurus ?? 0),
-          reason: c.reason,
-          createdAt: c.createdAt,
-        })),
-        announcements: announcementRows,
-      };
-    });
+  @Get("profile")
+  @RequirePermission("unit:read")
+  @ApiOperation({
+    summary: "Bilgilerim — kişisel kayıt ve bağımsız bölüm ilişkileri",
+    description: "TCKN ve telefon maskeli döner; kendi kaydında da ham değer verilmez.",
+  })
+  profile(): Promise<PortalProfile> {
+    return this.service.profile();
+  }
+
+  @Patch("profile")
+  @RequirePermission("unit:read")
+  @ApiOperation({
+    summary: "Bilgilerimi güncelle",
+    description:
+      "Telefon bu uçtan değişmez: numara oturum kimliğinin kendisi (OTP " +
+      "oraya gidiyor), doğrulamasız değişiklik hesabı devretmenin yolu olurdu.",
+  })
+  updateProfile(
+    @Body(new ZodBodyPipe(portalProfileUpdate)) dto: PortalProfileUpdate,
+  ) {
+    return this.service.updateProfile(dto);
+  }
+
+  @Get("management")
+  @RequirePermission("tenant:read")
+  @ApiOperation({
+    summary: "Yönetim bilgileri — yönetici, banka hesapları, personel",
+    description:
+      "Yöneticinin iletişim bilgisi KMK md.34 gereği kat maliklerine açıktır; " +
+      "IBAN yine de maskeli döner (yönetim ekranıyla aynı çizgi).",
+  })
+  management(): Promise<PortalManagement> {
+    return this.service.management();
+  }
+
+  @Get("announcements")
+  @RequirePermission("announcement:read")
+  @ApiOperation({ summary: "Yayınlanmış ve süresi dolmamış duyurular" })
+  announcements(): Promise<PortalAnnouncementsResponse> {
+    return this.service.announcements();
   }
 }

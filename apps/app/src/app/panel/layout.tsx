@@ -1,6 +1,5 @@
 import { cookies } from "next/headers";
 
-import { hasPermission } from "@yonetim/auth/guard";
 import {
   A11Y_COOKIE,
   parseA11y,
@@ -9,7 +8,7 @@ import {
 } from "@yonetim/ui";
 
 import { AppShell } from "@/components/app-shell";
-import { NAV_ITEMS } from "@/components/shell/nav";
+import { audienceOf, navItemsFor } from "@/components/shell/nav";
 import { requireContext } from "@/lib/context";
 import { getInAppNotifications, getNavBadges } from "@/lib/shell-data";
 
@@ -31,14 +30,20 @@ export default async function PanelLayout({
   const ctx = await requireContext();
   const cookieStore = await cookies();
 
-  const allowedHrefs = NAV_ITEMS.filter((item) =>
-    hasPermission(ctx.roles, item.permission),
-  ).map((i) => i.href);
+  // Menü hem izne hem kitleye bakar: sakinin `announcement:read` izni var ama
+  // yönetim ekranları onun menüsünde işi yok (bkz. `navItemsFor`).
+  const allowedHrefs = navItemsFor(ctx.roles).map((i) => i.href);
 
   // Rozetler ve bildirimler paralel çekilir: kabuk her sayfada render edildiği
   // için sıralı beklemek tüm panele gecikme bindirirdi.
+  //
+  // Rozet sayaçları yönetim sorguları (açık talep, eşleşmemiş banka hareketi);
+  // sakinde ne izni ne anlamı var, bu yüzden hiç çağrılmıyor.
+  const isResident = audienceOf(ctx.roles) === "resident";
   const [badges, notifications] = await Promise.all([
-    getNavBadges(),
+    isResident
+      ? Promise.resolve({} as Awaited<ReturnType<typeof getNavBadges>>)
+      : getNavBadges(),
     getInAppNotifications(),
   ]);
 

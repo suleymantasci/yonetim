@@ -6,13 +6,23 @@ import { Badge, Card, CardBody, CardHeader } from "@yonetim/ui";
 import { AnnouncementComposer } from "@/components/announcement-composer";
 import { PageHeader } from "@/components/app-shell";
 import { apiGet } from "@/lib/api/server";
-import { requirePermission } from "@/lib/context";
+import { can, requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Duyurular — yönetim ve sakin **aynı** ekranı paylaşıyor.
+ *
+ * Duyuru tanımı gereği site geneline yayın: içerik iki taraf için de aynı,
+ * değişen yalnız yazma yetkisi. Ayrı bir sakin rotası açmak aynı listeyi
+ * ikinci kez yazmak olurdu. Besteci kutusu `announcement:write` ile
+ * gizleniyor — öncesinde herkese render ediliyordu ve sakin, gönderemeyeceği
+ * bir formu görüyordu.
+ */
 export default async function AnnouncementsPage() {
-  await requirePermission("announcement:read");
+  const ctx = await requirePermission("announcement:read");
+  const canCompose = can(ctx, "announcement:write");
   const t = await getTranslations("app.announcements");
   const tCommon = await getTranslations("common");
   const tEnum = await getTranslations("enum");
@@ -27,8 +37,8 @@ export default async function AnnouncementsPage() {
     <>
       <PageHeader title={t("title")} description={t("description")} />
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <AnnouncementComposer />
+      <div className={canCompose ? "grid gap-4 lg:grid-cols-2" : "mx-auto max-w-3xl"}>
+        {canCompose ? <AnnouncementComposer /> : null}
 
         <Card>
           <CardHeader

@@ -1,4 +1,5 @@
-import type { Permission } from "@yonetim/core";
+import { hasPermission } from "@yonetim/auth/guard";
+import { isResidentRole, type Permission, type Role } from "@yonetim/core";
 
 /**
  * Panel gezinme haritası — SPEC Bölüm 11.4.
@@ -25,6 +26,22 @@ export type NavBadgeKey =
   | "unmatchedBankTx"
   | "overdueMaintenance";
 
+/**
+ * Menü öğesinin kime ait olduğu.
+ *
+ * NEDEN İZİN YETMİYOR: sakinin `announcement:read`, `poll:read`,
+ * `meeting:read`, `document:read` gibi izinleri **var** — bunlar site geneline
+ * açık içerik. Ama o izinlerin işaret ettiği sayfalar yönetim ekranı: duyuru
+ * sayfası besteci kutusu açıyor, mesaj sayfası sitedeki tüm yazışmayı
+ * listeliyor. Yalnız izne bakan bir menü, sakine yönetim ekranlarını
+ * gösteriyordu.
+ *
+ * Bu yüzden görünürlük iki koşula bağlı: **izin ∧ kitle**. Varsayılan
+ * `["staff"]`, yani yeni bir yönetim sayfası eklendiğinde sakine sızmaz —
+ * unutulduğunda güvenli tarafa düşen varsayılan bu.
+ */
+export type NavAudience = "staff" | "resident";
+
 export interface NavItem {
   href: string;
   /** `app.nav.<key>` çeviri anahtarı. */
@@ -34,10 +51,66 @@ export interface NavItem {
   badge?: NavBadgeKey;
   /** Komut paletinde arama için ek anahtar kelimeler (`app.nav.keywords.<key>`). */
   searchable?: boolean;
+  /** Kimin menüsünde görünür — verilmezse yalnız yönetim tarafı. */
+  audience?: NavAudience[];
 }
 
 export const NAV_ITEMS: NavItem[] = [
-  { href: "/panel", key: "dashboard", permission: "tenant:read", group: "general" },
+  // Ana ekran ikisinde de var; `/panel/page.tsx` role göre yönetim
+  // dashboard'unu ya da sakin özetini render ediyor.
+  {
+    href: "/panel",
+    key: "dashboard",
+    permission: "tenant:read",
+    group: "general",
+    audience: ["staff", "resident"],
+  },
+
+  /* ------------------------------------------------------------ sakin */
+  {
+    href: "/panel/borclarim",
+    key: "myDebts",
+    permission: "debt:read_own",
+    group: "finance",
+    audience: ["resident"],
+  },
+  {
+    href: "/panel/odemelerim",
+    key: "myPayments",
+    permission: "payment:read_own",
+    group: "finance",
+    audience: ["resident"],
+  },
+  {
+    href: "/panel/taleplerim",
+    key: "myRequests",
+    permission: "request:read_own",
+    group: "operations",
+    audience: ["resident"],
+  },
+  {
+    href: "/panel/mesajlarim",
+    key: "myMessages",
+    permission: "message:read_own",
+    group: "communication",
+    audience: ["resident"],
+  },
+  {
+    href: "/panel/bilgilerim",
+    key: "myProfile",
+    permission: "unit:read",
+    group: "general",
+    audience: ["resident"],
+  },
+  {
+    href: "/panel/yonetim-bilgileri",
+    key: "managementInfo",
+    permission: "tenant:read",
+    group: "general",
+    audience: ["resident"],
+  },
+
+  /* ---------------------------------------------------------- yönetim */
   { href: "/panel/birimler", key: "units", permission: "unit:read", group: "property" },
   { href: "/panel/sakinler", key: "residents", permission: "resident:read", group: "property" },
   { href: "/panel/gecis", key: "migration", permission: "unit:write", group: "property" },
@@ -53,11 +126,15 @@ export const NAV_ITEMS: NavItem[] = [
     badge: "unmatchedBankTx",
   },
   { href: "/panel/simulator", key: "simulator", permission: "dues:simulate", group: "finance" },
+  // Duyuru site geneline yayın: içerik iki taraf için de aynı, değişen yalnız
+  // yazma yetkisi. Ayrı bir sakin rotası açmak aynı listeyi ikinci kez
+  // yazmak olurdu; sayfa besteci kutusunu `announcement:write` ile gizliyor.
   {
     href: "/panel/duyurular",
     key: "announcements",
     permission: "announcement:read",
     group: "communication",
+    audience: ["staff", "resident"],
   },
   { href: "/panel/anketler", key: "polls", permission: "poll:read", group: "communication" },
   { href: "/panel/toplantilar", key: "meetings", permission: "meeting:read", group: "communication" },
@@ -139,6 +216,34 @@ export const QUICK_ACTIONS: QuickAction[] = [
   { href: "/panel/mesajlar/yeni", key: "newMessage", permission: "message:write" },
   { href: "/panel/banka/hesap/yeni", key: "newBankAccount", permission: "bank:write" },
 ];
+
+/**
+ * Kullanıcının kitlesi — menü ve ana ekran seçimi buna bakar.
+ *
+ * Karma rol mümkün: bir site yöneticisi aynı zamanda o sitede malik olabilir.
+ * Böyle bir kullanıcıya sakin menüsü göstermek, yönetim işini yapamaz hâle
+ * getirirdi; bu yüzden **yönetim kitlesi baskın**. Kendi borcunu görmek
+ * isterse `/panel/borclarim` yolu ona da açık kalıyor (izni var), yalnız
+ * menüde durmuyor.
+ */
+export function audienceOf(roles: Role[]): NavAudience {
+  return roles.length > 0 && roles.every(isResidentRole) ? "resident" : "staff";
+}
+
+/**
+ * Menüde görünecek öğeler — izin **ve** kitle koşulunu birlikte uygular.
+ *
+ * Kabuk, komut paleti ve `allowedHrefs` hep buradan besleniyor; filtrenin tek
+ * kopyası olması önemli, çünkü ikinci bir kopya er geç birinden sapardı.
+ */
+export function navItemsFor(roles: Role[]): NavItem[] {
+  const audience = audienceOf(roles);
+  return NAV_ITEMS.filter(
+    (item) =>
+      (item.audience ?? ["staff"]).includes(audience) &&
+      hasPermission(roles, item.permission),
+  );
+}
 
 /**
  * Bir yol için gezinme öğesini bulur (en uzun eşleşen önek).

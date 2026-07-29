@@ -53,7 +53,13 @@
       "newBankAccount": "Yeni banka hesabı"
     },
     "inventory": "Demirbaş",
-    "decisionBook": "Karar Defteri"
+    "decisionBook": "Karar Defteri",
+    "myDebts": "Borçlarım",
+    "myPayments": "Ödemelerim",
+    "myRequests": "Taleplerim",
+    "myMessages": "Mesajlarım",
+    "myProfile": "Bilgilerim",
+    "managementInfo": "Yönetim Bilgileri"
   },
   "shell": {
     "impersonationWarning": "Bu oturum destek ekibi tarafından kullanıcı adına açılmıştır. Tüm işlemler ayrıca kayıt altına alınır.",
@@ -1993,7 +1999,25 @@
     "changeType": {
       "amount_changed": "Tutar değişikliği",
       "due_date_changed": "Vade değişikliği"
-    }
+    },
+    "greeting": "{property}",
+    "action": {
+      "viewDebts": "Borçlarımı gör",
+      "newRequest": "Talep aç",
+      "all": "Tümü"
+    },
+    "overdueTitle": "Gecikmiş borcunuz var",
+    "overdueBody": "{amount} tutarındaki borcunuzun vadesi geçti. Gecikme tazminatı işlemeye devam eder.",
+    "overdueBadge": "Gecikmiş",
+    "noPayment": "Kayıt yok",
+    "nextDueTitle": "Sıradaki ödeme",
+    "noOpenDebt": "Açık borcunuz bulunmuyor.",
+    "myActivity": "Bana ait",
+    "openRequests": "Açık talep",
+    "unreadMessages": "Okunmamış mesaj",
+    "openPolls": "Oy bekleyen anket",
+    "announcementsTitle": "Son duyurular",
+    "urgent": "Acil"
   },
   "payment": {
     "summaryTitle": "Ödeme özeti",
@@ -2154,5 +2178,145 @@
     "emptyStep2": "Toplantısız oybirliğiyle alınan kararları da deftere işleyin (md.32/son).",
     "emptyStep3": "Noter tasdikli fiziki deftere işlediğinizde sayfa numarasını da girin.",
     "meetingsLink": "Toplantı gündemi ve katılım için <link>Toplantılar</link> ekranına bakın."
+  },
+  "myDebts": {
+    "title": "Borçlarım",
+    "description": "Dairenize ait borç dökümü ve yapılan düzeltmeler.",
+    "outstanding": "Toplam borç",
+    "overdue": "Gecikmiş",
+    "lateFee": "Gecikme tazminatı",
+    "listTitle": "Borç dökümü",
+    "emptyTitle": "Borç kaydı yok",
+    "emptyDescription": "Dairenize tanımlanmış bir borç bulunmuyor.",
+    "col": {
+      "description": "Açıklama",
+      "dueDate": "Vade",
+      "amount": "Tutar",
+      "paid": "Ödenen",
+      "remaining": "Kalan",
+      "status": "Durum"
+    },
+    "daysLate": "{days} gün gecikti",
+    "changesTitle": "Değişiklik geçmişi",
+    "changesDescription": "Borcunuzda yapılan her değişiklik burada görünür ve silinemez."
+  },
+  "myPayments": {
+    "title": "Ödemelerim",
+    "description": "Dairenize ait ödeme geçmişi ve makbuz numaraları.",
+    "thisYear": "Bu yıl",
+    "allTime": "Toplam",
+    "listTitle": "Ödeme geçmişi",
+    "emptyTitle": "Ödeme kaydı yok",
+    "emptyDescription": "Henüz kayıtlı bir ödemeniz bulunmuyor.",
+    "col": {
+      "date": "Tarih",
+      "method": "Yöntem",
+      "receipt": "Makbuz",
+      "amount": "Tutar",
+      "status": "Durum"
+    },
+    "paidBy": "{name} ödedi"
+  },
+  "myRequests": {
+    "title": "Taleplerim",
+    "description": "Açtığınız arıza ve istek kayıtları.",
+    "new": "Yeni talep",
+    "newDescription": "Arızayı olabildiğince açık anlatın; yönetim daha hızlı çözer.",
+    "created": "Talebiniz oluşturuldu ({code}).",
+    "commentAdded": "Mesajınız iletildi.",
+    "submit": "Talebi gönder",
+    "titlePlaceholder": "Örn. Asansör 3. katta duruyor",
+    "field": {
+      "title": "Başlık",
+      "category": "Kategori",
+      "priority": "Aciliyet",
+      "description": "Açıklama"
+    },
+    "priorityHint": "Acil durumlarda yönetim önceliği kendisi yükseltir.",
+    "descriptionHint": "Nerede, ne zaman ve nasıl olduğunu yazmanız işi hızlandırır.",
+    "emptyTitle": "Henüz talebiniz yok",
+    "emptyDescription": "Bir arıza veya isteğiniz olduğunda buradan bildirebilirsiniz.",
+    "col": {
+      "code": "Kod",
+      "title": "Başlık",
+      "category": "Kategori",
+      "createdAt": "Açılış",
+      "status": "Durum"
+    },
+    "commentCount": "{count} mesaj",
+    "conversation": "Yazışma",
+    "conversationHint": "Yönetimle bu talep hakkındaki yazışmanız.",
+    "originalRequest": "Talebim",
+    "management": "Yönetim",
+    "noComments": "Henüz mesaj yok.",
+    "closedHint": "Bu talep kapandı. Yeni bir sorun için yeni talep açabilirsiniz.",
+    "details": "Talep bilgileri",
+    "resolvedAt": "Çözüm",
+    "sendComment": "Gönder",
+    "commentLabel": "Mesajınız",
+    "commentPlaceholder": "Eklemek istediğiniz bilgi…"
+  },
+  "myMessages": {
+    "title": "Mesajlarım",
+    "description": "Yönetimle uygulama içi yazışmanız.",
+    "conversation": "Yazışma",
+    "emptyTitle": "Henüz mesaj yok",
+    "emptyDescription": "Yönetime ilk mesajınızı aşağıdan gönderebilirsiniz.",
+    "management": "Yönetim",
+    "newMessage": "Yeni mesaj",
+    "send": "Gönder",
+    "sent": "Mesajınız iletildi.",
+    "placeholder": "Yönetime iletmek istediğiniz konu…"
+  },
+  "myProfile": {
+    "title": "Bilgilerim",
+    "description": "Kayıtlı bilgileriniz ve bağımsız bölüm ilişkileriniz.",
+    "formTitle": "İletişim bilgileri",
+    "save": "Kaydet",
+    "saved": "Bilgileriniz güncellendi.",
+    "field": {
+      "firstName": "Ad",
+      "lastName": "Soyad",
+      "email": "E-posta",
+      "emergencyName": "Acil durumda aranacak kişi",
+      "emergencyPhone": "Acil durum telefonu",
+      "phone": "Telefon",
+      "tckn": "TCKN"
+    },
+    "emailHint": "Bildirimler ve makbuzlar bu adrese gönderilir.",
+    "identityTitle": "Kimlik bilgileri",
+    "maskedHint": "Telefon ve TCKN güvenlik gereği maskeli gösterilir. Yanlışsa yöneticinize bildirin.",
+    "unitsTitle": "Bağımsız bölümlerim",
+    "noUnits": "Tanımlı bağımsız bölüm yok.",
+    "col": {
+      "unit": "Daire",
+      "relation": "İlişki",
+      "since": "Başlangıç"
+    }
+  },
+  "managementInfo": {
+    "title": "Yönetim Bilgileri",
+    "description": "Kime, nasıl ulaşacağınız ve aidat hesapları.",
+    "propertyTitle": "Site bilgileri",
+    "propertyName": "Adı",
+    "propertyType": "Türü",
+    "address": "Adres",
+    "managerTitle": "Yönetici",
+    "managerName": "Ad soyad",
+    "phone": "Telefon",
+    "email": "E-posta",
+    "noManager": "Yönetici bilgisi tanımlanmamış.",
+    "bankTitle": "Aidat hesapları",
+    "bankDescription": "Ödemelerinizi bu hesaplara yapabilirsiniz.",
+    "noBankAccount": "Tanımlı banka hesabı yok.",
+    "col": {
+      "account": "Hesap",
+      "iban": "IBAN",
+      "name": "Ad soyad",
+      "role": "Görev"
+    },
+    "ibanMaskedHint": "IBAN güvenlik gereği maskeli gösterilir. Tam numara için yöneticinize başvurun.",
+    "staffTitle": "Personel",
+    "noStaff": "Kayıtlı personel yok."
   }
 }

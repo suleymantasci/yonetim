@@ -43,7 +43,7 @@ export const PERMISSIONS = [
   "decision:read", "decision:write",
   "staff:read", "staff:write", "staff:payroll",
   "legal:read", "legal:write",
-  "message:read", "message:write",
+  "message:read", "message:read_own", "message:write",
   "report:read", "report:export",
   "nps:read",
   "kvkk:read", "kvkk:manage", "kvkk:export_own",
@@ -78,7 +78,16 @@ const RESIDENT_BASE: Permission[] = [
   "reservation:read",
   "reservation:write",
   "document:read",
-  "message:read",
+  /**
+   * `message:read` DEĞİL — GAP: sakinin bu izni vardı ve
+   * `GET /v1/panel/communication/messages` yalnız `message:read` istiyor.
+   * Yani her sakin sitedeki **tüm** yazışmaları okuyabiliyordu; ekranı
+   * gizlemek yetmez, uç kendisi açıktı. Kapsam izinle daraltılıyor:
+   * `message:read_own` yalnız sakinin kendi yazışmasını döndüren
+   * `/v1/panel/portal/messages` ucunu açar. `debt:read_own` ve
+   * `request:read_own` ile aynı desen.
+   */
+  "message:read_own",
   "message:write",
   "kvkk:export_own",
 ];

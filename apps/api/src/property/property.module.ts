@@ -3,6 +3,7 @@ import { Module } from "@nestjs/common";
 import { BlockService } from "./block/block.service";
 import { PiiService } from "./resident/pii.service";
 import { PortalController } from "./resident/portal.controller";
+import { PortalService } from "./resident/portal.service";
 import { ResidentWriteRepository } from "./resident/resident-write.repository";
 import { ResidentController } from "./resident/resident.controller";
 import { ResidentRepository } from "./resident/resident.repository";
@@ -27,6 +28,7 @@ import { UnitService } from "./unit/unit.service";
     ResidentRepository,
     ResidentWriteRepository,
     PiiService,
+    PortalService,
   ],
   exports: [UnitService, UnitRepository, ResidentService, PiiService],
 })

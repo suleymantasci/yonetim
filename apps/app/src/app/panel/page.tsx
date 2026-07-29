@@ -18,15 +18,27 @@ import {
 import { dashboardResponse } from "@yonetim/contracts";
 
 import { PageHeader } from "@/components/app-shell";
+import { audienceOf } from "@/components/shell/nav";
 import { apiGet } from "@/lib/api/server";
 import { requireContext } from "@/lib/context";
 import { formatters } from "@/lib/format";
 import { DashboardCharts } from "./dashboard-charts";
+import { ResidentHome } from "./resident-home";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const ctx = await requireContext();
+
+  /**
+   * `/panel` ortak adres, ekran role göre ayrışıyor.
+   *
+   * Öncesinde sakin buraya girdiğinde hata sayfası görüyordu: aşağıdaki
+   * `/v1/panel/dashboard` çağrısı `report:read` istiyor ve sakinde yok.
+   * Sakini `/giris`e atmak da doğru değildi — oturumu geçerliydi, yalnız
+   * ekranı yanlıştı.
+   */
+  if (audienceOf(ctx.roles) === "resident") return <ResidentHome />;
   // MIMARI-PLAN §9a — bir ekran, bir çağrı: özet, grafikler ve aktivite akışı
   // tek yanıtta geliyor. A4 öncesi bu sayfa üç ayrı sorgu fonksiyonu
   // çağırıyordu; HTTP'ye çevrilince üç gidiş-dönüş olurdu.

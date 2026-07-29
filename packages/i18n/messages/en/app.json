@@ -53,7 +53,13 @@
       "newBankAccount": "New bank account"
     },
     "inventory": "Assets",
-    "decisionBook": "Decision Book"
+    "decisionBook": "Decision Book",
+    "myDebts": "My Debts",
+    "myPayments": "My Payments",
+    "myRequests": "My Requests",
+    "myMessages": "My Messages",
+    "myProfile": "My Details",
+    "managementInfo": "Management Info"
   },
   "shell": {
     "impersonationWarning": "This session was opened by the support team on behalf of a user. Every action is additionally recorded.",
@@ -1993,7 +1999,25 @@
     "changeType": {
       "amount_changed": "Amount change",
       "due_date_changed": "Due date change"
-    }
+    },
+    "greeting": "{property}",
+    "action": {
+      "viewDebts": "View my debts",
+      "newRequest": "New request",
+      "all": "All"
+    },
+    "overdueTitle": "You have an overdue balance",
+    "overdueBody": "A balance of {amount} is past due. Late fees continue to accrue.",
+    "overdueBadge": "Overdue",
+    "noPayment": "No record",
+    "nextDueTitle": "Next payment",
+    "noOpenDebt": "You have no outstanding balance.",
+    "myActivity": "Mine",
+    "openRequests": "Open requests",
+    "unreadMessages": "Unread messages",
+    "openPolls": "Polls awaiting your vote",
+    "announcementsTitle": "Latest announcements",
+    "urgent": "Urgent"
   },
   "payment": {
     "summaryTitle": "Payment summary",
@@ -2154,5 +2178,145 @@
     "emptyStep2": "Also record unanimous decisions taken without a meeting (art. 32).",
     "emptyStep3": "Enter the page number when you transcribe it into the notarised book.",
     "meetingsLink": "For meeting agendas and attendance see the <link>Meetings</link> screen."
+  },
+  "myDebts": {
+    "title": "My Debts",
+    "description": "Balance breakdown and adjustments for your unit.",
+    "outstanding": "Total balance",
+    "overdue": "Overdue",
+    "lateFee": "Late fees",
+    "listTitle": "Balance breakdown",
+    "emptyTitle": "No debt records",
+    "emptyDescription": "There is no balance assigned to your unit.",
+    "col": {
+      "description": "Description",
+      "dueDate": "Due date",
+      "amount": "Amount",
+      "paid": "Paid",
+      "remaining": "Remaining",
+      "status": "Status"
+    },
+    "daysLate": "{days} days late",
+    "changesTitle": "Change history",
+    "changesDescription": "Every adjustment to your balance appears here and cannot be deleted."
+  },
+  "myPayments": {
+    "title": "My Payments",
+    "description": "Payment history and receipt numbers for your unit.",
+    "thisYear": "This year",
+    "allTime": "All time",
+    "listTitle": "Payment history",
+    "emptyTitle": "No payments yet",
+    "emptyDescription": "You have no recorded payments yet.",
+    "col": {
+      "date": "Date",
+      "method": "Method",
+      "receipt": "Receipt",
+      "amount": "Amount",
+      "status": "Status"
+    },
+    "paidBy": "paid by {name}"
+  },
+  "myRequests": {
+    "title": "My Requests",
+    "description": "Issues and requests you have submitted.",
+    "new": "New request",
+    "newDescription": "Describe the issue clearly — management resolves it faster.",
+    "created": "Your request was created ({code}).",
+    "commentAdded": "Your message was sent.",
+    "submit": "Submit request",
+    "titlePlaceholder": "e.g. Lift stops on the 3rd floor",
+    "field": {
+      "title": "Title",
+      "category": "Category",
+      "priority": "Urgency",
+      "description": "Description"
+    },
+    "priorityHint": "Management raises the priority itself in emergencies.",
+    "descriptionHint": "Where, when and how it happened speeds things up.",
+    "emptyTitle": "No requests yet",
+    "emptyDescription": "Report an issue or request from here whenever you need to.",
+    "col": {
+      "code": "Code",
+      "title": "Title",
+      "category": "Category",
+      "createdAt": "Opened",
+      "status": "Status"
+    },
+    "commentCount": "{count} messages",
+    "conversation": "Conversation",
+    "conversationHint": "Your conversation with management about this request.",
+    "originalRequest": "My request",
+    "management": "Management",
+    "noComments": "No messages yet.",
+    "closedHint": "This request is closed. Open a new one for a new issue.",
+    "details": "Request details",
+    "resolvedAt": "Resolved",
+    "sendComment": "Send",
+    "commentLabel": "Your message",
+    "commentPlaceholder": "Anything you want to add…"
+  },
+  "myMessages": {
+    "title": "My Messages",
+    "description": "Your in-app conversation with management.",
+    "conversation": "Conversation",
+    "emptyTitle": "No messages yet",
+    "emptyDescription": "Send your first message to management below.",
+    "management": "Management",
+    "newMessage": "New message",
+    "send": "Send",
+    "sent": "Your message was sent.",
+    "placeholder": "What would you like to tell management?"
+  },
+  "myProfile": {
+    "title": "My Details",
+    "description": "Your recorded details and unit relationships.",
+    "formTitle": "Contact details",
+    "save": "Save",
+    "saved": "Your details were updated.",
+    "field": {
+      "firstName": "First name",
+      "lastName": "Last name",
+      "email": "Email",
+      "emergencyName": "Emergency contact",
+      "emergencyPhone": "Emergency phone",
+      "phone": "Phone",
+      "tckn": "National ID"
+    },
+    "emailHint": "Notifications and receipts are sent to this address.",
+    "identityTitle": "Identity",
+    "maskedHint": "Phone and national ID are masked for security. Tell your manager if anything is wrong.",
+    "unitsTitle": "My units",
+    "noUnits": "No units assigned.",
+    "col": {
+      "unit": "Unit",
+      "relation": "Relationship",
+      "since": "Since"
+    }
+  },
+  "managementInfo": {
+    "title": "Management Info",
+    "description": "Who to contact, how, and where to pay dues.",
+    "propertyTitle": "Property",
+    "propertyName": "Name",
+    "propertyType": "Type",
+    "address": "Address",
+    "managerTitle": "Manager",
+    "managerName": "Full name",
+    "phone": "Phone",
+    "email": "Email",
+    "noManager": "No manager details recorded.",
+    "bankTitle": "Dues accounts",
+    "bankDescription": "You can make your payments to these accounts.",
+    "noBankAccount": "No bank account recorded.",
+    "col": {
+      "account": "Account",
+      "iban": "IBAN",
+      "name": "Full name",
+      "role": "Role"
+    },
+    "ibanMaskedHint": "The IBAN is masked for security. Ask your manager for the full number.",
+    "staffTitle": "Staff",
+    "noStaff": "No staff recorded."
   }
 }
