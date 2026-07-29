@@ -142,7 +142,18 @@ export async function switchTenant(rawToken: string, tenantId: string): Promise<
 /** Tek kullanımlık token (magic link, davet, OTP). */
 export async function issueVerificationToken(params: {
   identifier: string;
-  purpose: "magic_link" | "otp" | "invite" | "password_reset" | "resident_verify";
+  /**
+   * `phone_change` giriş OTP'sinden **ayrı** bir amaç: aynı havuzda olsalardı
+   * girişe gönderilen kod numara değiştirmek için kullanılabilirdi (ve tersi).
+   * `consumeVerificationToken` amacı da doğruluyor (`wrongPurpose`).
+   */
+  purpose:
+    | "magic_link"
+    | "otp"
+    | "invite"
+    | "password_reset"
+    | "resident_verify"
+    | "phone_change";
   tenantId?: string;
   ttlMinutes?: number;
   metadata?: Record<string, unknown>;

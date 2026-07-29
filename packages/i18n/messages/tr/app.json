@@ -2357,7 +2357,21 @@
       "unit": "Daire",
       "relation": "İlişki",
       "since": "Başlangıç"
-    }
+    },
+    "changePhone": "Telefon numaramı değiştir",
+    "changePhoneHint": "Yeni numaranıza bir doğrulama kodu göndeririz. Numara giriş yaparken kullandığınız kimliktir; bu yüzden onaylanmadan değişmez.",
+    "newPhone": "Yeni telefon numarası",
+    "newPhoneHint": "Kayıtlı numaranız: {current}",
+    "sendCode": "Kod gönder",
+    "phoneCodeSent": "Doğrulama kodu {phone} numarasına gönderildi.",
+    "code": "Doğrulama kodu",
+    "codeHint": "{phone} numarasına gelen 6 haneli kodu girin. Kod 5 dakika geçerlidir.",
+    "verifyCode": "Doğrula ve değiştir",
+    "changeNumber": "Numarayı düzelt",
+    "phoneChanged": "Telefon numaranız güncellendi. Bundan sonra giriş kodu yeni numaranıza gelecek.",
+    "phoneTaken": "Bu numara başka bir hesapta kayıtlı. Sizin numaranızsa site yönetiminize başvurun.",
+    "phoneUnchanged": "Bu zaten kayıtlı numaranız.",
+    "phoneCodeInvalid": "Kod geçersiz ya da süresi dolmuş. Yeni bir kod isteyin."
   },
   "managementInfo": {
     "title": "Yönetim Bilgileri",

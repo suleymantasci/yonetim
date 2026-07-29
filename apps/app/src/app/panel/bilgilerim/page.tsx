@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/app-shell";
 import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
+import { PhoneChange } from "./phone-change";
 import { ProfileForm } from "./profile-form";
 
 /**
@@ -61,6 +62,13 @@ export default async function MyProfilePage() {
               <Row label={t("field.phone")} value={profile.phoneMasked ?? "—"} />
               <Row label={t("field.tckn")} value={profile.tcknMasked ?? "—"} />
               <Alert tone="info">{t("maskedHint")}</Alert>
+              {/*
+                Telefon **değiştirilebilir**, TCKN değil: numara kullanıcının
+                kendi iletişim bilgisi ve hattını değiştirdiğinde güncellemesi
+                gereken şey. TCKN ise kimlik kaydı; onu düzeltmek belge
+                görmeyi gerektiriyor, yani yöneticinin işi.
+              */}
+              <PhoneChange currentPhoneMasked={profile.phoneMasked} />
             </CardBody>
           </Card>
 

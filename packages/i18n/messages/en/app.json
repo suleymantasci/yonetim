@@ -2357,7 +2357,21 @@
       "unit": "Unit",
       "relation": "Relationship",
       "since": "Since"
-    }
+    },
+    "changePhone": "Change my phone number",
+    "changePhoneHint": "We send a verification code to your new number. The number is the identity you sign in with, so it does not change until confirmed.",
+    "newPhone": "New phone number",
+    "newPhoneHint": "Your number on file: {current}",
+    "sendCode": "Send code",
+    "phoneCodeSent": "A verification code was sent to {phone}.",
+    "code": "Verification code",
+    "codeHint": "Enter the 6-digit code sent to {phone}. The code is valid for 5 minutes.",
+    "verifyCode": "Verify and change",
+    "changeNumber": "Correct the number",
+    "phoneChanged": "Your phone number has been updated. Sign-in codes will now go to the new number.",
+    "phoneTaken": "This number belongs to another account. If it is yours, contact your building management.",
+    "phoneUnchanged": "This is already your number on file.",
+    "phoneCodeInvalid": "The code is invalid or expired. Request a new one."
   },
   "managementInfo": {
     "title": "Management Info",

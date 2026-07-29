@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { dateTime, moneyMinor, uuid } from "../_shared/fields";
+import { dateTime, moneyMinor, phoneInput, uuid } from "../_shared/fields";
 
 /**
  * Sakin self-servis portalı sözleşmesi — SPEC Faz 2 / Bölüm 6.1.
@@ -194,6 +194,42 @@ export const portalProfileUpdate = z.object({
   emergencyContactPhone: z.string().trim().max(20).nullable().optional(),
 });
 
+/* -------------------------------------------------- telefon değişikliği */
+
+/**
+ * Telefon değişikliği **iki adım**: kod iste → kodu doğrula.
+ *
+ * NEDEN AYRI AKIŞ: numara oturum kimliğinin kendisi, giriş kodu oraya gidiyor.
+ * "Bilgilerim" formundan doğrudan değiştirilebilseydi, oturumu ele geçiren
+ * biri numarayı kendi numarasıyla değiştirip hesabı kalıcı olarak devralırdı —
+ * asıl sahibi artık kendi numarasına kod isteyemezdi.
+ *
+ * DOĞRULAMA **YENİ** NUMARAYA: kod eskiye gitseydi, numarasını gerçekten
+ * kaybetmiş bir kullanıcı (hattı kapanmış, numara değişmiş) hiçbir zaman
+ * güncelleyemezdi. Yeni numaraya kod göndermek aynı zamanda "bu numara
+ * gerçekten sizin mi" sorusunun tek dürüst cevabı.
+ */
+export const portalPhoneChangeStart = z.object({ phone: phoneInput });
+
+export const portalPhoneChangeVerify = z.object({
+  phone: phoneInput,
+  /** 6 haneli OTP. Biçim `packages/auth`'taki `generateOtp` ile aynı. */
+  code: z.string().trim().min(4).max(10),
+});
+
+/**
+ * `sent` her zaman `true`.
+ *
+ * Numara başkasına aitse de aynı cevap dönüyor: aksi halde bu uç, "şu numara
+ * bu platformda kayıtlı mı" sorusunun sorulabildiği bir yüzey olurdu.
+ * Sahiplik kontrolü doğrulama adımında — numarayı elinde tutmayan zaten kodu
+ * göremiyor.
+ */
+export const portalPhoneChangeResult = z.object({
+  sent: z.literal(true),
+  retryAfterSeconds: z.number().int(),
+});
+
 /* ------------------------------------------------------- yönetim bilgisi */
 
 /**
@@ -368,6 +404,9 @@ export type PortalMessagesResponse = z.infer<typeof portalMessagesResponse>;
 export type PortalMessageCreate = z.infer<typeof portalMessageCreate>;
 export type PortalProfile = z.infer<typeof portalProfile>;
 export type PortalProfileUpdate = z.infer<typeof portalProfileUpdate>;
+export type PortalPhoneChangeStart = z.infer<typeof portalPhoneChangeStart>;
+export type PortalPhoneChangeVerify = z.infer<typeof portalPhoneChangeVerify>;
+export type PortalPhoneChangeResult = z.infer<typeof portalPhoneChangeResult>;
 export type PortalManagement = z.infer<typeof portalManagement>;
 export type PortalAnnouncementsResponse = z.infer<
   typeof portalAnnouncementsResponse

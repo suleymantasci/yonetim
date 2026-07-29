@@ -4,14 +4,18 @@ import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
-import { apiPatch } from "@/lib/api/server";
+import { AppError } from "@yonetim/core";
+
+import { apiPatch, apiPost } from "@/lib/api/server";
 import {
+  ActionError,
   emailField,
   okState,
   optionalText,
   phoneField,
   requiredText,
   runAction,
+  V,
   type ActionState,
 } from "@/lib/form";
 
@@ -20,8 +24,8 @@ import {
  *
  * TELEFON BU FORMDA YOK ve bilinçli: numara oturum kimliğinin kendisi (giriş
  * kodu oraya gidiyor). Doğrulamasız değiştirilebilseydi hesabı başka bir
- * numaraya taşımak, yani devralmak mümkün olurdu. Numara değişikliği ayrı bir
- * doğrulama akışı gerektiriyor (PROJE-DURUMU §5.8 "sırada").
+ * numaraya taşımak, yani devralmak mümkün olurdu. Değişiklik aşağıdaki
+ * `startPhoneChange` / `confirmPhoneChange` akışında, kod doğrulamasıyla.
  */
 const schema = z.object({
   firstName: requiredText(1, 80),
@@ -63,4 +67,120 @@ export async function updateMyProfile(
       return okState(t("saved"));
     },
   );
+}
+
+/* --------------------------------------------------- telefon değişikliği */
+
+/**
+ * Numara değişikliği iki adım: kod iste → kodu doğrula.
+ *
+ * Kural sunucuda: kodun **yeni** numaraya gitmesi, tek kullanımlık olması,
+ * amacının giriş OTP'sinden ayrı olması ve numaranın platform genelinde tekil
+ * olması `apps/api`'de. Burada yalnız form doğrulaması, HTTP ve hata
+ * kodlarının okunabilir metne çevrilmesi var.
+ */
+// `phoneField` isteğe bağlı; burada zorunlu: numarasız bir "kod gönder"
+// isteği anlamsız.
+const requiredPhone = phoneField.refine((v): v is string => Boolean(v), {
+  message: V.required,
+});
+
+const phoneStartSchema = z.object({ phone: requiredPhone });
+
+const phoneVerifySchema = z.object({
+  phone: requiredPhone,
+  // Kodun kendisi sunucuda doğrulanıyor; buradaki tek iş, boş ya da harf
+  // içeren bir gönderim için ağ turu harcamamak.
+  code: z.string().trim().regex(/^\d{4,10}$/, V.invalidSelection),
+});
+
+export async function startPhoneChange(
+  _previous: ActionState<{ phone: string }>,
+  formData: FormData,
+): Promise<ActionState<{ phone: string }>> {
+  return runAction(
+    {
+      permission: "unit:read",
+      schema: phoneStartSchema,
+      meta: { action: "portal_phone_change_requested", resource: "user" },
+    },
+    formData,
+    async ({ input }) => {
+      const t = await getTranslations("app.myProfile");
+
+      await callPhoneEndpoint("/v1/panel/portal/profile/phone", {
+        phone: input.phone,
+      }, {
+        phone_taken: t("phoneTaken"),
+        phone_unchanged: t("phoneUnchanged"),
+        invalid_code: t("phoneCodeInvalid"),
+      });
+
+      /*
+       * Numara **durumda** taşınıyor, gizli alanda değil: ikinci adımda
+       * doğrulanacak numaranın, kodun gittiği numara olduğundan emin olmak
+       * gerekiyor. Kullanıcı arada alanı değiştirse bile sunucu yine kodun
+       * kimliğine bakıyor; bu yalnız ekranın tutarlılığı için.
+       */
+      return okState(t("phoneCodeSent", { phone: input.phone }), {
+        data: { phone: input.phone },
+      });
+    },
+  );
+}
+
+export async function confirmPhoneChange(
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  return runAction(
+    {
+      permission: "unit:read",
+      schema: phoneVerifySchema,
+      meta: { action: "portal_phone_change_completed", resource: "user" },
+    },
+    formData,
+    async ({ input }) => {
+      const t = await getTranslations("app.myProfile");
+
+      await callPhoneEndpoint("/v1/panel/portal/profile/phone/verify", {
+        phone: input.phone,
+        code: input.code,
+      }, {
+        phone_taken: t("phoneTaken"),
+        phone_unchanged: t("phoneUnchanged"),
+        invalid_code: t("phoneCodeInvalid"),
+      });
+
+      revalidatePath("/panel/bilgilerim");
+      return okState(t("phoneChanged"));
+    },
+  );
+}
+
+/**
+ * Sunucunun hata **kodunu** kullanıcının okuyabileceği metne çevirir.
+ *
+ * Ham mesaj (`phone_taken`, `invalid_code:expired`) doğrudan gösterilseydi
+ * ekranda bir hata kodu belirirdi. Tanınmayan kod olduğu gibi geçiyor: bilmediğimiz
+ * bir hatayı "bir şeyler ters gitti" diye yutmak, kullanıcıyı da bizi de bilgisiz
+ * bırakırdı.
+ */
+async function callPhoneEndpoint(
+  path: string,
+  body: Record<string, unknown>,
+  messages: Record<string, string>,
+): Promise<void> {
+  try {
+    await apiPost(path, body, z.object({}).passthrough());
+  } catch (error) {
+    if (error instanceof AppError) {
+      // `invalid_code:expired` gibi ayrıntılı kodların önekine bakılıyor:
+      // sebebi ("süresi doldu" / "kullanıldı") kullanıcıya söylemenin tek
+      // faydası yeni kod istemesi, ki mesaj zaten onu söylüyor.
+      const message = messages[error.message.split(":")[0] ?? ""];
+      if (message) throw new ActionError(message);
+    }
+    throw error;
+  }
 }

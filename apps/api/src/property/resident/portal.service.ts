@@ -4,13 +4,21 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from "@nestjs/common";
 import {
   and, count, desc, eq, gt, inArray, isNotNull, isNull, lte, ne, sql,
 } from "drizzle-orm";
 
-import { maskPhone } from "@yonetim/core";
+import {
+  consumeVerificationToken,
+  generateOtp,
+  issueVerificationToken,
+  RATE_LIMITS,
+  rateLimit,
+} from "@yonetim/auth";
+import { errors, maskPhone } from "@yonetim/core";
 import type {
   PortalAnnouncementsResponse,
   PortalCommentCreate,
@@ -19,6 +27,9 @@ import type {
   PortalMessageCreate,
   PortalMessagesResponse,
   PortalPaymentsResponse,
+  PortalPhoneChangeResult,
+  PortalPhoneChangeStart,
+  PortalPhoneChangeVerify,
   PortalPollRow,
   PortalPollsResponse,
   PortalProfile,
@@ -48,6 +59,7 @@ import {
   units,
   users,
 } from "@yonetim/db";
+import { sendSms } from "@yonetim/sms";
 
 import { AuditService } from "../../governance/audit/audit.service";
 import { DbService } from "../../infra/db/db.service";
@@ -66,6 +78,8 @@ import { PiiService } from "./pii.service";
  */
 @Injectable()
 export class PortalService {
+  private readonly logger = new Logger(PortalService.name);
+
   constructor(
     private readonly db: DbService,
     private readonly pii: PiiService,
@@ -656,7 +670,8 @@ export class PortalService {
           lastName: dto.lastName,
           // Telefon burada değişmiyor: numara oturum kimliğinin kendisi
           // (OTP oraya gidiyor). Değişikliği doğrulamasız kabul etmek,
-          // hesabı başka bir numaraya taşımanın kapısını açardı.
+          // hesabı başka bir numaraya taşımanın kapısını açardı — ayrı ve
+          // kod doğrulamalı akış `startPhoneChange`/`confirmPhoneChange`.
           ...(dto.email !== undefined ? { email: dto.email } : {}),
           ...(dto.emergencyContactName !== undefined
             ? { emergencyContactName: dto.emergencyContactName }
@@ -670,6 +685,173 @@ export class PortalService {
 
     await this.audit.record({
       action: "portal.profile.update",
+      resource: "user",
+      resourceId: userId,
+    });
+
+    return { ok: true };
+  }
+
+  /* --------------------------------------------------- telefon değişimi */
+
+  /**
+   * 1. adım: **yeni** numaraya doğrulama kodu.
+   *
+   * CEVAP HER DURUMDA AYNI (`sent: true`). Numara başkasına aitse de öyle:
+   * farklı cevap vermek, oturum açmış herhangi birine "şu numara bu
+   * platformda kayıtlı mı" sorusunu sordururdu. Numaranın gerçekten
+   * başkasında olduğu doğrulama adımında anlaşılıyor — kodu görebilen
+   * zaten o hattı elinde tutan kişi.
+   *
+   * HIZ SINIRI KULLANICI **VE** NUMARA BAŞINA: yalnız kullanıcı başına
+   * olsaydı bir hesap sırayla farklı numaralara SMS yağdırabilirdi; yalnız
+   * numara başına olsaydı bir hesap aynı numarayı hedef alan başka
+   * hesapların önünü tıkardı.
+   */
+  async startPhoneChange(
+    dto: PortalPhoneChangeStart,
+  ): Promise<PortalPhoneChangeResult> {
+    const userId = this.userId();
+    const phone = dto.phone;
+
+    const current = await this.db.tx(async (tx) => {
+      const rows = await tx
+        .select({ phone: users.phone })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+      return rows[0]?.phone ?? null;
+    });
+
+    // Aynı numara için kod göndermek, kullanıcıya hiçbir şey değiştirmeyen
+    // bir doğrulama turu yaptırırdı.
+    if (current && current === phone) {
+      throw errors.validation("phone_unchanged");
+    }
+
+    for (const key of [`phone-change:${userId}`, `phone-change:${phone}`]) {
+      const limit = await rateLimit(RATE_LIMITS.otp, key);
+      if (!limit.allowed) {
+        return {
+          sent: true,
+          retryAfterSeconds: Math.max(
+            1,
+            Math.ceil((limit.resetAt.getTime() - Date.now()) / 1000),
+          ),
+        };
+      }
+    }
+
+    const code = generateOtp(6);
+    await issueVerificationToken({
+      identifier: phone,
+      purpose: "phone_change",
+      ttlMinutes: 5,
+      code,
+      // `userId` kodu **kime** verdiğimizi bağlıyor: doğrulamada oturumdaki
+      // kullanıcıyla karşılaştırılıyor. Olmasaydı, aynı numaraya kod isteyen
+      // iki hesaptan biri diğerinin kodunu kullanabilirdi.
+      metadata: { userId },
+    });
+
+    await sendSms({
+      to: phone,
+      body: `Yonetim numara dogrulama kodunuz: ${code}`,
+      isOtp: true,
+    }).catch((error: unknown) => {
+      this.logger.error({ event: "portal.phone_change_sms_failed", error });
+    });
+
+    await this.audit.record({
+      action: "portal.phone_change.requested",
+      resource: "user",
+      resourceId: userId,
+    });
+
+    return { sent: true, retryAfterSeconds: RATE_LIMITS.otp.windowSeconds };
+  }
+
+  /**
+   * 2. adım: kodu doğrula ve numarayı değiştir.
+   *
+   * ESKİ NUMARAYA BİLGİLENDİRME SMS'İ: oturumu ele geçiren biri numarayı
+   * değiştirdiğinde asıl sahibinin bunu öğrenebileceği **tek** kanal o. Kayıt
+   * değiştikten sonra gönderiliyor ve gönderilemezse işlem geri alınmıyor —
+   * SMS sağlayıcısının arızası kullanıcının numarasını güncellemesini
+   * engellememeli.
+   */
+  async confirmPhoneChange(
+    dto: PortalPhoneChangeVerify,
+  ): Promise<{ ok: true }> {
+    const userId = this.userId();
+    const phone = dto.phone;
+
+    // Gönderim değil **deneme** sınırı: yanlış yazılan kod da sayılıyor
+    // (kaba kuvvet koruması), ama iki tuş hatası kullanıcıyı bir saat
+    // kilitlemesin diye kova ayrı ve daha cömert.
+    const limit = await rateLimit(RATE_LIMITS.otpVerify, `phone:${userId}`);
+    if (!limit.allowed) throw errors.rateLimited();
+
+    const result = await consumeVerificationToken({
+      identifier: phone,
+      token: dto.code,
+      purpose: "phone_change",
+    });
+    if (!result.ok) throw errors.validation(`invalid_code:${result.reason}`);
+
+    // Kod doğru ama **başkasının** kodu olabilir: aynı numaraya iki hesap kod
+    // istediyse ikisi de aynı hattı görüyor. Sahiplik burada bağlanıyor.
+    if ((result.metadata as { userId?: string }).userId !== userId) {
+      throw errors.validation("invalid_code:invalid");
+    }
+
+    const currentPhone = await this.db.tx(async (tx) => {
+      const rows = await tx
+        .select({ phone: users.phone })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+      return rows[0]?.phone ?? null;
+    });
+
+    const previousPhone = await this.db.bypass(
+      "portal:phone-change",
+      async (tx) => {
+        /*
+         * NUMARA PLATFORM GENELİNDE TEKİL (`idx_users_phone`) ve kontrol RLS
+         * **dışında**: çakışan kayıt başka bir sitenin sakini olabilir, tenant
+         * bağlamında görünmez. Görünmediği için "boş" sanıp yazsaydık,
+         * benzersizlik kısıtı ham veritabanı hatasıyla dönerdi.
+         */
+        const taken = await tx
+          .select({ id: users.id })
+          .from(users)
+          .where(and(eq(users.phone, phone), ne(users.id, userId)))
+          .limit(1);
+        if (taken[0]) throw errors.validation("phone_taken");
+
+        const rows = await tx
+          .update(users)
+          .set({ phone, phoneVerifiedAt: new Date() })
+          .where(eq(users.id, userId))
+          .returning({ id: users.id });
+        if (!rows[0]) throw new NotFoundException("not_found");
+
+        return currentPhone;
+      },
+    );
+
+    if (previousPhone) {
+      await sendSms({
+        to: previousPhone,
+        body: "Yonetim hesabinizin telefon numarasi degistirildi. Bu islemi siz yapmadiysaniz site yonetiminize basvurun.",
+      }).catch((error: unknown) => {
+        this.logger.error({ event: "portal.phone_change_notice_failed", error });
+      });
+    }
+
+    await this.audit.record({
+      action: "portal.phone_change.completed",
       resource: "user",
       resourceId: userId,
     });

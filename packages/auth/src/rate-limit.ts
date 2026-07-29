@@ -14,6 +14,16 @@ export interface RateLimitRule {
 export const RATE_LIMITS = {
   login: { key: "login", limit: 5, windowSeconds: 60 },
   otp: { key: "otp", limit: 3, windowSeconds: 3600 },
+  /**
+   * Kod **doğrulama** denemesi — göndermekten ayrı ve daha cömert.
+   *
+   * Gönderim sınırı SMS maliyetini ve spam'i tutuyor; doğrulama sınırı ise
+   * kaba kuvvete karşı. İkisini aynı kovaya koymak, kodunu iki kez yanlış
+   * yazan kullanıcıyı bir saat kilitlemek olurdu — oysa 6 haneli ve 5 dakika
+   * ömürlü bir kod için saatte 10 deneme, 1.000.000 ihtimalli uzayda kaba
+   * kuvvet sayılmaz.
+   */
+  otpVerify: { key: "otp_verify", limit: 10, windowSeconds: 3600 },
   sms: { key: "sms", limit: 3, windowSeconds: 3600 },
   api: { key: "api", limit: 100, windowSeconds: 60 },
   payment: { key: "payment", limit: 10, windowSeconds: 300 },

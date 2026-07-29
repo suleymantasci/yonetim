@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 
-import { createSession, SESSION_COOKIE } from "@yonetim/auth";
+import { createSession, issueVerificationToken, SESSION_COOKIE } from "@yonetim/auth";
 import {
   announcements,
   blocks,
@@ -19,6 +19,7 @@ import {
   unitOccupancies,
   units,
   users,
+  verificationTokens,
   withBypassRls,
 } from "@yonetim/db";
 
@@ -192,6 +193,16 @@ afterAll(async () => {
     const ids = [ALICE.id, BOB.id];
     await withBypassRls("test:portal-cleanup", async (tx) => {
       await tx.delete(sessions).where(inArray(sessions.userId, ids));
+      // Telefon testlerinin bıraktığı doğrulama kayıtları: süreleri zaten
+      // doluyor ama test kendi çöpünü toplasın.
+      await tx
+        .delete(verificationTokens)
+        .where(
+          and(
+            eq(verificationTokens.purpose, "phone_change"),
+            inArray(sql`${verificationTokens.metadata}->>'userId'`, ids),
+          ),
+        );
       await tx.delete(messages).where(inArray(messages.userId, ids));
       await tx.delete(requests).where(inArray(requests.createdByUserId, ids));
       await tx.delete(debts).where(inArray(debts.debtorUserId, ids));
@@ -422,5 +433,125 @@ describe.skipIf(!apiReachable)("sakin portalı — kapsam sınırı", () => {
     // genelindeki tüm yazışmaları döndürüyor.
     const { status } = await get("/v1/panel/communication/messages", aliceCookie);
     expect(status).toBe(403);
+  });
+});
+
+/**
+ * Telefon değişikliği — PROJE-DURUMU §5.8.
+ *
+ * NEDEN ENTEGRASYON TESTİ: akışın değeri tek bir dalda toplanıyor — "kodu
+ * doğrulayamayan numarayı değiştiremez". Bu iddia ancak gerçek veritabanına
+ * yazılmış bir doğrulama kaydı ve gerçek bir HTTP turu ile sınanabilir; birim
+ * testi `consumeVerificationToken`'ı sahtelemek zorunda kalır ve tam da
+ * sınamak istediğimiz şeyi sahtelemiş olurdu.
+ *
+ * Kod testte `issueVerificationToken` ile üretiliyor — servisin kullandığı
+ * fonksiyonun aynısı. Kayıt hash saklıyor, yani gönderilen kodu okumanın başka
+ * yolu yok; kurulumda bilinen bir kod yazmak tek dürüst yaklaşım.
+ */
+describe.skipIf(!apiReachable)("sakin portalı — telefon değişikliği", () => {
+  const NEW_PHONE = `+9055509${String(Date.now()).slice(-5)}`;
+
+  async function phoneOf(userId: string): Promise<string | null> {
+    return withBypassRls("test:phone-read", async (tx) => {
+      const rows = await tx
+        .select({ phone: users.phone })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+      return rows[0]?.phone ?? null;
+    });
+  }
+
+  it("yanlış kod numarayı değiştirmiyor", async () => {
+    const before = await phoneOf(ALICE.id);
+
+    const { status } = await postJson(
+      "/v1/panel/portal/profile/phone/verify",
+      aliceCookie,
+      { phone: NEW_PHONE, code: "000000" },
+    );
+    expect(status).toBeGreaterThanOrEqual(400);
+    expect(await phoneOf(ALICE.id)).toBe(before);
+  });
+
+  it("başkasına verilmiş kod kabul edilmiyor", async () => {
+    /*
+     * Aynı numaraya iki hesap kod isteyebilir; kod doğru olsa bile sahibi
+     * değilse geçmemeli. Bu kontrol olmasaydı, aynı hattı hedefleyen iki
+     * hesaptan biri diğerinin kodunu kullanabilirdi.
+     */
+    const shared = `+9055508${String(Date.now()).slice(-5)}`;
+    await issueVerificationToken({
+      identifier: shared,
+      purpose: "phone_change",
+      code: "424242",
+      metadata: { userId: BOB.id },
+    });
+
+    const { status } = await postJson(
+      "/v1/panel/portal/profile/phone/verify",
+      aliceCookie,
+      { phone: shared, code: "424242" },
+    );
+    expect(status).toBeGreaterThanOrEqual(400);
+    expect(await phoneOf(ALICE.id)).not.toBe(shared);
+  });
+
+  it("başkasının numarası alınamıyor", async () => {
+    const bobPhone = await phoneOf(BOB.id);
+    expect(bobPhone).toBeTruthy();
+
+    await issueVerificationToken({
+      identifier: bobPhone!,
+      purpose: "phone_change",
+      code: "515151",
+      metadata: { userId: ALICE.id },
+    });
+
+    const { status, body } = await postJson(
+      "/v1/panel/portal/profile/phone/verify",
+      aliceCookie,
+      { phone: bobPhone, code: "515151" },
+    );
+    expect(status).toBeGreaterThanOrEqual(400);
+    expect(JSON.stringify(body)).toContain("phone_taken");
+    // Komşunun numarası da yerinde duruyor.
+    expect(await phoneOf(BOB.id)).toBe(bobPhone);
+  });
+
+  it("doğru kod numarayı değiştiriyor ve kod ikinci kez çalışmıyor", async () => {
+    await issueVerificationToken({
+      identifier: NEW_PHONE,
+      purpose: "phone_change",
+      code: "123456",
+      metadata: { userId: ALICE.id },
+    });
+
+    const first = await postJson(
+      "/v1/panel/portal/profile/phone/verify",
+      aliceCookie,
+      { phone: NEW_PHONE, code: "123456" },
+    );
+    expect(first.status).toBe(201);
+    expect(await phoneOf(ALICE.id)).toBe(NEW_PHONE);
+
+    // Tek kullanımlık: aynı kodla ikinci bir değişiklik yapılamaz.
+    const replay = await postJson(
+      "/v1/panel/portal/profile/phone/verify",
+      aliceCookie,
+      { phone: NEW_PHONE, code: "123456" },
+    );
+    expect(replay.status).toBeGreaterThanOrEqual(400);
+  });
+
+  it("kayıtlı numara için kod istenmiyor", async () => {
+    const current = await phoneOf(ALICE.id);
+    const { status } = await postJson(
+      "/v1/panel/portal/profile/phone",
+      aliceCookie,
+      { phone: current },
+    );
+    expect(status).toBeGreaterThanOrEqual(400);
   });
 });

@@ -4,6 +4,8 @@ import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import {
   portalCommentCreate,
   portalMessageCreate,
+  portalPhoneChangeStart,
+  portalPhoneChangeVerify,
   portalProfileUpdate,
   portalRequestCreate,
   portalVoteCreate,
@@ -14,6 +16,9 @@ import {
   type PortalMessageCreate,
   type PortalMessagesResponse,
   type PortalPaymentsResponse,
+  type PortalPhoneChangeResult,
+  type PortalPhoneChangeStart,
+  type PortalPhoneChangeVerify,
   type PortalPollsResponse,
   type PortalProfile,
   type PortalProfileUpdate,
@@ -157,6 +162,36 @@ export class PortalController {
     @Body(new ZodBodyPipe(portalProfileUpdate)) dto: PortalProfileUpdate,
   ) {
     return this.service.updateProfile(dto);
+  }
+
+  @Post("profile/phone")
+  @RequirePermission("unit:read")
+  @ApiOperation({
+    summary: "Telefon değişikliği başlat — yeni numaraya doğrulama kodu",
+    description:
+      "Yanıt her durumda `sent: true`: numara başkasına ait olsa da farklı " +
+      "cevap vermek, oturum açmış birine 'şu numara kayıtlı mı' sorusunu " +
+      "sordururdu. Sahiplik doğrulama adımında bağlanıyor.",
+  })
+  startPhoneChange(
+    @Body(new ZodBodyPipe(portalPhoneChangeStart)) dto: PortalPhoneChangeStart,
+  ): Promise<PortalPhoneChangeResult> {
+    return this.service.startPhoneChange(dto);
+  }
+
+  @Post("profile/phone/verify")
+  @RequirePermission("unit:read")
+  @ApiOperation({
+    summary: "Telefon değişikliğini kodla onayla",
+    description:
+      "Kod tek kullanımlık ve amacı ayrı (`phone_change`): giriş için " +
+      "gönderilen bir OTP burada geçmez. Numara platform genelinde tekil; " +
+      "başkasına aitse `phone_taken` döner.",
+  })
+  confirmPhoneChange(
+    @Body(new ZodBodyPipe(portalPhoneChangeVerify)) dto: PortalPhoneChangeVerify,
+  ) {
+    return this.service.confirmPhoneChange(dto);
   }
 
   @Get("management")
