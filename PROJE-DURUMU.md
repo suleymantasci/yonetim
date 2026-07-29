@@ -66,6 +66,15 @@
     değiştirici kuruldu (§5.8.3).
   - API uçlarındaki Türkçe/İngilizce karışıklığı standartlandı (§5.8.5) ve
     komut paleti overlay'i düzeltildi (§5.8.6).
+- **✅ 2026-07-29 (üçüncü tur): ekranlar ilk kez gerçek veriyle sürüldü.**
+  §5.8'de yazılan sakin portalı tarayıcıda denendiğinde iki şey çıktı:
+  - **Sakin `/panel`'e yine giremiyordu** — `/v1/panel/portal/me` 500
+    veriyordu. Sebep ham `sql` şablonuna gömülmüş bir `Date` (§5.9.1). Aynı
+    fonksiyon sakin duyuru ekranını da besliyordu.
+  - **Yönetici gelen mesaja cevap veremiyordu.** `/panel/mesajlar` düz bir
+    mesaj kütüğüydü: kimin yazdığı görünmüyor, aynı sakinin her mesajı ayrı
+    satır, cevap yolu yok. Konuşma tabanlı gelen kutusuna çevrildi ve yazışma
+    ekranı + cevap kutusu eklendi (§5.9.2).
 - **Kalan büyük iş (Track E):** teknik altyapı hazır ama her biri bir ürün
   kararı bekliyor — PDF/KEP, bakım hatırlatma, göç sihirbazı, bordro kapsamı,
   landing builder (bkz. §6). Sakin tarafında oylama ve ödeme akışı hâlâ açık
@@ -335,7 +344,7 @@ Kalan **9'u hâlâ kullanılmıyor** ve her biri ayrı bir sebeple — sayıyı
 | ~~Rezervasyon `/panel/rezervasyon`~~ | ✅ | ✅ | ✅ **2026-07-29** | `reservations`, `resources` | **TAMAMLANDI** — bkz. §5.7. Tesis tanımı da eklendi |
 | ~~Anketler `/panel/anketler`~~ | ✅ | ✅ | ✅ **2026-07-29** | `polls`, `poll_votes` | **TAMAMLANDI** — bkz. §5.7 |
 | ~~Toplantılar `/panel/toplantilar`~~ | ✅ | ✅ | ✅ **2026-07-29** | `meetings`, `meeting_decisions` | **TAMAMLANDI** — bkz. §5.7. (Karar Defteri ayrı modül — §2.7) |
-| ~~Mesajlar `/panel/mesajlar`~~ | ✅ | ✅ | ✅ **2026-07-29** | `messages` | **TAMAMLANDI** — bkz. §5.7 |
+| ~~Mesajlar `/panel/mesajlar`~~ | ✅ | ✅ | ✅ **2026-07-29** | `messages` | **TAMAMLANDI** — bkz. §5.7. Okuma tarafı sonradan konuşma tabanlı gelen kutusuna çevrildi (§5.9.2): yazma ucu vardı ama gelen mesaja **cevap** yolu yoktu |
 | ~~Banka `/panel/banka`~~ | ✅ | ✅ | ✅ **2026-07-29** | `bank_accounts`, `bank_transactions`, `reconciliation_issues` | **TAMAMLANDI** — bkz. §5.7. Ödemeye `bank_account_id` de eklendi (migration `0007`) |
 | ~~Ayarlar `/panel/ayarlar`~~ | ✅ | ✅ | ✅ **2026-07-29** | `tenants.settings` (JSONB) | **TAMAMLANDI** — bkz. §5.7. Entegrasyon rozetleri de gerçeğe bağlandı (§5.5) |
 | Hukuk `/panel/hukuk` | ✅ liste | `GET /v1/panel/legal` | ❌ | `legal_cases` | İcra/dava dosyası açılamıyor |
@@ -822,6 +831,93 @@ kendi yorumunda zaten "Track C1'de Radix Dialog bunu devralıyor" yazıyordu.
 
 ---
 
+## 5.9 Sakin portalı 500'ü ve yönetici gelen kutusu (2026-07-29)
+
+§5.8 ekranları tarayıcıda ilk kez gerçek veriyle sürüldüğünde iki şey çıktı:
+sakin `/panel`'e giremiyordu ve yönetici gelen mesajlara cevap veremiyordu.
+İkisi de "kod yazılmış ama bir kez çalıştırılmamış" sınıfından.
+
+### 5.9.1 `/v1/panel/portal/me` 500 veriyordu — `sql` şablonuna gömülü `Date`
+
+Sakin `/panel`'e girdiğinde uç 500, ekran "Beklenmeyen bir hata oluştu."
+dönüyordu. Sebep `PortalService.recentAnnouncements` içindeki tek satır:
+
+```ts
+sql`${announcements.publishedAt} <= ${now}`   // now: Date
+```
+
+Drizzle'ın postgres-js sürücüsü **ham `sql` şablonundaki** parametreleri
+`client.unsafe()` üzerinden geçiriyor; orada kolon tipi bilinmediği için
+`Date` serileştirilmiyor ve sorgu bind aşamasında patlıyor:
+
+```
+TypeError: The "string" argument must be of type string or an instance of
+Buffer or ArrayBuffer. Received an instance of Date
+```
+
+Kolon operatörleri (`lte`, `gte`, `eq`) aynı değeri kolonun tipine göre
+çeviriyor; hata yalnız ham şablona özgü. Düzeltme `isNotNull` + `lte`.
+
+**Sınıfın kendisi:** ham `sql` içine JS değeri gömmek yalnız `string`/`number`
+için güvenli. Kod tabanı tarandı, `Date` gömen tek yer buydu (`${polls.id}`,
+`${userId}` gibi kalan interpolasyonlar kolon referansı ya da metin).
+
+Neden testler yakalamadı: portal uçlarının hiç entegrasyon testi yok (§5.8.7
+son madde) ve `tsc` bu hatayı göremiyor — `sql` şablonu `unknown` alıyor. Hata
+yalnız veritabanına gerçekten gidildiğinde çıkıyor.
+
+Aynı fonksiyon `/v1/panel/portal/announcements`'ı da besliyordu; sakin
+duyuru ekranı da bu yüzden açılmıyordu.
+
+### 5.9.2 `/panel/mesajlar` gelen kutusu oldu — düz kütük değil konuşma
+
+Sakin `/panel/mesajlarim`'dan yazdığında mesaj yöneticiye ulaşıyordu ama
+ekran onu kullanılabilir kılmıyordu: `GET /v1/panel/communication/messages`
+düz bir mesaj kütüğü döndürüyordu, yani aynı sakinin üç mesajı üç ayrı satır,
+hiçbirinde **kimin yazdığı yok** ve cevap yolu yok. Yeni mesaj düğmesi vardı
+ama alıcıyı listeden yeniden seçtiriyordu — gelen kutusu olmayan bir gelen
+kutusu.
+
+- **Yanıt artık konuşma listesi.** `messageListResponse.rows` → `threads`;
+  her satır bir muhatap (`messageThreadRow`): ad, daire etiketi
+  (`A Blok · 9`), maskeli telefon, son mesaj, mesaj sayısı ve
+  `awaitingReply`. `totals`'a cevap bekleyen yazışma sayısı eklendi.
+- **Kümeleme serviste, SQL'de değil.** `DISTINCT ON` ile son mesajı çekmek
+  aynı listeyi verirdi ama "cevap bekliyor mu" kararı yine serviste olurdu;
+  tek yerde durması okunurluğu kazandırıyor. Muhatap adı `leftJoin` ile
+  geliyor: `user_id` boş bir mesaj (tanınmayan numaradan gelen WhatsApp)
+  listeden düşmemeli — yönetici onu da görmeli, yalnız cevaplayamaz.
+- **`GET /v1/panel/communication/messages/:userId`** — tek sakinle yazışmanın
+  tamamı, eskiden yeniye. `/panel/mesajlar/[userId]` bunu baloncuklu akışla
+  gösteriyor ve altında cevap kutusu var.
+- **Cevap formunda alıcı seçimi yok.** `MessageForm` opsiyonel `recipient`
+  alıyor; verildiğinde `userId` gizli alandan gidiyor. Yanlış kişiye yazmanın
+  en kolay yolu, cevap yazarken açık duran bir alıcı listesidir.
+- **Eşleşmemiş numaralar tek başlıkta ve bağlantı değil.** Gönderilecek
+  `userId` olmadığı için satır tıklanabilir yapılmadı: boş bir yazışma açmak
+  "cevaplayabilirsin" demenin yanlış yolu olurdu.
+
+`awaitingReply` ölçüsü "son söz sakinde mi" — ayrı bir okundu tablosu yok ve
+bu ölçü rozetin sorduğu şeye ("dönmem gereken var mı") yetiyor. Gerçek okundu
+bilgisi istenirse `messages`'a okuma damgası eklemek gerekir.
+
+### 5.9.3 Sırada
+
+- **Portal uçları için entegrasyon testi** — §5.8.7'de zaten açıktı, 5.9.1 onu
+  teorik olmaktan çıkardı: uçlar bir kez bile veritabanına karşı
+  koşulmadığı için hata kullanıcıda çıktı. `tests/integration`'a
+  `/v1/panel/portal/*` duman testi (her uç 200) eklenmeli; bu tek test
+  5.9.1'i yakalardı.
+- **Cevap bekleyen yazışma için nav rozeti ve bildirim yok.** Yönetici
+  `/panel/mesajlar`'a girmedikçe yeni mesajdan haberdar olmuyor.
+- **Yazışmada sayfalama yok**: liste son 300, yazışma son 200 mesajla sınırlı;
+  `messageCount` de bu pencere içinde sayıyor.
+- **Kanal yazışma başlığında son mesajdan alınıyor** — sakin WhatsApp'tan
+  yazıp yönetici uygulama içinden cevaplarsa başlıktaki kanal rozeti
+  değişiyor. Bugünkü veride tek kanal kullanıldığı için sorun görünmüyor.
+
+---
+
 ## 6. Bekleyen ürün kararları (Track E — teknik altyapı hazır, karar bekliyor)
 
 Bu maddeler **yapılmadı** çünkü kod değil, iş kararı eksik. Karar verilirse
@@ -876,7 +972,9 @@ her biri artık tek modül işi (altyapı: contracts, worker, iptal/ilerleme haz
   hata olabilir; `pnpm typecheck` bu üçünü birlikte çalıştıracak şekilde
   düzeltilmeli
 - **Sakin portalı ve erişim talebi için entegrasyon testi yok** (§5.8.7) —
-  kapsam sınırı ve onay akışı yalnız elle doğrulandı
+  kapsam sınırı ve onay akışı yalnız elle doğrulandı. §5.9.1'den sonra bu
+  madde artık teorik değil: uçların bir kez bile veritabanına karşı
+  koşulmaması kullanıcıya 500 olarak yansıdı
 - `0008_access_requests` migration'ı **üretim veritabanında çalıştırılmadı**;
   bu oturumda yalnız yazıldı ve tip/lint kapılarından geçirildi
 
