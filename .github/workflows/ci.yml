@@ -86,7 +86,29 @@ jobs:
           pnpm db:migrate
           SEED_DEMO=false pnpm db:seed
 
-      - name: Entegrasyon testleri (RLS izolasyonu, borç motoru)
+      - name: API'yi başlat (entegrasyon testleri için)
+        # Entegrasyon testlerinin bir kısmı (kimlik yolları, sakin portalı)
+        # HTTP üzerinden çalışan bir API'ye ihtiyaç duyuyor. Bu adım olmadan
+        # o testler API'ye ulaşamayıp **atlanıyordu** ve CI yine yeşil
+        # görünüyordu — yani hiç koşmayan testler koşuyormuş gibi sayılıyordu.
+        run: |
+          pnpm --filter @yonetim/api build
+          # `nohup` + log dosyası: adım bittiğinde kabuk kapanıyor, süreç
+          # arkada kalmalı. Açılış hatası (eksik ortam değişkeni gibi) ancak
+          # log'a bakılarak anlaşılır, o yüzden başarısızlıkta basılıyor.
+          PORT=3100 nohup node apps/api/dist/apps/api/src/main.js > /tmp/api.log 2>&1 &
+          for _ in $(seq 1 30); do
+            if curl -sf http://localhost:3100/health >/dev/null; then
+              echo "API hazır"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "API 60 saniyede ayağa kalkmadı:" >&2
+          cat /tmp/api.log >&2
+          exit 1
+
+      - name: Entegrasyon testleri (RLS izolasyonu, borç motoru, sakin portalı)
         run: pnpm test:integration
 
       - name: Lint (jsx-a11y dahil)
