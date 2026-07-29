@@ -49,9 +49,27 @@
   kararlar §5'te. **Açık kalan:** hukuk ve belge yükleme (ikisi de Track E'deki
   bir ürün kararına bağlı) ve hâlâ boşta duran 9 yazma yetkisi — tek tek
   gerekçeleriyle §5.1'de.
+- **✅ 2026-07-29 (ikinci tur): "uygulamaya girilemiyordu" sınıfı kapatıldı.**
+  Kod baştan beri yazılıydı, hiçbir yere bağlanmamıştı:
+  - **Kayıt yolu yoktu.** `apps/web`'in bütün CTA'ları `/kayit`'e, site
+    landing sayfaları `/kayit-talebi`'ne bakıyordu — ikisi de 404. `/kurulum`
+    ise sonsuz döngüdeydi: sitesi olmayan kullanıcı 401 alıp `/giris`e, giriş
+    yapıp yine 401'e düşüyordu. Üçü de kuruldu (§5.8.4).
+  - **Sakin panele giremiyordu.** `/panel` dashboard'u `report:read` istiyor;
+    sakin hata sayfası görüyordu. `/panel` rol duyarlı yapıldı ve yedi sakin
+    ekranı yazıldı (§5.8.2).
+  - **🔒 Güvenlik açığı kapatıldı:** sakinin `message:read` izni vardı ve o
+    izin site genelindeki **tüm** yazışmaları açıyordu (§5.8.1).
+  - **Çoklu site yönetilemiyordu.** `company_admin`, `tenants.company_id`,
+    `ctx.memberships`, `switchTenant()` yazılıydı ama hiçbiri bağlı değildi;
+    site değiştirmek için çıkış yapmak gerekiyordu. Portföy ekranı ve site
+    değiştirici kuruldu (§5.8.3).
+  - API uçlarındaki Türkçe/İngilizce karışıklığı standartlandı (§5.8.5) ve
+    komut paleti overlay'i düzeltildi (§5.8.6).
 - **Kalan büyük iş (Track E):** teknik altyapı hazır ama her biri bir ürün
-  kararı bekliyor — PDF/KEP, bakım hatırlatma, sakin portalı kapsamı, göç
-  sihirbazı, bordro kapsamı, landing builder (bkz. §6).
+  kararı bekliyor — PDF/KEP, bakım hatırlatma, göç sihirbazı, bordro kapsamı,
+  landing builder (bkz. §6). Sakin tarafında oylama ve ödeme akışı hâlâ açık
+  (§5.8.7).
 
 ---
 
@@ -641,6 +659,167 @@ ve yeni gelen sekiz modülün tamamı zaten çekmece sürümüyle birlikte geldi
 Her adımda kapılar: `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm arch`,
 `pnpm --filter @yonetim/app build`.
 
+> **Typecheck kapısı hakkında uyarı:** kökteki `tsconfig.check.json` yalnız
+> `packages/*` ve `tests/` kapsıyor — `apps/api` ve `apps/app` **dahil değil**
+> (dosyanın kendi yorumunda gerekçesi yazılı: Nest dekoratörleri sahte hata
+> üretiyordu). Uygulamalar ayrı ayrı `npx tsc --noEmit` ile kontrol edilmeli;
+> yalnız kökteki komutu çalıştırıp "temiz" demek yanıltıcı.
+
+---
+
+## 5.8 Sakin portalı, firma konsolu ve kayıt akışları (2026-07-29)
+
+Bu bölümdeki dört iş birbirine bağlı: hepsi "uygulama var ama içine
+girilemiyor" sınıfından. Kod baştan beri yazılıydı, bağlanmamıştı.
+
+### 5.8.1 Kapatılan güvenlik açığı — sakin tüm yazışmaları okuyabiliyordu
+
+`RESIDENT_BASE` içinde `message:read` vardı ve
+`GET /v1/panel/communication/messages` yalnız o izni istiyor; servis ise
+sitedeki **tüm** mesajları döndürüyor. Yani her sakin, komşularının yönetimle
+yazışmasını okuyabiliyordu. Menüde de görünüyordu (`/panel/mesajlar`).
+
+Ekranı gizlemek çözüm değildi — uç kendisi açıktı. İzin `message:read_own`
+ile daraltıldı (`debt:read_own`, `request:read_own` ile aynı desen) ve sakin
+yalnız kendi yazışmasını döndüren `/v1/panel/portal/messages` ucuna bağlandı.
+
+**Aynı sınıftan ikinci bulgu:** menü yalnız izne bakıyordu, oysa sakinde
+`announcement:read`, `poll:read`, `meeting:read`, `document:read`,
+`decision:read`, `reservation:read` izinleri de var — hepsi site geneline açık
+içerik izinleri, ama işaret ettikleri sayfalar yönetim ekranı. `/panel/duyurular`
+sakine besteci kutusu açıyordu.
+
+Çözüm: `NavItem.audience` (`"staff" | "resident"`) ve `navItemsFor(roles)` —
+görünürlük artık **izin ∧ kitle**. Varsayılan `["staff"]`, yani yeni bir
+yönetim sayfası eklendiğinde sakine sızmıyor; unutulduğunda güvenli tarafa
+düşen varsayılan bu.
+
+### 5.8.2 `/panel` rol duyarlı, sakin ekranları kuruldu
+
+Sakin `/panel`'e girdiğinde **hata sayfası** görüyordu: dashboard'u besleyen
+`/v1/panel/dashboard` `report:read` istiyor, sakinde yok (ve olmamalı — site
+geneli tahsilat/gider rakamları). Eski `/sakin` portalı ise tek sayfalık
+kalmıştı: ödeme geçmişi, talepler, mesajlar, bilgiler hiç yoktu.
+
+`/panel` artık ortak adres; `audienceOf(ctx.roles)` sonucuna göre yönetim
+dashboard'u ya da sakin özeti render ediliyor. `/sakin` → `/panel` (301).
+
+| Ekran | Yol | Uç |
+| --- | --- | --- |
+| Özet | `/panel` | `GET /v1/panel/portal/me` |
+| Borçlarım | `/panel/borclarim` | `GET /v1/panel/portal/debts` |
+| Ödemelerim | `/panel/odemelerim` | `GET /v1/panel/portal/payments` |
+| Taleplerim | `/panel/taleplerim` (+`yeni`, `[id]`) | `/v1/panel/portal/requests*` |
+| Mesajlarım | `/panel/mesajlarim` | `/v1/panel/portal/messages` |
+| Bilgilerim | `/panel/bilgilerim` | `GET/PATCH /v1/panel/portal/profile` |
+| Yönetim bilgileri | `/panel/yonetim-bilgileri` | `GET /v1/panel/portal/management` |
+| Duyurular | `/panel/duyurular` (ortak) | mevcut uç, besteci yetkiyle gizli |
+
+Üç karar:
+
+- **Kapsam izinle değil sorguyla daraltılıyor.** `PortalService`'in hiçbir
+  metodu dışarıdan `unitId`/`userId` almıyor; hepsi oturumdan çözülüyor
+  (`activeUnit()` tek giriş kapısı). İzin ile sorgu birbirinin yedeği —
+  biri unutulursa diğeri hâlâ tutuyor.
+- **Başkasının talebi 404, 403 değil.** 403 dönmek "böyle bir kayıt var ama
+  senin değil" bilgisini sızdırırdı; sahiplik `where` koşulunun içinde.
+- **TCKN ve telefon kendi kaydında da maskeli.** Ham değer uçtan çıktığı anda
+  sunucu loglarına, hata izlerine ve tarayıcı önbelleğine giriyor; "kaydım
+  doğru mu" sorusuna maskeli metin yetiyor. Telefon `PATCH /profile`'da hiç
+  değişmiyor: numara oturum kimliğinin kendisi (OTP oraya gidiyor),
+  doğrulamasız değişiklik hesabı devretmenin yolu olurdu.
+
+### 5.8.3 Yönetim firması konsolu
+
+`company_admin`/`company_operator` rolleri, `tenants.company_id`,
+`ctx.memberships` ve `switchTenant()` baştan beri yazılıydı — **hiçbiri bir
+uca ya da ekrana bağlı değildi**. Birden fazla site yöneten bir kullanıcı,
+site değiştirmek için çıkış yapıp yeniden girmek zorundaydı.
+
+- `GET /v1/panel/portfolio` — yönetilen sitelerin özeti. Kapsam izinle değil
+  **üyelikle**: sorgu `m.user_id = ?` ile sınırlı (`company_id` üzerinden
+  kurulmadı, çünkü bir yönetici şirkete bağlı olmayan siteleri de yönetiyor
+  olabilir). Sayaçlar `LATERAL` ile tek turda — 20 siteli portföyde site
+  başına dört sorgu 80 gidiş-dönüş demekti.
+- `POST /v1/auth/web/switch-tenant` — **üyelik burada doğrulanıyor**;
+  `switchTenant()` tek başına oturum satırını körlemesine güncelliyor, yani
+  kontrol atlansa kullanıcı hiç üyesi olmadığı bir siteyi aktif yapabilirdi.
+  Oturum önbelleği hemen düşürülüyor.
+- `/panel/portfoy` — liste **risk skoruna göre** sıralı (tahsilat oranı, SLA
+  ihlali, geciken bakım birlikte). Alfabetik bir liste 20 satırda hiçbir şey
+  söylemiyordu; buradaki tek iş "bugün nereye bakmalıyım" sorusunu ilk satırda
+  cevaplamak.
+- Kabukta site değiştirici; tek üyelikte hiç render edilmiyor.
+
+### 5.8.4 Kayıt akışları ve düzeltilen sonsuz döngü
+
+`apps/web`'in bütün CTA'ları `/kayit`'e, site landing sayfaları
+`/kayit-talebi`'ne bakıyordu; **ikisi de 404 veriyordu.** Pazarlama sitesinin
+tamamı ölü bir düğmeye çıkıyordu.
+
+- **`/kayit`** — site veya yönetim firması kaydı. Firma seçilirse `companies`
+  kaydı açılıyor, ilk kullanıcı `company_admin` oluyor ve sonraki siteler aynı
+  firmaya bağlanıp portföyde tek listede görünüyor. `?kampanya=` ve `?gecis=`
+  tenant ayarlarına yazılıyor — hangi kanalın dönüştüğü ancak burada
+  öğrenilebiliyor. **Kayıt oturum açmıyor:** doğrulama kodu giriş akışının
+  aynı ucundan gidiyor; doğrulamasız site açılabilseydi başkasının adresiyle
+  site açıp o kişiyi kilitlemek mümkün olurdu.
+- **`/kayit-talebi`** — sakin erişim talebi (`access_requests`, migration
+  `0008`). Üyeliği başvuran değil **yönetici** açıyor; otomatik onay "3. daire"
+  yazan herkesi o dairenin sakini yapardı ve o kişi duyuruları, karar defterini
+  ve tutanakları okurdu. Yanıt her koşulda aynı ("iletildi") — site bulunamasa
+  da, talep zaten beklese de; aksi halde uç "bu sitede bu numara kayıtlı mı"
+  sorusunun sorulabildiği bir yüzey olurdu. Onay kuyruğu
+  `GET /v1/panel/residents/access-requests` (`resident:invite`).
+- **`/kurulum` — düzeltilen sonsuz döngü.** `requireContext()` sitesi olmayan
+  kullanıcıyı buraya yönlendiriyordu, ama bağlam çözücü üyeliksiz kullanıcı
+  için hiç kimlik üretmiyor (`resolveTenantForUser` tenant bulamayınca `null`),
+  yani 401 dönüyordu → `/giris` → giriş → yine 401 → `/giris`. Kullanıcı
+  hiçbir zaman içeri giremiyordu. Artık çerez varsa `/kurulum`'a gidiliyor ve
+  setup ucu oturumu çerezden kendisi çözüyor (`@Public()` ama oturum zorunlu —
+  `web/logout` ile aynı desen).
+
+### 5.8.5 Endpoint dil standardı
+
+Controller taban yolları zaten İngilizceydi ama alt segmentler karışıktı:
+`/v1/panel/units/secenekler`, `/v1/panel/operations/talepler/:id/durum` gibi
+yollarda tek bir uçta iki dil vardı. 45 segment çevrildi, 212 çağrı noktası
+ve kontrat dokümantasyonu güncellendi (`secenekler→options`,
+`talepler→requests`, `bakim→maintenance`, `sayaclar→meters`,
+`toplu/onizleme→bulk/preview`, `dagitim→allocation`,
+`gecikme-muafiyeti→late-fee-waiver` …). `apps/app` tarafında
+`/api/oturum/cikis` → `/api/session/logout`.
+
+**Sayfa adresleri bilinçli olarak Türkçe kalıyor** (`/panel/borclar`,
+`/giris`, `/kayit`): onlar kullanıcıya görünen ve `apps/web`'in SEO
+bağlantılarının işaret ettiği yüzey.
+
+### 5.8.6 Komut paleti overlay'i
+
+Palet, kabuğun üst şeridinin içinde render ediliyordu ve o şeritte
+`backdrop-blur` var. `backdrop-filter` bir öğeyi `fixed` torunları için
+**içeren blok** yapıyor; sonuç: `inset-0` verilmiş backdrop tüm ekran yerine
+yalnız 64 piksellik başlığı kaplıyor, dışına tıklamak da kapatmıyordu.
+`packages/ui`'ye `CommandOverlay` eklendi (Radix `Dialog.Portal`) — dosyanın
+kendi yorumunda zaten "Track C1'de Radix Dialog bunu devralıyor" yazıyordu.
+
+### 5.8.7 Sırada — bu bölümden çıkan açık işler
+
+- **Sakin oylama ekranı yok.** Özet kartında "oy bekleyen anket" sayısı
+  gösteriliyor ama bağlantı verilmiyor: `/panel/anketler` yönetim ekranı.
+  `poll:vote` izni tanımlı, hiçbir uçta kullanılmıyor.
+- **Sakin ödeme akışı bağlanmadı.** `/v1/panel/portal/payment` uçları var
+  (`portal-payment.controller.ts`), "Borçlarım" ekranından ödeme düğmesi yok.
+- **Telefon değiştirme akışı yok** — doğrulama gerektiriyor (§5.8.2).
+- **Toplantı/karar defteri/belgeler sakine kapalı**: içerik site geneline açık
+  ve izinleri var, ama sayfaları yönetim ekranı olduğu için `audience: staff`
+  bırakıldı. Sakin sürümleri ayrıca yazılmalı.
+- **Erişim talebi bildirimi yok**: talep geldiğinde yöneticiye bildirim
+  gitmiyor, kuyruğu görmesi için ekrana girmesi gerekiyor. Nav rozeti de yok.
+- **Entegrasyon testi yok**: portal kapsam sınırı (sakin komşusunun verisini
+  göremiyor) ve erişim talebi onayı `tests/integration`'a yazılmalı — bu
+  bölümdeki en kritik iki davranış ve ikisi de yalnız elle doğrulandı.
+
 ---
 
 ## 6. Bekleyen ürün kararları (Track E — teknik altyapı hazır, karar bekliyor)
@@ -652,7 +831,8 @@ her biri artık tek modül işi (altyapı: contracts, worker, iptal/ilerleme haz
 | --- | --- |
 | Borcu Yoktur PDF + KEP | KEP sağlayıcısı (PTT/TNB?), PDF saklama politikası, Türkçe font lisansı |
 | Bakım hatırlatma (T-30/-15/-7/-0/+3) | Hatırlatma kime gidecek (yönetici mi görevli mi), kanal önceliği |
-| Sakin portalı kapsamı | Yalnız görüntüleme mi, talep açma + oylama da mı |
+| ~~Sakin portalı kapsamı~~ | **karara bağlandı** (§5.8.2): görüntüleme + talep açma + yazışma yapıldı; **oylama ve ödeme** hâlâ açık (§5.8.7) |
+| Sakin IBAN görünürlüğü | "Yönetim bilgileri" ekranı IBAN'ı maskeli gösteriyor (yönetim ekranıyla aynı çizgi), ama ekranın amacı "nereye yatıracağım". Açık IBAN gösterilecek mi? |
 | Göç sihirbazı (Excel import) | Kabul edilecek şablonlar, çakışma politikası (üzerine yaz / atla / sor) |
 | Personel bordrosu | Tam SGK/vergi hesabı mı, yalnız kayıt mı |
 | Landing builder | Blok kütüphanesi kapsamı, yayınlama akışı |
@@ -661,7 +841,9 @@ her biri artık tek modül işi (altyapı: contracts, worker, iptal/ilerleme haz
 1. Borcu Yoktur PDF/KEP + bütçe simülatörü
 2. Bakım planı + duyuru zamanlama
 3. WhatsApp paneli + talep/SLA + KVKK gelen kutusu
-4. **Sakin portalı** (en büyük parça — aynı API'yi tüketen ikinci istemci)
+4. ~~**Sakin portalı**~~ → **büyük kısmı yapıldı** (§5.8.2). Ayrı bir istemci
+   olarak değil, panelin rol duyarlı hâli olarak kuruldu: tek kabuk, tek
+   bildirim zili, tek tema/erişilebilirlik ayarı. Kalan: oylama + ödeme (§5.8.7)
 5. Rezervasyon takvimi + sayaç okuma + banka eşleştirme
 6. Bordro + anket/toplantı/hukuk tam akış + denetim diff görselleştirme
 7. Raporlar modülü (+ rakipten gelen **Muhasebe Raporları** fikri burada
@@ -688,6 +870,15 @@ her biri artık tek modül işi (altyapı: contracts, worker, iptal/ilerleme haz
 - 16 worker job'ı hâlâ `skipped: no_handler` (Track E maddeleriyle birlikte dolacak)
 - Demirbaş ve Karar Defteri için **entegrasyon testi yok**; karar defterinin
   değişmezlik trigger'ı elle (psql) doğrulandı, `tests/integration`'a taşınmalı
+- **`tsconfig.check.json` uygulamaları kapsamıyor** — `packages/*` ve `tests/`
+  dışında kalan `apps/api` ve `apps/app` ayrı ayrı kontrol edilmek zorunda
+  (§5.7 sonundaki uyarı). Kök komut tek başına "temiz" dediğinde uygulamalarda
+  hata olabilir; `pnpm typecheck` bu üçünü birlikte çalıştıracak şekilde
+  düzeltilmeli
+- **Sakin portalı ve erişim talebi için entegrasyon testi yok** (§5.8.7) —
+  kapsam sınırı ve onay akışı yalnız elle doğrulandı
+- `0008_access_requests` migration'ı **üretim veritabanında çalıştırılmadı**;
+  bu oturumda yalnız yazıldı ve tip/lint kapılarından geçirildi
 
 ---
 
