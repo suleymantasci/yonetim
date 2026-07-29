@@ -26,7 +26,6 @@ import {
   debts,
   messages,
   payments,
-  pollVotes,
   polls,
   requestComments,
   requests,

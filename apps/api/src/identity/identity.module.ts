@@ -7,6 +7,8 @@ import { PermissionGuard } from "./guards/permission.guard";
 import { RateLimitGuard } from "./guards/rate-limit.guard";
 import { TenantContextGuard } from "./guards/tenant-context.guard";
 import { MobileAuthService } from "./mobile-auth.service";
+import { SignupController } from "./signup.controller";
+import { SignupService } from "./signup.service";
 import { WebAuthService } from "./web-auth.service";
 
 /**
@@ -15,12 +17,13 @@ import { WebAuthService } from "./web-auth.service";
  */
 @Global()
 @Module({
-  controllers: [AuthController],
+  controllers: [AuthController, SignupController],
   providers: [
     ContextResolver,
     AppContextService,
     MobileAuthService,
     WebAuthService,
+    SignupService,
     TenantContextGuard,
     PermissionGuard,
     RateLimitGuard,
@@ -30,6 +33,7 @@ import { WebAuthService } from "./web-auth.service";
     AppContextService,
     MobileAuthService,
     WebAuthService,
+    SignupService,
     TenantContextGuard,
     PermissionGuard,
     RateLimitGuard,

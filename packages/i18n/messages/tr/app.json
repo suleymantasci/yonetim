@@ -2345,5 +2345,82 @@
     "overdueMaintenance": "{count} geciken bakım",
     "openRequests": "{count} açık talep",
     "footnote": "Liste {user} kullanıcısının üyeliklerine göre hazırlanır."
+  },
+  "signup": {
+    "title": "Ücretsiz deneyin",
+    "subtitle": "{days} gün, kredi kartı istemeden.",
+    "accountType": "Hesap türü",
+    "typeProperty": "Site / apartman",
+    "typePropertyHint": "Tek bir siteyi yönetiyorum.",
+    "typeCompany": "Yönetim firması",
+    "typeCompanyHint": "Birden fazla siteyi yönetiyorum.",
+    "field": {
+      "companyName": "Firma adı",
+      "propertyName": "Site / apartman adı",
+      "propertyType": "Tür",
+      "unitCount": "Daire sayısı",
+      "city": "Şehir",
+      "fullName": "Ad soyad",
+      "identifier": "E-posta veya telefon"
+    },
+    "propertyPlaceholder": "Örn. Yeşilvadi Sitesi",
+    "identifierHint": "Giriş kodunuz buraya gönderilecek.",
+    "terms": "Aydınlatma metnini okudum, kişisel verilerimin işlenmesini kabul ediyorum.",
+    "termsRequired": "Devam etmek için onaylamanız gerekiyor.",
+    "submit": "Hesabı oluştur",
+    "haveAccount": "Zaten hesabınız var mı?",
+    "login": "Giriş yapın",
+    "noCardNote": "Kredi kartı istenmez. Deneme bitince veriniz silinmez.",
+    "sentTitle": "Son bir adım kaldı",
+    "emailSent": "Giriş bağlantısını e-posta adresinize gönderdik.",
+    "smsSent": "Giriş kodunu telefonunuza gönderdik.",
+    "continueToLogin": "Girişe devam et",
+    "checkFields": "Lütfen işaretli alanları kontrol edin.",
+    "invalidField": "Bu alanı kontrol edin.",
+    "invalidIdentifier": "E-posta veya telefon geçersiz.",
+    "tooManyAttempts": "Çok fazla deneme yapıldı. Lütfen biraz sonra tekrar deneyin."
+  },
+  "accessRequest": {
+    "title": "Sakin erişim talebi",
+    "subtitle": "Yöneticiniz onayladıktan sonra panele giriş yapabilirsiniz.",
+    "applyingTo": "{property} için başvuruyorsunuz.",
+    "field": {
+      "property": "Site",
+      "fullName": "Ad soyad",
+      "phone": "Telefon",
+      "email": "E-posta",
+      "block": "Blok",
+      "unit": "Daire no",
+      "relation": "İlişkiniz",
+      "note": "Not"
+    },
+    "propertyHint": "Yöneticinizin verdiği site adresi.",
+    "phoneHint": "Giriş kodunuz bu numaraya gönderilecek.",
+    "blockPlaceholder": "A",
+    "noteHint": "Yöneticinizin sizi tanımasına yardımcı olacak bilgi.",
+    "terms": "Aydınlatma metnini okudum, bilgilerimin yöneticiyle paylaşılmasını kabul ediyorum.",
+    "termsRequired": "Devam etmek için onaylamanız gerekiyor.",
+    "submit": "Talebi gönder",
+    "sentTitle": "Talebiniz iletildi",
+    "sentBody": "Yöneticiniz onayladığında telefonunuza bilgi verilecek.",
+    "backToLogin": "Girişe dön",
+    "privacyNote": "Bilgileriniz yalnız başvurduğunuz sitenin yöneticisiyle paylaşılır.",
+    "checkFields": "Lütfen işaretli alanları kontrol edin.",
+    "invalidField": "Bu alanı kontrol edin."
+  },
+  "setup": {
+    "title": "İlk sitenizi kurun",
+    "subtitle": "Panele girmeden önce yöneteceğiniz siteyi tanımlayalım.",
+    "field": {
+      "propertyName": "Site / apartman adı",
+      "propertyType": "Tür",
+      "unitCount": "Daire sayısı",
+      "city": "Şehir"
+    },
+    "generateUnits": "Daireleri otomatik oluştur",
+    "generateUnitsHint": "1'den başlayarak numaralandırılır; sonradan düzenleyebilirsiniz.",
+    "submit": "Siteyi oluştur",
+    "checkFields": "Lütfen işaretli alanları kontrol edin.",
+    "invalidField": "Bu alanı kontrol edin."
   }
 }

@@ -2345,5 +2345,82 @@
     "overdueMaintenance": "{count} overdue maintenance",
     "openRequests": "{count} open requests",
     "footnote": "The list is built from {user}'s memberships."
+  },
+  "signup": {
+    "title": "Start your free trial",
+    "subtitle": "{days} days, no credit card required.",
+    "accountType": "Account type",
+    "typeProperty": "Single property",
+    "typePropertyHint": "I manage one building or estate.",
+    "typeCompany": "Management company",
+    "typeCompanyHint": "I manage several properties.",
+    "field": {
+      "companyName": "Company name",
+      "propertyName": "Property name",
+      "propertyType": "Type",
+      "unitCount": "Number of units",
+      "city": "City",
+      "fullName": "Full name",
+      "identifier": "Email or phone"
+    },
+    "propertyPlaceholder": "e.g. Greenvalley Estate",
+    "identifierHint": "Your sign-in code will be sent here.",
+    "terms": "I have read the privacy notice and consent to my personal data being processed.",
+    "termsRequired": "You need to accept this to continue.",
+    "submit": "Create account",
+    "haveAccount": "Already have an account?",
+    "login": "Sign in",
+    "noCardNote": "No credit card required. Your data is not deleted when the trial ends.",
+    "sentTitle": "One last step",
+    "emailSent": "We sent a sign-in link to your email address.",
+    "smsSent": "We sent a sign-in code to your phone.",
+    "continueToLogin": "Continue to sign in",
+    "checkFields": "Please check the highlighted fields.",
+    "invalidField": "Please check this field.",
+    "invalidIdentifier": "That email or phone number is not valid.",
+    "tooManyAttempts": "Too many attempts. Please try again shortly."
+  },
+  "accessRequest": {
+    "title": "Request resident access",
+    "subtitle": "You can sign in once your manager approves the request.",
+    "applyingTo": "You are applying to {property}.",
+    "field": {
+      "property": "Property",
+      "fullName": "Full name",
+      "phone": "Phone",
+      "email": "Email",
+      "block": "Block",
+      "unit": "Unit no",
+      "relation": "Your relationship",
+      "note": "Note"
+    },
+    "propertyHint": "The property address your manager gave you.",
+    "phoneHint": "Your sign-in code will be sent to this number.",
+    "blockPlaceholder": "A",
+    "noteHint": "Anything that helps your manager recognise you.",
+    "terms": "I have read the privacy notice and consent to my details being shared with the manager.",
+    "termsRequired": "You need to accept this to continue.",
+    "submit": "Send request",
+    "sentTitle": "Request sent",
+    "sentBody": "You will be notified by phone once your manager approves it.",
+    "backToLogin": "Back to sign in",
+    "privacyNote": "Your details are shared only with the manager of the property you applied to.",
+    "checkFields": "Please check the highlighted fields.",
+    "invalidField": "Please check this field."
+  },
+  "setup": {
+    "title": "Set up your first property",
+    "subtitle": "Let's define the property you will manage before you enter the panel.",
+    "field": {
+      "propertyName": "Property name",
+      "propertyType": "Type",
+      "unitCount": "Number of units",
+      "city": "City"
+    },
+    "generateUnits": "Create units automatically",
+    "generateUnitsHint": "Numbered from 1 upwards; you can edit them later.",
+    "submit": "Create property",
+    "checkFields": "Please check the highlighted fields.",
+    "invalidField": "Please check this field."
   }
 }

@@ -11,6 +11,7 @@ import {
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 
 import {
+  accessRequestDecision,
   occupancyCreate,
   occupancyEnd,
   residentCreate,
@@ -19,6 +20,7 @@ import {
   residentUpdate,
   tcknLookupQuery,
   whatsappOptInPatch,
+  type AccessRequestDecision,
   type OccupancyCreate,
   type OccupancyEnd,
   type ResidentCreate,
@@ -28,6 +30,7 @@ import {
 
 import { RequirePermission } from "../../identity/decorators";
 import { ZodBodyPipe, ZodQueryPipe } from "../../infra/zod/zod-dto";
+import { AccessRequestService } from "./access-request.service";
 import { ResidentService } from "./resident.service";
 
 /**
@@ -40,7 +43,10 @@ import { ResidentService } from "./resident.service";
 @ApiTags("panel/residents")
 @Controller("v1/panel/residents")
 export class ResidentController {
-  constructor(private readonly service: ResidentService) {}
+  constructor(
+    private readonly service: ResidentService,
+    private readonly accessRequest: AccessRequestService,
+  ) {}
 
   @Get()
   @RequirePermission("resident:read")
@@ -52,6 +58,43 @@ export class ResidentController {
   })
   list(@Query(new ZodQueryPipe(residentListQuery)) q: ResidentListQuery) {
     return this.service.list(q);
+  }
+
+  /**
+   * Erişim talepleri — `/kayit-talebi`'nden gelen onay kuyruğu.
+   *
+   * `/:id` deseninden **önce** tanımlı olmalı, aksi halde "access-requests"
+   * bir kimlik sanılır ve `ParseUUIDPipe` 400 döndürür.
+   */
+  @Get("access-requests")
+  @RequirePermission("resident:invite")
+  accessRequestList() {
+    return this.accessRequest.list();
+  }
+
+  @Post("access-requests/:id/approve")
+  @RequirePermission("resident:invite")
+  @ApiOperation({
+    summary: "Erişim talebini onayla — üyelik ve daire ilişkisi açılır",
+    description:
+      "Daire **yöneticiden** gelir: başvurunun `unitLabel` alanı serbest " +
+      "metin ve beyandır. Otomatik eşleşme yalnız öneri olarak gösterilir; " +
+      "bağlayıcı olsaydı '3. daire' yazan herkes o dairenin sakini olurdu.",
+  })
+  approveAccessRequest(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body(new ZodBodyPipe(accessRequestDecision)) dto: AccessRequestDecision,
+  ) {
+    return this.accessRequest.approve(id, dto);
+  }
+
+  @Post("access-requests/:id/reject")
+  @RequirePermission("resident:invite")
+  rejectAccessRequest(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body(new ZodBodyPipe(accessRequestDecision)) dto: AccessRequestDecision,
+  ) {
+    return this.accessRequest.reject(id, dto);
   }
 
   /** Combobox (borç/ödeme ekranları) — detaydan önce tanımlı olmalı. */

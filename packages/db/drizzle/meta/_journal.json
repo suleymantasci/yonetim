@@ -57,6 +57,13 @@
       "when": 1785342400000,
       "tag": "0007_payment_bank_account",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1785342500000,
+      "tag": "0008_access_requests",
+      "breakpoints": true
     }
   ]
 }

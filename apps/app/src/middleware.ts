@@ -19,6 +19,11 @@ const PUBLIC_PATHS = [
   "/kayit",
   "/kayit-talebi",
   "/sifre-sifirla",
+  // `/kurulum` oturum İSTER ama tenant bağlamı istemez. Buraya yazılmasa da
+  // çerez kontrolünden geçerdi; yazılmasının sebebi sayfanın kendi kontrolünü
+  // yapıyor olması (`hasSessionCookie` → `/giris`) ve `devam` parametresinin
+  // iki kez eklenmemesi.
+  "/kurulum",
   "/api/webhooks",
   "/api/public",
   "/api/health",

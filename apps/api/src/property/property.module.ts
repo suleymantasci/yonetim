@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { BlockService } from "./block/block.service";
+import { AccessRequestService } from "./resident/access-request.service";
 import { PiiService } from "./resident/pii.service";
 import { PortalController } from "./resident/portal.controller";
 import { PortalService } from "./resident/portal.service";
@@ -29,6 +30,7 @@ import { UnitService } from "./unit/unit.service";
     ResidentWriteRepository,
     PiiService,
     PortalService,
+    AccessRequestService,
   ],
   exports: [UnitService, UnitRepository, ResidentService, PiiService],
 })

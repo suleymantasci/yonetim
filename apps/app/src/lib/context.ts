@@ -51,9 +51,23 @@ export async function requireContext(): Promise<AppContext> {
     resolved = await apiGet("/v1/auth/context", appContext);
   } catch (error) {
     if (error instanceof AppError) {
-      // 401 = oturum yok/süresi dolmuş → giriş; 404 = erişilebilir site yok
-      // → kurulum. İkisi de hata sayfası değil, yönlendirme.
-      if (error.code === "unauthorized") redirect("/giris");
+      /**
+       * 401 iki farklı durumu birden anlatıyor ve ayrımı burada yapmak
+       * gerekiyor: `apps/api`'nin bağlam çözücüsü, üyeliği olmayan kullanıcı
+       * için hiç kimlik üretmiyor (`resolveTenantForUser` tenant bulamayınca
+       * `null` dönüyor), yani "oturum yok" ile "oturum var ama sitesi yok"
+       * aynı 401'e düşüyor.
+       *
+       * Ayrım yapılmazsa ikinci durumdaki kullanıcı `/giris`e gidiyor, giriş
+       * yapıyor, yine 401 alıp yine `/giris`e düşüyordu — sonsuz döngü. Bu
+       * yüzden çerez varsa kurulum akışına gönderiliyor; çerez geçersizse
+       * `/kurulum` da onu `/giris`e geri yolluyor ve döngü kapanıyor.
+       *
+       * 404 = kullanıcı var, site var ama erişim yok → yine kurulum.
+       */
+      if (error.code === "unauthorized") {
+        redirect((await hasSessionCookie()) ? "/kurulum" : "/giris");
+      }
       if (error.code === "not_found") redirect("/kurulum");
     }
     throw error;

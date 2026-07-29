@@ -206,3 +206,50 @@ export const consents = pgTable(
     index("idx_consents_tenant").on(t.tenantId),
   ],
 );
+
+/**
+ * Sakin erişim talebi — `/kayit-talebi` (SPEC Bölüm 6.14).
+ *
+ * NEDEN AYRI BİR TABLO: sitede oturan ama sisteme henüz tanımlanmamış bir kişi
+ * kendini `memberships`'e yazamaz — yazabilseydi herkes istediği sitenin
+ * sakini olurdu. Talep bu yüzden **onay bekleyen bir kayıt**: yönetici daire
+ * numarasını ve kimliği doğrulayıp üyeliği kendisi açıyor.
+ *
+ * `user_id` nullable: talebi gönderen kişinin platformda hesabı olmayabilir.
+ * Onay anında ya mevcut kullanıcı bulunuyor ya da yenisi açılıyor.
+ *
+ * Kişisel veri burada **onaya kadar** duruyor; reddedilen talep de siliniyor
+ * değil kapatılıyor, çünkü "kim, ne zaman başvurdu" sorusu yöneticinin
+ * hesap verebilirliğinin parçası (KVKK saklama süresi ayarlardan yönetiliyor).
+ */
+export const accessRequests = pgTable(
+  "access_requests",
+  {
+    id: idCol(),
+    tenantId: tenantId().references(() => tenants.id, { onDelete: "cascade" }),
+    /** Talebi eşleştirdiğimiz mevcut kullanıcı — yoksa onayda oluşturulur. */
+    userId: uuid("user_id").references(() => users.id, { onDelete: "set null" }),
+    fullName: varchar("full_name", { length: 160 }).notNull(),
+    phone: varchar("phone", { length: 20 }).notNull(),
+    email: varchar("email", { length: 255 }),
+    /** Serbest metin: blok/daire yazımı sitelere göre değişiyor. */
+    blockLabel: varchar("block_label", { length: 60 }),
+    unitLabel: varchar("unit_label", { length: 40 }).notNull(),
+    /** 'owner' | 'tenant' — yönetici onayda değiştirebilir. */
+    claimedRelation: varchar("claimed_relation", { length: 20 }).notNull().default("tenant"),
+    note: text("note"),
+    /** 'pending' | 'approved' | 'rejected' */
+    status: varchar("status", { length: 20 }).notNull().default("pending"),
+    /** Onay/ret sırasında bağlanan bağımsız bölüm. */
+    unitId: uuid("unit_id"),
+    reviewedBy: uuid("reviewed_by").references(() => users.id, { onDelete: "set null" }),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    rejectionReason: text("rejection_reason"),
+    ip: varchar("ip", { length: 45 }),
+    ...timestamps,
+  },
+  (t) => [
+    index("idx_access_requests_tenant_status").on(t.tenantId, t.status),
+    index("idx_access_requests_phone").on(t.phone),
+  ],
+);
