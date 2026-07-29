@@ -253,6 +253,72 @@ export const portalAnnouncementsResponse = z.object({
   rows: z.array(portalAnnouncement),
 });
 
+/* ----------------------------------------------------------------- oylama */
+
+/**
+ * Sakinin oy kullanamama sebebi.
+ *
+ * Düğmeyi gizlemek yetmiyor: "neden oy veremiyorum" sorusunun cevabı her
+ * durumda farklı bir sonuç doğuruyor. Kiracıya "bu oylama yalnız maliklere
+ * açık" demek (KMK md.31) ile "oyunuzu zaten kullandınız" demek arasındaki
+ * fark, sakinin yöneticiyi araması ile aramaması kadar.
+ */
+export const portalVoteBlockedReason = z.enum([
+  "no_unit",
+  "owners_only",
+  "already_voted",
+  "not_open",
+]);
+
+export const portalPollOption = z.object({
+  id: z.string(),
+  label: z.string(),
+});
+
+export const portalPollRow = z.object({
+  id: uuid,
+  question: z.string(),
+  description: z.string().nullable(),
+  options: z.array(portalPollOption),
+  /** `equal` daire başı bir oy · `land_share` arsa payı ağırlıklı (KMK md.31). */
+  weightMode: z.string(),
+  /** Gizli oylamada kimin ne oy verdiği kayda geçmez. */
+  visibility: z.string(),
+  allowMultiple: z.boolean(),
+  ownersOnly: z.boolean(),
+  opensAt: dateTime,
+  closesAt: dateTime,
+  closedAt: dateTime.nullable(),
+  isOpen: z.boolean(),
+  /**
+   * Bu dairenin verdiği oy(lar).
+   *
+   * Gizli oylamada da doluyor: "oyumu kullandım mı" ile "ne oy verdim"
+   * farklı sorular ve ilkini gizlemek sakini iki kez oy vermeye çalışmaya
+   * iter. Gizlilik, oyun **yönetime** kim tarafından verildiğinin
+   * gösterilmemesi demek — sakinin kendi kaydından değil.
+   */
+  myVote: z.array(z.string()),
+  canVote: z.boolean(),
+  blockedReason: portalVoteBlockedReason.nullable(),
+  /** Kapanmış oylamanın saklanmış sonucu; açıkken `null`. */
+  result: z.unknown().nullable(),
+});
+
+export const portalPollsResponse = z.object({
+  rows: z.array(portalPollRow),
+});
+
+/**
+ * `POST /v1/panel/portal/polls/:id/vote`.
+ *
+ * Ağırlık gövdede **yok**: arsa payı sunucuda daireden okunuyor. İstemciden
+ * almak, sakine kendi oyunun ağırlığını yazdırmak olurdu.
+ */
+export const portalVoteCreate = z.object({
+  optionIds: z.array(z.string().min(1).max(40)).min(1).max(20),
+});
+
 /* ------------------------------------------------------------------ özet */
 
 /**
@@ -306,3 +372,6 @@ export type PortalManagement = z.infer<typeof portalManagement>;
 export type PortalAnnouncementsResponse = z.infer<
   typeof portalAnnouncementsResponse
 >;
+export type PortalPollsResponse = z.infer<typeof portalPollsResponse>;
+export type PortalPollRow = z.infer<typeof portalPollRow>;
+export type PortalVoteCreate = z.infer<typeof portalVoteCreate>;

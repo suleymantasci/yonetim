@@ -60,7 +60,8 @@
     "myMessages": "Mesajlarım",
     "myProfile": "Bilgilerim",
     "managementInfo": "Yönetim Bilgileri",
-    "portfolio": "Portföy"
+    "portfolio": "Portföy",
+    "myPolls": "Oylamalarım"
   },
   "shell": {
     "impersonationWarning": "Bu oturum destek ekibi tarafından kullanıcı adına açılmıştır. Tüm işlemler ayrıca kayıt altına alınır.",
@@ -2459,5 +2460,29 @@
     "submit": "Siteyi oluştur",
     "checkFields": "Lütfen işaretli alanları kontrol edin.",
     "invalidField": "Bu alanı kontrol edin."
+  },
+  "myPolls": {
+    "title": "Oylamalar",
+    "description": "Sitenizde açılan oylamalar ve verdiğiniz oylar.",
+    "emptyTitle": "Oylama yok",
+    "emptyDescription": "Yönetim bir oylama açtığında burada görünür ve oyunuzu buradan kullanırsınız.",
+    "closesAt": "Son oy: {date}",
+    "ownersOnlyBadge": "Yalnız malikler",
+    "secretBadge": "Gizli oylama",
+    "castVote": "Oyumu kullan",
+    "chooseOption": "Seçeneği belirleyin",
+    "singleHint": "Bir seçenek işaretleyin. Oyunuz kaydedildikten sonra değiştirilemez.",
+    "multipleHint": "Birden fazla seçenek işaretleyebilirsiniz; oy ağırlığınız seçenekler arasında bölünür. Oyunuz kaydedildikten sonra değiştirilemez.",
+    "voteRecorded": "Oyunuz kaydedildi.",
+    "youVoted": "Oyunuzu kullandınız: {option}",
+    "blocked": {
+      "not_open": "Bu oylama şu an oya kapalı.",
+      "no_unit": "Daire kaydınız henüz yönetimle eşleştirilmemiş; oy kullanabilmek için yönetiminizle iletişime geçin.",
+      "owners_only": "Bu oylamada yalnız kat malikleri oy kullanabilir (Kat Mülkiyeti Kanunu md.31).",
+      "already_voted": "Bu oylamada oyunuzu zaten kullandınız."
+    },
+    "closedTitle": "Sonuçlanan oylamalar",
+    "closedDescription": "Kapanan oylamaların sonucu; kapanış anında hesaplanır ve sonradan değişmez.",
+    "noResultYet": "Sonuç henüz yayımlanmadı."
   }
 }

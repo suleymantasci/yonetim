@@ -1,4 +1,11 @@
-import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import { createHash } from "node:crypto";
+
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import {
   and, count, desc, eq, gt, inArray, isNotNull, isNull, lte, ne, sql,
 } from "drizzle-orm";
@@ -12,12 +19,15 @@ import type {
   PortalMessageCreate,
   PortalMessagesResponse,
   PortalPaymentsResponse,
+  PortalPollRow,
+  PortalPollsResponse,
   PortalProfile,
   PortalProfileUpdate,
   PortalRequestCreate,
   PortalRequestDetail,
   PortalRequestsResponse,
   PortalSummary,
+  PortalVoteCreate,
 } from "@yonetim/contracts";
 import type { Database } from "@yonetim/db";
 import {
@@ -28,6 +38,7 @@ import {
   debts,
   messages,
   payments,
+  pollVotes,
   polls,
   requestComments,
   requests,
@@ -745,6 +756,208 @@ export class PortalService {
     });
   }
 
+  /* ------------------------------------------------------------ oylama */
+
+  /**
+   * Sakine açık oylamalar — açık olanlar ve son kapananlar.
+   *
+   * Kapanmışlar da dönüyor: sakin oyunu verdikten sonra sonucu görebilmeli.
+   * KMK md.32 kararların kat maliklerince görülebilmesini gerektiriyor ve
+   * "oy verdim, ne oldu" sorusunu cevapsız bırakmak, katılımı düşüren en
+   * kolay yol.
+   */
+  async polls(): Promise<PortalPollsResponse> {
+    return this.db.tx(async (tx) => {
+      // Kapsam **daire** üzerinden: oy hakkı kişiye değil bağımsız bölüme
+      // bağlı (KMK md.31). Aynı daireyi iki kişi kullanıyorsa ikisi de aynı
+      // "oy verildi" durumunu görmeli.
+      const unit = await this.activeUnit(tx);
+
+      const rows = await tx
+        .select()
+        .from(polls)
+        .where(isNull(polls.deletedAt))
+        .orderBy(desc(polls.closesAt))
+        .limit(50);
+
+      // Bu dairenin oyları tek sorguda: anket başına sorgu açmak 50 anketlik
+      // bir listede 50 gidiş-dönüş demekti.
+      const myVotes = unit
+        ? await tx
+            .select({ pollId: pollVotes.pollId, optionId: pollVotes.optionId })
+            .from(pollVotes)
+            .where(eq(pollVotes.unitId, unit.unitId))
+        : [];
+
+      const votesByPoll = new Map<string, string[]>();
+      for (const vote of myVotes) {
+        const list = votesByPoll.get(vote.pollId) ?? [];
+        list.push(vote.optionId);
+        votesByPoll.set(vote.pollId, list);
+      }
+
+      const now = new Date();
+
+      return {
+        rows: rows.map((poll) => {
+          const isOpen =
+            !poll.closedAt && poll.opensAt <= now && poll.closesAt > now;
+          const myVote = votesByPoll.get(poll.id) ?? [];
+          const blockedReason = voteBlockedReason({
+            isOpen,
+            hasUnit: Boolean(unit),
+            isOwner: unit?.relation === "owner",
+            ownersOnly: poll.ownersOnly,
+            hasVoted: myVote.length > 0,
+          });
+
+          return {
+            id: poll.id,
+            question: poll.question,
+            description: poll.description,
+            options: Array.isArray(poll.options)
+              ? (poll.options as { id: string; label: string }[])
+              : [],
+            weightMode: poll.weightMode,
+            visibility: poll.visibility,
+            allowMultiple: poll.allowMultiple,
+            ownersOnly: poll.ownersOnly,
+            opensAt: poll.opensAt,
+            closesAt: poll.closesAt,
+            closedAt: poll.closedAt,
+            isOpen,
+            myVote,
+            canVote: blockedReason === null,
+            blockedReason,
+            // Sonuç yalnız kapanmış oylamada: açık oylamanın ara sonucunu
+            // göstermek, sonradan oy verecekleri etkiler (sürü etkisi).
+            result: poll.closedAt ? (poll.resultJson ?? null) : null,
+          };
+        }),
+      };
+    });
+  }
+
+  /**
+   * Oy kullan — daire başına **bir kez**.
+   *
+   * Tekillik veritabanındaki `idx_poll_votes_unique_unit` ile de garanti
+   * altında: "önce kontrol et sonra yaz" deseni iki eşzamanlı istekte iki oy
+   * üretebilirdi (aynı sakin iki sekmede). Kontrol kullanıcıya anlamlı hata
+   * vermek için, tekilliği sağlayan kısıt.
+   *
+   * Ağırlık sunucuda: `equal` modda 1, `land_share` modda dairenin arsa payı
+   * (KMK md.31). İstemciden alınsaydı sakin kendi oyunun ağırlığını yazardı.
+   */
+  async vote(pollId: string, dto: PortalVoteCreate): Promise<{ ok: true }> {
+    const userId = this.userId();
+    const ctx = this.db.ctx();
+
+    await this.db.tx(async (tx) => {
+      const unit = await this.activeUnitWithShare(tx);
+      if (!unit) throw new BadRequestException("validation_failed:no_unit");
+
+      const [poll] = await tx
+        .select()
+        .from(polls)
+        .where(and(eq(polls.id, pollId), isNull(polls.deletedAt)))
+        .limit(1);
+      if (!poll) throw new NotFoundException("not_found");
+
+      const now = new Date();
+      const isOpen = !poll.closedAt && poll.opensAt <= now && poll.closesAt > now;
+
+      const existing = await tx
+        .select({ id: pollVotes.id })
+        .from(pollVotes)
+        .where(
+          and(eq(pollVotes.pollId, pollId), eq(pollVotes.unitId, unit.unitId)),
+        )
+        .limit(1);
+
+      const blocked = voteBlockedReason({
+        isOpen,
+        hasUnit: true,
+        isOwner: unit.relation === "owner",
+        ownersOnly: poll.ownersOnly,
+        hasVoted: existing.length > 0,
+      });
+      if (blocked) throw new BadRequestException(`validation_failed:${blocked}`);
+
+      const options = Array.isArray(poll.options)
+        ? (poll.options as { id: string; label: string }[])
+        : [];
+      const known = new Set(options.map((o) => o.id));
+      const chosen = [...new Set(dto.optionIds)].filter((id) => known.has(id));
+
+      if (chosen.length !== dto.optionIds.length || chosen.length === 0) {
+        throw new BadRequestException("validation_failed:unknown_option");
+      }
+      if (!poll.allowMultiple && chosen.length > 1) {
+        throw new BadRequestException("validation_failed:single_choice");
+      }
+
+      /*
+       * Çoklu seçimde ağırlık **bölünüyor**, kopyalanmıyor: üç seçeneği de
+       * işaretleyen bir daire, tek seçenek işaretleyenin üç katı ağırlık
+       * taşıyamaz. Aksi halde "hepsini seç" bir oy hilesi olurdu.
+       */
+      const total = poll.weightMode === "land_share" ? unit.landShare : 1;
+      const perOption = total / chosen.length;
+
+      await tx.insert(pollVotes).values(
+        chosen.map((optionId) => ({
+          tenantId: ctx.tenantId,
+          pollId,
+          unitId: unit.unitId,
+          // Gizli oylamada kimin verdiği kayda geçmiyor; hash yalnız aynı
+          // kişinin iki kez sayılmadığını denetlemeye yetiyor.
+          userId: poll.visibility === "secret" ? null : userId,
+          voterHash:
+            poll.visibility === "secret"
+              ? createHash("sha256").update(`${pollId}:${userId}`).digest("hex")
+              : null,
+          optionId,
+          weight: perOption.toFixed(6),
+        })),
+      );
+    });
+
+    await this.audit.record({
+      action: "portal.poll.vote",
+      resource: "poll",
+      resourceId: pollId,
+    });
+
+    return { ok: true };
+  }
+
+  /** Arsa payı ağırlıklı oylama için dairenin payı da gerekiyor. */
+  private async activeUnitWithShare(tx: Database) {
+    const rows = await tx
+      .select({
+        unitId: unitOccupancies.unitId,
+        relation: unitOccupancies.relation,
+        landShare: units.landShare,
+      })
+      .from(unitOccupancies)
+      .innerJoin(units, eq(units.id, unitOccupancies.unitId))
+      .where(
+        and(
+          eq(unitOccupancies.userId, this.userId()),
+          isNull(unitOccupancies.endDate),
+        ),
+      )
+      .limit(1);
+
+    const row = rows[0];
+    if (!row) return null;
+    // Arsa payı girilmemişse 1: payı olmayan daireyi oylamadan düşürmek,
+    // eksik veriyi hak kaybına çevirmek olurdu.
+    const share = Number(row.landShare ?? 0);
+    return { ...row, landShare: share > 0 ? share : 1 };
+  }
+
   /* --------------------------------------------------------- duyurular */
 
   async announcements(): Promise<PortalAnnouncementsResponse> {
@@ -788,4 +1001,28 @@ export class PortalService {
       .filter((r) => !r.expiresAt || r.expiresAt > now)
       .map(({ expiresAt: _drop, ...rest }) => rest);
   }
+}
+
+/**
+ * Oy kullanmanın önündeki engel — liste ve yazma **aynı** kuralı okuyor.
+ *
+ * İki yerde ayrı yazılsaydı ekran "oy verebilirsin" derken uç reddedebilir
+ * ya da tersi olabilirdi; ikisi de kullanıcıya sistemin bozuk olduğunu
+ * düşündürür. Sıra da anlamlı: kapalı bir oylamada "yalnız malikler"
+ * demek, çözülemeyecek bir engeli öne çıkarmak olurdu.
+ */
+function voteBlockedReason(state: {
+  isOpen: boolean;
+  hasUnit: boolean;
+  isOwner: boolean;
+  ownersOnly: boolean;
+  hasVoted: boolean;
+}): PortalPollRow["blockedReason"] {
+  if (!state.isOpen) return "not_open";
+  if (!state.hasUnit) return "no_unit";
+  // KMK md.31: oy hakkı kat malikinin. Kiracı yönetim işlerine katılır ama
+  // malikin oyunu kullanamaz.
+  if (state.ownersOnly && !state.isOwner) return "owners_only";
+  if (state.hasVoted) return "already_voted";
+  return null;
 }

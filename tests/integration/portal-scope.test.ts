@@ -11,6 +11,8 @@ import {
   debts,
   memberships,
   messages,
+  pollVotes,
+  polls,
   requests,
   sessions,
   tenants,
@@ -214,6 +216,30 @@ async function get(path: string, token: string) {
   return { status: res.status, body: (await res.json()) as Record<string, unknown> };
 }
 
+async function postJson(path: string, token: string, body: unknown) {
+  const res = await fetch(`${BASE}${path}`, {
+    method: "POST",
+    headers: { ...asResident(token), "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  return { status: res.status, body: (await res.json()) as Record<string, unknown> };
+}
+
+/** Hata zarfındaki ayrıntı kodu — `validation_failed:already_voted` gibi. */
+function errorHint(body: Record<string, unknown>): string {
+  const error = body.error as { details?: { hint?: string } } | undefined;
+  return error?.details?.hint ?? "";
+}
+
+/** Oylama satırının teste konu olan alanları. */
+interface PollView {
+  id: string;
+  canVote: boolean;
+  myVote: string[];
+  blockedReason: string | null;
+  result: unknown;
+}
+
 describe.skipIf(!apiReachable)("sakin portalı — duman testi", () => {
   it.each(PORTAL_ENDPOINTS)("%s 200 dönüyor", async (path) => {
     const { status, body } = await get(path, aliceCookie);
@@ -310,18 +336,80 @@ describe.skipIf(!apiReachable)("sakin portalı — kapsam sınırı", () => {
     // Ekranın düğmeyi gizlemesi kolaylık; kapı uçta. Doğrudan istek atan bir
     // istemci, yönetimin hiç açmadığı tahsilatı başlatıp siteye komisyon
     // yazdırabilirdi.
-    const res = await fetch(`${BASE}/v1/panel/portal/payment`, {
-      method: "POST",
-      headers: { ...asResident(aliceCookie), "content-type": "application/json" },
-      body: "{}",
-    });
-    const body = (await res.json()) as {
-      error?: { message?: string; details?: { reason?: string } };
-    };
+    const res = await postJson("/v1/panel/portal/payment", aliceCookie, {});
+    const error = res.body.error as
+      | { message?: string; details?: { reason?: string } }
+      | undefined;
 
     expect(res.status).toBe(422);
-    expect(body.error?.message).toBe("online_payment_unavailable");
-    expect(body.error?.details?.reason).toBe("not_enabled");
+    expect(error?.message).toBe("online_payment_unavailable");
+    expect(error?.details?.reason).toBe("not_enabled");
+  });
+
+  it("oylama: malik oy kullanıyor, ikinci oy reddediliyor", async () => {
+    const [poll] = await withBypassRls("test:portal-poll", async (tx) =>
+      tx
+        .insert(polls)
+        .values({
+          tenantId: TENANT.id,
+          question: "Çatı yalıtımı yapılsın mı?",
+          options: [
+            { id: "opt1", label: "Evet" },
+            { id: "opt2", label: "Hayır" },
+          ],
+          weightMode: "equal",
+          ownersOnly: true,
+          opensAt: new Date(Date.now() - 60_000),
+          closesAt: new Date(Date.now() + 3_600_000),
+        })
+        .returning({ id: polls.id }),
+    );
+    const pollId = poll!.id;
+
+    const listBefore = await get("/v1/panel/portal/polls", aliceCookie);
+    const before = (listBefore.body.rows as PollView[]).find((r) => r.id === pollId);
+    expect(before?.canVote).toBe(true);
+    expect(before?.myVote).toEqual([]);
+    // Açık oylamanın ara sonucu dönmüyor — sonradan oy verecekleri etkilerdi.
+    expect(before?.result).toBeNull();
+
+    const first = await postJson(`/v1/panel/portal/polls/${pollId}/vote`, aliceCookie, {
+      optionIds: ["opt1"],
+    });
+    expect(first.status).toBe(201);
+
+    // Aynı daire ikinci kez oy veremez: hem uygulama kuralı hem
+    // `idx_poll_votes_unique_unit` kısıtı. Sebep hata zarfının `hint`
+    // alanında — kod sözleşmede sabit kalırken ayrıntı korunuyor.
+    const second = await postJson(`/v1/panel/portal/polls/${pollId}/vote`, aliceCookie, {
+      optionIds: ["opt2"],
+    });
+    expect(second.status).toBe(400);
+    expect(errorHint(second.body)).toContain("already_voted");
+
+    const listAfter = await get("/v1/panel/portal/polls", aliceCookie);
+    const after = (listAfter.body.rows as PollView[]).find((r) => r.id === pollId);
+    expect(after?.myVote).toEqual(["opt1"]);
+    expect(after?.blockedReason).toBe("already_voted");
+
+    // Komşunun oyu bu sakinin listesine sızmıyor.
+    const bobView = await get("/v1/panel/portal/polls", bobCookie);
+    const bobPoll = (bobView.body.rows as PollView[]).find((r) => r.id === pollId);
+    expect(bobPoll?.myVote).toEqual([]);
+    expect(bobPoll?.canVote).toBe(true);
+
+    // Tanınmayan seçenek reddediliyor: seçenek kimliği istemciden geliyor ve
+    // sunucu onu anketin kendi seçenek listesine karşı doğruluyor.
+    const bogus = await postJson(`/v1/panel/portal/polls/${pollId}/vote`, bobCookie, {
+      optionIds: ["opt9"],
+    });
+    expect(bogus.status).toBe(400);
+    expect(errorHint(bogus.body)).toContain("unknown_option");
+
+    await withBypassRls("test:portal-poll-cleanup", async (tx) => {
+      await tx.delete(pollVotes).where(eq(pollVotes.pollId, pollId));
+      await tx.delete(polls).where(eq(polls.id, pollId));
+    });
   });
 
   it("sakin yönetim mesaj ucuna erişemiyor", async () => {

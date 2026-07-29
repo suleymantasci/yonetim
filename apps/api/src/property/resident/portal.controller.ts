@@ -6,6 +6,7 @@ import {
   portalMessageCreate,
   portalProfileUpdate,
   portalRequestCreate,
+  portalVoteCreate,
   type PortalAnnouncementsResponse,
   type PortalCommentCreate,
   type PortalDebtsResponse,
@@ -13,12 +14,14 @@ import {
   type PortalMessageCreate,
   type PortalMessagesResponse,
   type PortalPaymentsResponse,
+  type PortalPollsResponse,
   type PortalProfile,
   type PortalProfileUpdate,
   type PortalRequestCreate,
   type PortalRequestDetail,
   type PortalRequestsResponse,
   type PortalSummary,
+  type PortalVoteCreate,
 } from "@yonetim/contracts";
 
 import { RequirePermission } from "../../identity/decorators";
@@ -173,5 +176,35 @@ export class PortalController {
   @ApiOperation({ summary: "Yayınlanmış ve süresi dolmamış duyurular" })
   announcements(): Promise<PortalAnnouncementsResponse> {
     return this.service.announcements();
+  }
+
+  @Get("polls")
+  @RequirePermission("poll:read")
+  @ApiOperation({
+    summary: "Oylamalar — oy durumum ve kapanmışların sonucu",
+    description:
+      "Açık oylamanın ara sonucu **dönmez**: sonradan oy verecekleri " +
+      "etkilerdi. `blockedReason` oy kullanamama sebebini söyler; ekran " +
+      "sadece düğmeyi gizlemek yerine nedenini yazabilsin diye.",
+  })
+  polls(): Promise<PortalPollsResponse> {
+    return this.service.polls();
+  }
+
+  @Post("polls/:id/vote")
+  @RequirePermission("poll:vote")
+  @ApiOperation({
+    summary: "Oy kullan",
+    description:
+      "Daire başına bir oy; tekillik veritabanı kısıtıyla da garanti " +
+      "altında. Ağırlık sunucuda hesaplanır (arsa payı modunda dairenin " +
+      "payı), istemciden alınmaz. Çoklu seçimde ağırlık seçenekler arasında " +
+      "bölünür — kopyalansaydı 'hepsini seç' bir oy hilesi olurdu.",
+  })
+  vote(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body(new ZodBodyPipe(portalVoteCreate)) dto: PortalVoteCreate,
+  ) {
+    return this.service.vote(id, dto);
   }
 }

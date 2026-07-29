@@ -95,6 +95,18 @@ export const NAV_ITEMS: NavItem[] = [
     group: "communication",
     audience: ["resident"],
   },
+  /*
+   * Oylama sakinde ayrı bir ekran: `/panel/anketler` yönetim ekranı ve
+   * anket **açıp kapatıyor**, oy kullanmıyor. İzin de farklı — sakinde
+   * `poll:vote` var, `poll:write` yok.
+   */
+  {
+    href: "/panel/oylamalarim",
+    key: "myPolls",
+    permission: "poll:vote",
+    group: "communication",
+    audience: ["resident"],
+  },
   {
     href: "/panel/bilgilerim",
     key: "myProfile",

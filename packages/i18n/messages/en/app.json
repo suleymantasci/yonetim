@@ -60,7 +60,8 @@
     "myMessages": "My Messages",
     "myProfile": "My Details",
     "managementInfo": "Management Info",
-    "portfolio": "Portfolio"
+    "portfolio": "Portfolio",
+    "myPolls": "My polls"
   },
   "shell": {
     "impersonationWarning": "This session was opened by the support team on behalf of a user. Every action is additionally recorded.",
@@ -2459,5 +2460,29 @@
     "submit": "Create property",
     "checkFields": "Please check the highlighted fields.",
     "invalidField": "Please check this field."
+  },
+  "myPolls": {
+    "title": "Polls",
+    "description": "Polls opened at your property and the votes you cast.",
+    "emptyTitle": "No polls",
+    "emptyDescription": "When management opens a poll it appears here and you cast your vote from this screen.",
+    "closesAt": "Closes: {date}",
+    "ownersOnlyBadge": "Owners only",
+    "secretBadge": "Secret ballot",
+    "castVote": "Cast my vote",
+    "chooseOption": "Choose an option",
+    "singleHint": "Select one option. Your vote cannot be changed once recorded.",
+    "multipleHint": "You may select more than one option; your voting weight is split between them. Your vote cannot be changed once recorded.",
+    "voteRecorded": "Your vote has been recorded.",
+    "youVoted": "You voted: {option}",
+    "blocked": {
+      "not_open": "This poll is not open for voting right now.",
+      "no_unit": "Your unit record has not been linked by management yet; contact your management to be able to vote.",
+      "owners_only": "Only unit owners may vote in this poll (Condominium Law art. 31).",
+      "already_voted": "You have already voted in this poll."
+    },
+    "closedTitle": "Concluded polls",
+    "closedDescription": "Results of closed polls; calculated at closing time and unchanged afterwards.",
+    "noResultYet": "The result has not been published yet."
   }
 }
