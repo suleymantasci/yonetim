@@ -18,7 +18,11 @@ pnpm db:seed                  # planlar, 55 bakım şablonu, kampanyalar, demo s
 pnpm dev                      # web :3000, app :3001
 ```
 
-Yerel oturum açmak için demo kullanıcı ve çerez üretin:
+Panele giriş: `yonetici@ornek.test` / `OrnekSite2026` (seed parolası,
+`SEED_DEMO_PASSWORD` ile değişir). Üretim modunda derleyip çalıştırmak için
+[`CALISTIRMA.md`](./CALISTIRMA.md).
+
+Çerezi elle üretmek isterseniz (parolasız kısayol):
 
 ```bash
 pnpm --filter @yonetim/auth dev:session manager    # yönetici
@@ -31,7 +35,7 @@ pnpm --filter @yonetim/auth dev:session resident   # sakin
 | Komut | Açıklama |
 | --- | --- |
 | `pnpm dev` | Her iki uygulamayı geliştirme modunda başlatır |
-| `pnpm build` | Üretim derlemesi |
+| `pnpm build` | Üretim derlemesi (çalıştırma adımları: `CALISTIRMA.md`) |
 | `pnpm test` | Birim testleri (167 test, DB gerektirmez) |
 | `pnpm test:integration` | RLS izolasyonu ve borç motoru testleri (Postgres gerekir) |
 | `pnpm exec tsc --noEmit -p tsconfig.check.json` | Tüm paketlerin tip kontrolü |

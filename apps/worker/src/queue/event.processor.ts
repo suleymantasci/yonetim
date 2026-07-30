@@ -12,7 +12,7 @@ import {
   type DomainEventPayload,
   type RecipientProfile,
 } from "@yonetim/notifications";
-import { memberships, notifications, unitOccupancies, users } from "@yonetim/db";
+import { memberships, notifications, tenants, unitOccupancies, users } from "@yonetim/db";
 import { hasPermission } from "@yonetim/auth/guard";
 import type { Role } from "@yonetim/core";
 
@@ -60,9 +60,25 @@ export class EventProcessor extends WorkerHost {
       return { skipped: "unmapped" };
     }
 
+    /*
+     * Sitenin durumu olay yükünde taşınmıyor, burada okunuyor.
+     *
+     * Yüke eklemek daha ucuz görünürdü ama durum olayın **üretildiği** andaki
+     * hâli olurdu; olay kuyrukta beklerken site askıya alınmış olabilir.
+     * Bağlamın taşıdığı durum, işin gerçekten koştuğu andaki durum olmalı.
+     * Site silinmişse bildirim de gitmiyor: kaydı olmayan bir siteye ait
+     * bildirim, kimseye ulaşmayacak bir gönderim denemesidir.
+     */
+    const status = await this.tenantStatus(payload.tenantId);
+    if (!status) {
+      this.logger.warn({ event: "notification.tenant_missing", tenantId: payload.tenantId });
+      return { skipped: "tenant_missing" };
+    }
+
     return this.context.run(
       {
         tenantId: payload.tenantId,
+        tenantStatus: status,
         jobId: `event:${payload.event}`,
         requestId: payload.requestId,
       },
@@ -132,6 +148,20 @@ export class EventProcessor extends WorkerHost {
    * kim oturuyor" sorusunu her servisin cevaplaması, her servisi sakin
    * tablosuna bağımlı hale getirirdi.
    */
+  /** Sitenin yaşam döngüsü durumu; kaydı yoksa `null`. */
+  private async tenantStatus(tenantId: string): Promise<string | null> {
+    // `bypass`: bağlam henüz kurulmadı, RLS'e tabi sorgu burada çalışamaz.
+    // Okunan tek şey tenant'ın kendi durumu — kiracı verisi değil.
+    const rows = await this.db.bypass("event:tenant-status", async (tx) =>
+      tx
+        .select({ status: tenants.status })
+        .from(tenants)
+        .where(and(eq(tenants.id, tenantId), isNull(tenants.deletedAt)))
+        .limit(1),
+    );
+    return rows[0]?.status ?? null;
+  }
+
   private async resolveRecipients(
     audience: Audience,
     payload: DomainEventPayload,

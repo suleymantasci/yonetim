@@ -1,5 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { and, inArray, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 
 import { tenants } from "@yonetim/db";
 import {
@@ -57,13 +57,14 @@ export class JobRegistry {
   ) {}
 
   async run(jobId: string, only?: string): Promise<JobRunSummary> {
-    const targets = only ? [only] : await this.activeTenantIds();
+    const targets = await this.writableTenants(only);
     const outcomes: JobOutcome[] = [];
 
-    for (const tenantId of targets) {
+    for (const { id: tenantId, status } of targets) {
       try {
-        const detail = await this.context.run({ tenantId, jobId }, () =>
-          this.runFor(jobId, tenantId),
+        const detail = await this.context.run(
+          { tenantId, tenantStatus: status, jobId },
+          () => this.runFor(jobId, tenantId),
         );
         outcomes.push(
           detail === NO_HANDLER
@@ -117,21 +118,30 @@ export class JobRegistry {
    * `past_due` **dahil**: ödemesi geciken bir sitede aidat üretmeyi durdurmak,
    * borcu bizim tarafımızdan silmek olurdu. Erişim kısıtlaması ayrı bir karar
    * (§tenant durumu), veri üretimi ayrı.
+   *
+   * DURUM DA OKUNUYOR, yalnız kimlik değil: `RequestContext.tenantStatus`
+   * zorunlu bir alan ve job bağlamı onu uydurmamalı. Sabit `"active"` yazmak,
+   * `past_due` bir sitenin job'ının bağlamda `active` görünmesi demekti —
+   * denetim kütüğü ve ileride durum okuyacak her kod yanlış bilgilenirdi.
+   * Aynı sorgudan geliyor, ek maliyeti yok.
+   *
+   * Tek site hedeflendiğinde (`only`) durum yine buradan çözülüyor: bulunamayan
+   * ya da yazılamaz durumdaki site hedef listesinden düşüyor — elle tetiklenen
+   * bir koşunun, zamanlanmış koşunun atladığı siteye yazması tutarsız olurdu.
    */
-  private activeTenantIds(): Promise<string[]> {
-    return this.db
-      .bypass("job:tenants", async (tx) =>
-        tx
-          .select({ id: tenants.id })
-          .from(tenants)
-          .where(
-            and(
-              inArray(tenants.status, ["trial", "active", "past_due"]),
-              isNull(tenants.deletedAt),
-            ),
+  private writableTenants(only?: string): Promise<{ id: string; status: string }[]> {
+    return this.db.bypass("job:tenants", async (tx) =>
+      tx
+        .select({ id: tenants.id, status: tenants.status })
+        .from(tenants)
+        .where(
+          and(
+            inArray(tenants.status, ["trial", "active", "past_due"]),
+            isNull(tenants.deletedAt),
+            ...(only ? [eq(tenants.id, only)] : []),
           ),
-      )
-      .then((rows) => rows.map((row) => row.id));
+        ),
+    );
   }
 }
 

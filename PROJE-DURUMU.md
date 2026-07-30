@@ -1117,6 +1117,39 @@ kullanıcının ilk parolasını belirlemesi. Bu turda yeni hata çıkmadı.
 
 ---
 
+## 5.12 Üretim derlemesi koşuldu — worker `build`'i kırıyordu (2026-07-30)
+
+`pnpm dev` dışında, gerçek build çıktısıyla çalıştırma denendi ve **derleme
+hiç geçmiyordu**: `apps/worker` `RequestContext.tenantStatus` alanını
+doldurmuyordu (§5.10'da eklenmişti). `tsx` tip kontrolü yapmadığı için
+geliştirmede görünmüyor, `pnpm build`'de turbo'yu tümüyle durduruyordu — yani
+**projenin üretim derlemesi bir süredir alınamıyordu.**
+
+Düzeltmede uydurma değer kullanılmadı; durum gerçekten okunuyor:
+
+- `JobRegistry` zaten yazılabilir siteleri (`trial`/`active`/`past_due`)
+  sorguluyordu; aynı sorguya `status` eklendi. Sabit `"active"` yazmak,
+  `past_due` bir sitenin job'ını kütükte olduğundan iyi göstermek olurdu.
+  `only` (tek site) yolu da aynı sorgudan geçiyor: elle tetiklenen koşunun,
+  zamanlanmış koşunun atladığı siteye yazması tutarsızdı.
+- `EventProcessor` durumu olay yükünden değil, işi koştuğu anda veritabanından
+  okuyor: olay kuyrukta beklerken site askıya alınmış olabilir. Sitesi
+  silinmiş olay `tenant_missing` ile atlanıyor.
+
+**Doğrulama (yerel üretim yığını):** `pnpm build` → `migrate` → api :3100,
+worker, app :3001, web :3000, `NODE_ENV=production`, Redis + MinIO container.
+`/health/ready` `database:true, redis:true`; worker zamanlanmış işleri 4 site
+için koştu (`maintenance.reminders` ok:4); `/panel` oturum çerezi ile üretim
+SSR'ından gerçek veriyle render oldu; parola ekranı ve giriş uçtan uca çalıştı.
+Adımlar `CALISTIRMA.md`'ye yazıldı.
+
+**Not:** `apps/api`'nin `migrate` npm betiği yalnız repo kökünden çalışıyor
+(`packages/db/drizzle`'ı çalışma dizinine göre arıyor; container'da kök budur).
+`pnpm --filter @yonetim/api migrate` bu yüzden yerelde hata veriyor —
+düzeltilmedi, `CALISTIRMA.md`'de belgelendi.
+
+---
+
 ## 6. Bekleyen ürün kararları (Track E — teknik altyapı hazır, karar bekliyor)
 
 Bu maddeler **yapılmadı** çünkü kod değil, iş kararı eksik. Karar verilirse

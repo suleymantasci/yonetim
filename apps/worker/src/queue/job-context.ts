@@ -28,12 +28,27 @@ export class JobContext {
   constructor(private readonly cls: ClsService<ClsStore>) {}
 
   run<T>(
-    params: { tenantId: string; tenantSlug?: string; jobId: string; requestId?: string },
+    params: {
+      tenantId: string;
+      tenantSlug?: string;
+      /**
+       * Sitenin gerçek yaşam döngüsü durumu — çağıran okuyup veriyor.
+       *
+       * Burada sabit bir değer üretilmiyor: bağlamın taşıdığı durum
+       * `TenantWritableGuard`'ın ve durum okuyan her kodun dayanağı. Job
+       * bağlamında "her zaman active" demek, `past_due` bir sitenin koşusunu
+       * kütükte olduğundan iyi göstermek olurdu.
+       */
+      tenantStatus: string;
+      jobId: string;
+      requestId?: string;
+    },
     fn: () => Promise<T>,
   ): Promise<T> {
     const ctx: RequestContext = {
       tenantId: params.tenantId,
       tenantSlug: params.tenantSlug ?? "",
+      tenantStatus: params.tenantStatus,
       // Job'ın kendi kimliği yok; RLS için gereken yetki `super_admin`
       // düzeyinde ama **tenant kapsamında** — baypas değil.
       roles: ["super_admin"] as Role[],
