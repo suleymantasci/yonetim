@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
@@ -159,7 +158,6 @@ export async function createUnit(
       );
 
       if (!created?.id) throw new ActionError(t("createFailed"));
-      revalidatePath("/panel/birimler");
 
       return okState(t("created", { number: input.number }), {
         redirectTo: `/panel/birimler/${created.id}`,
@@ -188,9 +186,6 @@ export async function updateUnit(
       await apiPatch(`/v1/panel/units/${input.id}`, toUnitBody(input), null, {
         reason: PANEL_FORM_REASON,
       });
-
-      revalidatePath("/panel/birimler");
-      revalidatePath(`/panel/birimler/${input.id}`);
 
       return okState(t("updated", { number: input.number }), {
         redirectTo: `/panel/birimler/${input.id}`,
@@ -312,8 +307,6 @@ export async function createUnitsBulk(
         unitBulkCreateResult,
       );
 
-      revalidatePath("/panel/birimler");
-
       return okState(
         result.skipped.length > 0
           ? t("bulkCreatedWithSkips", {
@@ -371,7 +364,6 @@ export async function softDeleteUnits(ids: string[]): Promise<BulkResult> {
     { ids: targets },
     bulkResultSchema,
   );
-  revalidatePath("/panel/birimler");
   return { ok: true, message: t("bulkDeleted", { count: result.affected }) };
 }
 
@@ -387,7 +379,6 @@ export async function restoreUnits(ids: string[]): Promise<BulkResult> {
     { ids: targets },
     bulkResultSchema,
   );
-  revalidatePath("/panel/birimler");
   return { ok: true, message: t("bulkRestored", { count: result.affected }) };
 }
 
@@ -424,7 +415,6 @@ export async function bulkPatchUnits(
     },
   );
 
-  revalidatePath("/panel/birimler");
   return { ok: true, message: t("bulkPatched", { count: result.affected }) };
 }
 
@@ -497,8 +487,6 @@ export async function saveBlock(
         await apiPost("/v1/panel/units/blocks", body, createdSchema);
       }
 
-      revalidatePath("/panel/birimler");
-      revalidatePath("/panel/birimler/bloklar");
       return okState(t("blockSaved", { name: input.name }));
     },
   );
@@ -521,7 +509,6 @@ export async function softDeleteBlock(id: string): Promise<BulkResult> {
     throw error;
   }
 
-  revalidatePath("/panel/birimler");
   return { ok: true, message: t("blockDeleted") };
 }
 

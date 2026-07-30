@@ -13,6 +13,7 @@ import { ExpenseForm } from "../../../giderler/expense-form";
 /** Çekmece içindeki gider ekleme akışı — `NewUnitFlow` ile aynı iki adım. */
 export function NewExpenseFlow({
   categories,
+  bankAccounts,
   canApprove,
   labels,
 }: {
@@ -23,6 +24,7 @@ export function NewExpenseFlow({
     distribution: string;
     defaultVatRate: string | null;
   }[];
+  bankAccounts: { id: string; label: string }[];
   canApprove: boolean;
   labels: {
     submit: string;
@@ -66,6 +68,7 @@ export function NewExpenseFlow({
     <ExpenseForm
       key={formKey}
       categories={categories}
+      bankAccounts={bankAccounts}
       canApprove={canApprove}
       submitLabel={labels.submit}
       layout="modal"

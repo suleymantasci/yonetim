@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
@@ -104,7 +103,6 @@ export async function saveMeeting(
             meetingSaveResult,
           );
 
-      revalidatePath("/panel/toplantilar");
       return okState(t("saved", { title: result.title }), {
         data: { id: result.id },
       });
@@ -155,7 +153,6 @@ export async function addMeetingDecision(
         meetingDecisionSaveResult,
       );
 
-      revalidatePath("/panel/toplantilar");
       return okState(t("decisionAdded", { no: result.decisionNo }), {
         data: { decisionNo: result.decisionNo },
       });

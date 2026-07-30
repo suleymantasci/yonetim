@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
@@ -106,7 +105,6 @@ export async function saveRequest(
           )
         : await apiPost("/v1/panel/operations/requests", body, requestSaveResult);
 
-      revalidatePath("/panel/talepler");
       return okState(t("saved", { code: result.code }), {
         data: { id: result.id },
       });
@@ -152,7 +150,6 @@ export async function setRequestStatus(
         z.object({ id: z.string().uuid() }),
       );
 
-      revalidatePath("/panel/talepler");
       return okState(t("statusChanged"), { data: { id: input.id } });
     },
   );
@@ -185,7 +182,6 @@ export async function assignRequest(
         z.object({ id: z.string().uuid() }),
       );
 
-      revalidatePath("/panel/talepler");
       return okState(t("assigned"), { data: { id: input.id } });
     },
   );
@@ -217,7 +213,6 @@ export async function commentOnRequest(
         z.object({ id: z.string().uuid() }),
       );
 
-      revalidatePath("/panel/talepler");
       return okState(t("commented"), { data: { id: input.id } });
     },
   );

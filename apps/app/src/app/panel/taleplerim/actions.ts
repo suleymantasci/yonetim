@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
@@ -81,7 +80,6 @@ export async function createMyRequest(
         z.object({ id: z.string().uuid(), code: z.string() }),
       );
 
-      revalidatePath("/panel/taleplerim");
       return okState(t("created", { code: result.code }), {
         redirectTo: `/panel/taleplerim/${result.id}`,
         data: { id: result.id },
@@ -115,7 +113,6 @@ export async function addMyRequestComment(
         z.object({ id: z.string().uuid() }),
       );
 
-      revalidatePath(`/panel/taleplerim/${input.id}`);
       return okState(t("commentAdded"), { data: { id: result.id } });
     },
   );

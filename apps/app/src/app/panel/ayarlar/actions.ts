@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
@@ -90,11 +89,8 @@ export async function saveSettings(
         z.object({ id: z.string().uuid() }),
       );
 
-      revalidatePath("/panel/ayarlar");
       // Vade günü ve gecikme oranı borç üretimini besliyor; o ekranların
       // önbelleği de tazelenmeli.
-      revalidatePath("/panel/aidat");
-      revalidatePath("/panel/borclar");
 
       return okState(t("saved"), { data: { id: result.id } });
     },
@@ -142,7 +138,6 @@ export async function archiveTenant(
         { reason: input.reason },
       );
       // Kabuk site durumunu gösteriyor ve artık salt-okunur rozeti taşıyacak.
-      revalidatePath("/panel", "layout");
       return okState(tLifecycle("archiveDone"));
     },
   );
@@ -172,7 +167,6 @@ export async function restoreTenant(
         tenantLifecycleResult,
         { reason: input.reason },
       );
-      revalidatePath("/panel", "layout");
       return okState(tLifecycle("restoreDone"));
     },
   );

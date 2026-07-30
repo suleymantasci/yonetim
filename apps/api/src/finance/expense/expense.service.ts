@@ -55,6 +55,7 @@ export class ExpenseService {
         expenseDate: e.expenseDate,
         paidAt: e.paidAt,
         paidVia: e.paidVia,
+        bankAccountId: e.bankAccountId,
         period: e.period,
         status: e.status,
         distributedAt: e.distributedAt,

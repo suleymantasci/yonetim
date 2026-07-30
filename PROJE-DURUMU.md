@@ -1150,6 +1150,151 @@ düzeltilmedi, `CALISTIRMA.md`'de belgelendi.
 
 ---
 
+## 5.13 Panelde iki sessiz kırık: sekmeler ve form başarı yolu (2026-07-30)
+
+Kullanıcı bildirdi, üretim derlemesinde gerçek Chrome ile (CDP) tekrarlandı ve
+düzeltildi. İkisi de "hata vermeyen" kırıklar: ekran bir şey söylemiyor, iş
+olmuyor (ya da olduğu görünmüyor).
+
+### 5.13.1 Sekmeler tıklamayı yutuyordu
+
+`?sekme=` bağlantıları ilk tıklamadan sonra çalışmıyordu ("bazen çift tık,
+bazen hiç"). Ölçüm: tıklama doğru `<a>`'ya ulaşıyor, `next/link`
+`preventDefault` çağırıyor, RSC isteği gidip **200** dönüyor, adres ve içerik
+değişmiyor. Gezinme yönlendiricinin içinde düşüyor.
+
+- **Detay ekranları** (`sakinler/[id]`, `birimler/[id]`) artık hiç gezinmiyor:
+  yeni `TabView` (`packages/ui`) panelleri sunucudan alıp istemcide değiştiriyor.
+  Tüm veri zaten **tek** API çağrısıyla geliyordu — `birimler/[id]`
+  başlığındaki "sekme geçişi anlık" notu bunu söylüyordu ama kod öyle
+  çalışmıyordu. URL `history.replaceState` ile korunuyor: `?sekme=kvkk`
+  paylaşılabilir ve yenilemede aynı sekme açılıyor.
+- **Borçlar görünüm sekmeleri** her görünümde farklı veri çektiği için gezinmek
+  zorunda; orada düz `<a>` kullanılıyor (`components/nav-tabs.tsx`) ve tam
+  sayfa gezinme güvenilir çalışıyor.
+- Denenip **işe yaramayanlar** (kayda geçsin diye): sekme şeridini `"use
+  client"` yapmak ve `next/link`'i doğrudan import etmek. Sıralama başlıkları
+  aynı sayfada sorunsuz çalışıyor, yani sorun "aynı yol + arama parametresi"
+  gezinmesinin tamamında değil.
+
+### 5.13.2 `revalidatePath` form başarı yolunu öldürüyordu
+
+"Kaydettim ama form kapanmadı, işleniyor deyip kaldı" şikâyetinin sebebi:
+server action `revalidatePath` çağırınca Next yanıtla birlikte ağacı yeniden
+üretiyor, form yeniden monte oluyor ve `useActionState` durumu `idle`'a
+düşüyor. Sonuç: sunucu `{"status":"ok"}` dönmesine rağmen `ActionForm`'un
+başarı etkisi **hiç çalışmıyor** — bildirim yok, `onSuccess` yok (çekmece
+kapanmıyor), yönlendirme yok. Kayıt ise atılmış oluyor.
+
+Ölçüm tahsilat çekmecesinde yapıldı: `revalidatePath` varken çekmece açık
+kalıyor ve bildirim çıkmıyor; çağrı kaldırılınca ikisi de çalışıyor.
+
+`apps/app` aksiyonlarındaki **112 çağrı kaldırıldı** (30 dosya). Kayıp yok:
+panelin **104 sayfasının tamamı** `force-dynamic`, yani geçersiz kılınacak bir
+rota önbelleği hiç yoktu; tazeleme `ActionForm`'un başarıda çağırdığı
+`router.refresh()` ile, yanıttan sonra yapılıyor. Gerekçe `action-form.tsx`
+başlığında — yeni aksiyon yazan kişi oraya bakmalı.
+
+`components/shell/actions.ts`'teki iki çağrı **duruyor**: bildirim rozetini
+tazeliyorlar ve bir forma bağlı değiller.
+
+### 5.13.3 Sakin formunda ölü karşılaştırma
+
+"Bağımsız bölüm yok" seçildiğinde form "işaretli alanları düzeltin" diyor ama
+hiçbir alan işaretlenmiyordu. Şema `relation` için `"vacant"` bekliyordu, form
+`"none"` gönderiyordu — `vacant` birimin `ownershipType` sözlüğünden gelme,
+sakin ilişkisiyle karışmış. Hata `relation` alanına düşüyor, ekranda o adla
+alan olmadığı için görünmüyordu. Enum düzeltildi, `errorMap` eklendi (ham Zod
+metni "Invalid enum value…" kullanıcıya gösteriliyordu) ve radyo grubu
+`FormField` ile sarıldı.
+
+### 5.13.4 Doldurulmamış çeviri yer tutucuları
+
+`app.expenses.description` ekranda ham anahtar olarak görünüyordu: mesaj
+`{count}` bekliyor, çağrı argümansız. Tarama yazıldı ve **yedi** örnek çıktı
+(`polls.closesAt` form etiketi olarak, `reservations.capacity` yanlış argüman
+adıyla, `legal.candidatesDescription` argümansız, birim kalıbı ipuçlarında
+ICU kaçışı eksik…). Hepsi düzeltildi; tarama artık sıfır sonuç veriyor ve
+tekrarını yakalamak için `pnpm test` içindeki mesaj paritesi testi zaten
+yer tutucu tutarlılığını kontrol ediyor.
+
+### 5.13.5 Sırada
+
+- **Tahsilat girişi** artık sakin ve birim ekranlarından açılıyor
+  (`components/collect-payment.tsx`); eskiden yalnız borç detayındaydı.
+  Çok birimli sakinde önce birim seçiliyor. Sakin detayının borç satırları
+  bunun için `unitId` de taşıyor (daire **numarası** birim kimliği değil).
+- Bu bölümün hiçbiri için otomatik test yok; doğrulama tarayıcıda elle
+  (CDP betikleri) yapıldı. Sekme geçişi ve form başarı yolu, `tests/` altına
+  bir Playwright/CDP duman testi olarak eklenmeye değer — ikisi de tip
+  kontrolünden ve birim testlerinden geçen, yalnız tarayıcıda görünen
+  kırıklardı.
+
+---
+
+## 5.14 Kasa: "tahsilat girdim ama bakiye 0" (2026-07-30)
+
+Kullanıcı bildirdi: `/panel/banka` hesap listesindeki **Bakiye** sütunu, tahsilat
+girilmiş bir sitede 0 ₺ gösteriyordu.
+
+**Sebep.** O sütun `bank_accounts.balance_kurus` alanını okuyordu. Bu alan
+yalnız **open banking senkronizasyonu** yazıyor; panelden tahsilat ya da gider
+girilince hiç değişmiyor. Sağlayıcı bağlı olmayan her sitede kalıcı olarak
+sıfır. Yani sütun yanlış hesaplanmıyordu — yanlış soruyu cevaplıyordu.
+
+Veritabanında doğrulandı (demo kiracı): `bank_accounts.balance_kurus = 0` iken
+`payments` tablosunda 3.650 ₺ tamamlanmış tahsilat vardı.
+
+**Yapılan.** Bakiye artık **sitenin kendi kayıtlarından** türetiliyor
+(`IntegrationService.bankOverview` → `cashbox`):
+
+- **giren** = `status = 'completed'` tahsilatlar, `refunded_kurus` düşülmüş.
+  `initiated`/`failed` sayılsaydı kasa hiç gerçekleşmemiş parayla şişerdi.
+- **çıkan** = `paid_at IS NOT NULL` olan, reddedilmemiş giderler.
+  Ölçüt `status = 'paid'` **değil**: iki alan formda bağımsız doldurulabiliyor
+  ve ikisini birlikte şart koşmak "durumu ödendi ama kutusu işaretsiz"
+  kayıtları hem çıkan hem ödenmemiş havuzunun dışında bırakıyordu.
+- Kovalama tek `GROUP BY` ile: `COALESCE(bank_account_id::text, …)`. Hesap
+  başına ayrı sorgu atılmıyor. Kova adları sorguya **düz metin** giriyor;
+  `${}` ile verilseydi bağlı parametre olur ve `GROUP BY` içinde tipi belirsiz
+  kalırdı.
+
+Ekranda üç satır türü var: her banka hesabı, **nakit kasa** (hesap seçilmeden
+girilen kayıtlar) ve **hesabı belirtilmemiş** (nakit olmadığı hâlde hesabı
+seçilmemiş — kalırsa düzeltilmesi gereken bir durum, sessizce nakde yazmak
+kasayı yanıltırdı). Altında toplam satırı. Silinmiş hesaba bağlı kayıtlar
+"hesabı belirtilmemiş" havuzuna katlanıyor; kovası düşürülse toplam eksik
+kalırdı.
+
+**Bankadan gelen bakiye ayrı sütunda duruyor, birleştirilmedi.** İki rakamın
+çelişmesi bilgi: fark, kayda geçmemiş bir hareket ya da eksik mutabakat
+demektir. Sağlayıcı bağlı değilse "Bağlantı yok" yazıyor — sıfır göstermek tam
+olarak şikâyet edilen yanılgıydı.
+
+**Ödenmemiş gider** ayrı gösteriliyor: kasadan çıkmadığı için bakiyeye
+girmiyor ama yöneticinin bileceği bir yük. Gösterilmeseydi "girdiğim gider
+nerede" sorusu doğardı.
+
+**Hesap listesindeki Bakiye sütunu kaldırıldı.** Aynı ekranda iki farklı
+anlamda bakiye göstermek, tam da şikâyet edilen karışıklığı üretiyordu. O kart
+artık yalnız hesabın **tanımı** (banka, IBAN, amaç); paranın hareketi kasa
+kartında.
+
+**Giderde ödeme kaynağı.** `expenses.bank_account_id` şemada vardı ama hiçbir
+yerden yazılmıyordu; `paid_via` serbest metin ("havale") hangi hesap olduğunu
+söylemiyor. Alan sözleşmeye, yazma deposuna ve gider formuna eklendi (boş =
+nakit kasa). Hesap listesi dört ekranı besliyor, bu yüzden
+`apps/app/src/lib/bank-accounts.ts` altında tek yerde: `bank:read` yetkisi
+yoksa liste boş dönüyor ve alan hiç sorulmuyor — gider girebilen ama banka
+modülünü görmeyen kullanıcı kaydını yine de tamamlayabilmeli. Düzenlemede
+kapatılmış hesap seçenek olarak kalıyor; aksi hâlde form sessizce "nakit"e
+düşer ve dokunulmamış bir alanı bozardı.
+
+**Test yok.** Doğrulama şema + gerçek veriyle SQL üzerinden yapıldı; kasa
+toplamları `tests/` altına birim testi olarak eklenmeye değer.
+
+---
+
 ## 6. Bekleyen ürün kararları (Track E — teknik altyapı hazır, karar bekliyor)
 
 Bu maddeler **yapılmadı** çünkü kod değil, iş kararı eksik. Karar verilirse

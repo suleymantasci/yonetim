@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
@@ -22,6 +21,5 @@ export async function switchTenant(formData: FormData): Promise<void> {
 
   await apiPost("/v1/auth/web/switch-tenant", { tenantId }, z.unknown());
 
-  revalidatePath("/panel", "layout");
   redirect("/panel");
 }

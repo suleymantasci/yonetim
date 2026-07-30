@@ -18,11 +18,11 @@ import {
   CardHeader,
   Pagination,
   Stat,
-  Tabs,
   tableClasses as tc,
 } from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
+import { NavTabs } from "@/components/nav-tabs";
 import { ListControls } from "@/components/list/list-controls";
 import { toListQuery } from "@/lib/api/list";
 import { apiGet, toQuery } from "@/lib/api/server";
@@ -93,9 +93,8 @@ export default async function DebtsPage({
   const { from, to, pageCount } = pageRange(params, data.meta.total);
 
   const tabs = (
-    <Tabs
+    <NavTabs
       activeKey={view}
-      linkComponent={Link}
       label={t("viewTabs")}
       items={[
         { key: "borc", label: t("viewDebts"), href: "/panel/borclar" },

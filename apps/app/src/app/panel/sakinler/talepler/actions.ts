@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
@@ -59,11 +58,8 @@ export async function approveAccessRequest(
         z.object({ ok: z.literal(true) }),
       );
 
-      revalidatePath("/panel/sakinler/talepler");
       // Onay yeni bir sakin ve daire ilişkisi doğuruyor; sakin listesi ile
       // birim detayı bunu göstermeden yönetici işin bittiğinden emin olamaz.
-      revalidatePath("/panel/sakinler");
-      revalidatePath("/panel/birimler");
 
       return okState(t("approved"));
     },
@@ -89,8 +85,6 @@ export async function rejectAccessRequest(
         { rejectionReason: input.rejectionReason ?? undefined },
         z.object({ ok: z.literal(true) }),
       );
-
-      revalidatePath("/panel/sakinler/talepler");
 
       return okState(t("rejected"));
     },

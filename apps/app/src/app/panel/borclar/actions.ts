@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
@@ -121,9 +120,6 @@ export async function createDebt(
         },
         debtCreateResult,
       );
-
-      revalidatePath("/panel/borclar");
-      revalidatePath(`/panel/birimler/${input.unitId}`);
 
       return okState(
         created.ids.length === 1
@@ -269,9 +265,6 @@ export async function createBulkDebts(
         debtBulkResult,
       );
 
-      revalidatePath("/panel/borclar");
-      revalidatePath("/panel");
-
       const data: BulkDebtResult = {
         createdCount: result.createdCount,
         skippedCount: result.skippedCount,
@@ -339,8 +332,6 @@ export async function adjustDebt(
         { reason: input.reason },
       );
 
-      revalidatePath("/panel/borclar");
-      revalidatePath(`/panel/borclar/${input.id}`);
       return okState(t("adjusted"));
     },
   );
@@ -418,10 +409,12 @@ export async function collectPayment(
         paymentCollectResult,
       );
 
-      revalidatePath("/panel/borclar");
-      revalidatePath(`/panel/birimler/${input.unitId}`);
-      revalidatePath("/panel");
-
+      /*
+       * `revalidatePath` YOK — `ActionForm` başlığındaki gerekçe.
+       *
+       * Bu akış ölçümün yapıldığı yerdi: tahsilat kaydediliyor ama çekmece
+       * kapanmıyor, bildirim çıkmıyordu. Çağrı kaldırılınca ikisi de çalıştı.
+       */
       return okState(
         result.creditBalanceMinor > 0
           ? t("collectedWithCredit", {
@@ -468,8 +461,6 @@ export async function cancelDebts(
     { reason },
   );
 
-  revalidatePath("/panel/borclar");
-
   return result.affected === result.requested
     ? { ok: true, message: t("bulkCancelled", { count: result.affected }) }
     : {
@@ -497,7 +488,6 @@ export async function setLateFeeExempt(
     debtBulkResultSimple,
   );
 
-  revalidatePath("/panel/borclar");
   return {
     ok: true,
     message: exempt

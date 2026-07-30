@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
@@ -69,7 +68,6 @@ export async function extendSubscription(
         platformActionResult,
         { reason: input.reason },
       );
-      revalidatePath("/yonetim/hesaplar", "layout");
       return okState(t("extendDone", { days: input.days }));
     },
   );
@@ -101,7 +99,6 @@ export async function runAccountAction(
         platformActionResult,
         { reason: input.reason },
       );
-      revalidatePath("/yonetim/hesaplar", "layout");
       return okState(
         t(`accountActionDone.${input.action}`, { count: result.affected }),
       );
@@ -149,7 +146,6 @@ export async function runTenantAction(
         tenantLifecycleResult,
         { reason: input.reason },
       );
-      revalidatePath("/yonetim/hesaplar", "layout");
       return okState(t(`tenantActionDone.${input.action}`));
     },
   );
@@ -184,7 +180,6 @@ export async function grantAddon(
         platformActionResult,
         { reason: input.reason },
       );
-      revalidatePath("/yonetim/hesaplar", "layout");
       return okState(t("addonDone", { count: input.quantity }));
     },
   );

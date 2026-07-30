@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
@@ -84,9 +83,7 @@ export async function saveBankAccount(
           )
         : await apiPost("/v1/panel/bank/accounts", body, bankAccountSaveResult);
 
-      revalidatePath("/panel/banka");
       // Tahsilat formundaki hesap listesi bu kayıttan besleniyor.
-      revalidatePath("/panel/borclar");
 
       return okState(t("accountSaved", { iban: result.ibanMasked }), {
         data: { id: result.id },
@@ -107,8 +104,6 @@ export async function deleteBankAccount(
   const t = await getTranslations("app.bank");
 
   await apiDelete(`/v1/panel/bank/accounts/${id}`);
-  revalidatePath("/panel/banka");
-  revalidatePath("/panel/borclar");
 
   return { ok: true, message: t("accountDeleted") };
 }

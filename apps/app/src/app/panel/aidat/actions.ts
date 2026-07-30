@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
@@ -156,8 +155,6 @@ export async function saveDuesPlan(
         z.object({ id: z.string().uuid() }),
       );
 
-      revalidatePath("/panel/aidat");
-
       return okState(t("saved", { name: input.name }), {
         redirectTo: "/panel/aidat",
         data: { id },
@@ -176,7 +173,6 @@ export async function toggleDuesPlan(
 
   await apiPatch(`/v1/panel/dues-plans/${id}/status`, { isActive }, null);
 
-  revalidatePath("/panel/aidat");
   return { ok: true, message: isActive ? t("activated") : t("deactivated") };
 }
 
@@ -195,7 +191,6 @@ export async function archiveDuesPlan(
 
   await apiDelete(`/v1/panel/dues-plans/${id}`);
 
-  revalidatePath("/panel/aidat");
   return { ok: true, message: t("archived") };
 }
 
@@ -255,11 +250,6 @@ export async function runDuesPlan(
         duesPlanRunResult,
       );
 
-      if (input.apply) {
-        revalidatePath("/panel/aidat");
-        revalidatePath("/panel/borclar");
-        revalidatePath("/panel");
-      }
 
       const data: DuesRunState = {
         period: result.period,

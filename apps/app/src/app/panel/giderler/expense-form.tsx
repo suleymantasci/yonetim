@@ -31,6 +31,7 @@ import { saveExpense } from "./actions";
  */
 export function ExpenseForm({
   categories,
+  bankAccounts = [],
   defaults,
   cancelHref,
   submitLabel,
@@ -47,6 +48,8 @@ export function ExpenseForm({
     distribution: string;
     defaultVatRate: string | null;
   }[];
+  /** Paranın çıkabileceği hesaplar; boşsa yalnız nakit kasa sorulur. */
+  bankAccounts?: { id: string; label: string }[];
   defaults?: {
     id: string;
     categoryId: string | null;
@@ -58,6 +61,7 @@ export function ExpenseForm({
     invoiceNo: string | null;
     expenseDate: string;
     paidVia: string | null;
+    bankAccountId: string | null;
     isPaid: boolean;
     attachmentUrl: string | null;
     status: string;
@@ -255,6 +259,32 @@ export function ExpenseForm({
             maxLength={40}
           />
         </FormField>
+
+        {/*
+          Paranın çıktığı yer: kasa dökümü "bu hesaptan ne çıktı" sorusunu
+          ancak bununla cevaplıyor. Boş bırakılırsa nakit kasa sayılıyor —
+          serbest metin `paidVia` hangi hesap olduğunu söylemiyordu.
+          Hesap tanımlanmamış siteye seçim sorulmuyor; tek olasılık nakit.
+        */}
+        {bankAccounts.length > 0 ? (
+          <FormField
+            name="bankAccountId"
+            label={t("paidFrom")}
+            hint={t("paidFromHint")}
+          >
+            <Select
+              name="bankAccountId"
+              defaultValue={defaults?.bankAccountId ?? ""}
+            >
+              <option value="">{t("paidFromCash")}</option>
+              {bankAccounts.map((account) => (
+                <option key={account.id} value={account.id}>
+                  {account.label}
+                </option>
+              ))}
+            </Select>
+          </FormField>
+        ) : null}
 
         <FormField name="status" label={t("status")} required>
           <Select

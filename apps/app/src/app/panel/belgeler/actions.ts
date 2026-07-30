@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
@@ -93,7 +92,6 @@ export async function createDocument(
         z.object({ id: z.string().uuid() }),
       );
 
-      revalidatePath("/panel/belgeler");
       return okState(t("uploaded"));
     },
   );
@@ -145,7 +143,6 @@ export async function removeDocument(
     async ({ input }) => {
       const t = await getTranslations("app.documents");
       await apiDelete(`/v1/panel/documents/${input.id}`);
-      revalidatePath("/panel/belgeler");
       return okState(t("removed"));
     },
   );

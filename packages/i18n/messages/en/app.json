@@ -367,13 +367,13 @@
     "floorTo": "Last floor",
     "perFloor": "Units per floor",
     "bulkSectionNumbering": "Numbering",
-    "bulkSectionNumberingHint": "The pattern accepts {blok}, {kat} and {no} placeholders.",
+    "bulkSectionNumberingHint": "You can use the '{blok}' (block), '{kat}' (floor) and '{no}' placeholders in the pattern.",
     "numberingFloorPrefixed": "Floor-prefixed (301, 302…)",
     "numberingFloorPrefixedHint": "Numbers are built from floor + sequence.",
     "numberingSequential": "Sequential (1, 2, 3…)",
     "numberingSequentialHint": "Numbers increase from start to end.",
     "pattern": "Number pattern",
-    "patternHint": "Example: {blok}-{no} → A-301",
+    "patternHint": "Example: '{blok}'-'{no}' → A-301",
     "preview": "Preview",
     "previewTotal": "{count} units will be created.",
     "bulkSubmit": "Create {count} units",
@@ -577,7 +577,8 @@
     "statMissingBothHint": "Neither blood type nor emergency contact on file.",
     "bulkOptIn": "Turn on WhatsApp consent",
     "bulkOptOut": "Turn off WhatsApp consent",
-    "removeAction": "Remove from site"
+    "removeAction": "Remove from site",
+    "relationLabel": "Relationship to the unit"
   },
   "accessRequests": {
     "title": "Access requests",
@@ -880,7 +881,7 @@
     "collected": "Payment recorded; {count} charges settled.",
     "collectedWithCredit": "Payment recorded. {credit} ₺ exceeded the charges and remains as a credit balance.",
     "collectFailed": "The payment could not be recorded.",
-    "noOpenDebts": "This unit has no open charges.",
+    "noOpenDebts": "No open debt — the amount will be recorded as credit.",
     "riskFilter": "Risk threshold",
     "allRisks": "All balances",
     "riskAtLeast": "{amount} and above",
@@ -895,11 +896,13 @@
     "drawerCreatedHint": "The list has been updated. You can enter a debt for another unit or open the detail.",
     "drawerAddAnother": "Enter another debt",
     "presetTitle": "Prefilled from the \"{plan}\" plan",
-    "presetBody": "The formula, amount, due day and scope were copied from the plan; you can change all of them. This charge is **not linked** to the plan — it creates a one-off record independent of the plan's periodic run."
+    "presetBody": "The formula, amount, due day and scope were copied from the plan; you can change all of them. This charge is **not linked** to the plan — it creates a one-off record independent of the plan's periodic run.",
+    "collectFromUnit": "Record payment",
+    "collectUnitLabel": "Unit"
   },
   "expenses": {
     "title": "Expenses",
-    "description": "Latest {count} expense records.",
+    "description": "Expense records, approval status and category breakdown.",
     "total": "Total expenses",
     "vat": "VAT amount",
     "vatHint": "Separated from expenses",
@@ -1062,7 +1065,11 @@
     "distributedLabel": "unit share",
     "drawerCreatedTitle": "Expense added",
     "drawerCreatedHint": "You can continue here — the list stayed open behind this panel.",
-    "drawerAddAnother": "Add another expense"
+    "drawerAddAnother": "Add another expense",
+    "distributedOption": "Distributed",
+    "paidFrom": "Paid from",
+    "paidFromHint": "The account the money left. If empty the expense counts as paid from the cash box and appears there in the cash breakdown.",
+    "paidFromCash": "Cash box"
   },
   "bank": {
     "title": "Bank & reconciliation",
@@ -1129,7 +1136,24 @@
     "noAccountsTitle": "No bank account defined yet",
     "noAccountsDescription": "Without an account, bank transactions cannot be imported, reconciliation does not run, and a collection cannot record which account the money went into.",
     "purposeColumn": "Purpose",
-    "balance": "Balance"
+    "balance": "Balance",
+    "totalIncoming": "Total in",
+    "totalOutgoing": "Total out",
+    "netBalance": "Cash balance",
+    "cashboxTitle": "Cash breakdown",
+    "cashboxHint": "Amounts are derived from the building's own records: in = completed collections (refunds deducted), out = paid expenses. The bank-reported balance is shown separately; a difference means a movement was never recorded.",
+    "cashboxSource": "Account",
+    "cashboxIncoming": "In",
+    "cashboxOutgoing": "Out",
+    "cashboxSynced": "Bank balance",
+    "cashboxCash": "Cash box",
+    "cashboxCashHint": "Cash collections and expenses recorded without a bank account.",
+    "cashboxUnassigned": "No account selected",
+    "cashboxUnassignedHint": "Records that are not cash yet have no account selected. Open the collection/expense and pick an account; otherwise no account balance is correct.",
+    "cashboxTotal": "Total",
+    "cashboxUnpaid": "Unpaid expenses",
+    "cashboxUnpaidHint": "Expenses awaiting approval or approved but not yet paid. They have not left the cash box, so they are excluded from the balance.",
+    "cashboxSyncedNone": "Not connected"
   },
   "simulator": {
     "title": "Budget simulator",
@@ -1253,7 +1277,8 @@
     "closeReason": "Early closure reason",
     "closeReasonHint": "If you close before the end date, the reason is recorded in the audit log.",
     "closeWarning": "Closing cannot be undone: the result is computed, stored and never changes.",
-    "quorumRule": "Majority rule"
+    "quorumRule": "Majority rule",
+    "closesAtLabel": "Closing date"
   },
   "meetings": {
     "title": "Meetings & decision book",
@@ -1669,7 +1694,8 @@
     "noResourcesDescription": "A bookable space must exist before reservations can be taken.",
     "drawerCreatedTitle": "Reservation saved",
     "drawerCreatedHint": "The list has been updated. You can take another reservation.",
-    "drawerAddAnother": "Take another reservation"
+    "drawerAddAnother": "Take another reservation",
+    "capacityLabel": "Capacity"
   },
   "staff": {
     "title": "Staff",

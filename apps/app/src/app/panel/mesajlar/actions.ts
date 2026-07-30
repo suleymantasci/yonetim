@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
@@ -58,10 +57,8 @@ export async function sendMessage(
         messageSendResult,
       );
 
-      revalidatePath("/panel/mesajlar");
       // Cevap yazışma ekranından geldiyse baloncuk hemen görünmeli; liste
       // tazelense de detay sayfası kendi önbelleğinde kalırdı.
-      revalidatePath(`/panel/mesajlar/${input.userId}`);
 
       /*
        * Engellenen gönderim de **başarılı bir eylem**: kayıt açıldı ve

@@ -64,7 +64,7 @@ export default async function LegalPage() {
         <Card className="mt-4">
           <CardHeader
             title={t("candidatesTitle")}
-            description={t("candidatesDescription")}
+            description={t("candidatesDescription", { days: thresholdDays })}
           />
           <CardBody className="p-0">
             <div className={tc.wrapper}>

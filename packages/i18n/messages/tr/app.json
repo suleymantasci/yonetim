@@ -367,13 +367,13 @@
     "floorTo": "Bitiş katı",
     "perFloor": "Kat başına daire",
     "bulkSectionNumbering": "Numaralandırma",
-    "bulkSectionNumberingHint": "Kalıpta {blok}, {kat} ve {no} yer tutucuları kullanılabilir.",
+    "bulkSectionNumberingHint": "Kalıpta '{blok}', '{kat}' ve '{no}' yer tutucuları kullanılabilir.",
     "numberingFloorPrefixed": "Kat önekli (301, 302…)",
     "numberingFloorPrefixedHint": "Numara kat + sıra biçiminde üretilir.",
     "numberingSequential": "Sıralı (1, 2, 3…)",
     "numberingSequentialHint": "Numara baştan sona artar.",
     "pattern": "Numara kalıbı",
-    "patternHint": "Örnek: {blok}-{no} → A-301",
+    "patternHint": "Örnek: '{blok}'-'{no}' → A-301",
     "preview": "Önizleme",
     "previewTotal": "Toplam {count} bağımsız bölüm oluşturulacak.",
     "bulkSubmit": "{count} bağımsız bölüm oluştur",
@@ -577,7 +577,8 @@
     "statMissingBothHint": "Ne kan grubu ne acil durum kişisi kayıtlı.",
     "bulkOptIn": "WhatsApp iznini aç",
     "bulkOptOut": "WhatsApp iznini kapat",
-    "removeAction": "Siteden çıkar"
+    "removeAction": "Siteden çıkar",
+    "relationLabel": "Bağımsız bölüm ilişkisi"
   },
   "accessRequests": {
     "title": "Erişim talepleri",
@@ -880,7 +881,7 @@
     "collected": "Tahsilat kaydedildi; {count} borç kapandı.",
     "collectedWithCredit": "Tahsilat kaydedildi. {credit} ₺ borçları aştı ve alacak bakiyesi olarak kaldı.",
     "collectFailed": "Tahsilat kaydedilemedi.",
-    "noOpenDebts": "Bu dairede açık borç yok.",
+    "noOpenDebts": "Açık borç yok — girilen tutar avans olarak kaydedilir.",
     "riskFilter": "Risk eşiği",
     "allRisks": "Tüm bakiyeler",
     "riskAtLeast": "{amount} ve üzeri",
@@ -895,11 +896,13 @@
     "drawerCreatedHint": "Liste güncellendi. Başka bir daireye borç girebilir veya detaya gidebilirsiniz.",
     "drawerAddAnother": "Bir borç daha gir",
     "presetTitle": "“{plan}” planından dolduruldu",
-    "presetBody": "Formül, tutar, vade günü ve kapsam plandan kopyalandı; hepsini değiştirebilirsiniz. Bu borçlandırma plana **bağlı değil** — planın kendi dönemsel koşusundan bağımsız, tek seferlik bir kayıt üretir."
+    "presetBody": "Formül, tutar, vade günü ve kapsam plandan kopyalandı; hepsini değiştirebilirsiniz. Bu borçlandırma plana **bağlı değil** — planın kendi dönemsel koşusundan bağımsız, tek seferlik bir kayıt üretir.",
+    "collectFromUnit": "Tahsilat gir",
+    "collectUnitLabel": "Bağımsız bölüm"
   },
   "expenses": {
     "title": "Giderler",
-    "description": "Son {count} gider kaydı.",
+    "description": "Gider kayıtları, onay durumu ve kategori dağılımı.",
     "total": "Toplam gider",
     "vat": "KDV tutarı",
     "vatHint": "Giderlerden ayrıştırılan",
@@ -1062,7 +1065,11 @@
     "distributedLabel": "daire payı",
     "drawerCreatedTitle": "Gider eklendi",
     "drawerCreatedHint": "Akışı burada sürdürebilirsiniz — liste arkada açık kaldı.",
-    "drawerAddAnother": "Bir gider daha ekle"
+    "drawerAddAnother": "Bir gider daha ekle",
+    "distributedOption": "Yansıtıldı",
+    "paidFrom": "Ödeme kaynağı",
+    "paidFromHint": "Paranın çıktığı hesap. Boş bırakılırsa nakit kasadan çıkmış sayılır ve kasa dökümünde oraya yazılır.",
+    "paidFromCash": "Nakit kasa"
   },
   "bank": {
     "title": "Banka & Mutabakat",
@@ -1129,7 +1136,24 @@
     "noAccountsTitle": "Henüz banka hesabı tanımlanmamış",
     "noAccountsDescription": "Hesap tanımlanmadan banka hareketi içeri alınamaz, mutabakat çalışmaz ve tahsilatta paranın hangi hesaba yattığı kaydedilemez.",
     "purposeColumn": "Amaç",
-    "balance": "Bakiye"
+    "balance": "Bakiye",
+    "totalIncoming": "Toplam giren",
+    "totalOutgoing": "Toplam çıkan",
+    "netBalance": "Kasa bakiyesi",
+    "cashboxTitle": "Kasa dökümü",
+    "cashboxHint": "Tutarlar sitenin kendi kayıtlarından türetilir: giren = tamamlanmış tahsilatlar (iade düşülmüş), çıkan = ödenmiş giderler. Bankadan gelen bakiye ayrı sütunda durur; iki rakamın farkı kayda geçmemiş bir hareket demektir.",
+    "cashboxSource": "Hesap",
+    "cashboxIncoming": "Giren",
+    "cashboxOutgoing": "Çıkan",
+    "cashboxSynced": "Bankadaki bakiye",
+    "cashboxCash": "Nakit kasa",
+    "cashboxCashHint": "Banka hesabı seçilmeden girilen nakit tahsilat ve giderler.",
+    "cashboxUnassigned": "Hesabı belirtilmemiş",
+    "cashboxUnassignedHint": "Nakit olmadığı hâlde hesabı seçilmemiş kayıtlar. İlgili tahsilat/gideri açıp hesabını seçin; aksi hâlde hiçbir hesabın bakiyesi doğru olmaz.",
+    "cashboxTotal": "Toplam",
+    "cashboxUnpaid": "Henüz ödenmemiş gider",
+    "cashboxUnpaidHint": "Onay bekleyen ya da onaylı ama ödenmemiş giderler. Kasadan çıkmadığı için bakiyeye girmiyor.",
+    "cashboxSyncedNone": "Bağlantı yok"
   },
   "simulator": {
     "title": "Bütçe Simülatörü",
@@ -1253,7 +1277,8 @@
     "closeReason": "Erken kapatma gerekçesi",
     "closeReasonHint": "Süresi dolmadan kapatıyorsanız gerekçe denetim kütüğüne geçer.",
     "closeWarning": "Kapatma geri alınamaz: sonuç hesaplanıp saklanır ve bir daha değişmez.",
-    "quorumRule": "Yeter sayı kuralı"
+    "quorumRule": "Yeter sayı kuralı",
+    "closesAtLabel": "Son katılım tarihi"
   },
   "meetings": {
     "title": "Toplantılar & Karar Defteri",
@@ -1669,7 +1694,8 @@
     "noResourcesDescription": "Rezervasyon alınabilmesi için önce rezerve edilebilir bir alan tanımlanmalı.",
     "drawerCreatedTitle": "Rezervasyon kaydedildi",
     "drawerCreatedHint": "Liste güncellendi. Başka bir rezervasyon alabilirsiniz.",
-    "drawerAddAnother": "Bir rezervasyon daha al"
+    "drawerAddAnother": "Bir rezervasyon daha al",
+    "capacityLabel": "Kapasite"
   },
   "staff": {
     "title": "Personel",

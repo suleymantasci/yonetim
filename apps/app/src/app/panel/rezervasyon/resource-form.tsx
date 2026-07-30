@@ -133,7 +133,7 @@ export function ResourceForm({
 
         <FormField
           name="capacity"
-          label={t("capacity")}
+          label={t("capacityLabel")}
           hint={t("capacityHint")}
         >
           <Input

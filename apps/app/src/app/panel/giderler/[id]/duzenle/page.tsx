@@ -11,6 +11,7 @@ import { Alert, Card, CardBody } from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
 import { apiGet } from "@/lib/api/server";
+import { getBankAccountOptions } from "@/lib/bank-accounts";
 import { requirePermission } from "@/lib/context";
 import { ExpenseForm } from "../../expense-form";
 
@@ -78,6 +79,13 @@ export default async function EditExpensePage({
     })),
   ]);
 
+  /*
+   * Kapatılmış hesap listede yok ama kayıt o hesaba bağlıysa seçenek
+   * kalmalı: aksi hâlde form sessizce "nakit"e düşer ve düzenleme,
+   * dokunulmamış bir alanı bozardı.
+   */
+  const bankAccounts = await getBankAccountOptions(expense.bankAccountId);
+
   return (
     <>
       <PageHeader
@@ -92,6 +100,7 @@ export default async function EditExpensePage({
         <CardBody>
           <ExpenseForm
             categories={categories}
+            bankAccounts={bankAccounts}
             cancelHref={`/panel/giderler/${id}`}
             submitLabel={tCommon("action.save")}
             canApprove={hasPermission(ctx.roles, "expense:approve")}
@@ -108,6 +117,7 @@ export default async function EditExpensePage({
               invoiceNo: expense.invoiceNo,
               expenseDate: expense.expenseDate.toISOString().slice(0, 10),
               paidVia: expense.paidVia,
+              bankAccountId: expense.bankAccountId,
               isPaid: expense.paidAt !== null,
               attachmentUrl: expense.attachmentUrl,
               status: expense.status,

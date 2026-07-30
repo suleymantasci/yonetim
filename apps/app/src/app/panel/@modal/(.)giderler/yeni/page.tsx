@@ -6,6 +6,7 @@ import { Alert } from "@yonetim/ui";
 
 import { RouteDrawer } from "@/components/route-drawer";
 import { apiGet } from "@/lib/api/server";
+import { getBankAccountOptions } from "@/lib/bank-accounts";
 import { requirePermission } from "@/lib/context";
 import { NewExpenseFlow } from "./new-expense-flow";
 
@@ -17,10 +18,10 @@ export default async function NewExpenseModal() {
   const t = await getTranslations("app.expenses");
   const tCommon = await getTranslations("common");
 
-  const { roots: tree } = await apiGet(
-    "/v1/panel/expenses/categories",
-    categoryTreeSchema,
-  );
+  const [{ roots: tree }, bankAccounts] = await Promise.all([
+    apiGet("/v1/panel/expenses/categories", categoryTreeSchema),
+    getBankAccountOptions(),
+  ]);
   // Ağacı düzleştir: form tek seviyeli `<select>` kullanıyor, girinti ile hiyerarşi verilir.
   const categories = tree.flatMap((root) => [
     {
@@ -59,6 +60,7 @@ export default async function NewExpenseModal() {
 
       <NewExpenseFlow
         categories={categories}
+        bankAccounts={bankAccounts}
         canApprove={hasPermission(ctx.roles, "expense:approve")}
         labels={{
           submit: tCommon("action.create"),

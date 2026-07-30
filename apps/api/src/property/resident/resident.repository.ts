@@ -340,6 +340,11 @@ export class ResidentRepository {
           tx
             .select({
               id: debts.id,
+              // `unitId` de dönüyor: sakin ekranından tahsilat girilebilmesi
+              // için borcun hangi birime ait olduğu gerekiyor ve daire
+              // **numarası** birim kimliği değil (aynı numara başka blokta
+              // tekrar edebilir).
+              unitId: debts.unitId,
               unitNumber: units.number,
               description: debts.description,
               period: debts.period,

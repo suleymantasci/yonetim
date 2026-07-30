@@ -99,6 +99,26 @@ export function ActionForm<T = undefined>({
   const summaryRef = useRef<HTMLDivElement>(null);
   const handled = useRef<ActionState<T> | null>(null);
 
+  /*
+   * SERVER ACTION'LAR `revalidatePath` ÇAĞIRMAMALI — aşağıdaki etkinin
+   * çalışabilmesi buna bağlı.
+   *
+   * Çağrıldığında Next, aksiyonun yanıtıyla birlikte ağacın yeniden üretilmiş
+   * halini gönderiyor; bu da formu yeniden monte ediyor ve `useActionState`
+   * durumu `idle`'a düşüyor. Sonuç: sunucu `{"status":"ok"}` dönmesine rağmen
+   * bu etki hiç çalışmıyor — bildirim çıkmıyor, `onSuccess` (çekmeceyi kapatan
+   * şey) çağrılmıyor, yönlendirme yapılmıyor. Kullanıcının gördüğü şey "kayıt
+   * oldu ama form açık kaldı".
+   *
+   * Ölçüm (üretim derlemesi, gerçek Chrome): tahsilat çekmecesinde aynı form,
+   * `revalidatePath` varken kapanmıyor ve bildirim vermiyordu; çağrı
+   * kaldırıldığında ikisi de çalıştı. Bu yüzden `apps/app` aksiyonlarındaki
+   * 109 çağrı kaldırıldı.
+   *
+   * KAYIP YOK: panel sayfalarının tamamı `force-dynamic`, yani geçersiz
+   * kılınacak bir rota önbelleği zaten yok. Tazeleme aşağıdaki
+   * `router.refresh()` ile, yanıttan **sonra** yapılıyor.
+   */
   useEffect(() => {
     // Aynı durum nesnesi için iki kez tepki vermeyelim (React 19 çift render).
     if (state.status === "idle" || handled.current === state) return;

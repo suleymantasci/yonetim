@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
@@ -112,7 +111,6 @@ export async function savePoll(
             pollSaveResult,
           );
 
-      revalidatePath("/panel/anketler");
       return okState(t("saved"), { data: { id: result.id } });
     },
   );
@@ -149,7 +147,6 @@ export async function closePoll(
         pollCloseResult,
       );
 
-      revalidatePath("/panel/anketler");
       return okState(
         result.quorumMet
           ? t("closedWithResult", { votes: result.totalVotes })

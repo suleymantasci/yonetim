@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
@@ -113,8 +112,6 @@ export async function saveExpenseCategory(
         savedIdSchema,
       );
 
-      revalidatePath("/panel/giderler");
-      revalidatePath("/panel/giderler/kategoriler");
       return okState(t("categorySaved", { name: input.name }), {
         data: { id },
       });
@@ -147,9 +144,6 @@ export async function archiveExpenseCategory(id: string): Promise<BulkResult> {
     (raw) => archiveResultSchema.parse(raw),
   );
 
-  revalidatePath("/panel/giderler");
-  revalidatePath("/panel/giderler/kategoriler");
-
   return {
     ok: true,
     message: result.archived
@@ -176,6 +170,8 @@ const expenseSchema = z.object({
   invoiceNo: optionalText(60),
   expenseDate: dateField,
   paidVia: optionalText(40),
+  /** Paranın çıktığı hesap; boş = nakit kasa. */
+  bankAccountId: optionalUuidField,
   isPaid: checkboxField,
   attachmentUrl: optionalText(500),
   status: z.enum(
@@ -221,15 +217,13 @@ export async function saveExpense(
           invoiceNo: input.invoiceNo ?? null,
           expenseDate: input.expenseDate,
           paidVia: input.paidVia ?? null,
+          bankAccountId: input.bankAccountId ?? null,
           isPaid: input.isPaid,
           attachmentUrl: input.attachmentUrl ?? null,
           status: input.status,
         },
         savedIdSchema,
       );
-
-      revalidatePath("/panel/giderler");
-      revalidatePath(`/panel/giderler/${id}`);
 
       return okState(t("saved"), {
         redirectTo: `/panel/giderler/${id}`,
@@ -255,7 +249,6 @@ export async function setExpenseStatus(
     expenseBulkResult,
   );
 
-  revalidatePath("/panel/giderler");
   return {
     ok: true,
     message: t(`status_${status}_done`, { count: result.affected }),
@@ -273,7 +266,6 @@ export async function deleteExpenses(ids: string[]): Promise<BulkResult> {
     { ids: targets },
     expenseBulkResult,
   );
-  revalidatePath("/panel/giderler");
 
   return result.affected === result.requested
     ? { ok: true, message: t("bulkDeleted", { count: result.affected }) }
@@ -368,10 +360,6 @@ export async function distributeExpense(
         // sunucu ekliyor (o metni yalnız sunucu biliyor).
         { debtDescription: t("distributedLabel") },
       );
-
-      revalidatePath("/panel/giderler");
-      revalidatePath(`/panel/giderler/${input.expenseId}`);
-      revalidatePath("/panel/borclar");
 
       return okState(t("distributed", { count: result.debtCount }), {
         data: { debtCount: result.debtCount, totalKurus: result.totalMinor },

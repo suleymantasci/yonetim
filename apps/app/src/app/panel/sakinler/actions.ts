@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
@@ -83,7 +82,8 @@ const residentSchema = z.object({
   /** Boş = seçilmedi/silindi. Sunucu bunu NULL'lama olarak yorumluyor. */
   bloodType: z.preprocess(
     (value) => (value === "" || value === null ? undefined : value),
-    z.enum(BLOOD_TYPES, { errorMap: () => ({ message: V.invalidSelection }) })
+    z
+      .enum(BLOOD_TYPES, { errorMap: () => ({ message: V.invalidSelection }) })
       .optional(),
   ),
   /** Sağlık verisi açık rızası (KVKK md.6/3) — kan grubu doluysa zorunlu. */
@@ -92,7 +92,24 @@ const residentSchema = z.object({
 
   /** İlk ilişki (isteğe bağlı): birim + rol + başlangıç. */
   unitId: optionalUuidField,
-  relation: z.enum(["owner", "tenant", "vacant"]).optional(),
+  /*
+   * "none" = birim ilişkisi kurulmasın.
+   *
+   * BURADA "vacant" YAZIYORDU ve form hiçbir zaman o değeri göndermiyordu:
+   * radyo grubu `owner | tenant | none` üretiyor. Sonuç, "bağımsız bölüm yok"
+   * seçildiğinde şemanın patlaması ve formun "işaretli alanları düzeltin"
+   * deyip hangi alanın hatalı olduğunu **göstermemesiydi** (hata `relation`
+   * alanına düşüyordu, ekranda o adla bir alan yoktu). `vacant` sözcüğü
+   * birimin `ownershipType` sözlüğünden geliyor; sakin ilişkisiyle karışmış.
+   *
+   * `errorMap` de eklendi: aksi halde ham Zod metni ("Invalid enum value…")
+   * çeviri anahtarına sarılıp kullanıcıya olduğu gibi gösteriliyordu.
+   */
+  relation: z
+    .enum(["owner", "tenant", "none"], {
+      errorMap: () => ({ message: V.invalidSelection }),
+    })
+    .optional(),
   ownershipPct: z.preprocess(
     (value) =>
       value === "" || value === null || value === undefined
@@ -157,18 +174,15 @@ export async function createResident(
           bloodType: input.bloodType ?? null,
           healthDataConsent: input.healthDataConsent,
           notes: input.notes,
-          // "vacant" bir ilişki değil, ilişkisizlik: API'ye gönderilmez.
-          unitId: input.relation === "vacant" ? null : input.unitId,
-          relation: input.relation === "vacant" ? null : input.relation,
+          // "none" bir ilişki değil, ilişkisizlik: API'ye gönderilmez.
+          unitId: input.relation === "none" ? null : input.unitId,
+          relation: input.relation === "none" ? null : input.relation,
           ownershipPct: input.ownershipPct,
           startDate: input.startDate,
           debtTransferPolicy: input.debtTransferPolicy,
         },
         residentSaveResult,
       );
-
-      revalidatePath("/panel/sakinler");
-      if (input.unitId) revalidatePath(`/panel/birimler/${input.unitId}`);
 
       const name = `${input.firstName} ${input.lastName}`;
       return okState(
@@ -207,7 +221,8 @@ const updateSchema = z.object({
   /** Boş = seçilmedi/silindi. Sunucu bunu NULL'lama olarak yorumluyor. */
   bloodType: z.preprocess(
     (value) => (value === "" || value === null ? undefined : value),
-    z.enum(BLOOD_TYPES, { errorMap: () => ({ message: V.invalidSelection }) })
+    z
+      .enum(BLOOD_TYPES, { errorMap: () => ({ message: V.invalidSelection }) })
       .optional(),
   ),
   /** Sağlık verisi açık rızası (KVKK md.6/3) — kan grubu doluysa zorunlu. */
@@ -264,9 +279,6 @@ export async function updateResident(
         },
         residentSaveResult,
       );
-
-      revalidatePath("/panel/sakinler");
-      revalidatePath(`/panel/sakinler/${input.id}`);
 
       return okState(t("updated"), {
         redirectTo: `/panel/sakinler/${input.id}`,
@@ -330,8 +342,6 @@ export async function addOccupancy(
         z.object({ id: z.string().uuid() }),
       );
 
-      revalidatePath(`/panel/sakinler/${input.userId}`);
-      revalidatePath(`/panel/birimler/${input.unitId}`);
       return okState(t("occupancyAdded"));
     },
   );
@@ -390,9 +400,6 @@ export async function endOccupancy(
         occupancyEndResult,
       );
 
-      revalidatePath("/panel/sakinler");
-      revalidatePath("/panel/borclar");
-
       return okState(
         input.transferTo === "owner"
           ? t("occupancyEndedTransferred", {
@@ -439,7 +446,6 @@ export async function removeResidents(ids: string[]): Promise<BulkResult> {
     { ids: targets },
     residentRemoveResult,
   );
-  revalidatePath("/panel/sakinler");
 
   return result.skipped === 0
     ? { ok: true, message: t("bulkRemoved", { count: result.removed }) }
@@ -467,7 +473,6 @@ export async function setWhatsappOptIn(
     { ids: targets, optIn },
     z.object({ affected: z.number().int() }),
   );
-  revalidatePath("/panel/sakinler");
   return { ok: true, message: optIn ? t("optInDone") : t("optOutDone") };
 }
 

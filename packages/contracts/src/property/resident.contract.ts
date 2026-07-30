@@ -170,6 +170,8 @@ export const residentDetail = z.object({
   debts: z.array(
     z.object({
       id: uuid,
+      /** Tahsilat girişi birim kimliğine bağlı; daire numarası tekil değil. */
+      unitId: uuid,
       unitNumber: z.string(),
       description: z.string(),
       period: z.string().nullable(),

@@ -180,6 +180,8 @@ export const expenseDetail = z.object({
     expenseDate: dateTime,
     paidAt: dateTime.nullable(),
     paidVia: z.string().nullable(),
+    /** Paranın çıktığı banka hesabı; null = nakit kasa. */
+    bankAccountId: uuid.nullable(),
     period: z.string().nullable(),
     status: z.string(),
     distributedAt: dateTime.nullable(),
@@ -219,6 +221,14 @@ export const expenseSave = z.object({
   invoiceNo: z.string().trim().max(60).nullish(),
   expenseDate: dateTime,
   paidVia: z.string().trim().max(40).nullish(),
+  /**
+   * Paranın çıktığı banka hesabı; **null = nakit kasa**.
+   *
+   * `paidVia` serbest metin (örn. "havale") ve hangi hesaptan çıktığını
+   * söylemiyor. Kasa dökümü "bu hesaptan ne çıktı" sorusunu ancak bu alanla
+   * cevaplayabiliyor; olmadığında bütün giderler tek havuza yazılıyordu.
+   */
+  bankAccountId: uuid.nullish(),
   isPaid: z.coerce.boolean().default(false),
   attachmentUrl: z.string().trim().max(500).nullish(),
   status: expenseStatus,

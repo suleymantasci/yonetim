@@ -273,7 +273,7 @@ export function PollForm({
           />
         </FormField>
 
-        <FormField name="closesAt" label={t("closesAt")} required>
+        <FormField name="closesAt" label={t("closesAtLabel")} required>
           <DateInput
             name="closesAt"
             defaultValue={defaults?.closesAt ?? inDays(14)}

@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
@@ -104,7 +103,6 @@ export async function createDecisionEntry(
         decisionEntryCreateResult,
       );
 
-      revalidatePath("/panel/karar-defteri");
       return okState(t("created", { no: created.entryNo }), {
         data: { entryNo: created.entryNo },
       });

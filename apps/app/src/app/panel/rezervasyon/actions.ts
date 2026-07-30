@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
@@ -123,7 +122,6 @@ export async function saveResource(
             resourceSaveResult,
           );
 
-      revalidatePath("/panel/rezervasyon");
       return okState(t("resourceSaved", { name: result.name }), {
         data: { id: result.id },
       });
@@ -187,7 +185,6 @@ export async function createReservation(
         reservationSaveResult,
       );
 
-      revalidatePath("/panel/rezervasyon");
       return okState(
         result.status === "pending"
           ? t("createdPending")
@@ -228,7 +225,6 @@ export async function decideReservation(
         z.object({ id: z.string().uuid(), status: z.string() }),
       );
 
-      revalidatePath("/panel/rezervasyon");
       return okState(t("decided"), { data: { id: input.id } });
     },
   );
@@ -246,7 +242,6 @@ export async function deleteResource(
   const t = await getTranslations("app.reservations");
 
   await apiDelete(`/v1/panel/operations/reservations/resources/${id}`);
-  revalidatePath("/panel/rezervasyon");
 
   return { ok: true, message: t("resourceDeleted") };
 }

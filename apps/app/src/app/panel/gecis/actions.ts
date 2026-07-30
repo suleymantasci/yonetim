@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 
 import { migrationCommitResult } from "@yonetim/contracts";
@@ -133,9 +132,6 @@ export async function commitMigration(
     },
     migrationCommitResult,
   );
-
-  revalidatePath("/panel/gecis");
-  revalidatePath("/panel/birimler");
 
   return {
     ok: true,

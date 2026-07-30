@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
@@ -94,7 +93,6 @@ export async function saveMeter(
             meterSaveResult,
           );
 
-      revalidatePath("/panel/sayaclar");
       return okState(t("saved"), { data: { id: result.id } });
     },
   );
@@ -180,8 +178,6 @@ export async function recordMeterReadings(
     meterReadingBatchResult,
   );
 
-  revalidatePath("/panel/sayaclar");
-
   return {
     ok: true,
     message: t("batchDone", {
@@ -210,7 +206,6 @@ export async function deleteMeter(id: string): Promise<MeterMutationResult> {
   const t = await getTranslations("app.meters");
 
   await apiDelete(`/v1/panel/operations/meters/${id}`);
-  revalidatePath("/panel/sayaclar");
 
   return { ok: true, message: t("deleted") };
 }

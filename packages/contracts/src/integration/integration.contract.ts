@@ -54,10 +54,65 @@ export const reconciliationIssueRow = z.object({
   createdAt: dateTime,
 });
 
+/* ------------------------------------------------------------------ *
+ * Kasa (paranın durduğu yerler)
+ * ------------------------------------------------------------------ */
+
+/**
+ * Paranın durduğu tek bir yer: bir banka hesabı, nakit kasa ya da hesabı
+ * belirtilmemiş tahsilat havuzu.
+ *
+ * NEDEN AYRI BİR HESAP: `bankAccounts.balanceKurus` **banka
+ * senkronizasyonunun** gerçeği — open banking bağlanmadan sıfır kalır.
+ * Panelde tahsilat ve gider girilirken o alan hiç değişmediği için ekranda
+ * "tahsilat yaptım ama bakiye 0" durumu doğuyordu. Buradaki tutarlar
+ * sitenin **kendi kayıtlarından** türetiliyor: giren = tamamlanmış
+ * tahsilatlar (iade düşülmüş), çıkan = ödenmiş giderler.
+ *
+ * İki rakam çelişebilir ve çelişmesi **bilgi**: fark, kayda geçmemiş bir
+ * hareket ya da eksik mutabakat demektir. Bu yüzden birleştirilmiyor.
+ */
+export const cashboxRow = z.object({
+  /**
+   * `bank` — tanımlı banka hesabı.
+   * `cash` — nakit kasa (banka hesabı olmayan tahsilat/gider).
+   * `unassigned` — nakit olmadığı hâlde hesabı seçilmemiş kayıtlar; kalırsa
+   *   yöneticinin düzeltmesi gerekir, sessizce nakde yazmak kasayı yanıltır.
+   */
+  source: z.enum(["bank", "cash", "unassigned"]),
+  accountId: uuid.nullable(),
+  bankName: z.string().nullable(),
+  accountName: z.string().nullable(),
+  ibanMasked: z.string().nullable(),
+  isActive: z.boolean(),
+  incomingMinor: moneyMinor,
+  outgoingMinor: moneyMinor,
+  balanceMinor: moneyMinor,
+  /** Banka senkronizasyonundan gelen bakiye (yalnız `bank` satırlarında). */
+  syncedBalanceMinor: moneyMinor.nullable(),
+});
+
+export type CashboxRow = z.infer<typeof cashboxRow>;
+
 export const bankOverviewResponse = z.object({
   accounts: z.array(bankAccountRow),
   transactions: z.array(bankTransactionRow),
   issues: z.array(reconciliationIssueRow),
+  /** Kasa dökümü — her hesap ve nakit için ayrı, altında toplam. */
+  cashbox: z.object({
+    rows: z.array(cashboxRow),
+    totals: z.object({
+      incomingMinor: moneyMinor,
+      outgoingMinor: moneyMinor,
+      balanceMinor: moneyMinor,
+      /**
+       * Onaylı ama henüz ödenmemiş gider: kasadan çıkmadığı için bakiyeye
+       * girmiyor, ama yöneticinin bileceği bir yük. Ayrı gösterilmezse
+       * "girdiğim gider nerede" sorusu doğuyor.
+       */
+      unpaidExpenseMinor: moneyMinor,
+    }),
+  }),
   totals: z.object({
     balanceMinor: moneyMinor,
     unmatched: z.number().int(),

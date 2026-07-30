@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
@@ -54,10 +53,8 @@ export async function castVote(
         z.object({ ok: z.literal(true) }),
       );
 
-      revalidatePath("/panel/oylamalarim");
       // Özet kartındaki "oy bekleyen anket" sayacı da düşmeli; aksi halde
       // sakin oyunu verdikten sonra ana ekranda hâlâ bekleyen bir iş görür.
-      revalidatePath("/panel");
 
       return okState(t("voteRecorded"));
     },

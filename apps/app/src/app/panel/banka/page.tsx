@@ -34,6 +34,7 @@ export default async function BankPage() {
     accounts,
     transactions: txs,
     issues,
+    cashbox,
     totals,
   } = await apiGet("/v1/panel/bank", bankOverviewResponse);
 
@@ -48,6 +49,21 @@ export default async function BankPage() {
     </Link>
   ) : null;
 
+  /**
+   * Kasa satırının başlığı. Nakit ve "hesabı belirtilmemiş" kovaları gerçek
+   * bir hesaba karşılık gelmediği için adlarını buradan alıyor.
+   */
+  const rowLabel = (row: (typeof cashbox.rows)[number]) => {
+    if (row.source === "cash") return t("cashboxCash");
+    if (row.source === "unassigned") return t("cashboxUnassigned");
+    return row.bankName ?? "—";
+  };
+  const rowHint = (row: (typeof cashbox.rows)[number]) => {
+    if (row.source === "cash") return t("cashboxCashHint");
+    if (row.source === "unassigned") return t("cashboxUnassignedHint");
+    return row.accountName;
+  };
+
   return (
     <>
       <PageHeader
@@ -56,7 +72,38 @@ export default async function BankPage() {
         action={newAccountButton}
       />
 
+      {/*
+        PARA ÖNCE, MUTABAKAT SONRA.
+
+        Ekranın ilk sorusu "kasada ne var" — tanımlı hesap sayısı ya da
+        eşleşmemiş hareket adedi değil. Üstelik daha önce tek gösterilen
+        rakam `bank_accounts.balance_kurus` idi; o alan yalnız open banking
+        bağlanınca doluyor, panelden tahsilat girilince değil. Tahsilat
+        girilmiş bir sitede "0 ₺" yazması tam olarak bu yüzdendi.
+      */}
       <div className="grid gap-4 sm:grid-cols-3">
+        <Stat
+          label={t("totalIncoming")}
+          value={f.money(cashbox.totals.incomingMinor)}
+          tone="success"
+        />
+        <Stat
+          label={t("totalOutgoing")}
+          value={f.money(cashbox.totals.outgoingMinor)}
+          hint={
+            cashbox.totals.unpaidExpenseMinor > 0
+              ? `${t("cashboxUnpaid")}: ${f.money(cashbox.totals.unpaidExpenseMinor)} — ${t("cashboxUnpaidHint")}`
+              : undefined
+          }
+        />
+        <Stat
+          label={t("netBalance")}
+          value={f.money(cashbox.totals.balanceMinor)}
+          tone={cashbox.totals.balanceMinor < 0 ? "danger" : "neutral"}
+        />
+      </div>
+
+      <div className="mt-4 grid gap-4 sm:grid-cols-3">
         <Stat label={t("accounts")} value={String(accounts.length)} />
         <Stat
           label={t("unmatched")}
@@ -87,6 +134,100 @@ export default async function BankPage() {
           ))}
         </div>
       ) : null}
+
+      {/*
+        KASA DÖKÜMÜ — her hesap ve nakit için ayrı, altında toplam.
+
+        Hesap listesindeki "bakiye" sütunu kaldırıldı: aynı ekranda iki farklı
+        anlamda bakiye göstermek, tam da şikâyet edilen karışıklığı üretiyordu.
+        Paranın hareketi burada, hesabın tanımı aşağıdaki kartta.
+      */}
+      <Card className="mt-4">
+        <CardHeader title={t("cashboxTitle")} description={t("cashboxHint")} />
+        <CardBody className="p-0">
+          <div className={tc.wrapper}>
+            <table className={tc.table} style={{ minWidth: 640 }}>
+              <thead className={tc.thead}>
+                <tr>
+                  <th scope="col" className={tc.th}>
+                    {t("cashboxSource")}
+                  </th>
+                  <th scope="col" className={`${tc.th} text-right`}>
+                    {t("cashboxIncoming")}
+                  </th>
+                  <th scope="col" className={`${tc.th} text-right`}>
+                    {t("cashboxOutgoing")}
+                  </th>
+                  <th scope="col" className={`${tc.th} text-right`}>
+                    {t("balance")}
+                  </th>
+                  <th scope="col" className={`${tc.th} text-right`}>
+                    {t("cashboxSynced")}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {cashbox.rows.map((row) => (
+                  <tr
+                    key={row.accountId ?? row.source}
+                    className={tc.tr}
+                    data-testid="cashbox-row"
+                  >
+                    <td className={`${tc.td} font-medium`}>
+                      <span className="flex flex-wrap items-center gap-2">
+                        {rowLabel(row)}
+                        {row.source === "bank" && !row.isActive ? (
+                          <Badge tone="neutral">
+                            {tCommon("state.inactive")}
+                          </Badge>
+                        ) : null}
+                      </span>
+                      {rowHint(row) ? (
+                        <div className="mt-0.5 text-xs font-normal text-fg-subtle">
+                          {rowHint(row)}
+                        </div>
+                      ) : null}
+                    </td>
+                    <td className={`${tc.tdNum} text-success-fg`}>
+                      {f.money(row.incomingMinor)}
+                    </td>
+                    <td className={tc.tdNum}>{f.money(row.outgoingMinor)}</td>
+                    <td className={`${tc.tdNum} font-semibold`}>
+                      {f.money(row.balanceMinor)}
+                    </td>
+                    {/*
+                      Bankadan gelen bakiye ayrı sütunda: bizim kaydımızla
+                      çelişmesi bilgi, birleştirilirse fark kayboluyor.
+                    */}
+                    <td className={`${tc.tdNum} text-fg-muted`}>
+                      {row.syncedBalanceMinor === null
+                        ? t("cashboxSyncedNone")
+                        : f.money(row.syncedBalanceMinor)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot className="border-t-2 border-border-strong">
+                <tr>
+                  <th scope="row" className={`${tc.td} text-left font-semibold`}>
+                    {t("cashboxTotal")}
+                  </th>
+                  <td className={`${tc.tdNum} font-semibold text-success-fg`}>
+                    {f.money(cashbox.totals.incomingMinor)}
+                  </td>
+                  <td className={`${tc.tdNum} font-semibold`}>
+                    {f.money(cashbox.totals.outgoingMinor)}
+                  </td>
+                  <td className={`${tc.tdNum} font-bold`}>
+                    {f.money(cashbox.totals.balanceMinor)}
+                  </td>
+                  <td className={tc.tdNum} />
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </CardBody>
+      </Card>
 
       {/*
         Hesap listesi hareketlerden **ayrı** kart: modülün girişi burası ve
@@ -122,9 +263,6 @@ export default async function BankPage() {
                     <th scope="col" className={tc.th}>
                       {t("purpose")}
                     </th>
-                    <th scope="col" className={`${tc.th} text-right`}>
-                      {t("balance")}
-                    </th>
                     {canWrite ? (
                       <th scope="col" className={`${tc.th} w-10`}>
                         <span className="sr-only">{tCommon("action.edit")}</span>
@@ -154,7 +292,6 @@ export default async function BankPage() {
                       <td className={tc.tdMuted}>
                         {t(`purposeOption.${a.purpose}`)}
                       </td>
-                      <td className={tc.tdNum}>{f.money(a.balanceMinor)}</td>
                       {canWrite ? (
                         <td className={tc.td}>
                           <Link

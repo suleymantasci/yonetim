@@ -11,11 +11,13 @@ import { ExpenseForm } from "../../../../giderler/expense-form";
  */
 export function EditExpenseFlow({
   categories,
+  bankAccounts,
   canApprove,
   defaults,
   submitLabel,
 }: {
   categories: React.ComponentProps<typeof ExpenseForm>["categories"];
+  bankAccounts: React.ComponentProps<typeof ExpenseForm>["bankAccounts"];
   canApprove: boolean;
   defaults: React.ComponentProps<typeof ExpenseForm>["defaults"];
   submitLabel: string;
@@ -25,6 +27,7 @@ export function EditExpenseFlow({
   return (
     <ExpenseForm
       categories={categories}
+      bankAccounts={bankAccounts}
       canApprove={canApprove}
       defaults={defaults}
       submitLabel={submitLabel}

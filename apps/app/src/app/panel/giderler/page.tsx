@@ -213,7 +213,7 @@ export default async function ExpensesPage({
                 options: [
                   { value: "", label: t("allDistribution") },
                   { value: "bekliyor", label: t("notDistributed") },
-                  { value: "yapildi", label: t("distributed") },
+                  { value: "yapildi", label: t("distributedOption") },
                 ],
               },
             ]}

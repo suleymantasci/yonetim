@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
@@ -86,7 +85,6 @@ export async function saveMaintenance(
             maintenanceSaveResult,
           );
 
-      revalidatePath("/panel/bakim");
       return okState(t("saved", { label: result.label }), {
         data: { id: result.id },
       });
@@ -137,7 +135,6 @@ export async function completeMaintenance(
         z.object({ id: z.string().uuid(), nextDueAt: z.coerce.date() }),
       );
 
-      revalidatePath("/panel/bakim");
       return okState(
         t("completed", {
           date: result.nextDueAt.toLocaleDateString("tr-TR"),
@@ -160,7 +157,6 @@ export async function deleteMaintenance(
   const t = await getTranslations("app.maintenance");
 
   await apiDelete(`/v1/panel/operations/maintenance/${id}`);
-  revalidatePath("/panel/bakim");
 
   return { ok: true, message: t("deleted") };
 }

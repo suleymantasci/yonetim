@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
@@ -95,7 +94,6 @@ export async function saveInventoryItem(
         savedIdSchema,
       );
 
-      revalidatePath("/panel/demirbas");
       return okState(t("saved", { name: input.name }), { data: { id } });
     },
   );
@@ -127,6 +125,5 @@ export async function setInventoryStatus(
     inventoryPatchResult,
   );
 
-  revalidatePath("/panel/demirbas");
   return { ok: true, message: t("statusChanged", { count: result.affected }) };
 }

@@ -18,6 +18,7 @@ export * from "./components/toast";
 export * from "./components/skeleton";
 export * from "./components/fields";
 export * from "./components/navigation";
+export * from "./components/tab-view";
 export * from "./components/page-header";
 export * from "./components/list-toolbar";
 export * from "./components/timeline";

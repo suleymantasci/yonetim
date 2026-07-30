@@ -169,6 +169,11 @@ export class ExpenseWriteRepository {
         expenseDate: dto.expenseDate,
         paidAt: dto.isPaid ? dto.expenseDate : null,
         paidVia: dto.paidVia ?? null,
+        /*
+         * Paranın çıktığı hesap; null = nakit kasa. Kasa dökümü "bu hesaptan
+         * ne çıktı" sorusunu bu alanla cevaplıyor — `paidVia` serbest metin.
+         */
+        bankAccountId: dto.bankAccountId ?? null,
         attachmentUrl: dto.attachmentUrl ?? null,
         status: dto.status,
         period,

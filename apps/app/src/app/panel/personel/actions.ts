@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
@@ -113,9 +112,7 @@ export async function saveStaff(
         ? await apiPatch(`/v1/panel/staff/${input.id}`, body, staffSaveResult)
         : await apiPost("/v1/panel/staff", body, staffSaveResult);
 
-      revalidatePath("/panel/personel");
       // Demirbaş zimmet seçenekleri personel listesinden besleniyor.
-      revalidatePath("/panel/demirbas");
 
       return okState(t("saved", { name: result.fullName }), {
         data: { id: result.id },
@@ -141,8 +138,6 @@ export async function deleteStaff(id: string): Promise<StaffMutationResult> {
   const t = await getTranslations("app.staff");
 
   await apiDelete(`/v1/panel/staff/${id}`);
-  revalidatePath("/panel/personel");
-  revalidatePath("/panel/demirbas");
 
   return { ok: true, message: t("deleted") };
 }

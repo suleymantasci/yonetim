@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
@@ -80,7 +79,6 @@ export async function createFirstTenant(
   }
 
   // Yeni site oturuma bağlandı; kabuk yeniden çözülmeli.
-  revalidatePath("/panel", "layout");
   redirect("/panel");
 }
 

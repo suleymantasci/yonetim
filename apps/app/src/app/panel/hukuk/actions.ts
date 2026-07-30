@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
@@ -67,7 +66,6 @@ export async function openLegalCase(
         z.object({ id: z.string().uuid() }),
       );
 
-      revalidatePath("/panel/hukuk");
       return okState(t("caseOpened"));
     },
   );
@@ -107,7 +105,6 @@ export async function updateLegalCase(
         ok,
       );
 
-      revalidatePath("/panel/hukuk");
       return okState(t("caseUpdated"));
     },
   );
@@ -137,7 +134,6 @@ export async function addLegalEvent(
         ok,
       );
 
-      revalidatePath("/panel/hukuk");
       return okState(t("eventAdded"));
     },
   );
@@ -176,7 +172,6 @@ export async function addLegalAmount(
         ok,
       );
 
-      revalidatePath("/panel/hukuk");
       return okState(
         input.kind === "cost" ? t("costAdded") : t("collectionAdded"),
       );
@@ -205,7 +200,6 @@ export async function closeLegalCase(
 
       await apiPost(`/v1/panel/legal/${input.id}/close`, { reason: input.reason }, ok);
 
-      revalidatePath("/panel/hukuk");
       return okState(t("caseClosed"));
     },
   );

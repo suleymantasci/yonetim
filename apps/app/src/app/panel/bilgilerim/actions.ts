@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
@@ -63,7 +62,6 @@ export async function updateMyProfile(
         z.object({ ok: z.literal(true) }),
       );
 
-      revalidatePath("/panel/bilgilerim");
       return okState(t("saved"));
     },
   );
@@ -212,7 +210,6 @@ export async function confirmPhoneChange(
         invalid_code: t("phoneCodeInvalid"),
       });
 
-      revalidatePath("/panel/bilgilerim");
       return okState(t("phoneChanged"));
     },
   );

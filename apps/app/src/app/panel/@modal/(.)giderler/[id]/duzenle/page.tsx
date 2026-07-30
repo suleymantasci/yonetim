@@ -11,6 +11,7 @@ import { Alert } from "@yonetim/ui";
 
 import { RouteDrawer } from "@/components/route-drawer";
 import { apiGet } from "@/lib/api/server";
+import { getBankAccountOptions } from "@/lib/bank-accounts";
 import { requirePermission } from "@/lib/context";
 import { EditExpenseFlow } from "./edit-expense-flow";
 
@@ -45,6 +46,12 @@ export default async function EditExpenseModal({
   if (!detail) notFound();
 
   const expense = detail.expense;
+
+  /*
+   * Kapatılmış hesap listede yok ama kayıt o hesaba bağlıysa seçenek kalmalı:
+   * aksi hâlde form sessizce "nakit"e düşer ve dokunulmamış bir alan bozulur.
+   */
+  const bankAccounts = await getBankAccountOptions(expense.bankAccountId);
 
   return (
     <RouteDrawer
@@ -82,6 +89,7 @@ export default async function EditExpenseModal({
               defaultVatRate: child.defaultVatRate,
             })),
           ])}
+          bankAccounts={bankAccounts}
           canApprove={hasPermission(ctx.roles, "expense:approve")}
           submitLabel={tCommon("action.save")}
           defaults={{
@@ -95,6 +103,7 @@ export default async function EditExpenseModal({
             invoiceNo: expense.invoiceNo,
             expenseDate: expense.expenseDate.toISOString().slice(0, 10),
             paidVia: expense.paidVia,
+            bankAccountId: expense.bankAccountId,
             isPaid: expense.paidAt !== null,
             attachmentUrl: expense.attachmentUrl,
             status: expense.status,

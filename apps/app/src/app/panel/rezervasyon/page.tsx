@@ -97,7 +97,7 @@ export default async function ReservationsPage() {
                 tEnum.has(`resourceKind.${r.kind}`)
                   ? tEnum(`resourceKind.${r.kind}`)
                   : r.kind
-              } · ${t("capacity", { count: r.capacity ?? "—" })}`}
+              } · ${t("capacity", { value: r.capacity ?? "—" })}`}
               action={
                 canWrite ? (
                   <Link

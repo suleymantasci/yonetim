@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
@@ -115,8 +114,6 @@ export async function createAnnouncement(
   if (result.kvkk.blocked) {
     return { ok: false, message: t("blockedMessage"), kvkk };
   }
-
-  revalidatePath("/panel/duyurular");
 
   return {
     ok: true,

@@ -271,31 +271,38 @@ export function ResidentForm({
           description={t("sectionFirstUnitHint")}
           columns={1}
         >
-          <RadioGroup
-            name="relation"
-            columns={3}
-            defaultValue={relation}
-            onChange={(value) =>
-              setRelation(value as "owner" | "tenant" | "none")
-            }
-            options={[
-              {
-                value: "owner",
-                label: tEnum("occupancy.owner"),
-                description: t("relationOwnerHint"),
-              },
-              {
-                value: "tenant",
-                label: tEnum("occupancy.tenant"),
-                description: t("relationTenantHint"),
-              },
-              {
-                value: "none",
-                label: t("relationNone"),
-                description: t("relationNoneHint"),
-              },
-            ]}
-          />
+          {/*
+            `FormField` ile sarıldı: alan hatası (örneğin geçersiz ilişki
+            seçimi) daha önce hiçbir yerde görünmüyordu — form "işaretli
+            alanları düzeltin" diyor ama işaretli alan olmuyordu.
+          */}
+          <FormField name="relation" label={t("relationLabel")}>
+            <RadioGroup
+              name="relation"
+              columns={3}
+              defaultValue={relation}
+              onChange={(value) =>
+                setRelation(value as "owner" | "tenant" | "none")
+              }
+              options={[
+                {
+                  value: "owner",
+                  label: tEnum("occupancy.owner"),
+                  description: t("relationOwnerHint"),
+                },
+                {
+                  value: "tenant",
+                  label: tEnum("occupancy.tenant"),
+                  description: t("relationTenantHint"),
+                },
+                {
+                  value: "none",
+                  label: t("relationNone"),
+                  description: t("relationNoneHint"),
+                },
+              ]}
+            />
+          </FormField>
 
           {relation === "none" ? (
             <Alert tone="info">{t("relationNoneNotice")}</Alert>

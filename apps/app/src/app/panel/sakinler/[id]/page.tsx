@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import {
+  bankOverviewResponse,
   residentDetail as residentDetailSchema,
   unitOptionList,
 } from "@yonetim/contracts";
@@ -14,11 +15,12 @@ import {
   CardBody,
   CardHeader,
   Stat,
-  Tabs,
+  TabView,
   tableClasses as tc,
 } from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
+import { CollectPaymentButton } from "@/components/collect-payment";
 import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
@@ -55,12 +57,16 @@ export default async function ResidentDetailPage({
   const tUnits = await getTranslations("app.units");
   const tCommon = await getTranslations("common");
   const tEnum = await getTranslations("enum");
+  const tDebts = await getTranslations("app.debts");
   const fmt = await formatters();
 
   // KVKK erişim kaydını uç yazıyor (§8.4); burada ayrıca yazmak çift satır olurdu.
-  const [detail, units] = await Promise.all([
+  const [detail, units, bank] = await Promise.all([
     apiGet(`/v1/panel/residents/${id}`, residentDetailSchema).catch(() => null),
     apiGet("/v1/panel/units/options", unitOptionList),
+    // Tahsilat paneli için: nakit dışı yöntemde paranın girdiği hesap.
+    // Hata yutuluyor — banka modülü kapalıysa tahsilat yine girilebilmeli.
+    apiGet("/v1/panel/bank", bankOverviewResponse).catch(() => null),
   ]);
   if (!detail) notFound();
 
@@ -72,10 +78,6 @@ export default async function ResidentDetailPage({
   const name =
     [detail.firstName, detail.lastName].filter(Boolean).join(" ") ||
     t("unnamed");
-  const tabHref = (key: TabKey) =>
-    key === "ozet"
-      ? `/panel/sakinler/${id}`
-      : `/panel/sakinler/${id}?sekme=${key}`;
 
   // Birim başına bakiye: ayrılma kararında hangi birimde borç kaldığını gösterir.
   const balanceByUnit = new Map<string, number>();
@@ -114,6 +116,67 @@ export default async function ResidentDetailPage({
     (o) => o.endDate === null,
   ).length;
 
+  /*
+   * Tahsilat kutusu için birim/borç listeleri.
+   *
+   * BİTMİŞ İLİŞKİLER LİSTEDE YOK: taşınmış bir kiracının eski dairesine
+   * tahsilat girmek, parayı yanlış birimin hesabına yazmak olurdu. Borcu
+   * duruyorsa o borç birimde kalıyor ve birim ekranından tahsil ediliyor.
+   */
+  const collectUnits = detail.occupancies
+    .filter((occupancy) => occupancy.endDate === null)
+    .map((occupancy) => ({
+      id: occupancy.unitId,
+      label: occupancy.blockName
+        ? `${occupancy.blockName} / ${occupancy.unitNumber}`
+        : occupancy.unitNumber,
+    }));
+
+  const collectDebts = detail.debts
+    .filter((debt) => debt.status !== "paid")
+    .map((debt) => ({
+      id: debt.id,
+      unitId: debt.unitId,
+      label: `${debt.description}${debt.period ? ` · ${fmt.period(debt.period)}` : ""}`,
+      remaining: fmt.money(
+        debt.amountMinor + debt.lateFeeMinor - debt.paidMinor,
+      ),
+    }));
+
+  const collectBankAccounts = (bank?.accounts ?? [])
+    .filter((account) => account.isActive)
+    .map((account) => ({
+      id: account.id,
+      label: `${account.bankName}${account.ibanMasked ? ` · ${account.ibanMasked}` : ""}`,
+    }));
+
+  const collectLabels = {
+    trigger: tDebts("collectFromUnit"),
+    title: tDebts("collectTitle"),
+    hint: tDebts("collectHint"),
+    cancel: tCommon("action.cancel"),
+    submit: tDebts("collectAction"),
+    unit: tDebts("collectUnitLabel"),
+    amount: tDebts("collectAmount"),
+    method: tUnits("method"),
+    methodTransfer: tEnum("paymentMethod.bank_transfer"),
+    methodCash: tEnum("paymentMethod.cash"),
+    methodCard: tEnum("paymentMethod.card"),
+    methodOffset: tEnum("paymentMethod.offset"),
+    paidAt: tUnits("paidAt"),
+    bankAccount: tDebts("bankAccount"),
+    bankAccountHint: tDebts("bankAccountHint"),
+    bankAccountNone: tDebts("bankAccountNone"),
+    noBankAccounts: tDebts("noBankAccounts"),
+    payer: tDebts("payer"),
+    payerHint: tDebts("payerHint"),
+    receiptNo: tUnits("receiptNo"),
+    targetDebts: tDebts("targetDebts"),
+    targetDebtsHint: tDebts("targetDebtsHint"),
+    noOpenDebts: tDebts("noOpenDebts"),
+    note: tDebts("note"),
+  };
+
   return (
     <>
       <PageHeader
@@ -146,6 +209,14 @@ export default async function ResidentDetailPage({
         }
         action={
           <>
+            <CollectPaymentButton
+              units={collectUnits}
+              openDebts={collectDebts}
+              payers={[{ id, label: name }]}
+              defaultPayerId={id}
+              bankAccounts={collectBankAccounts}
+              labels={collectLabels}
+            />
             <Link
               href={`/panel/borclar/yeni?sakin=${id}`}
               className="inline-flex h-10 items-center gap-2 rounded-lg border border-border-strong bg-surface px-3 text-sm font-semibold text-fg hover:bg-hover"
@@ -182,381 +253,402 @@ export default async function ResidentDetailPage({
         <Stat label={t("activeUnits")} value={String(activeCount)} />
       </div>
 
-      <div className="mb-4">
-        <Tabs
-          activeKey={tab}
-          linkComponent={Link}
-          label={t("detailTabs")}
-          items={[
-            { key: "ozet", label: t("tabSummary"), href: tabHref("ozet") },
-            {
-              key: "birimler",
-              label: t("tabUnits"),
-              href: tabHref("birimler"),
-              count: detail.occupancies.length,
-            },
-            {
-              key: "borclar",
-              label: t("tabDebts"),
-              href: tabHref("borclar"),
-              count: detail.debts.filter((d) => d.status !== "paid").length,
-            },
-            {
-              key: "odemeler",
-              label: t("tabPayments"),
-              href: tabHref("odemeler"),
-              count: detail.payments.length,
-            },
-            {
-              key: "kvkk",
-              label: t("tabKvkk"),
-              href: tabHref("kvkk"),
-              count: detail.consents.length,
-            },
-          ]}
-        />
-      </div>
-
-      {tab === "ozet" ? (
-        <div className="grid gap-4 lg:grid-cols-2">
-          <Card>
-            <CardHeader title={t("tabSummary")} />
-            <CardBody>
-              <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
-                <Row label={t("firstName")} value={detail.firstName ?? "—"} />
-                <Row label={t("lastName")} value={detail.lastName ?? "—"} />
-                <Row label={t("phone")} value={detail.phoneMasked ?? "—"} />
-                <Row label={t("email")} value={detail.email ?? "—"} />
-                <Row label={t("tckn")} value={detail.tcknMasked ?? "—"} />
-                <Row label={t("locale")} value={detail.locale.toUpperCase()} />
-                <Row
-                  label={t("emergencyName")}
-                  value={detail.emergencyContactName ?? "—"}
-                />
-                <Row
-                  label={t("emergencyPhone")}
-                  value={detail.emergencyContactPhoneMasked ?? "—"}
-                />
-                {/*
-                  Kan grubu maskesiz: maskelenmiş bir kan grubu ("A ••")
-                  hiçbir işe yaramaz. Koruma erişim denetiminde — bu
-                  görüntüleme `saglik_bilgisi` kategorisiyle kütüğe geçiyor.
-                */}
-                <Row label={t("bloodType")} value={detail.bloodType ?? "—"} />
-                <Row
-                  label={t("createdAt")}
-                  value={fmt.date(detail.createdAt)}
-                />
-                <Row
-                  label={t("lastLogin")}
-                  value={
-                    detail.lastLoginAt
-                      ? fmt.dateTime(detail.lastLoginAt)
-                      : t("neverLoggedIn")
-                  }
-                />
-              </dl>
-              {detail.notes ? (
-                <div className="mt-4 rounded-lg bg-surface-sunken p-3 text-sm text-fg-muted">
-                  <span className="block text-xs font-semibold uppercase tracking-wide text-fg-subtle">
-                    {t("notes")}
-                  </span>
-                  {detail.notes}
-                </div>
-              ) : null}
-            </CardBody>
-          </Card>
-
-          <Card>
-            <CardHeader
-              title={t("tabUnits")}
-              description={t("unitsSummaryHint")}
-            />
-            <CardBody className="p-0">
-              {occupancyViews.length === 0 ? (
-                <p className="p-6 text-center text-sm text-fg-subtle">
-                  {t("noUnits")}
-                </p>
-              ) : (
-                <ul className="divide-y divide-border">
-                  {occupancyViews.map((occupancy) => (
-                    <li
-                      key={occupancy.occupancyId}
-                      className="flex items-center justify-between gap-3 p-4"
-                    >
-                      <div className="min-w-0">
-                        <Link
-                          href={`/panel/birimler/${occupancy.unitId}`}
-                          className="text-sm font-medium text-fg hover:underline"
-                        >
-                          {occupancy.unitLabel}
-                        </Link>
-                        <p className="text-xs text-fg-subtle">
-                          {occupancy.relationLabel} · {occupancy.startDate}
-                          {occupancy.endDate ? ` → ${occupancy.endDate}` : ""}
-                        </p>
+      <TabView
+        initialKey={tab}
+        label={t("detailTabs")}
+        defaultKey="ozet"
+        items={[
+          {
+            key: "ozet",
+            label: t("tabSummary"),
+            panel: (
+              <div className="grid gap-4 lg:grid-cols-2">
+                <Card>
+                  <CardHeader title={t("tabSummary")} />
+                  <CardBody>
+                    <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+                      <Row
+                        label={t("firstName")}
+                        value={detail.firstName ?? "—"}
+                      />
+                      <Row
+                        label={t("lastName")}
+                        value={detail.lastName ?? "—"}
+                      />
+                      <Row
+                        label={t("phone")}
+                        value={detail.phoneMasked ?? "—"}
+                      />
+                      <Row label={t("email")} value={detail.email ?? "—"} />
+                      <Row label={t("tckn")} value={detail.tcknMasked ?? "—"} />
+                      <Row
+                        label={t("locale")}
+                        value={detail.locale.toUpperCase()}
+                      />
+                      <Row
+                        label={t("emergencyName")}
+                        value={detail.emergencyContactName ?? "—"}
+                      />
+                      <Row
+                        label={t("emergencyPhone")}
+                        value={detail.emergencyContactPhoneMasked ?? "—"}
+                      />
+                      {/*
+                      Kan grubu maskesiz: maskelenmiş bir kan grubu ("A ••")
+                      hiçbir işe yaramaz. Koruma erişim denetiminde — bu
+                      görüntüleme `saglik_bilgisi` kategorisiyle kütüğe geçiyor.
+                    */}
+                      <Row
+                        label={t("bloodType")}
+                        value={detail.bloodType ?? "—"}
+                      />
+                      <Row
+                        label={t("createdAt")}
+                        value={fmt.date(detail.createdAt)}
+                      />
+                      <Row
+                        label={t("lastLogin")}
+                        value={
+                          detail.lastLoginAt
+                            ? fmt.dateTime(detail.lastLoginAt)
+                            : t("neverLoggedIn")
+                        }
+                      />
+                    </dl>
+                    {detail.notes ? (
+                      <div className="mt-4 rounded-lg bg-surface-sunken p-3 text-sm text-fg-muted">
+                        <span className="block text-xs font-semibold uppercase tracking-wide text-fg-subtle">
+                          {t("notes")}
+                        </span>
+                        {detail.notes}
                       </div>
-                      <span
-                        className={`shrink-0 text-sm tabular-nums ${
-                          occupancy.hasOutstanding
-                            ? "font-semibold text-danger-fg"
-                            : "text-fg-muted"
-                        }`}
-                      >
-                        {occupancy.outstanding}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardBody>
-          </Card>
-        </div>
-      ) : null}
+                    ) : null}
+                  </CardBody>
+                </Card>
 
-      {tab === "birimler" ? (
-        <OccupancyManager
-          userId={id}
-          occupancies={occupancyViews}
-          units={units.map((unit) => ({
-            id: unit.id,
-            number: unit.number,
-            blockName: unit.blockName,
-          }))}
-          labels={{
-            title: t("tabUnits"),
-            hint: t("occupancyHint"),
-            unit: t("unit"),
-            relation: t("relation"),
-            relationOwner: tEnum("occupancy.owner"),
-            relationTenant: tEnum("occupancy.tenant"),
-            sharePct: t("ownershipPct"),
-            startDate: t("startDate"),
-            endDate: t("endDate"),
-            policy: t("debtTransferPolicy"),
-            ongoing: t("ongoing"),
-            empty: t("noUnits"),
-            addTitle: t("addOccupancy"),
-            addHint: t("addOccupancyHint"),
-            endTitle: t("endOccupancyTitle"),
-            endHint: t("endOccupancyHint"),
-            endAction: t("endOccupancyAction"),
-            outstandingWarning: t("endOccupancyDebtWarning"),
-            transferLabel: t("transferLabel"),
-            transferHint: t("debtTransferPolicyHint"),
-            transferOwner: t("transferPolicy.owner"),
-            transferNextTenant: t("transferPolicy.next_tenant"),
-            transferKeep: t("transferPolicy.keep"),
-            reason: t("transferReason"),
-            reasonHint: t("transferReasonHint"),
-            ownershipPct: t("ownershipPct"),
-            ownershipPctHint: t("ownershipPctHint"),
-            selectUnit: t("selectUnit"),
-            searchUnit: t("searchUnit"),
-            noUnitFound: t("noUnitFound"),
-            outstanding: t("outstanding"),
-            contract: t("contract"),
-          }}
-        />
-      ) : null}
-
-      {tab === "borclar" ? (
-        <Card>
-          <CardHeader title={t("tabDebts")} description={t("debtsHint")} />
-          <CardBody className="p-0">
-            <div className={tc.wrapper}>
-              <table className={tc.table} style={{ minWidth: 780 }}>
-                <thead className={tc.thead}>
-                  <tr>
-                    <th scope="col" className={tc.th}>
-                      {t("unit")}
-                    </th>
-                    <th scope="col" className={tc.th}>
-                      {tUnits("debtDescription")}
-                    </th>
-                    <th scope="col" className={tc.th}>
-                      {tUnits("period")}
-                    </th>
-                    <th scope="col" className={`${tc.th} text-right`}>
-                      {tUnits("amount")}
-                    </th>
-                    <th scope="col" className={`${tc.th} text-right`}>
-                      {tUnits("paid")}
-                    </th>
-                    <th scope="col" className={tc.th}>
-                      {tUnits("dueDate")}
-                    </th>
-                    <th scope="col" className={tc.th}>
-                      {t("status")}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {detail.debts.length === 0 ? (
-                    <tr>
-                      <td colSpan={7} className={tc.empty}>
-                        {tUnits("noDebts")}
-                      </td>
-                    </tr>
-                  ) : (
-                    detail.debts.map((debt) => (
-                      <tr key={debt.id} className={tc.tr}>
-                        <td className={tc.td}>{debt.unitNumber}</td>
-                        <td className={`${tc.td} font-medium`}>
-                          <Link
-                            href={`/panel/borclar/${debt.id}`}
-                            className="hover:underline"
+                <Card>
+                  <CardHeader
+                    title={t("tabUnits")}
+                    description={t("unitsSummaryHint")}
+                  />
+                  <CardBody className="p-0">
+                    {occupancyViews.length === 0 ? (
+                      <p className="p-6 text-center text-sm text-fg-subtle">
+                        {t("noUnits")}
+                      </p>
+                    ) : (
+                      <ul className="divide-y divide-border">
+                        {occupancyViews.map((occupancy) => (
+                          <li
+                            key={occupancy.occupancyId}
+                            className="flex items-center justify-between gap-3 p-4"
                           >
-                            {debt.description}
-                          </Link>
-                        </td>
-                        <td className={tc.tdMuted}>
-                          {debt.period ? fmt.period(debt.period) : "—"}
-                        </td>
-                        <td className={tc.tdNum}>
-                          {fmt.money(debt.amountMinor)}
-                        </td>
-                        <td className={tc.tdNum}>
-                          {fmt.money(debt.paidMinor)}
-                        </td>
-                        <td className={tc.td}>{fmt.date(debt.dueDate)}</td>
-                        <td className={tc.td}>
-                          <Badge tone={debtTone(debt.status)}>
-                            {tEnum(`debtStatus.${debt.status}`)}
-                          </Badge>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardBody>
-        </Card>
-      ) : null}
-
-      {tab === "odemeler" ? (
-        <Card>
-          <CardHeader
-            title={t("tabPayments")}
-            description={t("paymentsHint")}
-          />
-          <CardBody className="p-0">
-            <div className={tc.wrapper}>
-              <table className={tc.table} style={{ minWidth: 720 }}>
-                <thead className={tc.thead}>
-                  <tr>
-                    <th scope="col" className={tc.th}>
-                      {tUnits("paidAt")}
-                    </th>
-                    <th scope="col" className={`${tc.th} text-right`}>
-                      {tUnits("amount")}
-                    </th>
-                    <th scope="col" className={tc.th}>
-                      {tUnits("method")}
-                    </th>
-                    <th scope="col" className={tc.th}>
-                      {t("status")}
-                    </th>
-                    <th scope="col" className={tc.th}>
-                      {t("onBehalfOf")}
-                    </th>
-                    <th scope="col" className={tc.th}>
-                      {tUnits("receiptNo")}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {detail.payments.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className={tc.empty}>
-                        {tUnits("noPayments")}
-                      </td>
-                    </tr>
-                  ) : (
-                    detail.payments.map((payment) => (
-                      <tr key={payment.id} className={tc.tr}>
-                        <td className={tc.td}>
-                          {payment.paidAt ? fmt.dateTime(payment.paidAt) : "—"}
-                        </td>
-                        <td className={tc.tdNum}>
-                          {fmt.money(payment.amountMinor)}
-                        </td>
-                        <td className={tc.td}>
-                          {tEnum(`paymentMethod.${payment.method}`)}
-                        </td>
-                        <td className={tc.td}>
-                          <Badge
-                            tone={
-                              payment.status === "completed"
-                                ? "success"
-                                : "neutral"
-                            }
-                          >
-                            {tEnum(`paymentStatus.${payment.status}`)}
-                          </Badge>
-                        </td>
-                        <td className={tc.tdMuted}>
-                          {payment.onBehalfOf ? (
-                            <span className="inline-flex items-center gap-1">
-                              <Badge tone="info">{t("onBehalfBadge")}</Badge>
-                              {payment.onBehalfOf}
+                            <div className="min-w-0">
+                              <Link
+                                href={`/panel/birimler/${occupancy.unitId}`}
+                                className="text-sm font-medium text-fg hover:underline"
+                              >
+                                {occupancy.unitLabel}
+                              </Link>
+                              <p className="text-xs text-fg-subtle">
+                                {occupancy.relationLabel} ·{" "}
+                                {occupancy.startDate}
+                                {occupancy.endDate
+                                  ? ` → ${occupancy.endDate}`
+                                  : ""}
+                              </p>
+                            </div>
+                            <span
+                              className={`shrink-0 text-sm tabular-nums ${
+                                occupancy.hasOutstanding
+                                  ? "font-semibold text-danger-fg"
+                                  : "text-fg-muted"
+                              }`}
+                            >
+                              {occupancy.outstanding}
                             </span>
-                          ) : (
-                            "—"
-                          )}
-                        </td>
-                        <td className={tc.tdMuted}>
-                          {payment.receiptNo ?? "—"}
-                        </td>
-                      </tr>
-                    ))
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </CardBody>
+                </Card>
+              </div>
+            ),
+          },
+          {
+            key: "birimler",
+            label: t("tabUnits"),
+            count: detail.occupancies.length,
+            panel: (
+              <OccupancyManager
+                userId={id}
+                occupancies={occupancyViews}
+                units={units.map((unit) => ({
+                  id: unit.id,
+                  number: unit.number,
+                  blockName: unit.blockName,
+                }))}
+                labels={{
+                  title: t("tabUnits"),
+                  hint: t("occupancyHint"),
+                  unit: t("unit"),
+                  relation: t("relation"),
+                  relationOwner: tEnum("occupancy.owner"),
+                  relationTenant: tEnum("occupancy.tenant"),
+                  sharePct: t("ownershipPct"),
+                  startDate: t("startDate"),
+                  endDate: t("endDate"),
+                  policy: t("debtTransferPolicy"),
+                  ongoing: t("ongoing"),
+                  empty: t("noUnits"),
+                  addTitle: t("addOccupancy"),
+                  addHint: t("addOccupancyHint"),
+                  endTitle: t("endOccupancyTitle"),
+                  endHint: t("endOccupancyHint"),
+                  endAction: t("endOccupancyAction"),
+                  outstandingWarning: t("endOccupancyDebtWarning"),
+                  transferLabel: t("transferLabel"),
+                  transferHint: t("debtTransferPolicyHint"),
+                  transferOwner: t("transferPolicy.owner"),
+                  transferNextTenant: t("transferPolicy.next_tenant"),
+                  transferKeep: t("transferPolicy.keep"),
+                  reason: t("transferReason"),
+                  reasonHint: t("transferReasonHint"),
+                  ownershipPct: t("ownershipPct"),
+                  ownershipPctHint: t("ownershipPctHint"),
+                  selectUnit: t("selectUnit"),
+                  searchUnit: t("searchUnit"),
+                  noUnitFound: t("noUnitFound"),
+                  outstanding: t("outstanding"),
+                  contract: t("contract"),
+                }}
+              />
+            ),
+          },
+          {
+            key: "borclar",
+            label: t("tabDebts"),
+            count: detail.debts.filter((d) => d.status !== "paid").length,
+            panel: (
+              <Card>
+                <CardHeader
+                  title={t("tabDebts")}
+                  description={t("debtsHint")}
+                />
+                <CardBody className="p-0">
+                  <div className={tc.wrapper}>
+                    <table className={tc.table} style={{ minWidth: 780 }}>
+                      <thead className={tc.thead}>
+                        <tr>
+                          <th scope="col" className={tc.th}>
+                            {t("unit")}
+                          </th>
+                          <th scope="col" className={tc.th}>
+                            {tUnits("debtDescription")}
+                          </th>
+                          <th scope="col" className={tc.th}>
+                            {tUnits("period")}
+                          </th>
+                          <th scope="col" className={`${tc.th} text-right`}>
+                            {tUnits("amount")}
+                          </th>
+                          <th scope="col" className={`${tc.th} text-right`}>
+                            {tUnits("paid")}
+                          </th>
+                          <th scope="col" className={tc.th}>
+                            {tUnits("dueDate")}
+                          </th>
+                          <th scope="col" className={tc.th}>
+                            {t("status")}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {detail.debts.length === 0 ? (
+                          <tr>
+                            <td colSpan={7} className={tc.empty}>
+                              {tUnits("noDebts")}
+                            </td>
+                          </tr>
+                        ) : (
+                          detail.debts.map((debt) => (
+                            <tr key={debt.id} className={tc.tr}>
+                              <td className={tc.td}>{debt.unitNumber}</td>
+                              <td className={`${tc.td} font-medium`}>
+                                <Link
+                                  href={`/panel/borclar/${debt.id}`}
+                                  className="hover:underline"
+                                >
+                                  {debt.description}
+                                </Link>
+                              </td>
+                              <td className={tc.tdMuted}>
+                                {debt.period ? fmt.period(debt.period) : "—"}
+                              </td>
+                              <td className={tc.tdNum}>
+                                {fmt.money(debt.amountMinor)}
+                              </td>
+                              <td className={tc.tdNum}>
+                                {fmt.money(debt.paidMinor)}
+                              </td>
+                              <td className={tc.td}>
+                                {fmt.date(debt.dueDate)}
+                              </td>
+                              <td className={tc.td}>
+                                <Badge tone={debtTone(debt.status)}>
+                                  {tEnum(`debtStatus.${debt.status}`)}
+                                </Badge>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardBody>
+              </Card>
+            ),
+          },
+          {
+            key: "odemeler",
+            label: t("tabPayments"),
+            count: detail.payments.length,
+            panel: (
+              <Card>
+                <CardHeader
+                  title={t("tabPayments")}
+                  description={t("paymentsHint")}
+                />
+                <CardBody className="p-0">
+                  <div className={tc.wrapper}>
+                    <table className={tc.table} style={{ minWidth: 720 }}>
+                      <thead className={tc.thead}>
+                        <tr>
+                          <th scope="col" className={tc.th}>
+                            {tUnits("paidAt")}
+                          </th>
+                          <th scope="col" className={`${tc.th} text-right`}>
+                            {tUnits("amount")}
+                          </th>
+                          <th scope="col" className={tc.th}>
+                            {tUnits("method")}
+                          </th>
+                          <th scope="col" className={tc.th}>
+                            {t("status")}
+                          </th>
+                          <th scope="col" className={tc.th}>
+                            {t("onBehalfOf")}
+                          </th>
+                          <th scope="col" className={tc.th}>
+                            {tUnits("receiptNo")}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {detail.payments.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} className={tc.empty}>
+                              {tUnits("noPayments")}
+                            </td>
+                          </tr>
+                        ) : (
+                          detail.payments.map((payment) => (
+                            <tr key={payment.id} className={tc.tr}>
+                              <td className={tc.td}>
+                                {payment.paidAt
+                                  ? fmt.dateTime(payment.paidAt)
+                                  : "—"}
+                              </td>
+                              <td className={tc.tdNum}>
+                                {fmt.money(payment.amountMinor)}
+                              </td>
+                              <td className={tc.td}>
+                                {tEnum(`paymentMethod.${payment.method}`)}
+                              </td>
+                              <td className={tc.td}>
+                                <Badge
+                                  tone={
+                                    payment.status === "completed"
+                                      ? "success"
+                                      : "neutral"
+                                  }
+                                >
+                                  {tEnum(`paymentStatus.${payment.status}`)}
+                                </Badge>
+                              </td>
+                              <td className={tc.tdMuted}>
+                                {payment.onBehalfOf ? (
+                                  <span className="inline-flex items-center gap-1">
+                                    <Badge tone="info">
+                                      {t("onBehalfBadge")}
+                                    </Badge>
+                                    {payment.onBehalfOf}
+                                  </span>
+                                ) : (
+                                  "—"
+                                )}
+                              </td>
+                              <td className={tc.tdMuted}>
+                                {payment.receiptNo ?? "—"}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardBody>
+              </Card>
+            ),
+          },
+          {
+            key: "kvkk",
+            label: t("tabKvkk"),
+            count: detail.consents.length,
+            panel: (
+              <Card>
+                <CardHeader title={t("tabKvkk")} description={t("kvkkHint")} />
+                <CardBody className="p-0">
+                  {detail.consents.length === 0 ? (
+                    <p className="p-6 text-center text-sm text-fg-subtle">
+                      {t("noConsents")}
+                    </p>
+                  ) : (
+                    <ul className="divide-y divide-border">
+                      {detail.consents.map((consent, index) => (
+                        <li
+                          key={`${consent.kind}-${index}`}
+                          className="flex items-center justify-between gap-3 p-4"
+                        >
+                          <div className="min-w-0">
+                            <span className="block text-sm font-medium text-fg">
+                              {t(`consentKind.${consent.kind}`)}
+                            </span>
+                            <span className="text-xs text-fg-subtle">
+                              {t("consentVersion", {
+                                version: consent.documentVersion,
+                              })}
+                              {consent.at
+                                ? ` · ${fmt.dateTime(consent.at)}`
+                                : ""}
+                            </span>
+                          </div>
+                          <Badge tone={consent.granted ? "success" : "danger"}>
+                            {consent.granted
+                              ? t("consentGranted")
+                              : t("consentRevoked")}
+                          </Badge>
+                        </li>
+                      ))}
+                    </ul>
                   )}
-                </tbody>
-              </table>
-            </div>
-          </CardBody>
-        </Card>
-      ) : null}
-
-      {tab === "kvkk" ? (
-        <Card>
-          <CardHeader title={t("tabKvkk")} description={t("kvkkHint")} />
-          <CardBody className="p-0">
-            {detail.consents.length === 0 ? (
-              <p className="p-6 text-center text-sm text-fg-subtle">
-                {t("noConsents")}
-              </p>
-            ) : (
-              <ul className="divide-y divide-border">
-                {detail.consents.map((consent, index) => (
-                  <li
-                    key={`${consent.kind}-${index}`}
-                    className="flex items-center justify-between gap-3 p-4"
-                  >
-                    <div className="min-w-0">
-                      <span className="block text-sm font-medium text-fg">
-                        {t(`consentKind.${consent.kind}`)}
-                      </span>
-                      <span className="text-xs text-fg-subtle">
-                        {t("consentVersion", {
-                          version: consent.documentVersion,
-                        })}
-                        {consent.at ? ` · ${fmt.dateTime(consent.at)}` : ""}
-                      </span>
-                    </div>
-                    <Badge tone={consent.granted ? "success" : "danger"}>
-                      {consent.granted
-                        ? t("consentGranted")
-                        : t("consentRevoked")}
-                    </Badge>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardBody>
-        </Card>
-      ) : null}
+                </CardBody>
+              </Card>
+            ),
+          },
+        ]}
+      />
     </>
   );
 }
