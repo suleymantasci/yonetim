@@ -8,12 +8,16 @@ import {
   otpVerify,
   refreshRequest,
   tenantSwitch,
+  webLoginOtpVerify,
   webLoginRequest,
   webLoginVerify,
+  webPasswordLogin,
   type AuthMe,
   type TenantSwitch,
+  type WebLoginOtpVerify,
   type WebLoginRequest,
   type WebLoginVerify,
+  type WebPasswordLogin,
   type OtpRequest,
   type OtpVerify,
 } from "@yonetim/contracts";
@@ -47,7 +51,44 @@ export class AuthController {
   ) {}
 
   /* ---------------------------------------------------------------- *
-   * Web (parolasız) — magic link + SMS OTP
+   * Web (parola) — parola + opsiyonel OTP
+   * ---------------------------------------------------------------- */
+
+  @Public()
+  @Post("web/password")
+  @ApiOperation({
+    summary: "Parola ile giriş",
+    description:
+      "İkinci adım gerekip gerekmediğine sunucu karar verir " +
+      "(`AUTH_OTP_ENABLED`): yanıt `status: 'session'` ise oturum açılmıştır, " +
+      "`status: 'otp_required'` ise kod gönderilmiştir ve oturum " +
+      "`web/password/otp` ile açılır. Kayıtsız kimlik, parolası olmayan hesap " +
+      "ve yanlış parola **aynı** 401'i döner: farklı cevap vermek, ucu 'bu " +
+      "kişi kayıtlı mı' sorusunun sorulabildiği bir yüzeye çevirirdi.",
+  })
+  webPassword(
+    @Body(new ZodBodyPipe(webPasswordLogin)) dto: WebPasswordLogin,
+  ) {
+    return this.web.loginWithPassword(dto);
+  }
+
+  @Public()
+  @Post("web/password/otp")
+  @ApiOperation({
+    summary: "Parolalı girişin ikinci adımı — kodu oturuma çevir",
+    description:
+      "Kodun amacı `login_otp`; `web/request` ile parola bilmeden alınan bir " +
+      "OTP burada geçmez — geçseydi ikinci faktör, birincisini atlamanın yolu " +
+      "olurdu.",
+  })
+  webPasswordOtp(
+    @Body(new ZodBodyPipe(webLoginOtpVerify)) dto: WebLoginOtpVerify,
+  ) {
+    return this.web.verifyLoginOtp(dto);
+  }
+
+  /* ---------------------------------------------------------------- *
+   * Web (parolasız) — magic link + SMS OTP: kayıt doğrulaması ve kurtarma
    * ---------------------------------------------------------------- */
 
   @Public()

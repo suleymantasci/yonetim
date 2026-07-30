@@ -1060,6 +1060,63 @@ oturum hâlâ 200 dönüyordu); iki yer birden düzeltildi.
 
 ---
 
+## 5.11 Giriş parolaya taşındı, OTP tek bayrağa bağlandı (2026-07-30)
+
+**Karar:** giriş artık **parola** soruyor. Tek kullanımlık kod ikinci adım ve
+`AUTH_OTP_ENABLED` ile açılıp kapanıyor (varsayılan `false`).
+
+**Neden:** SMS sağlayıcısı (Netgsm / İleti Merkezi) henüz sözleşmeye
+bağlanmadı ve ikisi de boş. Boş bırakıldığında `packages/sms` konsola yazan
+sağlayıcıya düşüyor — yani parolasız giriş, üretimde **kimsenin göremeyeceği**
+bir koda dayanıyordu. Parola bu bağımlılığı kaldırıyor; sağlayıcı bağlanınca
+ikinci faktör tek satır ortam değişkeniyle açılıyor.
+
+### 5.11.1 Yapılanlar
+
+- `POST /v1/auth/web/password` → yanıt `status: "session"` (oturum açıldı) ya
+  da `status: "otp_required"` (kod gönderildi). **Bayrağı yalnız sunucu
+  okuyor**: panel de okusaydı, oturumun açılıp açılmayacağı iki sürecin aynı
+  değişkeni doğru okumasına bağlı olurdu.
+- `POST /v1/auth/web/password/otp` → ikinci adım. Kodun amacı `login_otp`,
+  parolasız akışın `otp`'sinden **ayrı**: aynı havuzu paylaşsalardı
+  `web/request` ile parola bilmeden alınan bir kod ikinci faktörü geçerdi.
+- Kayıt (`/kayit`) artık parola alıyor ve `checkPasswordPolicy` sunucuda
+  uygulanıyor. Parola **yalnız yeni kullanıcıda** yazılıyor — var olan kaydın
+  parolasını kayıt formundan ezmek, başkasının e-postasıyla hesap devralmak
+  olurdu.
+- `POST /v1/panel/portal/profile/password` + "Bilgilerim" ekranında parola
+  kutusu. Parolası olanda mevcut parola zorunlu, olmayanda değil; kural şemada
+  değil serviste, çünkü "parolası var mı" sorusunun cevabı veritabanında.
+- Kullanıcı sayımına (enumeration) karşı: kayıtsız kimlik, parolasız hesap ve
+  yanlış parola aynı 401'i veriyor **ve** kullanıcı bulunamadığında da scrypt
+  çalıştırılıyor (`burnPasswordTime`). Aksi hâlde fark yanıt metninden değil
+  **süresinden** okunurdu.
+- Seed demo yöneticisine parola veriyor (`SEED_DEMO_PASSWORD`, varsayılan
+  `OrnekSite2026`) ve konsola yazıyor.
+
+### 5.11.2 Bilerek korunan yol ve kabul edilen risk
+
+Parolasız akış (`web/request` + `web/verify`) **kaldırılmadı**: kayıt
+doğrulaması ve "parolamı bilmiyorum" kurtarması ondan geçiyor, ilk parolayı
+belirlemenin başka yolu yok. Karşılığı şu: e-posta kutusuna (ya da hatta)
+erişen biri parolayı bilmeden de girebiliyor. Kapatmak isteniyorsa kurtarma
+akışının ayrı bir bayrağa bağlanması gerekir — o zaman parolasını unutan
+kullanıcının tek çıkışı yönetici olur.
+
+### 5.11.3 Uçlar veritabanına karşı koşuldu
+
+§5.10.4'ün dersi uygulandı; sekiz senaryo curl + psql ile doğrulandı: doğru
+parola (oturum), yanlış parola ve olmayan kullanıcı (aynı 401), OTP açıkken
+`otp_required` → konsol SMS kodu → oturum, aynı kodun ikinci kullanımı
+(`used`), parolasız akıştan alınan kodun ikinci adımda reddi (`wrongPurpose`),
+parola değiştirme (mevcut parola yok/yanlış/zayıf/geçerli) ve parolası olmayan
+kullanıcının ilk parolasını belirlemesi. Bu turda yeni hata çıkmadı.
+
+**Açık kalan:** bu akışın entegrasyon testi yok; `tests/integration`'a hem
+`AUTH_OTP_ENABLED` kapalı hem açık durumla eklenmeli.
+
+---
+
 ## 6. Bekleyen ürün kararları (Track E — teknik altyapı hazır, karar bekliyor)
 
 Bu maddeler **yapılmadı** çünkü kod değil, iş kararı eksik. Karar verilirse

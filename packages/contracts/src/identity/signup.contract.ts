@@ -49,6 +49,17 @@ export const signupStart = z.object({
   /** E-posta ya da telefon — giriş akışındaki `authIdentifier` ile aynı kural. */
   identifier: authIdentifier,
 
+  /**
+   * Giriş parolası — kayıt anında **zorunlu**.
+   *
+   * Giriş artık parola soruyor (`POST /v1/auth/web/password`); parolasız açılan
+   * bir hesap, sahibinin ancak kurtarma akışıyla girebildiği bir hesap olurdu.
+   * Uzunluk kuralı burada, güç kuralı (`checkPasswordPolicy`) sunucuda: şemanın
+   * "büyük harf içermeli" gibi bir kuralı taşıması, aynı kuralın parola
+   * değiştirme ucunda ikinci kez yazılması demekti.
+   */
+  password: z.string().min(10).max(200),
+
   /** Pazarlama kampanyası (`/kayit?kampanya=`) ve rakip geçişi (`?gecis=`). */
   campaign: z.string().trim().max(60).optional(),
   migrationSource: z.string().trim().max(60).optional(),

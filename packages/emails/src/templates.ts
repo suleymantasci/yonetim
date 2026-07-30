@@ -121,6 +121,32 @@ export function magicLinkEmail(
   };
 }
 
+/**
+ * Parolalı girişin ikinci adımı — tek kullanımlık kod.
+ *
+ * Magic link'ten farkı **bağlantı taşımaması**: burada kod, parolayı zaten
+ * doğrulamış birinin ikinci faktörü. Tıklanabilir bir bağlantı koymak, e-posta
+ * kutusuna erişen birinin parolayı hiç bilmeden içeri girmesi demekti —
+ * ikinci faktör olmaktan çıkıp tek faktöre dönerdi.
+ */
+export function loginCodeEmail(
+  t: Translator,
+  params: { code: string; expiresMinutes: number },
+): EmailContent {
+  return {
+    subject: t("email.loginCode.subject"),
+    html: layout({
+      t,
+      title: t("email.loginCode.title"),
+      bodyHtml:
+        `<p style="font-size:28px;font-weight:700;letter-spacing:6px;margin:8px 0">` +
+        `${escapeHtml(params.code)}</p>` +
+        `<p>${escapeHtml(t("email.loginCode.body1", { minutes: params.expiresMinutes }))}</p>` +
+        `<p>${escapeHtml(t("email.loginCode.body2"))}</p>`,
+    }),
+  };
+}
+
 export function duesReminderEmail(
   t: Translator,
   params: {

@@ -102,7 +102,7 @@
     "subtitleManagerAndResident": "Yönetici ve sakin girişi",
     "subtitleForProperty": "{property} sakin ve yönetici girişi",
     "identifierLabel": "E-posta veya cep telefonu",
-    "identifierHint": "E-posta girerseniz giriş bağlantısı, telefon girerseniz SMS kodu gönderilir.",
+    "identifierHint": "Hesabınızı açarken kullandığınız e-posta ya da cep telefonu.",
     "identifierPlaceholder": "ornek@eposta.com veya 0532 000 00 00",
     "sendCode": "Giriş kodu gönder",
     "codeLabel": "Doğrulama kodu",
@@ -126,7 +126,16 @@
       "used": "Kod daha önce kullanılmış.",
       "expired": "Kodun süresi dolmuş.",
       "wrongPurpose": "Kod bu işlem için geçersiz."
-    }
+    },
+    "passwordLabel": "Parola",
+    "credentialsIncomplete": "E-posta/telefon ve parolanızı giriniz.",
+    "invalidCredentials": "E-posta/telefon ya da parola hatalı.",
+    "forgotPassword": "Parolamı bilmiyorum",
+    "backToPassword": "Parola ile girişe dön",
+    "recoveryIntro": "Size tek kullanımlık bir giriş bağlantısı/kodu gönderelim. Girdikten sonra Bilgilerim ekranından parolanızı belirleyebilirsiniz.",
+    "otpEmailSent": "Parolanız doğrulandı. Doğrulama kodunu e-posta adresinize gönderdik; kod 5 dakika geçerlidir.",
+    "otpSmsSent": "Parolanız doğrulandı. Doğrulama kodunu telefonunuza gönderdik; kod 5 dakika geçerlidir.",
+    "codeNotSent": "Doğrulama kodu gönderilemedi. Lütfen biraz sonra tekrar deneyin."
   },
   "dashboard": {
     "greeting": "Merhaba, {property}",
@@ -2440,7 +2449,16 @@
     "phoneChanged": "Telefon numaranız güncellendi. Bundan sonra giriş kodu yeni numaranıza gelecek.",
     "phoneTaken": "Bu numara başka bir hesapta kayıtlı. Sizin numaranızsa site yönetiminize başvurun.",
     "phoneUnchanged": "Bu zaten kayıtlı numaranız.",
-    "phoneCodeInvalid": "Kod geçersiz ya da süresi dolmuş. Yeni bir kod isteyin."
+    "phoneCodeInvalid": "Kod geçersiz ya da süresi dolmuş. Yeni bir kod isteyin.",
+    "passwordTitle": "Parola",
+    "passwordHint": "Girişte kullandığınız parola. Parolanız yoksa mevcut parolayı boş bırakın.",
+    "currentPassword": "Mevcut parola",
+    "newPassword": "Yeni parola",
+    "newPasswordHint": "En az 10 karakter; büyük harf, küçük harf ve rakam içermeli.",
+    "savePassword": "Parolayı kaydet",
+    "passwordSaved": "Parolanız güncellendi.",
+    "currentPasswordInvalid": "Mevcut parola hatalı.",
+    "weakPassword": "Parola yeterince güçlü değil: en az 10 karakter, büyük harf, küçük harf ve rakam."
   },
   "managementInfo": {
     "title": "Yönetim Bilgileri",
@@ -2507,7 +2525,8 @@
       "unitCount": "Daire sayısı",
       "city": "Şehir",
       "fullName": "Ad soyad",
-      "identifier": "E-posta veya telefon"
+      "identifier": "E-posta veya telefon",
+      "password": "Parola"
     },
     "propertyPlaceholder": "Örn. Yeşilvadi Sitesi",
     "identifierHint": "Giriş kodunuz buraya gönderilecek.",
@@ -2524,7 +2543,9 @@
     "checkFields": "Lütfen işaretli alanları kontrol edin.",
     "invalidField": "Bu alanı kontrol edin.",
     "invalidIdentifier": "E-posta veya telefon geçersiz.",
-    "tooManyAttempts": "Çok fazla deneme yapıldı. Lütfen biraz sonra tekrar deneyin."
+    "tooManyAttempts": "Çok fazla deneme yapıldı. Lütfen biraz sonra tekrar deneyin.",
+    "passwordHint": "En az 10 karakter; büyük harf, küçük harf ve rakam içermeli. Girişte bu parolayı kullanacaksınız.",
+    "weakPassword": "Parola yeterince güçlü değil: en az 10 karakter, büyük harf, küçük harf ve rakam."
   },
   "accessRequest": {
     "title": "Sakin erişim talebi",

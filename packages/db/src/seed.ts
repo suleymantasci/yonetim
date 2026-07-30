@@ -1,4 +1,4 @@
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID, scryptSync } from "node:crypto";
 
 import { tlToKurus } from "@yonetim/core";
 import { planForUnitCount } from "@yonetim/pricing";
@@ -97,6 +97,30 @@ async function main() {
   await closeDb();
 }
 
+/**
+ * Demo yöneticisinin giriş parolası.
+ *
+ * PAROLA NEDEN GEREKLİ: giriş artık parola soruyor (`POST
+ * /v1/auth/web/password`). Parolasız açılan bir demo hesabı, seed'i çalıştıran
+ * geliştiricinin ancak SMS/e-posta yapılandırıp kurtarma akışından girebildiği
+ * bir hesap olurdu — yapılandırılmamış kurulumda kodu yalnız sunucu logunda
+ * görebilirdi.
+ */
+const DEMO_PASSWORD = process.env.SEED_DEMO_PASSWORD ?? "OrnekSite2026";
+
+/**
+ * `packages/auth`'daki `hashPassword` ile **aynı** biçim (`scrypt$salt$hash`).
+ *
+ * Kopya, seçilmiş bir bağımlılık kısıtı: `@yonetim/auth` zaten `@yonetim/db`'ye
+ * bağlı, ters yönde bir bağımlılık eklemek iki paketi birbirine kilitlerdi.
+ * Biçim değişirse burası da değişmeli — bu yüzden format tek satırda ve
+ * göz önünde.
+ */
+function hashPasswordSync(password: string): string {
+  const salt = randomBytes(16);
+  return `scrypt$${salt.toString("base64")}$${scryptSync(password, salt, 64).toString("base64")}`;
+}
+
 async function seedDemoTenant() {
   console.log("→ Demo site oluşturuluyor...");
   const tenantId = randomUUID();
@@ -112,7 +136,15 @@ async function seedDemoTenant() {
       firstName: "Ali",
       lastName: "Yönetici",
       locale: "tr",
-    }).onConflictDoNothing();
+      passwordHash: hashPasswordSync(DEMO_PASSWORD),
+      // Parola çakışmada da yazılıyor (diğer alanlar değil): demo hesabı zaten
+      // duran bir veritabanında `onConflictDoNothing` parolayı hiç eklemezdi
+      // ve seed'i yeniden çalıştıran geliştirici, "parolayı seed veriyor" yazan
+      // bir kurulumda giriş yapamazdı.
+    }).onConflictDoUpdate({
+      target: users.email,
+      set: { passwordHash: hashPasswordSync(DEMO_PASSWORD) },
+    });
 
     const [planRow] = await tx.select().from(plans).limit(50);
     const planId = planRow?.id;
@@ -197,6 +229,7 @@ async function seedDemoTenant() {
   });
 
   console.log(`  Demo site: ornek-apartmani (${unitCount} daire, plan: ${plan.name})`);
+  console.log(`  Demo giriş: yonetici@ornek.test / ${DEMO_PASSWORD}`);
 }
 
 main().catch(async (error) => {

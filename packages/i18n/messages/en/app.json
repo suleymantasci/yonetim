@@ -102,7 +102,7 @@
     "subtitleManagerAndResident": "Manager and resident sign-in",
     "subtitleForProperty": "Sign-in for {property}",
     "identifierLabel": "Email or mobile number",
-    "identifierHint": "Enter an email to receive a sign-in link, or a phone number to receive an SMS code.",
+    "identifierHint": "The email or mobile number you registered with.",
     "identifierPlaceholder": "name@example.com or +90 532 000 00 00",
     "sendCode": "Send sign-in code",
     "codeLabel": "Verification code",
@@ -126,7 +126,16 @@
       "used": "This code has already been used.",
       "expired": "The code has expired.",
       "wrongPurpose": "The code is not valid for this action."
-    }
+    },
+    "passwordLabel": "Password",
+    "credentialsIncomplete": "Enter your email/phone and password.",
+    "invalidCredentials": "Email/phone or password is incorrect.",
+    "forgotPassword": "I don't know my password",
+    "backToPassword": "Back to password sign-in",
+    "recoveryIntro": "We'll send you a one-time sign-in link or code. Once you're in, you can set a password on the My details screen.",
+    "otpEmailSent": "Password verified. We've emailed your verification code; it is valid for 5 minutes.",
+    "otpSmsSent": "Password verified. We've texted your verification code; it is valid for 5 minutes.",
+    "codeNotSent": "The verification code could not be sent. Please try again shortly."
   },
   "dashboard": {
     "greeting": "Hello, {property}",
@@ -2440,7 +2449,16 @@
     "phoneChanged": "Your phone number has been updated. Sign-in codes will now go to the new number.",
     "phoneTaken": "This number belongs to another account. If it is yours, contact your building management.",
     "phoneUnchanged": "This is already your number on file.",
-    "phoneCodeInvalid": "The code is invalid or expired. Request a new one."
+    "phoneCodeInvalid": "The code is invalid or expired. Request a new one.",
+    "passwordTitle": "Password",
+    "passwordHint": "The password you sign in with. Leave the current password empty if you don't have one yet.",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "newPasswordHint": "At least 10 characters with an uppercase letter, a lowercase letter and a digit.",
+    "savePassword": "Save password",
+    "passwordSaved": "Your password has been updated.",
+    "currentPasswordInvalid": "The current password is incorrect.",
+    "weakPassword": "That password isn't strong enough: at least 10 characters with upper case, lower case and a digit."
   },
   "managementInfo": {
     "title": "Management Info",
@@ -2507,7 +2525,8 @@
       "unitCount": "Number of units",
       "city": "City",
       "fullName": "Full name",
-      "identifier": "Email or phone"
+      "identifier": "Email or phone",
+      "password": "Password"
     },
     "propertyPlaceholder": "e.g. Greenvalley Estate",
     "identifierHint": "Your sign-in code will be sent here.",
@@ -2524,7 +2543,9 @@
     "checkFields": "Please check the highlighted fields.",
     "invalidField": "Please check this field.",
     "invalidIdentifier": "That email or phone number is not valid.",
-    "tooManyAttempts": "Too many attempts. Please try again shortly."
+    "tooManyAttempts": "Too many attempts. Please try again shortly.",
+    "passwordHint": "At least 10 characters with an uppercase letter, a lowercase letter and a digit. You'll sign in with this password.",
+    "weakPassword": "That password isn't strong enough: at least 10 characters with upper case, lower case and a digit."
   },
   "accessRequest": {
     "title": "Request resident access",

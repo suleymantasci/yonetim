@@ -139,6 +139,21 @@ export function SignupForm({
             <Input name="identifier" required maxLength={160} autoComplete="username" />
           </Field>
 
+          <Field
+            label={t("field.password")}
+            hint={t("passwordHint")}
+            error={state.fieldErrors?.password?.[0]}
+          >
+            <Input
+              name="password"
+              type="password"
+              required
+              minLength={10}
+              maxLength={200}
+              autoComplete="new-password"
+            />
+          </Field>
+
           <label className="flex items-start gap-2 text-sm text-fg-muted">
             <input
               type="checkbox"

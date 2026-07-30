@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/app-shell";
 import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
+import { PasswordChange } from "./password-change";
 import { PhoneChange } from "./phone-change";
 import { ProfileForm } from "./profile-form";
 
@@ -56,6 +57,18 @@ export default async function MyProfilePage() {
         </div>
 
         <div className="space-y-4">
+          {/*
+            Parola kutusu kimlik bilgilerinin üstünde: giriş artık parola
+            soruyor ve parolası olmayan kullanıcılar (davetle açılmış hesaplar)
+            bu ekrana ilk parolalarını belirlemek için geliyor.
+          */}
+          <Card>
+            <CardHeader title={t("passwordTitle")} />
+            <CardBody>
+              <PasswordChange />
+            </CardBody>
+          </Card>
+
           <Card>
             <CardHeader title={t("identityTitle")} />
             <CardBody className="space-y-3 text-sm">

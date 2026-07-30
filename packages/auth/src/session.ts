@@ -162,6 +162,12 @@ export async function issueVerificationToken(params: {
   purpose:
     | "magic_link"
     | "otp"
+    /**
+     * Parolalı girişin ikinci adımı. `otp`'den ayrı tutuluyor: aynı amacı
+     * paylaşsalardı `web/request` ile parola bilmeden alınan bir kod, parolalı
+     * girişin ikinci faktörünü geçerdi.
+     */
+    | "login_otp"
     | "invite"
     | "password_reset"
     | "resident_verify"

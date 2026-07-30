@@ -1,7 +1,8 @@
 import { BadRequestException, Injectable, Logger } from "@nestjs/common";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 
 import {
+  burnPasswordTime,
   consumeVerificationToken,
   createSession,
   destroySession,
@@ -11,30 +12,47 @@ import {
   rateLimit,
   resolveSession,
   switchTenant,
+  verifyPassword,
 } from "@yonetim/auth";
 import { siteConfig } from "@yonetim/config";
 import type {
+  WebLoginOtpVerify,
   WebLoginRequest,
   WebLoginSession,
   WebLoginVerify,
+  WebPasswordLogin,
+  WebPasswordLoginResult,
 } from "@yonetim/contracts";
 import { errors, normalizePhone } from "@yonetim/core";
 import { memberships, users } from "@yonetim/db";
-import { magicLinkEmail, sendEmail } from "@yonetim/emails";
+import { loginCodeEmail, magicLinkEmail, sendEmail } from "@yonetim/emails";
 import { sendSms } from "@yonetim/sms";
 
+import { env } from "../infra/config/env";
 import { translatorFor } from "../infra/i18n/translator";
 import { DbService } from "../infra/db/db.service";
 
 /**
- * Parolasız web girişi — SPEC Bölüm 14.2.
+ * Web girişi — SPEC Bölüm 14.2.
  *
  * NEDEN BURADA: oturumun tek otoritesi `apps/api` (MIMARI-PLAN §8.1). Oturum
  * kaydını render katmanı açsaydı, iptal edilmiş bir oturumu geçerli saymamak
  * için iki ayrı yerin aynı kuralı uygulaması gerekirdi.
  *
- * E-posta → magic link, telefon → SMS OTP. Ayrım kanalın doğasından: bir
- * e-postada bağlantıya tıklamak kod yazmaktan kolay, SMS'te tam tersi.
+ * İKİ YOL VAR ve ikisi de aynı `openSession`'da bitiyor:
+ *
+ *  1. **Parola** (`loginWithPassword`) — normal giriş. `AUTH_OTP_ENABLED`
+ *     açıksa parolanın ardından tek kullanımlık kod da isteniyor
+ *     (`verifyLoginOtp`), kapalıysa oturum hemen açılıyor.
+ *  2. **Parolasız** (`request` + `verify`) — kayıt doğrulaması ve "parolamı
+ *     bilmiyorum" kurtarması. E-posta → magic link, telefon → SMS OTP; ayrım
+ *     kanalın doğasından: e-postada bağlantıya tıklamak kod yazmaktan kolay,
+ *     SMS'te tam tersi.
+ *
+ * İkinci yol kaldırılmadı çünkü ilk parolayı belirlemenin ve unutulan parolayı
+ * kurtarmanın başka yolu yok — kaldırmak, parolasını unutan kullanıcıyı
+ * hesabından kalıcı olarak kilitlemek olurdu. Karşılığında şunu kabul ediyoruz:
+ * e-posta kutusuna (ya da hattına) erişen biri parolayı bilmeden de girebilir.
  */
 @Injectable()
 export class WebAuthService {
@@ -122,6 +140,196 @@ export class WebAuthService {
     });
   }
 
+  /* ------------------------------------------------------------ *
+   * Parolalı giriş
+   * ------------------------------------------------------------ */
+
+  /**
+   * Birinci adım: parola.
+   *
+   * İkinci adımın olup olmayacağına **sunucu** karar veriyor
+   * (`AUTH_OTP_ENABLED`). Bayrağı panele de okutmak, oturumun açılıp
+   * açılmayacağını iki ayrı sürecin aynı ayarı doğru okumasına bağlardı;
+   * burada panel yalnızca "sırada ne var" bilgisini alıyor.
+   *
+   * KULLANICI SAYIMI (enumeration): kayıtsız kimlik, parolası olmayan hesap ve
+   * yanlış parola **aynı** hatayı veriyor. Üçü ayrılsaydı uç, "bu e-posta
+   * kayıtlı mı" sorusunun sorulabildiği bir yüzey olurdu. Aynı gerekçeyle
+   * kullanıcı bulunamadığında da `burnPasswordTime` çağrılıyor: fark yanıt
+   * metninden çıkarılamıyorsa yanıt **süresinden** çıkarılırdı.
+   */
+  async loginWithPassword(
+    dto: WebPasswordLogin,
+  ): Promise<WebPasswordLoginResult> {
+    const raw = dto.identifier.trim();
+    const isEmail = raw.includes("@");
+    const identifier = isEmail ? raw.toLowerCase() : normalizePhone(raw);
+    if (!identifier) throw errors.validation("invalid_identifier");
+
+    const limit = await rateLimit(RATE_LIMITS.login, identifier);
+    if (!limit.allowed) throw errors.rateLimited();
+
+    const user = await this.db.bypass("auth:password-lookup", async (tx) => {
+      const rows = await tx
+        .select({ id: users.id, passwordHash: users.passwordHash })
+        .from(users)
+        .where(
+          and(
+            isEmail ? eq(users.email, identifier) : eq(users.phone, identifier),
+            // Silinmiş hesap parolasıyla giremiyor. `resolveSession` zaten
+            // `deletedAt` bakıyor, yani oturum açılsa bile ilk istekte
+            // düşerdi — ama o "girdim sanıp her yerde 401 alan" bir kullanıcı
+            // demek; ret girişin kendisinde olmalı.
+            isNull(users.deletedAt),
+          ),
+        )
+        .limit(1);
+      return rows[0] ?? null;
+    });
+
+    const ok = user?.passwordHash
+      ? await verifyPassword(dto.password, user.passwordHash)
+      : await burnPasswordTime(dto.password);
+
+    if (!ok || !user) {
+      this.logger.warn({ event: "auth.password_login_failed", identifier });
+      throw errors.unauthorized("invalid_credentials");
+    }
+
+    if (!env().AUTH_OTP_ENABLED) {
+      const session = await this.openSession(user.id);
+      return { status: "session", identifier, channel: null, session };
+    }
+
+    const channel = isEmail ? "email" : "sms";
+    await this.sendLoginOtp(identifier, user.id, channel, dto.locale);
+
+    this.logger.log({ event: "auth.password_ok_otp_sent", userId: user.id });
+    return { status: "otp_required", identifier, channel, session: null };
+  }
+
+  /**
+   * İkinci adım: parolanın ardından gelen kod.
+   *
+   * Kodun amacı `login_otp` — parolasız akışın `otp`'sinden ayrı. Aynı havuzu
+   * paylaşsalardı `POST /v1/auth/web/request` ile parola bilmeden alınan bir
+   * kod bu adımı geçerdi; ikinci faktör, birinci faktörü atlamanın yolu
+   * olurdu.
+   */
+  async verifyLoginOtp(dto: WebLoginOtpVerify): Promise<WebLoginSession> {
+    const identifier = dto.identifier.includes("@")
+      ? dto.identifier.trim().toLowerCase()
+      : normalizePhone(dto.identifier);
+    if (!identifier) throw errors.validation("invalid_identifier");
+
+    // Gönderim değil **deneme** sınırı: yanlış yazılan kod da sayılıyor ama
+    // kova daha cömert — iki tuş hatası kullanıcıyı bir saat kilitlememeli.
+    const limit = await rateLimit(RATE_LIMITS.otpVerify, identifier);
+    if (!limit.allowed) throw errors.rateLimited();
+
+    const result = await consumeVerificationToken({
+      identifier,
+      token: dto.code,
+      purpose: "login_otp",
+    });
+
+    if (!result.ok) {
+      throw new BadRequestException({
+        code: "validation_failed",
+        message: "token_rejected",
+        details: { reason: result.reason },
+      });
+    }
+
+    const userId = String((result.metadata as { userId?: string }).userId ?? "");
+    if (!userId) {
+      throw new BadRequestException({
+        code: "validation_failed",
+        message: "token_rejected",
+        details: { reason: "userNotFound" },
+      });
+    }
+
+    return this.openSession(userId);
+  }
+
+  /**
+   * İkinci adım kodunu gönderir.
+   *
+   * Kanal, kullanıcının **giriş yaparken kullandığı** kimlikten seçiliyor:
+   * telefonla giren SMS, e-postayla giren posta alıyor. Sunucunun "telefonu da
+   * var, oraya göndereyim" demesi, kullanıcının beklemediği bir kanala
+   * gönderim demekti.
+   *
+   * Gönderim hatası girişi **düşürüyor**: kod gitmediği hâlde `otp_required`
+   * dönmek, kullanıcıyı hiç gelmeyecek bir kodu bekleten bir ekranda
+   * bırakırdı.
+   */
+  private async sendLoginOtp(
+    identifier: string,
+    userId: string,
+    channel: "email" | "sms",
+    locale?: string,
+  ): Promise<void> {
+    const code = generateOtp(6);
+    await issueVerificationToken({
+      identifier,
+      purpose: "login_otp",
+      ttlMinutes: 5,
+      code,
+      // Kodu **kime** verdiğimizi bağlıyor; doğrulama oturumu bu alandan açıyor.
+      metadata: { userId },
+    });
+
+    if (channel === "sms") {
+      const sent = await sendSms({
+        to: identifier,
+        body: translatorFor("app", locale)("login.smsBody", {
+          brand: siteConfig.brand.name,
+          code,
+        }),
+        isOtp: true,
+      });
+      if (!sent.ok) {
+        this.logger.error({ event: "auth.login_otp_sms_failed", userId });
+        throw errors.integrationUnavailable("SMS");
+      }
+      return;
+    }
+
+    const mail = loginCodeEmail(translatorFor("notification", locale), {
+      code,
+      expiresMinutes: 5,
+    });
+    const sent = await sendEmail({
+      to: identifier,
+      subject: mail.subject,
+      html: mail.html,
+    });
+    if (!sent.ok) {
+      this.logger.error({ event: "auth.login_otp_email_failed", userId });
+      throw errors.integrationUnavailable("E-posta");
+    }
+  }
+
+  /** Oturumu açar ve son giriş zamanını yazar — iki giriş yolunun ortak sonu. */
+  private async openSession(userId: string): Promise<WebLoginSession> {
+    const { token, expiresAt } = await createSession({
+      userId,
+      rememberMe: true,
+    });
+
+    await this.db.bypass("auth:touch-login", async (tx) => {
+      await tx
+        .update(users)
+        .set({ lastLoginAt: new Date() })
+        .where(eq(users.id, userId));
+    });
+
+    this.logger.log({ event: "auth.web_login", userId });
+    return { sessionToken: token, expiresAt, userId };
+  }
+
   /**
    * Kodu/bağlantıyı oturuma çevirir.
    *
@@ -160,20 +368,7 @@ export class WebAuthService {
       });
     }
 
-    const { token, expiresAt } = await createSession({
-      userId,
-      rememberMe: true,
-    });
-
-    await this.db.bypass("auth:touch-login", async (tx) => {
-      await tx
-        .update(users)
-        .set({ lastLoginAt: new Date() })
-        .where(eq(users.id, userId));
-    });
-
-    this.logger.log({ event: "auth.web_login", userId });
-    return { sessionToken: token, expiresAt, userId };
+    return this.openSession(userId);
   }
 
   /**

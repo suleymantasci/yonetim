@@ -93,7 +93,14 @@ async function toAppError(res: Response): Promise<AppError> {
   return new AppError(code, message, details);
 }
 
-/** Sözleşme kodu → `packages/core` kodu. `validation_failed` → `validation`. */
+/**
+ * Sözleşme kodu → `packages/core` kodu. `validation_failed` → `validation`.
+ *
+ * `integration_unavailable` listede: eskiden `internal`'a düşüyordu ve ekran
+ * "beklenmeyen bir hata" diyordu. Oysa sağlayıcı arızasında (SMS/e-posta
+ * gönderilemedi) çağıranın söyleyebileceği somut bir şey var — girişin ikinci
+ * adımı bu ayrımı kullanıyor.
+ */
 function mapCode(code: string | undefined, status: number): AppErrorCode {
   switch (code) {
     case "unauthorized":
@@ -102,6 +109,7 @@ function mapCode(code: string | undefined, status: number): AppErrorCode {
     case "conflict":
     case "rate_limited":
     case "tenant_mismatch":
+    case "integration_unavailable":
     case "payment_failed":
     case "kvkk_violation":
     case "internal":

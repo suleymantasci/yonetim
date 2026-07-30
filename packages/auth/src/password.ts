@@ -24,6 +24,30 @@ export async function verifyPassword(password: string, stored: string): Promise<
   return derived.length === expected.length && timingSafeEqual(derived, expected);
 }
 
+/**
+ * Kullanıcı bulunamadığında da parola doğrulamış gibi zaman harcatır.
+ *
+ * NEDEN GEREKLİ: `verifyPassword` scrypt çalıştırıyor ve bu ~100 ms sürüyor.
+ * Kullanıcı yoksa doğrudan "geçersiz" dönmek, cevabın **hızlı** gelmesi
+ * demekti — yani giriş ucu, yanıt süresine bakarak "bu e-posta kayıtlı mı"
+ * sorusunun sorulabildiği bir yüzeye dönüşürdü. Kullanıcı sayımına (enumeration)
+ * karşı alınan bütün önlemler (aynı mesaj, aynı durum kodu) bu kanaldan
+ * sızardı.
+ *
+ * Sabit bir hash'e karşı çalışıyor: parolanın kendisi girdi olduğu için maliyet
+ * gerçek doğrulamayla aynı, ama sonucu her zaman `false`.
+ */
+let dummyHash: Promise<string> | undefined;
+
+export async function burnPasswordTime(password: string): Promise<false> {
+  // Hash elle yazılmıyor, ilk çağrıda üretiliyor: elle yazılmış bir dize
+  // biçim değişirse sessizce "geçersiz format" dalına düşer ve scrypt hiç
+  // çalışmazdı — yani önlem, koruduğu şeyi ölçmeden ortadan kalkardı.
+  dummyHash ??= hashPassword(randomBytes(32).toString("hex"));
+  await verifyPassword(password, await dummyHash);
+  return false;
+}
+
 /** Parola gücü kontrolü — yönetici hesapları için zorunlu (Bölüm 14.2). */
 export interface PasswordPolicyResult {
   ok: boolean;

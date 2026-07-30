@@ -37,6 +37,10 @@ const schema = z.object({
   companyName: z.string().trim().max(200).optional(),
   fullName: z.string().trim().min(2).max(160),
   identifier: z.string().trim().min(5).max(160),
+  // Uzunluk burada, güç kuralı sunucuda: "büyük harf içermeli" gibi kuralların
+  // kopyası panelde de dursaydı, ikisinden biri er ya da geç geride kalır ve
+  // kullanıcı formu geçip sunucuda reddedilirdi.
+  password: z.string().min(10).max(200),
   campaign: z.string().trim().max(60).optional(),
   migrationSource: z.string().trim().max(60).optional(),
   acceptedTerms: z.literal("on"),
@@ -61,6 +65,7 @@ export async function startSignup(
         : undefined,
     fullName: formData.get("fullName"),
     identifier: formData.get("identifier"),
+    password: formData.get("password"),
     campaign: emptyToUndefined(formData.get("campaign")),
     migrationSource: emptyToUndefined(formData.get("migrationSource")),
     acceptedTerms: formData.get("acceptedTerms"),
@@ -97,6 +102,15 @@ export async function startSignup(
         return { status: "error", message: t("tooManyAttempts") };
       }
       if (error.code === "validation") {
+        // Güç kuralı yalnız sunucuda: reddi alan alanın altında göstermek,
+        // kullanıcıya "hangi alan" sorusunu sordurmamak için.
+        if (error.message === "weak_password") {
+          return {
+            status: "error",
+            message: t("checkFields"),
+            fieldErrors: { password: [t("weakPassword")] },
+          };
+        }
         return { status: "error", message: t("invalidIdentifier") };
       }
     }

@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { and, count, eq, isNull, sql } from "drizzle-orm";
 
+import { checkPasswordPolicy, hashPassword } from "@yonetim/auth";
 import { siteConfig } from "@yonetim/config";
 import type {
   AccessRequestCreate,
@@ -57,6 +58,15 @@ export class SignupService {
       : normalizePhone(dto.identifier);
     if (!identifier) throw errors.validation("invalid_identifier");
 
+    // Güç kuralı sözleşmede değil burada: "büyük harf içermeli" gibi kurallar
+    // şemaya yazılsaydı, parola değiştirme ucunda ikinci kez yazılmaları
+    // gerekirdi — iki kopyanın biri er ya da geç geride kalırdı.
+    const policy = checkPasswordPolicy(dto.password);
+    if (!policy.ok) {
+      throw errors.validation("weak_password", { problems: policy.problems });
+    }
+    const passwordHash = await hashPassword(dto.password);
+
     const result = await this.db.bypass("signup:create-tenant", async (tx) => {
       // Var olan kullanıcıyı yeniden yaratmıyoruz: bir yönetici ikinci sitesini
       // açıyor olabilir ve "tek cari" modelinde kişi platformda tekildir.
@@ -78,6 +88,13 @@ export class SignupService {
               firstName: firstName ?? dto.fullName,
               lastName: rest.join(" ") || null,
               locale: locale ?? "tr",
+              // Parola YALNIZCA yeni kullanıcıda yazılıyor. Var olan kaydın
+              // parolasını buradan ezmek, "kayıt ol" formuna başkasının
+              // e-postasını yazarak o hesabı devralmak demekti — parola
+              // değiştirmenin yolu oturum açmış profil ekranı ya da kurtarma
+              // akışı. İkinci sitesini açan yönetici zaten mevcut parolasıyla
+              // giriyor.
+              passwordHash,
             })
             .returning({ id: users.id })
         )[0]!.id;

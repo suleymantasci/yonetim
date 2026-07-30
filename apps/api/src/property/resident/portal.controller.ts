@@ -2,6 +2,7 @@ import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post } from "@nestj
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 
 import {
+  passwordSet,
   portalCommentCreate,
   portalMessageCreate,
   portalPhoneChangeStart,
@@ -20,6 +21,7 @@ import {
   type PortalPhoneChangeStart,
   type PortalPhoneChangeVerify,
   type PortalPollsResponse,
+  type PasswordSet,
   type PortalProfile,
   type PortalProfileUpdate,
   type PortalRequestCreate,
@@ -192,6 +194,20 @@ export class PortalController {
     @Body(new ZodBodyPipe(portalPhoneChangeVerify)) dto: PortalPhoneChangeVerify,
   ) {
     return this.service.confirmPhoneChange(dto);
+  }
+
+  @Post("profile/password")
+  @RequirePermission("unit:read")
+  @ApiOperation({
+    summary: "Parola belirle / değiştir",
+    description:
+      "Parolası olan kullanıcıda `currentPassword` zorunlu; olmayanda (davetle " +
+      "açılmış hesap, kurtarma akışıyla girmiş kullanıcı) ilk parola doğrudan " +
+      "belirlenir. Kural şemada değil serviste: 'parolası var mı' sorusunun " +
+      "cevabı yalnız veritabanında.",
+  })
+  setPassword(@Body(new ZodBodyPipe(passwordSet)) dto: PasswordSet) {
+    return this.service.setPassword(dto);
   }
 
   @Get("management")

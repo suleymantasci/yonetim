@@ -69,6 +69,66 @@ export async function updateMyProfile(
   );
 }
 
+/* ------------------------------------------------------------- parola */
+
+/**
+ * Parola belirleme / değiştirme.
+ *
+ * MEVCUT PAROLA İSTEĞE BAĞLI: parolası hiç olmayan kullanıcı (davetle açılmış
+ * hesap, kurtarma akışıyla girmiş kullanıcı) ilk parolasını burada belirliyor.
+ * Parolası olanda zorunluluğu **sunucu** uyguluyor; kural burada da olsaydı,
+ * "parolası var mı" sorusunun cevabını panelin ayrıca öğrenmesi gerekirdi.
+ *
+ * Güç kuralı da sunucuda: kopyası burada dursaydı ikisinden biri geride kalır
+ * ve kullanıcı formu geçip sunucuda reddedilirdi.
+ */
+const passwordSchema = z.object({
+  currentPassword: z.string().max(200).optional(),
+  password: z.string().min(10, V.min(10)).max(200, V.max(200)),
+});
+
+export async function changeMyPassword(
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  return runAction(
+    {
+      permission: "unit:read",
+      schema: passwordSchema,
+      meta: { action: "portal_password_changed", resource: "user" },
+    },
+    formData,
+    async ({ input }) => {
+      const t = await getTranslations("app.myProfile");
+
+      try {
+        await apiPost(
+          "/v1/panel/portal/profile/password",
+          {
+            // Boş alan gönderilmiyor: sunucu "mevcut parola verilmedi" ile
+            // "boş string verildi" arasında ayrım yapmak zorunda kalmasın.
+            ...(input.currentPassword ? { currentPassword: input.currentPassword } : {}),
+            password: input.password,
+          },
+          z.object({ ok: z.literal(true) }),
+        );
+      } catch (error) {
+        if (error instanceof AppError && error.code === "validation") {
+          if (error.message === "current_password_invalid") {
+            throw new ActionError(t("currentPasswordInvalid"));
+          }
+          if (error.message === "weak_password") {
+            throw new ActionError(t("weakPassword"));
+          }
+        }
+        throw error;
+      }
+
+      return okState(t("passwordSaved"));
+    },
+  );
+}
+
 /* --------------------------------------------------- telefon değişikliği */
 
 /**

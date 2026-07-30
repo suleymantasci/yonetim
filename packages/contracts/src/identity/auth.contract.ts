@@ -227,6 +227,92 @@ export const webLoginSession = z.object({
 
 export type WebLoginSession = z.infer<typeof webLoginSession>;
 
+/* ------------------------------------------------------------------ *
+ * Parolalı giriş — birinci adım parola, ikinci adım (opsiyonel) OTP
+ * ------------------------------------------------------------------ */
+
+/**
+ * `POST /v1/auth/web/password` — parola ile giriş.
+ *
+ * Parolasız akış (`web/request` + `web/verify`) **kaldırılmadı**: kayıt
+ * doğrulaması ve "parolamı bilmiyorum" kurtarması aynı uçtan geçiyor. Bu uç
+ * onun yerine değil, önüne konuldu — normal giriş artık parola soruyor.
+ *
+ * İKİNCİ ADIMIN OLUP OLMAYACAĞINA SUNUCU KARAR VERİYOR (`AUTH_OTP_ENABLED`).
+ * Bayrağı istemciye de okutmak, iki tarafın aynı ayarı ayrı ayrı doğru
+ * okumasına bağlı bir güvenlik kararı üretirdi: panel "OTP kapalı" sanıp
+ * kullanıcıyı içeri almaya çalışsa bile oturum jetonu ancak sunucu verirse
+ * oluşuyor. Bu yüzden yanıt "ne olduğunu" değil, "sırada ne var"ı söylüyor.
+ */
+export const webPasswordLogin = z.object({
+  identifier: authIdentifier,
+  /**
+   * Üst sınır var çünkü scrypt girdinin uzunluğuyla çalışıyor: sınırsız parola
+   * kabul etmek, tek istekle CPU tüketmenin yolu olurdu. Alt sınır 1 —
+   * "en az 10 karakter" kuralı parola **belirlerken** uygulanıyor; girişte
+   * uygulamak, kısa parolası olan eski bir kullanıcıya "parolan geçersiz"
+   * demek yerine "yanlış parola" demenin zorlaştırılmış hali olurdu.
+   */
+  password: z.string().min(1).max(200),
+  /** İkinci adım kodunun SMS/e-posta metni bu dilde üretilir. */
+  locale: z.string().max(8).optional(),
+});
+
+export type WebPasswordLogin = z.infer<typeof webPasswordLogin>;
+
+/**
+ * `status` alanı akışın tek yönlendiricisi:
+ *  - `session`      → oturum açıldı, `session` dolu.
+ *  - `otp_required` → parola doğru ama kod gerekiyor; `session` boş.
+ *
+ * İki durumu ayrı uçlara bölmek, istemcinin hangi uca gideceğini bilmek için
+ * ayarı önceden okuması demekti.
+ */
+export const webPasswordLoginResult = z.object({
+  status: z.enum(["session", "otp_required"]),
+  /** Normalize edilmiş kimlik — ikinci adım bunu geri gönderir. */
+  identifier: z.string(),
+  /** Kodun gittiği kanal; `session` durumunda `null`. */
+  channel: z.enum(["email", "sms"]).nullable(),
+  session: webLoginSession.nullable(),
+});
+
+export type WebPasswordLoginResult = z.infer<typeof webPasswordLoginResult>;
+
+/**
+ * `POST /v1/auth/web/password/otp` — parolalı girişin ikinci adımı.
+ *
+ * Kodun amacı (`login_otp`) parolasız giriş OTP'sinden **ayrı**: aynı havuzda
+ * olsalardı, `web/request` ile parola bilmeden alınan bir kod parolalı girişin
+ * ikinci adımını geçerdi. Yani ikinci faktör, ilk faktörü atlamanın yolu
+ * olurdu.
+ */
+export const webLoginOtpVerify = z.object({
+  identifier: authIdentifier,
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, { message: "Kod 6 haneli olmalı." }),
+});
+
+export type WebLoginOtpVerify = z.infer<typeof webLoginOtpVerify>;
+
+/**
+ * Parola belirleme/değiştirme — `POST /v1/panel/portal/profile/password`.
+ *
+ * `currentPassword` isteğe bağlı **ve** bu bir gevşeklik değil: parolası hiç
+ * olmayan (davetle açılmış, parolasız akışla girmiş) kullanıcı da bu ekrandan
+ * ilk parolasını belirliyor. Parolası **olan** kullanıcıda sunucu mevcut
+ * parolayı zorunlu tutuyor; kural şemada değil orada, çünkü şema kullanıcının
+ * durumunu bilmiyor.
+ */
+export const passwordSet = z.object({
+  currentPassword: z.string().max(200).optional(),
+  password: z.string().min(10).max(200),
+});
+
+export type PasswordSet = z.infer<typeof passwordSet>;
+
 /**
  * Doğrulama başarısızsa neden.
  *

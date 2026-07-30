@@ -25,6 +25,26 @@ const envSchema = z.object({
   /** Worker → api iç çağrıları için paylaşılan sır (§8.1 dördüncü kimlik yolu). */
   INTERNAL_API_TOKEN: z.string().min(16).optional(),
 
+  /**
+   * Girişte parolanın ardından tek kullanımlık kod da sorulsun mu?
+   *
+   * `false` (varsayılan): parola doğruysa oturum hemen açılır.
+   * `true`: parola doğruysa kimliğin kanalına (telefon → SMS, e-posta → posta)
+   * 6 haneli kod gider ve oturum ancak ikinci adımda açılır.
+   *
+   * VARSAYILAN NEDEN KAPALI: kod göndermek bir SMS sağlayıcısı gerektiriyor ve
+   * yapılandırılmamış kurulumda `packages/sms` konsola yazan sağlayıcıya
+   * düşüyor. Varsayılanı açık yapmak, sağlayıcı tanımlamamış bir kurulumda
+   * herkesi dışarıda bırakırdı — kodu yalnız sunucu logunu okuyan görebilirdi.
+   *
+   * `z.coerce.boolean()` bilerek kullanılmadı: o, `"false"` dizesini de `true`
+   * sayar. Yani ayarı kapatmak isteyen kişi tam tersini elde ederdi.
+   */
+  AUTH_OTP_ENABLED: z
+    .enum(["true", "false", "1", "0"])
+    .default("false")
+    .transform((value) => value === "true" || value === "1"),
+
 
   REDIS_URL: z.string().optional(),
   /** Oturum önbelleği TTL'i, saniye — §17 kararı 5: 60 sn, invalidation'lı. */

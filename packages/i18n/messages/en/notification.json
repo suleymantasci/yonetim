@@ -78,6 +78,12 @@
       "expense": "Expenses",
       "balance": "Cash/bank balance",
       "cta": "Open the detailed report"
+    },
+    "loginCode": {
+      "subject": "Your sign-in verification code",
+      "title": "Sign-in verification code",
+      "body1": "The code is valid for {minutes} minutes and can be used only once.",
+      "body2": "If you didn't request this, someone may know your password — change it as soon as you can."
     }
   },
   "bot": {

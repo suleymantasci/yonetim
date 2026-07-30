@@ -12,11 +12,14 @@ import {
 } from "drizzle-orm";
 
 import {
+  checkPasswordPolicy,
   consumeVerificationToken,
   generateOtp,
+  hashPassword,
   issueVerificationToken,
   RATE_LIMITS,
   rateLimit,
+  verifyPassword,
 } from "@yonetim/auth";
 import { errors, maskPhone } from "@yonetim/core";
 import type {
@@ -34,6 +37,7 @@ import type {
   PortalPollsResponse,
   PortalProfile,
   PortalProfileUpdate,
+  PasswordSet,
   PortalRequestCreate,
   PortalRequestDetail,
   PortalRequestsResponse,
@@ -852,6 +856,66 @@ export class PortalService {
 
     await this.audit.record({
       action: "portal.phone_change.completed",
+      resource: "user",
+      resourceId: userId,
+    });
+
+    return { ok: true };
+  }
+
+  /* ------------------------------------------------------------ parola */
+
+  /**
+   * Parola belirleme / değiştirme.
+   *
+   * MEVCUT PAROLA, VARSA ZORUNLU: kuralı şema değil burası biliyor, çünkü
+   * "parolası var mı" sorusunun cevabı veritabanında. Parolası olmayan
+   * kullanıcı (davetle açılmış hesap, kurtarma akışıyla girmiş kullanıcı) ilk
+   * parolasını doğrudan belirliyor; parolası olan, eskisini yazmadan
+   * değiştiremiyor. Aksi hâlde açık kalmış bir oturumu bulan biri parolayı
+   * değiştirip hesabı kalıcı olarak devralabilirdi.
+   *
+   * Parola değişince **diğer oturumlar düşmüyor** ve bu bilinçli: oturum
+   * iptali `sessions` tablosunda ayrı bir işlem ve "cihazlarım" ekranının işi.
+   * Parola değiştirmenin yan etkisi olarak kullanıcıyı bütün cihazlarından
+   * atmak, buradaki tek amacı (parolayı güncellemek) aşan bir davranış olurdu.
+   */
+  async setPassword(dto: PasswordSet): Promise<{ ok: true }> {
+    const userId = this.userId();
+
+    // Mevcut parolayı deneme yanılmayla bulmaya karşı: kova doğrulama
+    // denemesiyle aynı (saatte 10), çünkü ölçtüğü şey de aynı.
+    const limit = await rateLimit(RATE_LIMITS.otpVerify, `password:${userId}`);
+    if (!limit.allowed) throw errors.rateLimited();
+
+    const policy = checkPasswordPolicy(dto.password);
+    if (!policy.ok) {
+      throw errors.validation("weak_password", { problems: policy.problems });
+    }
+
+    const current = await this.db.tx(async (tx) => {
+      const rows = await tx
+        .select({ passwordHash: users.passwordHash })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+      return rows[0]?.passwordHash ?? null;
+    });
+
+    if (current) {
+      const ok =
+        dto.currentPassword !== undefined &&
+        (await verifyPassword(dto.currentPassword, current));
+      if (!ok) throw errors.validation("current_password_invalid");
+    }
+
+    const hash = await hashPassword(dto.password);
+    await this.db.tx(async (tx) => {
+      await tx.update(users).set({ passwordHash: hash }).where(eq(users.id, userId));
+    });
+
+    await this.audit.record({
+      action: "portal.password.changed",
       resource: "user",
       resourceId: userId,
     });

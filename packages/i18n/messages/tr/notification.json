@@ -78,6 +78,12 @@
       "expense": "Gider",
       "balance": "Kasa/banka bakiyesi",
       "cta": "Detaylı raporu aç"
+    },
+    "loginCode": {
+      "subject": "Giriş doğrulama kodunuz",
+      "title": "Giriş doğrulama kodu",
+      "body1": "Kod {minutes} dakika boyunca geçerlidir ve yalnızca bir kez kullanılabilir.",
+      "body2": "Bu isteği siz yapmadıysanız parolanız başkasının eline geçmiş olabilir; en kısa sürede değiştirin."
     }
   },
   "bot": {
