@@ -109,6 +109,21 @@ export class DocumentWriteService {
       throw errors.validation("mime_extension_mismatch");
     }
 
+    // M-48: Malware tarama. Üretimde ClamAV veya managed scanner (S3 EventBridge +
+    // Lambda + ClamAV/VirusTotal API) entegrasyonu yapılmalı. Bu aşamada
+    // stub: dosya türü `.pdf` ve `.docx` ise taranmamış olarak işaretleniyor.
+    // Implement edildiğinde `M-48` kapatılır.
+    const scannable = ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
+    if (scannable.includes(detected)) {
+      this.logger.log({
+        event: "document.scan_queued",
+        tenantId: ctx.tenantId,
+        key: dto.key,
+        mime: detected,
+        scanStatus: "pending",
+      });
+    }
+
     const [row] = await this.db.tx(async (tx) =>
       tx
         .insert(documents)

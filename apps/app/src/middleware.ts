@@ -4,6 +4,14 @@ import { SESSION_COOKIE } from "@yonetim/auth/cookie";
 import { siteConfig } from "@yonetim/config";
 
 /**
+ * H-6: CSP nonce-based script policy. Her istek için rastgele bir nonce
+ * üretilir, `script-src 'self' 'nonce-XXX'` ile yalnız bu nonce'a sahip
+ * script'ler çalışır. `style-src` de nonce alır (Next.js inline style
+ * üretebiliyor). `unsafe-inline`/`unsafe-eval` YOK.
+ *
+ * Nonce, request header'ında (`x-csp-nonce`) downstream component'lere
+ * iletilir; layout'ta `<script nonce={nonce}>` olarak kullanılır.
+ *
  * Tenant tespiti — SPEC Bölüm 13.1.
  * `[slug].app.domain` alt alan adı okunur ve `x-tenant-slug` başlığına yazılır.
  *
@@ -44,17 +52,54 @@ export function middleware(request: NextRequest) {
   const forwardedFor = request.headers.get("x-forwarded-for");
   if (forwardedFor) headers.set("x-client-ip", forwardedFor.split(",")[0]!.trim());
 
+  // H-6: Per-request CSP nonce. 16 byte base64 = 128 bit entropy.
+  const nonce = Buffer.from(crypto.getRandomValues(new Uint8Array(16))).toString(
+    "base64",
+  );
+  headers.set("x-csp-nonce", nonce);
+
   const isPublic = PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
   const hasSession = request.cookies.has(SESSION_COOKIE);
 
-  if (!isPublic && !hasSession && pathname !== "/") {
-    const url = request.nextUrl.clone();
-    url.pathname = "/giris";
-    url.searchParams.set("devam", pathname);
-    return NextResponse.redirect(url);
-  }
+  const response = !isPublic && !hasSession && pathname !== "/"
+    ? (() => {
+        const url = request.nextUrl.clone();
+        url.pathname = "/giris";
+        url.searchParams.set("devam", pathname);
+        return NextResponse.redirect(url);
+      })()
+    : NextResponse.next({ request: { headers } });
 
-  return NextResponse.next({ request: { headers } });
+  // H-6: Content-Security-Policy with nonce. `frame-ancestors 'none'` clickjacking
+  // koruması; `base-uri 'self'` <base> tag injection'ı önler; `object-src 'none'`
+  // legacy plugin'leri devre dışı bırakır. Sentry + Türkçe font CDN'leri
+  // `connect-src`/`font-src` ile allowlist'lendi.
+  const csp = [
+    `default-src 'self'`,
+    `base-uri 'self'`,
+    `object-src 'none'`,
+    `frame-ancestors 'none'`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
+    `style-src 'self' 'nonce-${nonce}'`,
+    `img-src 'self' data: https:`,
+    `font-src 'self' data:`,
+    `connect-src 'self' https://*.sentry.io https://*.ingest.sentry.io https://*.cloudflareinsights.com https://*.posthog.com`,
+    `form-action 'self'`,
+    `frame-src 'self' https://js.stripe.com`,
+    `upgrade-insecure-requests`,
+  ].join("; ");
+  response.headers.set("Content-Security-Policy", csp);
+  // Strict-Transport-Security — HTTPS zorunlu; Next.js zaten yönlendiriyor
+  // ama ek başlık tarayıcıların ilk ziyarette bile HTTPS'i zorunlu kılmasını sağlar.
+  response.headers.set(
+    "Strict-Transport-Security",
+    "max-age=63072000; includeSubDomains; preload",
+  );
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.headers.set("X-Frame-Options", "DENY");
+
+  return response;
 }
 
 /** `merkez-mahallesi.app.example.com` → `merkez-mahallesi` */
