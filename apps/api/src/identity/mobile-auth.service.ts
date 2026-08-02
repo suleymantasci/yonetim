@@ -225,7 +225,15 @@ export class MobileAuthService {
       // JWT'yi kullanmanın anlamını ortadan kaldırırdı. Kısa ömrü (15 dk)
       // iptal penceresini zaten dar tutuyor.
       accessToken: signJwt(
-        { sub: userId, tid: tenant.id, typ: "access", sid: sessionId },
+        {
+          sub: userId,
+          tid: tenant.id,
+          typ: "access",
+          sid: sessionId,
+          // L-4: iss/aud claim'leri.
+          iss: "yonetim-api",
+          aud: "yonetim-mobile",
+        },
         secret,
         ACCESS_TTL_SECONDS,
       ),
@@ -234,6 +242,8 @@ export class MobileAuthService {
           sub: userId,
           tid: tenant.id,
           typ: "refresh",
+          iss: "yonetim-api",
+          aud: "yonetim-mobile",
           sid: sessionId,
           jti: generation,
         },

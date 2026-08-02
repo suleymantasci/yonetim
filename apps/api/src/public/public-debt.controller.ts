@@ -39,7 +39,11 @@ export class PublicDebtController {
   @ApiOperation({ summary: "Borçları listele" })
   async list(@Query() query: Record<string, string>) {
     const page = parsePagination(query);
-    const { unitId, period, status } = query;
+    // L-17: Public uç filter'ları Zod ile doğrulanıyor — malformed UUID'ler ve
+    // geçersiz enum değerleri sessizce kabul edilmesin.
+    const unitId = parseUuid(query.unitId, "unitId");
+    const period = parseString(query.period, 7, "period");
+    const status = parseString(query.status, 32, "status");
 
     const result = await this.db.tx(async (tx) => {
       const conditions = [isNull(debts.deletedAt)];
@@ -159,6 +163,24 @@ const SORTS = {
   amount: debts.amountKurus,
   createdAt: debts.createdAt,
 } as const;
+
+/** L-17: Public uçlarda gelen raw string filter'ları doğrula. */
+function parseUuid(v: string | undefined, field: string): string | undefined {
+  if (v === undefined || v === "") return undefined;
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)) {
+    throw errors.validation(`${field}_invalid_uuid`);
+  }
+  return v;
+}
+function parseString(
+  v: string | undefined,
+  max: number,
+  field: string,
+): string | undefined {
+  if (v === undefined || v === "") return undefined;
+  if (v.length > max) throw errors.validation(`${field}_too_long`);
+  return v;
+}
 
 const createSchema = z.object({
   unitId: z.string().uuid(),

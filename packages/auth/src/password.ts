@@ -5,21 +5,69 @@ const scrypt = promisify(scryptCb) as (
   password: string,
   salt: Buffer,
   keylen: number,
+  options?: { N?: number; r?: number; p?: number; maxmem?: number },
 ) => Promise<Buffer>;
 
+// L-15: scrypt parametreleri açıkça set ediliyor. N=2^15 OWASP 2024 önerisi.
+// Format `v1$N$r$p$...` — eski `scrypt$...` hash'leri geriye uyumlu parse edilir
+// (varsayılan N/r/p uygulanır).
+const VERSION = "v1";
+const N = 1 << 15; // 32768
+const R = 8;
+const P = 1;
+const MAXMEM = 64 * 1024 * 1024; // 64 MB
 const KEYLEN = 64;
 
-/** scrypt ile parola hash'leme (Node yerleşik, ek bağımlılık yok). */
+export const HASH_VERSION = VERSION as const;
+
+/** scrypt ile parola hash'leme. */
 export async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(16);
-  const derived = await scrypt(password, salt, KEYLEN);
-  return `scrypt$${salt.toString("base64")}$${derived.toString("base64")}`;
+  const derived = await scrypt(password, salt, KEYLEN, {
+    N,
+    r: R,
+    p: P,
+    maxmem: MAXMEM,
+  });
+  return `${VERSION}$${N}$${R}$${P}$${salt.toString("base64")}$${derived.toString("base64")}`;
 }
 
-export async function verifyPassword(password: string, stored: string): Promise<boolean> {
-  const [algo, saltB64, hashB64] = stored.split("$");
-  if (algo !== "scrypt" || !saltB64 || !hashB64) return false;
-  const derived = await scrypt(password, Buffer.from(saltB64, "base64"), KEYLEN);
+export async function verifyPassword(
+  password: string,
+  stored: string,
+): Promise<boolean> {
+  // L-15: Eski format `scrypt$salt$hash` (parametre yok) ve yeni format
+  // `v1$N$r$p$salt$hash` kabul edilir; geriye uyumluluk korunur.
+  const parts = stored.split("$");
+  let algo: string;
+  let saltB64: string;
+  let hashB64: string;
+  let opts: { N?: number; r?: number; p?: number; maxmem?: number } | undefined;
+  if (parts.length === 3 && parts[0] === "scrypt") {
+    [, algo, saltB64, hashB64] = [parts[0]!, parts[1]!, parts[2]!, parts[2]!];
+    [saltB64, hashB64] = [parts[1]!, parts[2]!];
+    algo = parts[0]!;
+  } else if (parts.length === 6 && parts[0] === VERSION) {
+    algo = parts[0]!;
+    const n = Number(parts[1]);
+    const r = Number(parts[2]);
+    const p = Number(parts[3]);
+    if (!Number.isFinite(n) || !Number.isFinite(r) || !Number.isFinite(p)) {
+      return false;
+    }
+    saltB64 = parts[4]!;
+    hashB64 = parts[5]!;
+    opts = { N: n, r, p, maxmem: MAXMEM };
+  } else {
+    return false;
+  }
+  if (!saltB64 || !hashB64) return false;
+  const derived = await scrypt(
+    password,
+    Buffer.from(saltB64, "base64"),
+    KEYLEN,
+    opts,
+  );
   const expected = Buffer.from(hashB64, "base64");
   return derived.length === expected.length && timingSafeEqual(derived, expected);
 }

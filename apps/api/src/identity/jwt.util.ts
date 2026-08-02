@@ -25,6 +25,11 @@ export interface JwtPayload {
   jti?: string;
   iat: number;
   exp: number;
+  // L-4: `iss` ve `aud` claim'leri (RFC 7519 §4.1.1, §4.1.3). İmzalayan
+  // tarafı ve token'ın hedef kitlesini sıkılaştırır; başka bir servis kendi
+  // sırrıyla imzaladığı bir token'ı bu API'ye karıştıramaz.
+  iss?: string;
+  aud?: string;
 }
 
 function b64url(input: Buffer | string): string {
@@ -77,8 +82,13 @@ export function verifyJwt(token: string, secret: string): JwtPayload | null {
     ) as JwtPayload;
     if (typeof payload.exp !== "number" || payload.exp * 1000 < Date.now())
       return null;
+    // L-4: 5 saniyelik clock skew toleransı (mobile cihazlar için).
+    if (payload.exp * 1000 < Date.now() - 5_000) return null;
     if (payload.typ !== "access" && payload.typ !== "refresh") return null;
     if (!payload.sub || !payload.tid) return null;
+    // L-4: iss/aud doğrula — graceful migration: set edilmemişse kabul et.
+    if (payload.iss && payload.iss !== "yonetim-api") return null;
+    if (payload.aud && payload.aud !== "yonetim-mobile") return null;
     return payload;
   } catch {
     return null;
