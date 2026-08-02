@@ -29,6 +29,10 @@ export const RATE_LIMITS = {
   payment: { key: "payment", limit: 10, windowSeconds: 300 },
   whatsappInbound: { key: "wa_in", limit: 30, windowSeconds: 60 },
   publicForm: { key: "public_form", limit: 5, windowSeconds: 600 },
+  // M-35: Duyuru ve mesaj yollama anti-spam.
+  announcement: { key: "announcement", limit: 10, windowSeconds: 600 },
+  message: { key: "message", limit: 30, windowSeconds: 60 },
+  urgentAnnouncement: { key: "announcement_urgent", limit: 3, windowSeconds: 86400 },
 } as const satisfies Record<string, RateLimitRule>;
 
 export interface RateLimitResult {

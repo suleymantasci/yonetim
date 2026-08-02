@@ -16,7 +16,9 @@ import type {
 } from "@yonetim/contracts";
 
 import { maskPhone } from "@yonetim/core";
+import { RATE_LIMITS, rateLimit } from "@yonetim/auth/rate-limit";
 import { filterContent, requiresIndividualDelivery } from "@yonetim/kvkk";
+import { errors } from "@yonetim/core";
 
 /** Sakin kaydıyla eşleşmemiş mesajların ortak kovası — cevaplanamaz. */
 const UNMATCHED = "unmatched";
@@ -64,6 +66,17 @@ export class CommunicationService {
      */
     if (dto.isUrgent && !grants(this.db.maybeCtx(), "announcement:send_urgent")) {
       throw new ForbiddenException("forbidden:announcement:send_urgent");
+    }
+
+    // M-35: Duyuru yayınlama hız sınırı. Manager başına 10/10dk + urgent
+    // için ek 3/gün. Sahte yönetici hesabı bu hızda sakinlere spam atamaz.
+    const ctx = this.db.maybeCtx();
+    if (ctx?.userId) {
+      const rule = dto.isUrgent
+        ? RATE_LIMITS.urgentAnnouncement
+        : RATE_LIMITS.announcement;
+      const limit = await rateLimit(rule, `user:${ctx.userId}`);
+      if (!limit.allowed) throw errors.rateLimited();
     }
 
     // Acil durum override'ı tüm kanalları açar (SPEC 6.4): yangın/su baskını

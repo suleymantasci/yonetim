@@ -238,6 +238,17 @@ export const notifications = pgTable(
     index("idx_notifications_tenant_created").on(t.tenantId, t.createdAt),
     index("idx_notifications_status_sched").on(t.status, t.scheduledFor),
     index("idx_notifications_user").on(t.userId),
+    // M-27: Aynı kullanıcı + resource + template için birden fazla
+    // bildirim yazılmasın. BullMQ retry'ı aynı event'i tekrar işlerse
+    // duplicate SMS/WhatsApp gönderimini DB seviyesinde engelliyoruz.
+    // `providerRef` ile birlikte de aranabilir (provider mesaj ID'si
+    // set edildikten sonra ON CONFLICT DO NOTHING).
+    uniqueIndex("uq_notif_user_resource_template").on(
+      t.userId,
+      t.resourceType,
+      t.resourceId,
+      t.template,
+    ),
   ],
 );
 

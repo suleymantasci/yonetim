@@ -168,8 +168,24 @@ export class EventProcessor extends WorkerHost {
   ): Promise<RecipientProfile[]> {
     const userIds = await this.db.tx(async (tx) => {
       switch (audience) {
-        case "subject_user":
-          return payload.subjectUserId ? [payload.subjectUserId] : [];
+        case "subject_user": {
+          // M-18: subject_user audiensi için payload.subjectUserId'nin
+          // event'in tenant'ına gerçekten ait olduğunu doğrula. Forged
+          // event, başka tenant sakinine bildirim yazabilirdi.
+          if (!payload.subjectUserId) return [];
+          const membership = await tx
+            .select({ userId: memberships.userId })
+            .from(memberships)
+            .where(
+              and(
+                eq(memberships.userId, payload.subjectUserId),
+                eq(memberships.tenantId, payload.tenantId),
+                isNull(memberships.deletedAt),
+              ),
+            )
+            .limit(1);
+          return membership[0] ? [payload.subjectUserId] : [];
+        }
 
         case "unit_residents": {
           if (!payload.unitId) return [];
