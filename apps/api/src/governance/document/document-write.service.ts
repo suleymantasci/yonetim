@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { and, eq, isNull } from "drizzle-orm";
 
 import type {
@@ -42,6 +42,8 @@ import { DbService } from "../../infra/db/db.service";
  */
 @Injectable()
 export class DocumentWriteService {
+  private readonly logger = new Logger(DocumentWriteService.name);
+
   constructor(
     private readonly db: DbService,
     private readonly audit: AuditService,

@@ -111,18 +111,15 @@ async function bootstrap(): Promise<void> {
     // Mobil Bearer / internal token istekleri Authorization header taşır;
     // cookie tabanlı CSRF bunlar için geçerli değil.
     if (req.headers.authorization) return next();
+    // CSRF origin check — Origin veya Referer allowlist'te olmalı. Host
+    // header'a güvenmek YANLIŞ: saldırgan bazı senaryolarda Host'u
+    // ayarlayabilir. Yalnız Origin/Referer kabul.
     const origin = req.headers.origin;
     const referer = req.headers.referer;
     const originOk = origin && safeOrigins.has(origin);
     const refererOk =
       referer && [...safeOrigins].some((o) => referer.startsWith(o));
     if (originOk || refererOk) return next();
-    // Same-origin (Caddy arkasında) Origin header boş olabilir; host header
-    // allowlist'teki origin'lerle eşleşiyorsa da geçerli.
-    const host = req.headers.host;
-    if (host && [...safeOrigins].some((o) => o.endsWith(`://${host}`))) {
-      return next();
-    }
     res
       .status(403)
       .json({ error: { code: "csrf_origin_check_failed", message: "Origin doğrulanamadı." } });
