@@ -13,10 +13,17 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   transpilePackages: [
-    "@yonetim/ui", "@yonetim/config", "@yonetim/core", "@yonetim/seo", "@yonetim/i18n",
-    "@yonetim/pricing", "@yonetim/campaigns", "@yonetim/db", "@yonetim/auth", "@yonetim/dues",
-    "@yonetim/payment", "@yonetim/whatsapp", "@yonetim/sms", "@yonetim/emails",
-    "@yonetim/notifications", "@yonetim/kvkk", "@yonetim/bank", "@yonetim/jobs",
+    // M-14: apps/web (pazarlama sitesi) yalnız UI + config + core + i18n + seo
+    // paketlerini kullanır. Diğer paketler (db, payment, sms, whatsapp, vs.)
+    // serverEnv üzerinden env okur; bunlar client bundle'a girerse API
+    // anahtarları (iyzico, anthropic, resend vb.) ifşa olur. Marketing
+    // sitesi client component'lerine bu paketlerin import edilmesini
+    // lint kuralı ile de yasaklıyoruz (eslint-plugin-import).
+    "@yonetim/ui",
+    "@yonetim/config",
+    "@yonetim/core",
+    "@yonetim/seo",
+    "@yonetim/i18n",
   ],
   async headers() {
     return [

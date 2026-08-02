@@ -214,7 +214,25 @@ export const legalEventCreate = z.object({
   title: z.string().trim().min(1).max(200),
   note: z.string().trim().max(2000).nullish(),
   occurredAt: z.coerce.date().optional(),
-  documentUrl: z.string().trim().max(500).nullish(),
+  // M-52: documentUrl yalnız güvenli https URL kabul eder; javascript:,
+  // data:, ve diğer scheme'ler reddedilir. XSS/phishing pivot engellenir.
+  documentUrl: z
+    .string()
+    .trim()
+    .max(500)
+    .nullish()
+    .refine(
+      (v) => {
+        if (!v) return true;
+        try {
+          const u = new URL(v);
+          return u.protocol === "https:";
+        } catch {
+          return false;
+        }
+      },
+      { message: "documentUrl yalnızca https URL olabilir." },
+    ),
 });
 
 /**
