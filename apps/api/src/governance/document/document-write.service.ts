@@ -14,6 +14,7 @@ import {
   detectContentType,
   headObject,
   isAllowedMimeType,
+  isMimeExtensionMatch,
   MAX_UPLOAD_BYTES,
   objectKey,
   presignDownload,
@@ -101,6 +102,13 @@ export class DocumentWriteService {
       throw errors.validation("unsupported_file_type");
     }
 
+    // M-50: Tanımlanan MIME ile dosya uzantısı tutarlı olmalı. `.html` +
+    // `application/pdf` gibi uyuşmazlık XSS tetikleyebilir.
+    if (!isMimeExtensionMatch(detected, dto.key)) {
+      await deleteObject(config, dto.key);
+      throw errors.validation("mime_extension_mismatch");
+    }
+
     const [row] = await this.db.tx(async (tx) =>
       tx
         .insert(documents)
@@ -145,7 +153,11 @@ export class DocumentWriteService {
 
     const row = await this.db.tx(async (tx) => {
       const rows = await tx
-        .select({ url: documents.url, title: documents.title })
+        .select({
+          url: documents.url,
+          title: documents.title,
+          mimeType: documents.mimeType,
+        })
         .from(documents)
         .where(and(eq(documents.id, id), isNull(documents.deletedAt)))
         .limit(1);
@@ -169,7 +181,14 @@ export class DocumentWriteService {
       reason: row.title,
     });
 
-    return { url: presignDownload(config, row.url), expiresInSeconds: 300 };
+    return {
+      // M-49: Content-Disposition attachment + server-derived content type.
+      url: presignDownload(config, row.url, {
+        fileName: row.title,
+        mime: row.mimeType ?? undefined,
+      }),
+      expiresInSeconds: 300,
+    };
   }
 
   /**

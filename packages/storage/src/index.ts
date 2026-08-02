@@ -86,8 +86,30 @@ export function presignUpload(config: StorageConfig, key: string): {
   };
 }
 
-export function presignDownload(config: StorageConfig, key: string): string {
-  return sign(config, "GET", key, DOWNLOAD_TTL_SECONDS);
+/**
+ * M-49: Content-Disposition: attachment + server-side response-content-type
+ * ile imzala. Browser içerik inline render etmesin; MIME client-supplied
+ * metadata'dan değil, sunucu tarafından geçersiz kılınsın.
+ */
+export function presignDownload(
+  config: StorageConfig,
+  key: string,
+  opts: { fileName?: string; mime?: string } = {},
+): string {
+  const params = new URLSearchParams();
+  if (opts.fileName) {
+    params.set(
+      "response-content-disposition",
+      `attachment; filename="${encodeURIComponent(opts.fileName)}"`,
+    );
+  }
+  if (opts.mime) {
+    params.set("response-content-type", opts.mime);
+  }
+  const extra = params.toString();
+  return extra
+    ? sign(config, "GET", key, DOWNLOAD_TTL_SECONDS) + "&" + extra
+    : sign(config, "GET", key, DOWNLOAD_TTL_SECONDS);
 }
 
 /**
@@ -141,6 +163,42 @@ export function objectKey(tenantId: string, fileName: string): string {
 function fileExtension(fileName: string): string {
   const match = /\.([a-zA-Z0-9]{1,8})$/.exec(fileName.trim());
   return match ? `.${match[1]!.toLowerCase()}` : "";
+}
+
+/**
+ * M-50: MIME ↔ extension allowlist. Yalnız bu eşleşmeler kabul edilir;
+ * declared MIME ile uzantı uyuşmazsa reddedilir. `.html` + `application/pdf`
+ * gibi tutarsız kombinasyonlar XSS tetikleyebilir.
+ */
+const MIME_TO_EXTENSIONS: Readonly<Record<string, readonly string[]>> = {
+  "application/pdf": [".pdf"],
+  "image/jpeg": [".jpg", ".jpeg"],
+  "image/png": [".png"],
+  "image/webp": [".webp"],
+  "image/heic": [".heic"],
+  "image/gif": [".gif"],
+  "application/msword": [".doc"],
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [
+    ".docx",
+  ],
+  "application/vnd.ms-excel": [".xls"],
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
+    ".xlsx",
+  ],
+  "text/plain": [".txt"],
+  "text/csv": [".csv"],
+};
+
+export function isMimeExtensionMatch(
+  mime: string | null | undefined,
+  fileName: string,
+): boolean {
+  if (!mime) return false;
+  const base = mime.split(";")[0]!.trim().toLowerCase();
+  const allowed = MIME_TO_EXTENSIONS[base];
+  if (!allowed) return false;
+  const ext = fileExtension(fileName);
+  return allowed.includes(ext);
 }
 
 /**
