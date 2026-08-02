@@ -109,8 +109,14 @@ export class DbService {
     fn: (tx: Database) => Promise<T>,
     opts: { allowLogPurge?: boolean } = {},
   ): Promise<T> {
-    if ((reason ?? "").trim().length < 3) {
-      throw new BadRequestException("bypass_reason_required");
+    // M-42: Bypass reason namespaced olmalı (`<module>:<action>`). 3 karakterlik
+    // sadece string kabul eden gevşek kontroldü, "x" gibi typolara izin
+    // veriyordu. `^[a-z][a-z0-9-]+:[a-z][a-z0-9-]+$` ile audit log'larında
+    // aranabilir, anlamlı kalıyor.
+    if (!/^[a-z][a-z0-9-]+:[a-z][a-z0-9-]+$/.test((reason ?? "").trim())) {
+      throw new BadRequestException(
+        "bypass_reason_must_match_pattern: <module>:<action>",
+      );
     }
     const ctx = this.cls.get("ctx");
     this.logger.warn({

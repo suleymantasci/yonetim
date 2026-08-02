@@ -86,6 +86,18 @@ export class IyzicoWebhookController {
       return { ok: true, status: "failed" };
     }
 
+    // M-30: paidPriceKurus ile record.amountKurus eşit değilse amount drift
+    // var demektir. Status "partial" işaretlenir, fark failure_reason'a yazılır
+    // (KVKK kapsamında reconciliation gerekir; otomatik allocation yapılmaz).
+    const settledAmountKurus = payment.paidPriceKurus;
+    const isFullAmount = settledAmountKurus === record.amountKurus;
+    if (!isFullAmount) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[iyzico] amount drift: payment_id=${record.id} record=${record.amountKurus} paid=${settledAmountKurus}`,
+      );
+    }
+
     // Tahsilat ve mahsup **tek transaction**: ödeme "tamamlandı" görünüp
     // borçlar kapanmadan kalırsa sakin ödediği borcu ekranda görmeye devam
     // eder.
@@ -93,7 +105,10 @@ export class IyzicoWebhookController {
       await tx
         .update(payments)
         .set({
-          status: "completed",
+          status: isFullAmount ? "completed" : "partial",
+          failureReason: isFullAmount
+            ? null
+            : `amount_drift:record=${record.amountKurus}:paid=${settledAmountKurus}`,
           processorRef: payment.paymentId,
           paidAt: new Date(),
           installment: payment.installment,

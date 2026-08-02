@@ -125,8 +125,16 @@ describe("alan bazlı şifreleme (SPEC 5.6)", () => {
     expect(encryptField("x", key, "t")).not.toBe(encryptField("x", key, "t"));
   });
 
-  it("blind index eşitlik sorgusu için deterministiktir", () => {
-    expect(blindIndex("10000000146", key)).toBe(blindIndex("10000000146", key));
+  it("blind index eşitlik sorgusu için deterministiktir (tenant scope)", () => {
+    expect(blindIndex("10000000146", key, "t1")).toBe(
+      blindIndex("10000000146", key, "t1"),
+    );
+  });
+
+  it("blind index farklı tenant için farklı sonuç üretir", () => {
+    expect(blindIndex("10000000146", key, "t1")).not.toBe(
+      blindIndex("10000000146", key, "t2"),
+    );
   });
 });
 

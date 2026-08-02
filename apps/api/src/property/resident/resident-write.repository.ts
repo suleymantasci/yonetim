@@ -572,7 +572,9 @@ export class ResidentWriteRepository {
   async findByTckn(tckn: string): Promise<{ id: string; name: string } | null> {
     const digits = tckn.replace(/\D+/g, "");
     if (digits.length !== 11) return null;
-    const index = this.pii.tcknLookupIndex(digits);
+    // M-7: Blind index tenantId scope'lu.
+    const tenantId = this.db.ctx().tenantId;
+    const index = this.pii.tcknLookupIndex(digits, tenantId);
 
     const memberIds = await this.db.tx(async (tx) =>
       (

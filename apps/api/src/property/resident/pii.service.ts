@@ -44,7 +44,9 @@ export class PiiService {
     if (digits.length !== 11) return null;
     return {
       encrypted: encryptField(digits, this.key(), tenantId),
-      index: blindIndex(digits, this.key()),
+      // M-7: Blind index artık tenant scope'lu — farklı tenant'larda
+      // aynı TCKN için farklı index üretilir, global enumeration engellenir.
+      index: blindIndex(digits, this.key(), tenantId),
     };
   }
 
@@ -58,7 +60,7 @@ export class PiiService {
     if (normalized.length < 15) return null;
     return {
       encrypted: encryptField(normalized, this.key(), tenantId),
-      index: blindIndex(normalized, this.key()),
+      index: blindIndex(normalized, this.key(), tenantId),
       masked: maskIban(normalized),
     };
   }
@@ -94,7 +96,7 @@ export class PiiService {
   }
 
   /** Aynı TCKN'e sahip kayıt var mı sorgusu için index. */
-  tcknLookupIndex(tckn: string): string {
-    return blindIndex(tckn.replace(/\D+/g, ""), this.key());
+  tcknLookupIndex(tckn: string, tenantId: string): string {
+    return blindIndex(tckn.replace(/\D+/g, ""), this.key(), tenantId);
   }
 }
