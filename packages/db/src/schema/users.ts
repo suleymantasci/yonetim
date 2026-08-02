@@ -54,8 +54,23 @@ export const users = pgTable(
     locale: varchar("locale", { length: 5 }).notNull().default("tr"),
     /** Platform seviyesi rol; tenant rolleri memberships tablosunda. */
     platformRole: roleEnum("platform_role"),
-    twoFactorSecret: text("two_factor_secret"),
+    // M-20: TOTP secret artık AES-256-GCM ile şifreli. Eski plaintext
+    // `twoFactorSecret` sütunu kaldırıldı; migration 0014 bunu halleder.
+    twoFactorSecretEncrypted: text("two_factor_secret_encrypted"),
     twoFactorEnabled: boolean("two_factor_enabled").notNull().default(false),
+    // M-19: Telefon artık şifreli. `phone` (plaintext) provider eşleme için
+    // tutuluyor; `phoneEncrypted` gelecekte yeni yazımlarda set edilir
+    // (geriye uyumlu — provider matching phone üzerinden devam eder).
+    phoneEncrypted: text("phone_encrypted"),
+    phoneIndex: varchar("phone_index", { length: 64 }),
+    // Acil durum telefonu da şifreli.
+    emergencyContactPhoneEncrypted: text(
+      "emergency_contact_phone_encrypted",
+    ),
+    emergencyContactPhoneIndex: varchar(
+      "emergency_contact_phone_index",
+      { length: 64 },
+    ),
     whatsappOptIn: boolean("whatsapp_opt_in").notNull().default(false),
     whatsappOptInAt: timestamp("whatsapp_opt_in_at", { withTimezone: true }),
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),

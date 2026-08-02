@@ -185,6 +185,12 @@ export async function issueVerificationToken(params: {
      * girişin ikinci faktörünü geçerdi.
      */
     | "login_otp"
+    /**
+     * H-14: TOTP (2FA) doğrulaması için tek kullanımlık challenge token.
+     * `login_otp`'den ayrı: 2FA aktif olan kullanıcılar için paroladan sonra
+     * bu token üretilir, kullanıcı 6 haneli TOTP kodu ile challenge'ı çözer.
+     */
+    | "login_totp"
     | "invite"
     | "password_reset"
     | "resident_verify"

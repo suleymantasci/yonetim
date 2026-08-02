@@ -261,6 +261,24 @@ export const webPasswordLogin = z.object({
 export type WebPasswordLogin = z.infer<typeof webPasswordLogin>;
 
 /**
+ * M-43: Parola sıfırlama. İki uç: talep (token gönder) ve doğrula (yeni
+ * parola yaz). Talep enumeration-safe — kayıtlı olsun olmasın aynı `sent`
+ * döner. Yeni parola üzerinde policy uygulanır (kontrol service katmanında).
+ */
+export const webPasswordResetRequest = z.object({
+  identifier: authIdentifier,
+  locale: z.string().max(8).optional(),
+});
+export type WebPasswordResetRequest = z.infer<typeof webPasswordResetRequest>;
+
+export const webPasswordResetConfirm = z.object({
+  identifier: authIdentifier,
+  token: z.string().min(1).max(500),
+  newPassword: z.string().min(1).max(200),
+});
+export type WebPasswordResetConfirm = z.infer<typeof webPasswordResetConfirm>;
+
+/**
  * `status` alanı akışın tek yönlendiricisi:
  *  - `session`      → oturum açıldı, `session` dolu.
  *  - `otp_required` → parola doğru ama kod gerekiyor; `session` boş.
@@ -269,15 +287,32 @@ export type WebPasswordLogin = z.infer<typeof webPasswordLogin>;
  * ayarı önceden okuması demekti.
  */
 export const webPasswordLoginResult = z.object({
-  status: z.enum(["session", "otp_required"]),
+  // H-14: "totp_required" — kullanıcı 2FA açık, paroladan sonra TOTP bekleniyor.
+  status: z.enum(["session", "otp_required", "totp_required"]),
   /** Normalize edilmiş kimlik — ikinci adım bunu geri gönderir. */
   identifier: z.string(),
-  /** Kodun gittiği kanal; `session` durumunda `null`. */
+  /** Kodun gittiği kanal; `session` ve `totp_required` durumunda `null`. */
   channel: z.enum(["email", "sms"]).nullable(),
   session: webLoginSession.nullable(),
+  /**
+   * H-14: TOTP challenge token (totp_required durumunda dolu). Kullanıcı
+   * `verifyLoginTotp` ucuna bu token + 6 haneli TOTP kodu ile gelir.
+   */
+  challengeToken: z.string().nullable().optional(),
 });
 
 export type WebPasswordLoginResult = z.infer<typeof webPasswordLoginResult>;
+
+/**
+ * H-14: TOTP doğrulama. Paroladan sonra `status: "totp_required"` döndüğünde
+ * istemci bu uçla devam eder: `challengeToken` + 6 haneli TOTP kodu.
+ */
+export const webLoginTotpVerify = z.object({
+  identifier: authIdentifier,
+  challengeToken: z.string().min(1).max(500),
+  code: z.string().regex(/^\d{6}$/, { message: "Kod 6 haneli olmalı." }),
+});
+export type WebLoginTotpVerify = z.infer<typeof webLoginTotpVerify>;
 
 /**
  * `POST /v1/auth/web/password/otp` — parolalı girişin ikinci adımı.

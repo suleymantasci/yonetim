@@ -10,9 +10,15 @@ import {
   tenantSwitch,
   webLoginOtpVerify,
   webLoginRequest,
+  webLoginTotpVerify,
   webLoginVerify,
   webPasswordLogin,
+  webPasswordResetConfirm,
+  webPasswordResetRequest,
   type AuthMe,
+  type WebPasswordResetConfirm,
+  type WebPasswordResetRequest,
+  type WebLoginTotpVerify,
   type TenantSwitch,
   type WebLoginOtpVerify,
   type WebLoginRequest,
@@ -88,6 +94,21 @@ export class AuthController {
     return this.web.verifyLoginOtp(dto);
   }
 
+  @Public()
+  @Post("web/password/totp")
+  @HttpCode(200)
+  @ApiOperation({
+    summary: "H-14: Parolalı girişin TOTP doğrulaması (2FA)",
+    description:
+      "Paroladan sonra `status: totp_required` döndüğünde istemci bu uçla " +
+      "devam eder. Tek kullanımlık challenge token + 6 haneli TOTP kodu.",
+  })
+  webPasswordTotp(
+    @Body(new ZodBodyPipe(webLoginTotpVerify)) dto: WebLoginTotpVerify,
+  ) {
+    return this.web.verifyLoginTotp(dto);
+  }
+
   /* ---------------------------------------------------------------- *
    * Web (parolasız) — magic link + SMS OTP: kayıt doğrulaması ve kurtarma
    * ---------------------------------------------------------------- */
@@ -118,6 +139,39 @@ export class AuthController {
   })
   webVerify(@Body(new ZodBodyPipe(webLoginVerify)) dto: WebLoginVerify) {
     return this.web.verify(dto);
+  }
+
+  @Public()
+  @Post("web/password/reset")
+  @HttpCode(202)
+  @ApiOperation({
+    summary: "M-43: Parola sıfırlama bağlantısı gönder",
+    description:
+      "Identifier (e-posta veya telefon) alır, tek kullanımlık token " +
+      "üretir ve e-posta/SMS ile sıfırlama bağlantısı yollar. " +
+      "Enumeration-safe: kayıtlı olsun olmasın aynı `sent` yanıtı döner.",
+  })
+  webPasswordResetRequest(
+    @Body(new ZodBodyPipe(webPasswordResetRequest))
+    dto: WebPasswordResetRequest,
+  ): Promise<{ sent: true }> {
+    return this.web.requestPasswordReset(dto);
+  }
+
+  @Public()
+  @Post("web/password/reset/confirm")
+  @HttpCode(200)
+  @ApiOperation({
+    summary: "M-43: Parola sıfırlama — yeni parolayı uygula",
+    description:
+      "Talep aşamasından gelen token + yeni parola. Token tüketilir, " +
+      "parola policy uygulanır, kullanıcının tüm aktif oturumları iptal edilir.",
+  })
+  webPasswordResetConfirm(
+    @Body(new ZodBodyPipe(webPasswordResetConfirm))
+    dto: WebPasswordResetConfirm,
+  ): Promise<{ ok: true }> {
+    return this.web.confirmPasswordReset(dto);
   }
 
   @Public()

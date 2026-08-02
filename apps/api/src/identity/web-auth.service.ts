@@ -3,6 +3,8 @@ import { and, eq, isNull } from "drizzle-orm";
 
 import {
   burnPasswordTime,
+  checkPasswordPolicy,
+  hashPassword,
   consumeVerificationToken,
   createSession,
   destroySession,
@@ -14,7 +16,9 @@ import {
   switchTenant,
   verifyPassword,
 } from "@yonetim/auth";
+import { verifyTotp } from "@yonetim/auth";
 import { siteConfig } from "@yonetim/config";
+import { decryptField } from "@yonetim/core/crypto";
 import type {
   WebLoginOtpVerify,
   WebLoginRequest,
@@ -24,7 +28,7 @@ import type {
   WebPasswordLoginResult,
 } from "@yonetim/contracts";
 import { errors, normalizePhone } from "@yonetim/core";
-import { memberships, users } from "@yonetim/db";
+import { memberships, sessions, users } from "@yonetim/db";
 import { loginCodeEmail, magicLinkEmail, sendEmail } from "@yonetim/emails";
 import { sendSms } from "@yonetim/sms";
 
@@ -130,6 +134,136 @@ export class WebAuthService {
     await sendEmail({ to: identifier, subject: mail.subject, html: mail.html });
   }
 
+  /**
+   * M-43: Parola sıfırlama talebi — kullanıcının identifier'ına (e-posta
+   * veya telefon) tek kullanımlık sıfırlama token'ı gönderilir. Aynı
+   * `request` akışı gibi enumeration-safe: identifier kayıtlı olsun olmasın
+   * aynı `sent:true` döner. Token amacı `password_reset`; `consume` sırasında
+   * kontrol ediliyor, yanlış amaç reddediliyor.
+   */
+  async requestPasswordReset(
+    dto: { identifier: string; locale?: string },
+  ): Promise<{ sent: true }> {
+    const raw = dto.identifier.trim();
+    const isEmail = raw.includes("@");
+    const identifier = isEmail ? raw.toLowerCase() : normalizePhone(raw);
+    if (!identifier) throw errors.validation("invalid_identifier");
+
+    // Identifier başına hız sınırı (login ile aynı — farklı identifier'lar
+    // deneyerek enumeration'a karşı).
+    const limit = await rateLimit(RATE_LIMITS.otp, identifier);
+    if (!limit.allowed) throw errors.rateLimited();
+
+    const user = await this.db.bypass("auth:pwreset-lookup", async (tx) => {
+      const rows = await tx
+        .select({ id: users.id, locale: users.locale })
+        .from(users)
+        .where(
+          and(
+            isEmail ? eq(users.email, identifier) : eq(users.phone, identifier),
+            isNull(users.deletedAt),
+          ),
+        )
+        .limit(1);
+      return rows[0] ?? null;
+    });
+
+    if (!user) {
+      // Enumeration-safe: kayıt yoksa da aynı yanıt.
+      this.logger.log({
+        event: "auth.pwreset_unknown_identifier",
+        identifier,
+      });
+      return { sent: true };
+    }
+
+    // Tek kullanımlık token, 15 dakika ömürlü.
+    const { token } = await issueVerificationToken({
+      identifier,
+      purpose: "password_reset",
+      ttlMinutes: 15,
+      metadata: { userId: user.id },
+    });
+
+    const url = `${siteConfig.env.appUrl}/sifre-sifirla?e=${encodeURIComponent(
+      identifier,
+    )}&t=${token}`;
+    const locale = dto.locale ?? user.locale ?? "tr";
+    const mail = magicLinkEmail(translatorFor("notification", locale), {
+      url,
+      expiresMinutes: 15,
+    });
+    await sendEmail({ to: identifier, subject: mail.subject, html: mail.html });
+
+    this.logger.log({ event: "auth.pwreset_requested", userId: user.id });
+    return { sent: true };
+  }
+
+  /**
+   * M-43: Parola sıfırlama — token doğrulanır, parola policy uygulanır,
+   * yeni parola yazılır, kullanıcının TÜM aktif oturumları iptal edilir
+   * (çalınmış token'la başkası giremesin diye).
+   */
+  async confirmPasswordReset(dto: {
+    identifier: string;
+    token: string;
+    newPassword: string;
+  }): Promise<{ ok: true }> {
+    const raw = dto.identifier.trim();
+    const isEmail = raw.includes("@");
+    const identifier = isEmail ? raw.toLowerCase() : normalizePhone(raw);
+    if (!identifier) throw errors.validation("invalid_identifier");
+
+    const policy = checkPasswordPolicy(dto.newPassword);
+    if (!policy.ok) {
+      throw new BadRequestException({
+        code: "validation_failed",
+        message: "weak_password",
+        details: { problems: policy.problems },
+      });
+    }
+
+    const result = await consumeVerificationToken({
+      identifier,
+      token: dto.token,
+      purpose: "password_reset",
+    });
+    if (!result.ok) {
+      throw new BadRequestException({
+        code: "validation_failed",
+        message: "token_rejected",
+        details: { reason: result.reason },
+      });
+    }
+
+    const userId = String(
+      (result.metadata as { userId?: string }).userId ?? "",
+    );
+    if (!userId) {
+      throw new BadRequestException({
+        code: "validation_failed",
+        message: "token_rejected",
+        details: { reason: "missing_user" },
+      });
+    }
+
+    const newHash = await hashPassword(dto.newPassword);
+    await this.db.bypass("auth:pwreset-write", async (tx) => {
+      // Parolayı güncelle; deletedAt kontrolü yaparak soft-deleted
+      // hesap üzerinden reset engellenir.
+      await tx
+        .update(users)
+        .set({ passwordHash: newHash, updatedAt: new Date() })
+        .where(and(eq(users.id, userId), isNull(users.deletedAt)));
+      // Mevcut tüm oturumları iptal et — token çalındıysa bile
+      // eski cihazlardan girişi kesilir.
+      await tx.delete(sessions).where(eq(sessions.userId, userId));
+    });
+
+    this.logger.log({ event: "auth.pwreset_completed", userId });
+    return { ok: true };
+  }
+
   private async sendOtp(
     identifier: string,
     userId: string,
@@ -195,7 +329,11 @@ export class WebAuthService {
 
     const user = await this.db.bypass("auth:password-lookup", async (tx) => {
       const rows = await tx
-        .select({ id: users.id, passwordHash: users.passwordHash })
+        .select({
+          id: users.id,
+          passwordHash: users.passwordHash,
+          twoFactorEnabled: users.twoFactorEnabled,
+        })
         .from(users)
         .where(
           and(
@@ -221,6 +359,25 @@ export class WebAuthService {
     }
 
     if (!env().AUTH_OTP_ENABLED) {
+      // H-14: Kullanıcının 2FA'sı açıksa paroladan sonra TOTP doğrulaması
+      // iste. Tek faktörlü oturum açılmadan önce mola. Login `webPasswordLogin`
+      // sözleşmesinde `status` alanı kullanılır; yeni değer: "totp_required".
+      if (user.twoFactorEnabled) {
+        const challenge = await issueVerificationToken({
+          identifier,
+          purpose: "login_totp",
+          ttlMinutes: 5,
+          metadata: { userId: user.id, kind: "totp" },
+        });
+        this.logger.log({ event: "auth.totp_challenge_issued", userId: user.id });
+        return {
+          status: "totp_required",
+          identifier,
+          channel: null,
+          session: null,
+          challengeToken: challenge.token,
+        };
+      }
       const session = await this.openSession(user.id);
       return { status: "session", identifier, channel: null, session };
     }
@@ -274,6 +431,72 @@ export class WebAuthService {
       });
     }
 
+    return this.openSession(userId);
+  }
+
+  /**
+   * H-14: TOTP (2FA) doğrulaması — `loginWithPassword` döngüsünde
+   * `status: "totp_required"` döndüğünde çağrılır. Token + 6 haneli TOTP
+   * kodu alır; `verifyTotp` ile doğrular, başarılıysa oturum açar.
+   */
+  async verifyLoginTotp(dto: {
+    identifier: string;
+    challengeToken: string;
+    code: string;
+  }): Promise<WebLoginSession> {
+    const raw = dto.identifier.trim();
+    const isEmail = raw.includes("@");
+    const identifier = isEmail ? raw.toLowerCase() : normalizePhone(raw);
+    if (!identifier) throw errors.validation("invalid_identifier");
+
+    const result = await consumeVerificationToken({
+      identifier,
+      token: dto.challengeToken,
+      purpose: "login_totp",
+    });
+    if (!result.ok) {
+      throw new BadRequestException({
+        code: "validation_failed",
+        message: "token_rejected",
+        details: { reason: result.reason },
+      });
+    }
+    const userId = String(
+      (result.metadata as { userId?: string }).userId ?? "",
+    );
+    if (!userId) {
+      throw new BadRequestException({
+        code: "validation_failed",
+        message: "token_rejected",
+        details: { reason: "userNotFound" },
+      });
+    }
+
+    // M-20: Kullanıcının TOTP secret'ı AES-256-GCM ile şifreli.
+    const user = await this.db.bypass("auth:totp-lookup", async (tx) => {
+      const rows = await tx
+        .select({
+          twoFactorSecretEncrypted: users.twoFactorSecretEncrypted,
+        })
+        .from(users)
+        .where(and(eq(users.id, userId), isNull(users.deletedAt)))
+        .limit(1);
+      return rows[0] ?? null;
+    });
+    if (!user?.twoFactorSecretEncrypted) {
+      throw errors.unauthorized("totp_not_configured");
+    }
+    const secret = decryptField(
+      user.twoFactorSecretEncrypted,
+      env().FIELD_ENCRYPTION_KEY,
+      `user:${userId}`,
+    );
+    if (!verifyTotp(secret, dto.code)) {
+      this.logger.warn({ event: "auth.totp_failed", userId });
+      throw errors.unauthorized("invalid_totp");
+    }
+
+    this.logger.log({ event: "auth.totp_verified", userId });
     return this.openSession(userId);
   }
 
