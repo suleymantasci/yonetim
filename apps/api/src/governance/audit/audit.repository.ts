@@ -36,6 +36,11 @@ export class AuditRepository {
 
   async list(q: AuditListQuery) {
     const conditions: SQL[] = [];
+    // M-37: `audit_logs.tenant_id` nullable; RLS dynamic loop'a girmediği
+    // için tenant filtresi açıkça sorguya eklenir. Aksi halde login olmuş
+    // kullanıcı başka tenant'ın audit satırlarını görebilir.
+    const ctx = this.db.ctx();
+    if (ctx?.tenantId) conditions.push(eq(auditLogs.tenantId, ctx.tenantId));
     if (q.action) conditions.push(eq(auditLogs.action, q.action));
     if (q.resource) conditions.push(eq(auditLogs.resource, q.resource));
     if (q.from) conditions.push(gte(auditLogs.createdAt, q.from));

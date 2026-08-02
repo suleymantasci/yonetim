@@ -68,8 +68,9 @@ export class AuthController {
   })
   webPassword(
     @Body(new ZodBodyPipe(webPasswordLogin)) dto: WebPasswordLogin,
+    @Req() req: Request,
   ) {
-    return this.web.loginWithPassword(dto);
+    return this.web.loginWithPassword(dto, { ip: req.ip });
   }
 
   @Public()
@@ -101,8 +102,9 @@ export class AuthController {
   })
   webRequest(
     @Body(new ZodBodyPipe(webLoginRequest)) dto: WebLoginRequest,
+    @Req() req: Request,
   ) {
-    return this.web.request(dto);
+    return this.web.request(dto, { ip: req.ip });
   }
 
   @Public()

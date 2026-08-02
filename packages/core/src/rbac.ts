@@ -59,6 +59,7 @@ export const PERMISSIONS = [
   "kvkk:read", "kvkk:manage", "kvkk:export_own",
   "audit:read",
   "settings:read", "settings:write",
+  "certificate:write", // Borcu yoktur belgesi üretme (M-46)
   "admin:tenants", "admin:users", "admin:billing", "admin:campaigns",
   "admin:flags", "admin:impersonate", "admin:health",
 ] as const;
@@ -129,6 +130,7 @@ const MANAGER_PERMS: Permission[] = [
   "kvkk:read", "kvkk:manage",
   "audit:read",
   "settings:read", "settings:write",
+  "certificate:write", // M-46: Manager belge üretebilir, salt okuyan accountant/debt:read rolü üretemez
 ];
 
 const READ_ONLY_FINANCE: Permission[] = [

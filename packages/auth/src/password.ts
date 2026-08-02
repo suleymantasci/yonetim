@@ -55,6 +55,44 @@ export interface PasswordPolicyResult {
   problems: string[];
 }
 
+/**
+ * M-44: Bilinen / sık kullanılan parolaların küçük bir blocklist'i. Tam
+ * HIBP API entegrasyonu (k-anonymity modeli) ileride eklenebilir; bu liste
+ * OWASP "top breached passwords" özetinden alınmıştır ve minimum savunma.
+ */
+const COMMON_PASSWORDS = new Set([
+  "password",
+  "sifre",
+  "qwerty",
+  "111111",
+  "123456",
+  "1234567",
+  "12345678",
+  "123456789",
+  "1234567890",
+  "abc123",
+  "admin",
+  "welcome",
+  "letmein",
+  "iloveyou",
+  "monkey",
+  "dragon",
+  "master",
+  "passw0rd",
+  "p@ssword",
+  "password1",
+  "123123",
+  "qazwsx",
+  "asdf",
+  "asdfgh",
+  "zxcvbn",
+  "000000",
+  "11111111",
+  "1234",
+  "12345",
+  "654321",
+]);
+
 export function checkPasswordPolicy(password: string): PasswordPolicyResult {
   const problems: string[] = [];
   if (password.length < 10) problems.push("En az 10 karakter olmalı.");
@@ -64,6 +102,35 @@ export function checkPasswordPolicy(password: string): PasswordPolicyResult {
   if (/^(?:123456|password|sifre|qwerty|111111)/i.test(password)) {
     problems.push("Çok yaygın bir parola.");
   }
+  // M-44: Tam blocklist kontrolü (prefix-only yetersiz).
+  if (COMMON_PASSWORDS.has(password.toLowerCase())) {
+    problems.push("Çok yaygın bir parola.");
+  }
   const score = Math.max(0, 4 - problems.length);
   return { ok: problems.length === 0, score, problems };
+}
+
+/**
+ * M-44: Identity-parity kontrolü — parola kullanıcının e-posta, telefon veya
+ * ad/soyadı içeriyorsa reddet. Varsa `false` döner.
+ */
+export function passwordContainsIdentity(
+  password: string,
+  identity: { email?: string | null; phone?: string | null; firstName?: string | null; lastName?: string | null },
+): boolean {
+  const lower = password.toLowerCase();
+  if (identity.email) {
+    const local = identity.email.split("@")[0]?.toLowerCase() ?? "";
+    if (local.length >= 4 && lower.includes(local)) return true;
+  }
+  if (identity.phone) {
+    const digits = identity.phone.replace(/\D/g, "");
+    if (digits.length >= 6 && lower.includes(digits)) return true;
+  }
+  for (const part of [identity.firstName, identity.lastName]) {
+    if (!part) continue;
+    const norm = part.toLowerCase().replace(/[^a-zçğıöşü]/g, "");
+    if (norm.length >= 4 && lower.includes(norm)) return true;
+  }
+  return false;
 }

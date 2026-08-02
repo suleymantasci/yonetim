@@ -23,7 +23,10 @@ export class CertificateController {
   }
 
   @Post()
-  @RequirePermission("debt:read")
+  // M-46: Belge üretmek salt okuma yetkisi gerektirmez. `debt:read` ile
+  // kalıcı kayıt oluşturulabiliyordu — yetkisi düşük hesaplar resmi
+  // belge üretebiliyordu. `certificate:write` ayrı bir izin.
+  @RequirePermission("certificate:write")
   @ApiOperation({
     summary: "Belge üret",
     description:

@@ -24,6 +24,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
+    # M-26: GITHUB_TOKEN izinlerini en az yetkiyle sınırla. Depo default
+    # `read-all` ise bir PR'dan gelen kod başka PR'ları tetikleyebilir veya
+    # metadata yazabilir; bizim için yalnız `contents: read` yeterli.
+    permissions:
+      contents: read
+
     services:
       postgres:
         image: postgres:17-alpine

@@ -60,7 +60,10 @@ export class WebAuthService {
 
   constructor(private readonly db: DbService) {}
 
-  async request(dto: WebLoginRequest): Promise<{
+  async request(
+    dto: WebLoginRequest,
+    extras: { ip?: string } = {},
+  ): Promise<{
     channel: "email" | "sms";
     identifier: string;
   }> {
@@ -69,8 +72,18 @@ export class WebAuthService {
     const identifier = isEmail ? raw.toLowerCase() : normalizePhone(raw);
     if (!identifier) throw errors.validation("invalid_identifier");
 
-    const limit = await rateLimit(RATE_LIMITS.login, identifier);
-    if (!limit.allowed) throw errors.rateLimited();
+    // M-47: IP-bazlı ikinci limit (identifier ile distributed brute-force
+    // kovalayan ek savunma). Detaylar loginWithPassword üstünde.
+    const ip = extras.ip;
+    const limitByIdentifier = await rateLimit(
+      RATE_LIMITS.login,
+      identifier,
+    );
+    if (!limitByIdentifier.allowed) throw errors.rateLimited();
+    if (ip) {
+      const limitByIp = await rateLimit(RATE_LIMITS.login, `ip:${ip}`);
+      if (!limitByIp.allowed) throw errors.rateLimited();
+    }
 
     const user = await this.db.bypass("auth:lookup", async (tx) => {
       const rows = await tx
@@ -160,14 +173,25 @@ export class WebAuthService {
    */
   async loginWithPassword(
     dto: WebPasswordLogin,
+    extras: { ip?: string } = {},
   ): Promise<WebPasswordLoginResult> {
     const raw = dto.identifier.trim();
     const isEmail = raw.includes("@");
     const identifier = isEmail ? raw.toLowerCase() : normalizePhone(raw);
     if (!identifier) throw errors.validation("invalid_identifier");
 
-    const limit = await rateLimit(RATE_LIMITS.login, identifier);
-    if (!limit.allowed) throw errors.rateLimited();
+    // M-47: IP-bazlı ikinci limit (identifier ile distributed brute-force
+    // kovalayan ek savunma).
+    const ip = extras.ip;
+    const limitByIdentifier = await rateLimit(
+      RATE_LIMITS.login,
+      identifier,
+    );
+    if (!limitByIdentifier.allowed) throw errors.rateLimited();
+    if (ip) {
+      const limitByIp = await rateLimit(RATE_LIMITS.login, `ip:${ip}`);
+      if (!limitByIp.allowed) throw errors.rateLimited();
+    }
 
     const user = await this.db.bypass("auth:password-lookup", async (tx) => {
       const rows = await tx

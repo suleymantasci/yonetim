@@ -62,7 +62,17 @@ const envSchema = z.object({
     .transform((value) => value === "true" || value === "1"),
 
 
-  REDIS_URL: z.string().optional(),
+  REDIS_URL: z
+    .string()
+    .min(1)
+    .optional()
+    .refine(
+      (v) => v !== undefined || process.env.NODE_ENV !== "production",
+      {
+        message:
+          "REDIS_URL üretimde zorunlu (H-4): oturum önbelleği ve hız sınırı için.",
+      },
+    ),
   /** Oturum önbelleği TTL'i, saniye — §17 kararı 5: 60 sn, invalidation'lı. */
   SESSION_CACHE_TTL: z.coerce.number().int().min(0).max(600).default(60),
 

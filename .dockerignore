@@ -1,0 +1,51 @@
+# Docker build context'ten çıkar — builder'a gereksiz dosya
+# gönderilmesin, build cache şişmesin, gizli kalması gereken .env
+# dosyaları image'a girmesin (M-25, M-26).
+
+# Bağımlılıklar — image'a multi-stage ile alınır
+node_modules
+**/node_modules
+.pnpm-store
+
+# Build çıktıları
+.next
+**/.next
+dist
+**/dist
+out
+**/out
+.turbo
+**/.turbo
+coverage
+
+# VCS
+.git
+.gitignore
+
+# IDE / OS
+.DS_Store
+.idea
+.vscode
+
+# Ortam ve gizli dosyalar — KRİTİK
+.env
+.env.*
+!**/.env.example
+!**/.env.test.example
+
+# Testler
+**/tests/integration
+**/coverage
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+
+# Döküman ve yardımcı
+*.md
+!apps/api/README.md
+docs/
+scripts/
+
+# CI
+.github
+.gitlab-ci.yml

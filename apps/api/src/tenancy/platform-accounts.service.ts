@@ -470,7 +470,11 @@ export class PlatformAccountsService {
         throw errors.validation("restore_before_extend");
       }
 
-      const interval = sql.raw(`interval '${params.days} days'`);
+      // M-45: `sql.raw` ile kullanıcı girdisi SQL'e sokulmuyor; Drizzle
+      // parameter binding yerine integer + Drizzle `sql` template ile
+      // `INTERVAL '1 day' * $1` deseni kullanılır. `params.days` Zod ile
+      // 1..730 aralığında doğrulanıyor, ama saldırı yüzeyini azaltıyoruz.
+      const interval = sql`make_interval(days => ${params.days})`;
       const onTrial = row.status === "trial";
 
       await tx.execute(sql`
