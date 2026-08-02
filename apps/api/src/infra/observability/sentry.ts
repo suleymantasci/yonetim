@@ -82,9 +82,11 @@ function scrub<T extends ScrubbableEvent>(event: T): T {
  * bir takas: maskelenmiş bir sipariş numarası hata ayıklamayı biraz zorlaştırır,
  * sızmış bir TCKN geri alınamaz.
  */
+// L-21: IBAN spaced format için de pattern. TR12 3456 ... gibi gösterimler
+// maskelenmeden exception'a gidebiliyordu; whitespace'i de kabul eden pattern.
 const PII_PATTERNS: Array<[RegExp, string]> = [
   [/\b\d{11}\b/g, "[tckn]"],
-  [/\bTR\d{24}\b/gi, "[iban]"],
+  [/\bTR[\s\d]{24,30}\b/gi, "[iban]"],
 ];
 
 function maskPii(text: string): string {

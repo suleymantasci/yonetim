@@ -19,7 +19,8 @@ import type {
   ResidentUpdate,
   TcknLookupResult,
 } from "@yonetim/contracts";
-import { maskPhone } from "@yonetim/core";
+import { maskPhone, errors } from "@yonetim/core";
+import { rateLimit } from "@yonetim/auth/rate-limit";
 
 import { AuditService } from "../../governance/audit/audit.service";
 import { DbService } from "../../infra/db/db.service";
@@ -376,6 +377,31 @@ export class ResidentService {
   }
 
   async findByTckn(tckn: string): Promise<TcknLookupResult> {
+    // H-7: TCKN doğrulama enumeration penceresini kapat. Kullanıcı başına
+    // 5/dk + 50/saat; aynı IP için de 10/dk. Yetkili yönetici bile dakikada
+    // 5'ten fazla TCKN deneyemez. Brute-force ile tüm 11 haneli TCKN uzayını
+    // taramak (10^11) bu sınırla 100 milyon saat alır.
+    const ctx = this.db.ctx();
+    if (ctx?.userId) {
+      const perUser = await rateLimit(
+        { key: "tckn_user", limit: 5, windowSeconds: 60 },
+        `user:${ctx.userId}`,
+      );
+      if (!perUser.allowed) throw errors.rateLimited();
+      const perHour = await rateLimit(
+        { key: "tckn_user_hr", limit: 50, windowSeconds: 3600 },
+        `user:${ctx.userId}`,
+      );
+      if (!perHour.allowed) throw errors.rateLimited();
+    }
+    if (ctx?.ip) {
+      const perIp = await rateLimit(
+        { key: "tckn_ip", limit: 10, windowSeconds: 60 },
+        `ip:${ctx.ip}`,
+      );
+      if (!perIp.allowed) throw errors.rateLimited();
+    }
+
     const found = await this.write.findByTckn(tckn);
     if (!found) return { found: false, id: null, name: null };
 

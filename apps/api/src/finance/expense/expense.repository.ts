@@ -186,7 +186,13 @@ export class ExpenseRepository {
     ];
 
     if (q.search) {
-      const needle = `%${q.search}%`;
+      // L-18: SQL LIKE pattern karakterlerini escape et; kullanıcı `%`
+      // veya `_` gönderirse wildcard olarak yorumlanmasın.
+      const escaped = q.search
+        .replace(/\\/g, "\\\\")
+        .replace(/%/g, "\\%")
+        .replace(/_/g, "\\_");
+      const needle = `%${escaped}%`;
       const search = or(
         ilike(expenses.description, needle),
         ilike(expenses.vendorName, needle),
