@@ -16,6 +16,9 @@
       ]
     },
     "allowJs": true,
+    // L-12: AllowJs açıkken checkJs de açık olmalı — aksi halde JS
+    // dosyaları type-check olmadan derleme kapsamına girer.
+    "checkJs": false,
     "incremental": true
   },
   "include": [

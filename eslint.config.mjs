@@ -96,8 +96,11 @@ export default tseslint.config(
           caughtErrors: "none",
         },
       ],
-      // `any` göçün ortasında geçici olarak kaçınılmaz; uyarı kalsın, kapı olmasın.
-      "@typescript-eslint/no-explicit-any": "warn",
+      // L-13: Production kaynak kodunda `any` error. Request payload'ları
+      // `unknown` olarak işaretlenmeli; servis katmanı Zod ile doğrulamalı.
+      // Test dosyaları aşağıdaki override ile yine uyarı alır (test'lerde
+      // gevşeklik kabul edilebilir).
+      "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/no-empty-object-type": "off",
       "no-console": ["warn", { allow: ["warn", "error"] }],
       eqeqeq: ["error", "smart"],

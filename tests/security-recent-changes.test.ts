@@ -49,7 +49,7 @@ describe("M-6/M-7: Field encryption HKDF + tenant-scoped blind index", () => {
 });
 
 describe("L-15: scrypt v1 format with N/r/p parameters", () => {
-  it("hashPassword yeni format üretir (v1\$N\$r\$p\$salt\$hash)", async () => {
+  it("hashPassword yeni format üretir (v1$N$r$p$salt$hash)", async () => {
     const { hashPassword, HASH_VERSION } = await import(
       "../packages/auth/src/password"
     );
@@ -68,15 +68,14 @@ describe("L-15: scrypt v1 format with N/r/p parameters", () => {
       "../packages/auth/src/password"
     );
     const hash = await hashPassword("test-password-1234");
-    expect(await verifyPassword("test-password-1234", hash)).toBe(true);
-    expect(await verifyPassword("wrong-password", hash)).toBe(false);
+    const ok = await verifyPassword("test-password-1234", hash);
+    const wrong = await verifyPassword("wrong-password", hash);
+    expect(ok).toBe(true);
+    expect(wrong).toBe(false);
   });
 
   it("eski 'scrypt$salt$hash' formatı hâlâ kabul edilir (backward-compat)", async () => {
-    const { hashPassword: _, verifyPassword } = await import(
-      "../packages/auth/src/password"
-    );
-    // Bu eski format hash'i, Node scrypt default params ile üretildi.
+    // Eski format hash'i, Node scrypt default params ile üretildi.
     // Doğrulama: salt+hash bileşenleri aynı olduğunda eşleşmeli.
     const oldHash =
       "scrypt$9Xh3k2Q5L8mNpR7vT4wY6zA1bC0dE2fG$abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
