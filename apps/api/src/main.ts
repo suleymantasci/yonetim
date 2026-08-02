@@ -84,6 +84,51 @@ async function bootstrap(): Promise<void> {
   }
 
   /**
+   * M-4: Origin/Referer tabanlı CSRF savunması (defense-in-depth).
+   * Cookie-authenticated state-changing isteklerde (POST/PUT/PATCH/DELETE)
+   * Origin başlığı bilinen origin listesiyle eşleşmeli. Bu, SameSite=Lax
+   * cookie'ye ek koruma katmanı — özellikle subdomain'ler arası (panel
+   * tenant subdomain'leri) ataklara karşı.
+   *
+   * Mobil Bearer token akışında Origin header'ı olmayabilir; bu durumda
+   * auth source "mobile" ise skip edilir (Authorization header zaten
+   * CSRF'e karşı koruma sağlar).
+   */
+  const safeOrigins = new Set(
+    e.CORS_ORIGINS.split(",")
+      .map((o) => o.trim())
+      .filter(Boolean),
+  );
+  // Ana domain'ler her zaman güvenli (Caddy reverse proxy üzerinden
+  // gelen istekler için). apps/api reverse proxy üzerinden erişildiği
+  // için kendi origin'i de güvenli.
+  safeOrigins.add(`http://localhost:${e.PORT}`);
+  safeOrigins.add(`https://localhost:${e.PORT}`);
+
+  app.use((req: import("express").Request, res: import("express").Response, next: import("express").NextFunction) => {
+    const method = req.method.toUpperCase();
+    if (method === "GET" || method === "HEAD" || method === "OPTIONS") return next();
+    // Mobil Bearer / internal token istekleri Authorization header taşır;
+    // cookie tabanlı CSRF bunlar için geçerli değil.
+    if (req.headers.authorization) return next();
+    const origin = req.headers.origin;
+    const referer = req.headers.referer;
+    const originOk = origin && safeOrigins.has(origin);
+    const refererOk =
+      referer && [...safeOrigins].some((o) => referer.startsWith(o));
+    if (originOk || refererOk) return next();
+    // Same-origin (Caddy arkasında) Origin header boş olabilir; host header
+    // allowlist'teki origin'lerle eşleşiyorsa da geçerli.
+    const host = req.headers.host;
+    if (host && [...safeOrigins].some((o) => o.endsWith(`://${host}`))) {
+      return next();
+    }
+    res
+      .status(403)
+      .json({ error: { code: "csrf_origin_check_failed", message: "Origin doğrulanamadı." } });
+  });
+
+  /**
    * Swagger yalnız geliştirmede açık. Üretimde `/v1/docs` + `/v1/docs.json`
    * herkese açıldığında tüm uç yüzeyi, auth/permission şemaları, payload
    * validasyonları indekslenebilir olur; saldırı yüzeyi haritası bedavaya

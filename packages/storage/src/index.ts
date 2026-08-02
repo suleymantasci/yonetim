@@ -173,3 +173,47 @@ export function isAllowedMimeType(value: string | null | undefined): boolean {
   const base = value.split(";")[0]!.trim().toLowerCase();
   return (ALLOWED_MIME_TYPES as readonly string[]).includes(base);
 }
+
+/**
+ * H-15: Magic bytes (dosya imzası) tespiti. Client-supplied Content-Type'a
+ * güvenmek yerine nesnenin ilk 4096 byte'ını çekip imzayı kontrol ediyoruz.
+ * Basit signature map; PDF, JPEG, PNG, ZIP tabanlı Office formatları kapsar.
+ */
+const MAGIC_SIGNATURES: ReadonlyArray<{
+  mime: string;
+  bytes: readonly number[];
+}> = [
+  { mime: "application/pdf", bytes: [0x25, 0x50, 0x44, 0x46] }, // %PDF
+  { mime: "image/jpeg", bytes: [0xff, 0xd8, 0xff] },
+  { mime: "image/png", bytes: [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a] },
+  { mime: "image/webp", bytes: [0x52, 0x49, 0x46, 0x46] }, // RIFF...WEBP
+  { mime: "image/gif", bytes: [0x47, 0x49, 0x46, 0x38] }, // GIF8
+  // ZIP tabanlı: docx, xlsx, pptx — ilk 4 byte PK\x03\x04
+  { mime: "application/zip", bytes: [0x50, 0x4b, 0x03, 0x04] },
+];
+
+export async function detectContentType(
+  config: StorageConfig,
+  key: string,
+): Promise<string | null> {
+  // Range header ile ilk 4096 byte'ı çek.
+  const url = sign(config, "GET", key, DOWNLOAD_TTL_SECONDS);
+  const res = await fetch(url, {
+    method: "GET",
+    headers: { Range: "bytes=0-4095" },
+  });
+  if (!res.ok) return null;
+  const buf = new Uint8Array(await res.arrayBuffer());
+  for (const sig of MAGIC_SIGNATURES) {
+    if (sig.bytes.length > buf.length) continue;
+    let match = true;
+    for (let i = 0; i < sig.bytes.length; i++) {
+      if (buf[i] !== sig.bytes[i]) {
+        match = false;
+        break;
+      }
+    }
+    if (match) return sig.mime;
+  }
+  return null;
+}

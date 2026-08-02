@@ -11,6 +11,7 @@ import { errors } from "@yonetim/core";
 import { documents } from "@yonetim/db";
 import {
   deleteObject,
+  detectContentType,
   headObject,
   isAllowedMimeType,
   MAX_UPLOAD_BYTES,
@@ -88,6 +89,16 @@ export class DocumentWriteService {
       throw errors.validation(
         object.sizeBytes > MAX_UPLOAD_BYTES ? "file_too_large" : "unsupported_file_type",
       );
+    }
+
+    // H-15: Client-supplied Content-Type yeterli değil — sadece HEAD meta verisi
+    // saldırgan tarafından ayarlanabilir. Nesnenin ilk 4096 byte'ını okuyup
+    // magic bytes (dosya imzası) ile karşılaştırıyoruz. Uyuşmazsa nesne silinir
+    // ve belge oluşturma reddedilir.
+    const detected = await detectContentType(config, dto.key);
+    if (!detected || !isAllowedMimeType(detected)) {
+      await deleteObject(config, dto.key);
+      throw errors.validation("unsupported_file_type");
     }
 
     const [row] = await this.db.tx(async (tx) =>

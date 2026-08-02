@@ -3,8 +3,10 @@ import {
   ExecutionContext,
   ForbiddenException,
   Injectable,
+  Logger,
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
+import type { Request } from "express";
 import { ClsService } from "nestjs-cls";
 
 import type { Permission } from "@yonetim/core";
@@ -25,6 +27,8 @@ import { grants } from "../permission";
  */
 @Injectable()
 export class PermissionGuard implements CanActivate {
+  private readonly logger = new Logger(PermissionGuard.name);
+
   constructor(
     private readonly reflector: Reflector,
     private readonly cls: ClsService<ClsStore>,
@@ -51,8 +55,23 @@ export class PermissionGuard implements CanActivate {
 
     const granted = required.every((permission) => grants(ctx, permission));
 
-    if (!granted)
+    if (!granted) {
+      // M-40: 403'ler de audit ediliyor. KVKK regulator'ı "reddedilen
+      // erişim denemelerini" görmek ister; başarılı denemelerden ayırt
+      // etmek için `event: "authz.denied"` ayrı bir yapı.
+      const req = exec.switchToHttp().getRequest<Request>();
+      this.logger.warn({
+        event: "authz.denied",
+        userId: ctx.userId,
+        tenantId: ctx.tenantId,
+        required,
+        actualRoles: ctx.roles,
+        path: req.originalUrl,
+        method: req.method,
+        ip: req.ip,
+      });
       throw new ForbiddenException(`forbidden:${required.join(",")}`);
+    }
     return true;
   }
 }

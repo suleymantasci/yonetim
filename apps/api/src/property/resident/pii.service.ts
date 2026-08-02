@@ -71,13 +71,29 @@ export class PiiService {
    * Anahtar döndürüldüyse veya kayıt başka tenant'ın anahtarıyla
    * şifrelendiyse `null` döner ve çağıran "gösterilemiyor" der. Fırlatmak,
    * tek bozuk kayıt yüzünden tüm sakin listesini düşürürdü.
+   *
+   * M-39: Her `open()` çağrısı PII access olarak loglanır. KVKK md.7
+   * "veri işleme faaliyetlerinin kaydı" gereği; hangi kullanıcı, hangi
+   * tenant, ne zaman PII'a erişti izlenebilir olmalı. Alan türü (TCKN/IBAN)
+   * çağıran söylüyor — bu servis PII'ın hangi sütundan geldiğini bilmiyor.
    */
-  open(payload: string | null, tenantId: string): string | null {
+  open(
+    payload: string | null,
+    tenantId: string,
+    field: "tckn" | "iban" = "tckn",
+  ): string | null {
     if (!payload) return null;
     try {
-      return decryptField(payload, this.key(), tenantId);
+      const value = decryptField(payload, this.key(), tenantId);
+      this.logger.log({
+        event: "pii.accessed",
+        tenantId,
+        field,
+        op: "decrypt",
+      });
+      return value;
     } catch {
-      this.logger.warn({ event: "pii.decrypt_failed", tenantId });
+      this.logger.warn({ event: "pii.decrypt_failed", tenantId, field });
       return null;
     }
   }
