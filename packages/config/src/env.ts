@@ -24,14 +24,36 @@ function optionalNumber(key: string): number | undefined {
   return Number.isFinite(value) ? value : undefined;
 }
 
-function required(key: string, fallback?: string): string {
-  const v = optional(key) ?? fallback;
+function required(key: string): string {
+  const v = optional(key);
   if (!v) {
     throw new Error(
       `[config] Zorunlu ortam değişkeni eksik: ${key}. .env.example dosyasına bakın.`,
     );
   }
   return v;
+}
+
+/**
+ * Geliştirme varsayılan değerlerini **reddet**: deployer .env.example'ı
+ * kopyalayıp değiştirmeyi unutursa bilinen değerle başlamasın. Üretim
+ * ortamında `NODE_ENV=production` ise reddet; geliştirmede yalnızca
+ * AUTH_SECRET için uyarı ver (JWT imzalayan başka modül kalmadı, ama
+ * bu dosyayı okuyan yeni bir modül eklerse güvenli tarafta kalsın).
+ */
+const KNOWN_DEV_SECRETS = new Set<string>([
+  "dev-only-insecure-secret-change-me",
+]);
+
+function assertNotDevDefault(key: string, value: string): void {
+  if (KNOWN_DEV_SECRETS.has(value)) {
+    const msg = `[config] ${key} hâlâ bilinen geliştirme varsayılan değerinde — üretimde değiştirin.`;
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(msg);
+    }
+    // eslint-disable-next-line no-console
+    console.warn(msg);
+  }
 }
 
 export const serverEnv = {
@@ -42,8 +64,11 @@ export const serverEnv = {
   redisUrl: () => optional("UPSTASH_REDIS_REST_URL"),
   redisToken: () => optional("UPSTASH_REDIS_REST_TOKEN"),
 
-  authSecret: () =>
-    required("AUTH_SECRET", "dev-only-insecure-secret-change-me"),
+  authSecret: () => {
+    const v = required("AUTH_SECRET");
+    assertNotDevDefault("AUTH_SECRET", v);
+    return v;
+  },
 
   /*
    * `encryptionKey` BİLEREK YOK — MIMARI-PLAN §14 A3.

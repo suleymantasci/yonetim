@@ -19,7 +19,12 @@ const API_KEY_DEFAULT_LIMIT = 120;
 
 /**
  * Hız sınırı — `apps/app/src/lib/api.ts` içindeki davranış korunuyor.
- * Redis yoksa sınır uygulanmaz; geliştirme kurulumu Redis'siz de çalışsın.
+ *
+ * C-3: Redis erişilemezse **fail-closed** davranıyoruz. Üretimde 300/dk
+ * session limiti tek bir Redis kesintisinde sıfırlanmasın; koruma altındaki
+ * endpoint'lere sınırsız istek gelmesin. Geliştirmede Redis olmadan
+ * çalışmaya izin vermek için `RATE_LIMIT_FAIL_OPEN=true` env değişkeni
+ * ile fail-open moduna geçilebilir (sadece dev/test).
  */
 @Injectable()
 export class RateLimitGuard implements CanActivate {
@@ -50,7 +55,16 @@ export class RateLimitGuard implements CanActivate {
       : SESSION_LIMIT_PER_MINUTE;
 
     const count = await this.redis.incrWindow(`rl:${identifier}`, 60);
-    if (count === null) return true;
+    if (count === null) {
+      // Redis yok/hata — geliştirmede fail-open opsiyonu, üretimde 503.
+      if (process.env.RATE_LIMIT_FAIL_OPEN === "true") return true;
+      const res = exec.switchToHttp().getResponse<Response>();
+      res.setHeader("Retry-After", "60");
+      throw new HttpException(
+        "rate_limiter_unavailable",
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
 
     if (count > limit) {
       const res = exec.switchToHttp().getResponse<Response>();

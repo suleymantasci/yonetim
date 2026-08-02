@@ -121,7 +121,22 @@ async function main() {
     rememberMe: true,
   });
 
-  console.log(JSON.stringify({ token, ...result }));
+  // H-9: Token'ı stdout'a yazmak log aggregator'lar tarafından kalıcı
+  // indeksleniyor. Bearer nitelikteki bir credential stdout'a yazılmamalı.
+  // Bunun yerine yalnızca kullanıcı/tenant bilgisi yazılır; token operatörün
+  // ihtiyacı varsa ortam değişkenine koyup kendi script'iyle kullanabilir.
+  // --print-token flag'i bilinçli geçici çözümdür (release'lerde kaldırılabilir).
+  const printToken = process.argv.includes("--print-token");
+  if (printToken) {
+    console.log(JSON.stringify({ token, ...result }));
+  } else {
+    console.log(
+      JSON.stringify({
+        ...result,
+        _hint: "Token'ı görmek için --print-token flag'i kullanın (log kirliliği).",
+      }),
+    );
+  }
   await closeDb();
 }
 

@@ -17,10 +17,26 @@ const envSchema = z.object({
   DATABASE_ADMIN_URL: z.string().optional(),
   DATABASE_OWNER_URL: z.string().optional(),
 
-  AUTH_SECRET: z.string().min(8),
-  FIELD_ENCRYPTION_KEY: z.string().regex(/^[0-9a-f]{64}$/i, {
-    message: "FIELD_ENCRYPTION_KEY 32 byte hex olmalı (openssl rand -hex 32).",
-  }),
+  AUTH_SECRET: z
+    .string()
+    .min(32, "AUTH_SECRET en az 32 karakter olmalı (brute-force'a dayanıklı).")
+    .refine((v) => v !== "dev-only-insecure-secret-change-me", {
+      message:
+        "AUTH_SECRET hâlâ bilinen geliştirme varsayılan değerinde — üretimde değiştirin.",
+    }),
+  FIELD_ENCRYPTION_KEY: z
+    .string()
+    .regex(/^[0-9a-f]{64}$/i, {
+      message: "FIELD_ENCRYPTION_KEY 32 byte hex olmalı (openssl rand -hex 32).",
+    })
+    .refine((v) => v !== "0".repeat(64), {
+      message:
+        "FIELD_ENCRYPTION_KEY varsayılan sıfır değer; openssl rand -hex 32 ile üretin.",
+    })
+    .refine((v) => new Set(v.toLowerCase()).size >= 16, {
+      message:
+        "FIELD_ENCRYPTION_KEY yeterli entropi taşımıyor; tekrar eden karakterlerden oluşuyor.",
+    }),
 
   /** Worker → api iç çağrıları için paylaşılan sır (§8.1 dördüncü kimlik yolu). */
   INTERNAL_API_TOKEN: z.string().min(16).optional(),
@@ -72,9 +88,9 @@ const envSchema = z.object({
   MIGRATIONS_FOLDER: z.string().default("packages/db/drizzle"),
 });
 
-export type Env = z.infer<typeof envSchema>;
+export type Env = z.infer<typeof envSchema> & { isProduction: boolean };
 
-let cached: Env | undefined;
+let cached: z.infer<typeof envSchema> | undefined;
 
 export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
   const parsed = envSchema.safeParse(source);
@@ -84,12 +100,12 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
       .join("\n");
     throw new Error(`[api] Ortam değişkenleri geçersiz:\n${issues}`);
   }
-  return parsed.data;
+  return { ...parsed.data, isProduction: parsed.data.NODE_ENV === "production" };
 }
 
 export function env(): Env {
   cached ??= loadEnv();
-  return cached;
+  return { ...cached, isProduction: cached.NODE_ENV === "production" };
 }
 
 /** Test yardımcısı: doğrulanmış ortamı sıfırlar. */

@@ -21,6 +21,15 @@ loadRootEnv();
  * geliştirme için örnek bir site (Faz 0 demo).
  */
 async function main() {
+  // Seed geliştirme/test amaçlı. Üretimde demo hesabı veya geliştirici
+  // parolaları oluşturmak log'larda kalıcı olur ve kontrol dışı giriş
+  // yüzeyi açar (C-10).
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "[seed] Üretim ortamında seed çalıştırılamaz. NODE_ENV=development veya test ile çalıştırın.",
+    );
+  }
+
   // Seed, RLS öncesi platform verisini yazar; sahibi bağlantısı gerekir.
   if (process.env.DATABASE_OWNER_URL) {
     process.env.DATABASE_URL = process.env.DATABASE_OWNER_URL;
@@ -89,7 +98,7 @@ async function main() {
       .onConflictDoNothing();
   }
 
-  if (process.env.SEED_DEMO !== "false") {
+  if (process.env.SEED_DEMO === "true") {
     await seedDemoTenant();
   }
 
@@ -105,8 +114,11 @@ async function main() {
  * geliştiricinin ancak SMS/e-posta yapılandırıp kurtarma akışından girebildiği
  * bir hesap olurdu — yapılandırılmamış kurulumda kodu yalnız sunucu logunda
  * görebilirdi.
+ *
+ * C-10: SEED_DEMO opt-in oldu; default parola yerine `SEED_DEMO_PASSWORD`
+ * zorunlu ve loglanmaz. Üretimde seed çalışmayı reddeder.
  */
-const DEMO_PASSWORD = process.env.SEED_DEMO_PASSWORD ?? "OrnekSite2026";
+const DEMO_PASSWORD = process.env.SEED_DEMO_PASSWORD;
 
 /**
  * `packages/auth`'daki `hashPassword` ile **aynı** biçim (`scrypt$salt$hash`).
@@ -122,6 +134,14 @@ function hashPasswordSync(password: string): string {
 }
 
 async function seedDemoTenant() {
+  if (!DEMO_PASSWORD) {
+    throw new Error(
+      "[seed] SEED_DEMO=true ama SEED_DEMO_PASSWORD tanımlı değil. " +
+        "Bilinen varsayılan parolayla demo hesabı oluşturmuyoruz — CI log'larında " +
+        "kalıcı olur, üretim riski taşır. Önce SEED_DEMO_PASSWORD=<rastgele> set edin.",
+    );
+  }
+  const demoPassword: string = DEMO_PASSWORD;
   console.log("→ Demo site oluşturuluyor...");
   const tenantId = randomUUID();
   const managerId = randomUUID();
@@ -136,14 +156,14 @@ async function seedDemoTenant() {
       firstName: "Ali",
       lastName: "Yönetici",
       locale: "tr",
-      passwordHash: hashPasswordSync(DEMO_PASSWORD),
+      passwordHash: hashPasswordSync(demoPassword),
       // Parola çakışmada da yazılıyor (diğer alanlar değil): demo hesabı zaten
       // duran bir veritabanında `onConflictDoNothing` parolayı hiç eklemezdi
       // ve seed'i yeniden çalıştıran geliştirici, "parolayı seed veriyor" yazan
       // bir kurulumda giriş yapamazdı.
     }).onConflictDoUpdate({
       target: users.email,
-      set: { passwordHash: hashPasswordSync(DEMO_PASSWORD) },
+      set: { passwordHash: hashPasswordSync(demoPassword) },
     });
 
     const [planRow] = await tx.select().from(plans).limit(50);
@@ -229,7 +249,10 @@ async function seedDemoTenant() {
   });
 
   console.log(`  Demo site: ornek-apartmani (${unitCount} daire, plan: ${plan.name})`);
-  console.log(`  Demo giriş: yonetici@ornek.test / ${DEMO_PASSWORD}`);
+  // H-10: Demo parolasını stdout'a **yazma**. Eğer operatör parolayı
+  // bilmiyorsa `SEED_DEMO_PASSWORD` env'inden okuyabilir; üretim log'larında
+  // kalıcı olmasın.
+  console.log("  Demo giriş: yonetici@ornek.test / <SEED_DEMO_PASSWORD env>");
 }
 
 main().catch(async (error) => {

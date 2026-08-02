@@ -15,6 +15,20 @@ const REDACT_PATHS = [
   "*.iban",
   "*.password",
   "*.token",
+  // H-16: Giriş denemelerinde telefon/e-posta identifier olarak log'a
+  // düşüyordu. KVKK kapsamında PII log birikimi. Aynı şekilde üçüncü
+  // taraf API anahtarları (iyzico, paytr, anthropic, openai, resend, R2)
+  // hiçbir nesnede düz anahtar olarak loglanmamalı.
+  "*.identifier",
+  "*.email",
+  "*.phone",
+  "*.apiKey",
+  "*.api_key",
+  "*.secretKey",
+  "*.secret",
+  "*.clientSecret",
+  "*.merchantKey",
+  "*.merchantSalt",
 ];
 
 /**

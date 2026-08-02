@@ -5,6 +5,7 @@ import "./bootstrap-env";
 import "./infra/observability/instrument";
 
 import { json } from "express";
+import helmet from "helmet";
 import { NestFactory } from "@nestjs/core";
 import type { NestExpressApplication } from "@nestjs/platform-express";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
@@ -36,15 +37,34 @@ async function bootstrap(): Promise<void> {
   app.set("trust proxy", 1);
 
   /**
-   * WhatsApp imzası **ham gövde** üzerinden HMAC'leniyor. JSON parse edilip
-   * yeniden serialize edilmiş bir gövde, anahtar sırası ya da boşluk farkı
-   * yüzünden farklı bir imza üretir ve geçerli istekleri reddettirir. Bu
-   * yüzden gövdenin bayt bayt hâli saklanıyor.
+   * Güvenlik başlıkları (H-5). API JSON döner; `contentSecurityPolicy`
+   * `default-src 'none'` set eder — script, stil ve kaynak yüklemeleri
+   * API yanıtları için geçerli değildir. CORS aynı başlıkları ezmez.
    *
-   * Yalnız bu iki yol için: her istekte fazladan bir kopya tutmanın anlamı yok.
+   * `crossOriginEmbedderPolicy: false` — yalnız API, browser gömme
+   * politikasına tabi değil; COEP bazı eski istemcileri kırar.
+   */
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'none'"],
+          frameAncestors: ["'none'"],
+        },
+      },
+      crossOriginEmbedderPolicy: false,
+      referrerPolicy: { policy: "no-referrer" },
+    }),
+  );
+
+  /**
+   * Webhook gövdesi 64 KB ile sınırlı. S3 presigned upload gibi daha
+   * büyük payload'lar bu yoldan geçmiyor; 64 KB sınırı, büyük gövdeyle
+   * belleği doldurma girişimlerini engeller (M-31).
    */
   app.use(
     json({
+      limit: "256kb",
       verify: (req, _res, buf) => {
         const url = (req as { url?: string }).url ?? "";
         if (url.startsWith("/v1/webhooks/")) {
@@ -63,25 +83,35 @@ async function bootstrap(): Promise<void> {
     app.enableCors({ origin: origins, credentials: true });
   }
 
-  // `cleanupOpenApiDoc`, Zod DTO'larından üretilen `$ref`'leri düzleştirir;
-  // OpenAPI çıktısı CI'da diff'lenebilir olsun diye deterministik kalması şart (§15).
-  const doc = cleanupOpenApiDoc(
-    SwaggerModule.createDocument(
-      app,
-      new DocumentBuilder()
-        .setTitle("Yönetim API")
-        .setDescription(
-          "Site yönetim platformu HTTP arayüzü. `/v1/*` uçları donuk dış " +
-            "sözleşmedir; kırıcı değişiklik `/v2` açar. `/v1/panel/*` uçları " +
-            "panelin iç BFF'idir ve sürüm garantisi taşımaz.",
-        )
-        .setVersion("1.0.0")
-        .addBearerAuth({ type: "http", scheme: "bearer" }, "apiKey")
-        .addCookieAuth("yonetim_session")
-        .build(),
-    ),
-  );
-  SwaggerModule.setup("v1/docs", app, doc, { jsonDocumentUrl: "v1/docs.json" });
+  /**
+   * Swagger yalnız geliştirmede açık. Üretimde `/v1/docs` + `/v1/docs.json`
+   * herkese açıldığında tüm uç yüzeyi, auth/permission şemaları, payload
+   * validasyonları indekslenebilir olur; saldırı yüzeyi haritası bedavaya
+   * gelir (C-1).
+   */
+  if (!e.isProduction) {
+    // `cleanupOpenApiDoc`, Zod DTO'larından üretilen `$ref`'leri düzleştirir;
+    // OpenAPI çıktısı CI'da diff'lenebilir olsun diye deterministik kalması şart (§15).
+    const doc = cleanupOpenApiDoc(
+      SwaggerModule.createDocument(
+        app,
+        new DocumentBuilder()
+          .setTitle("Yönetim API")
+          .setDescription(
+            "Site yönetim platformu HTTP arayüzü. `/v1/*` uçları donuk dış " +
+              "sözleşmedir; kırıcı değişiklik `/v2` açar. `/v1/panel/*` uçları " +
+              "panelin iç BFF'idir ve sürüm garantisi taşımaz.",
+          )
+          .setVersion("1.0.0")
+          .addBearerAuth({ type: "http", scheme: "bearer" }, "apiKey")
+          .addCookieAuth("yonetim_session")
+          .build(),
+      ),
+    );
+    SwaggerModule.setup("v1/docs", app, doc, {
+      jsonDocumentUrl: "v1/docs.json",
+    });
+  }
 
   app.enableShutdownHooks();
   await app.listen(e.PORT, "0.0.0.0");

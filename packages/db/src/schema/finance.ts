@@ -226,6 +226,11 @@ export const paymentAllocations = pgTable(
   (t) => [
     index("idx_alloc_payment").on(t.paymentId),
     index("idx_alloc_debt").on(t.debtId),
+    // H-12: Aynı ödeme aynı borca iki kez mahsup edilemesin. İyzico
+    // webhook'unun SERIALIZABLE olmayan transaction'ında ikinci insert
+    // DB tarafından reddedilir; `ON CONFLICT DO NOTHING` ile controller
+    // tarafı da idempotent.
+    uniqueIndex("uq_alloc_payment_debt").on(t.paymentId, t.debtId),
   ],
 );
 

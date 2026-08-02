@@ -1,6 +1,6 @@
 import { Body, Controller, HttpCode, Post } from "@nestjs/common";
 import { ApiExcludeController } from "@nestjs/swagger";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { errors, formatKurus } from "@yonetim/core";
@@ -25,6 +25,11 @@ import { DbService } from "../../infra/db/db.service";
  * TEKRAR KORUMASI: aynı `processorRef` ikinci kez işlenmiyor. Sağlayıcılar
  * webhook'u yeniden gönderir; korumasız bir uçta bu, aynı ödemeyi iki kez
  * mahsup etmek demektir.
+ *
+ * H-12: İki eşzamanlı webhook aynı `conversationId` ile gelirse tek
+ * transaction içinde `SELECT … FOR UPDATE` ile payment satırını
+ * kilitliyoruz; `payment_allocations(payment_id, debt_id)` unique
+ * constraint mahsupun iki kez yazılmasını DB seviyesinde engelliyor.
  */
 @ApiExcludeController()
 @Controller("v1/webhooks/iyzico")
@@ -55,11 +60,13 @@ export class IyzicoWebhookController {
 
     // Kaydı `conversationId` ile buluyoruz: ödeme başlatılırken bu kimlik
     // bizim tarafımızda üretildi, dolayısıyla tenant'ı da o belirliyor.
+    // `FOR UPDATE` aynı anda iki webhook gelirse diğerinin beklemesini sağlar.
     const record = await this.db.bypass("iyzico:record", async (tx) => {
       const rows = await tx
         .select()
         .from(payments)
         .where(eq(payments.conversationId, payment.conversationId))
+        .for("update")
         .limit(1);
       return rows[0] ?? null;
     });
@@ -129,12 +136,24 @@ export class IyzicoWebhookController {
       );
 
       for (const a of allocation.allocations) {
-        await tx.insert(paymentAllocations).values({
-          tenantId: record.tenantId,
-          paymentId: record.id,
-          debtId: a.debtId,
-          amountKurus: a.amountKurus,
-        });
+        // H-12: Aynı (payment_id, debt_id) için DB unique constraint + ON CONFLICT
+        // DO NOTHING. İki eşzamanlı webhook ilk transaction SELECT FOR UPDATE
+        // ile sıralansa da, idempotency kontrolünü DB'ye yaklaştırmak savunmayı
+        // derinleştirir.
+        await tx
+          .insert(paymentAllocations)
+          .values({
+            tenantId: record.tenantId,
+            paymentId: record.id,
+            debtId: a.debtId,
+            amountKurus: a.amountKurus,
+          })
+          .onConflictDoNothing({
+            target: [
+              paymentAllocations.paymentId,
+              paymentAllocations.debtId,
+            ],
+          });
         const debt = open.find((d) => d.id === a.debtId);
         if (!debt) continue;
         await tx

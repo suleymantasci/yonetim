@@ -63,7 +63,11 @@ export class PublicDebtController {
           unitId: debts.unitId,
           unitNumber: units.number,
           blockName: blocks.name,
-          debtorUserId: debts.debtorUserId,
+          // H-13: `debtorUserId` global `users` tablosuna FK; API-key
+          // session'la gelen istemci `debtorUserId` → `/api/v1/residents`
+          // correlation'ıyla PII'a ulaşabilir. Sözleşmenin açıkça
+          // userId istediği integration `?include=userId` ile talep edebilir
+          // (audit log ile); default olarak gizli.
           kind: debts.kind,
           description: debts.description,
           period: debts.period,

@@ -85,8 +85,20 @@ interface Translated {
 function translate(exception: unknown): Translated {
   if (exception instanceof AppError) {
     const code = LEGACY_ERROR_CODE_MAP[exception.code] ?? "internal";
+    const status = HTTP_STATUS_BY_ERROR_CODE[code];
+    // H-2: 5xx hata yanıtlarında iç detay sızdırma. Sağlayıcı hata
+    // metni, DB şeması, dosya yolu gibi bilgileri istemciye döndürme;
+    // ayrıntı yalnız log + Sentry'de. 4xx (kullanıcı hatası) detayı
+    // korunabilir çünkü kullanıcının eylemini yönlendirir.
+    if (status >= 500) {
+      return {
+        status,
+        code,
+        message: "Beklenmeyen bir hata oluştu.",
+      };
+    }
     return {
-      status: HTTP_STATUS_BY_ERROR_CODE[code],
+      status,
       code,
       message: exception.message,
       details: exception.details,
