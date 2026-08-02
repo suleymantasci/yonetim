@@ -11,7 +11,6 @@ import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { and, desc, eq, isNull } from "drizzle-orm";
 
 import { RATE_LIMITS, rateLimit } from "@yonetim/auth/rate-limit";
-import { RequirePermission } from "@yonetim/auth/guard";
 import { siteConfig } from "@yonetim/config";
 import type {
   PortalCheckoutResult,
@@ -37,6 +36,7 @@ import {
 import { AuditService } from "../../governance/audit/audit.service";
 import { DbService } from "../../infra/db/db.service";
 import { PiiService } from "../../property/resident/pii.service";
+import { RequirePermission } from "../../identity/decorators";
 import {
   checkoutAmounts,
   onlineAvailability,

@@ -18,7 +18,7 @@ const P = 1;
 const MAXMEM = 64 * 1024 * 1024; // 64 MB
 const KEYLEN = 64;
 
-export const HASH_VERSION = VERSION as const;
+export const HASH_VERSION: "v1" = VERSION;
 
 /** scrypt ile parola hash'leme. */
 export async function hashPassword(password: string): Promise<string> {

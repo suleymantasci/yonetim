@@ -67,6 +67,9 @@ export const paymentMethodEnum = pgEnum("payment_method", [
 
 export const paymentStatusEnum = pgEnum("payment_status", [
   "initiated", "pending_3ds", "authorized", "completed", "failed", "refunded", "chargeback",
+  // M-30: amount drift durumunda kullanılan status; tahsilat tamamlanmadı
+  // ama bir kısmı alındı. Reconciliation gerekir.
+  "partial",
 ]);
 
 export const paymentProcessorEnum = pgEnum("payment_processor", [

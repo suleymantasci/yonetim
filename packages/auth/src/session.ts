@@ -11,7 +11,16 @@ import { hashToken } from "./otp";
 /**
  * Oturum yönetimi — SPEC Bölüm 14.2.
  * Cookie: HttpOnly + Secure + SameSite=Lax, 30 dk idle, 30 gün mutlak süre.
+ *
+ * L-3: Idle timeout in-memory cache ile uygulanıyor. Multi-replica
+ * kurulumda her replica kendi cache'ini tutar; aynı kullanıcı farklı
+ * replica'ya düştüğünde sıfırdan başlar. Tam distributed çözüm için
+ * `lastSeenAt` kolonu + update query gerekir (migration). Bu güncelleme
+ * Phase 4'ün kapsamını aşıyor; defense-in-depth katmanı olarak yeterli.
  */
+const idleLastSeen = new Map<string, number>();
+const IDLE_WINDOW_MS = SESSION_IDLE_MINUTES * 60 * 1000;
+
 export { SESSION_COOKIE, SESSION_IDLE_MINUTES, SESSION_MAX_DAYS };
 
 export interface SessionUser {
@@ -79,6 +88,14 @@ export async function createSession(params: {
 export async function resolveSession(rawToken: string | undefined): Promise<ActiveSession | null> {
   if (!rawToken) return null;
   const tokenHash = hashToken(rawToken);
+
+  // L-3: Idle timeout — son görülme üzerinden SESSION_IDLE_MINUTES.
+  const last = idleLastSeen.get(tokenHash);
+  if (last && Date.now() - last > IDLE_WINDOW_MS) {
+    idleLastSeen.delete(tokenHash);
+    return null;
+  }
+  idleLastSeen.set(tokenHash, Date.now());
 
   return withBypassRls("auth:resolve-session", async (tx) => {
     const rows = await tx
