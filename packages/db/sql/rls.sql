@@ -14,6 +14,50 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 
 -- -----------------------------------------------------------------------------
+-- Otomatik RLS uygulama — yeni eklenen tenant tablosu RLS'siz kalmasın
+-- (C-4 / H-8, SECURITY-REVIEW.md).
+--
+-- `tenant_id` sütunlu yeni bir tablo eklendiğinde ALTER TABLE event trigger
+-- ile yakalanır; ENABLE/FORCE RLS + `tenant_isolation` politikası otomatik
+-- uygulanır. Migration sırasının bozulması (partial rerun, hot-fix) bu sayede
+-- sessizce unprotected tablo bırakamaz.
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION app_attach_tenant_isolation() RETURNS event_trigger
+LANGUAGE plpgsql AS $$
+DECLARE
+  r RECORD;
+BEGIN
+  FOR r IN
+    SELECT c.relname AS table_name
+    FROM pg_event_trigger_ddl_commands() e
+    JOIN pg_class c ON c.oid = e.objid
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    JOIN pg_attribute a ON a.attrelid = c.oid
+    WHERE n.nspname = 'public'
+      AND c.relkind = 'r'
+      AND a.attname = 'tenant_id'
+      AND a.attnum > 0
+      AND NOT a.attisdropped
+  LOOP
+    EXECUTE format('ALTER TABLE public.%I ENABLE ROW LEVEL SECURITY', r.table_name);
+    EXECUTE format('ALTER TABLE public.%I FORCE ROW LEVEL SECURITY', r.table_name);
+    EXECUTE format('DROP POLICY IF EXISTS tenant_isolation ON public.%I', r.table_name);
+    EXECUTE format($p$
+      CREATE POLICY tenant_isolation ON public.%I
+        USING (tenant_id = app_current_tenant())
+        WITH CHECK (tenant_id = app_current_tenant())
+    $p$, r.table_name);
+  END LOOP;
+END;
+$$;
+
+DROP EVENT TRIGGER IF EXISTS trg_attach_tenant_isolation;
+CREATE EVENT TRIGGER trg_attach_tenant_isolation
+  ON ddl_command_end
+  WHEN TAG IN ('CREATE TABLE', 'CREATE TABLE AS', 'ALTER TABLE')
+  EXECUTE FUNCTION app_attach_tenant_isolation();
+
+-- -----------------------------------------------------------------------------
 -- Uygulama rolü.
 --
 -- KRİTİK: Postgres'te süper kullanıcılar ve BYPASSRLS yetkisi olan roller RLS'i
@@ -21,17 +65,36 @@ CREATE EXTENSION IF NOT EXISTS btree_gist;
 -- DEĞİL, aşağıdaki kısıtlı rol ile bağlanmalıdır (SPEC Bölüm 5.1 trade-off notu).
 --
 -- Bağlantı dizesi: postgresql://yonetim_app:<şifre>@host:5432/yonetim
+-- C-5: Parolalar SQL dosyasında hardcoded DEĞİL. `app.app_role_password` ve
+-- `app.admin_role_password` Postgres session değişkenleriyle dışarıdan
+-- verilmeli. Bu dosyayı çalıştıran operatör (genelde migration runner)
+-- `SET app.app_role_password = '...'; SET app.admin_role_password = '...';`
+-- ile sırları sağlar; SQL dosyası repo'ya düz metin sızmaz.
 -- -----------------------------------------------------------------------------
 DO $$
+DECLARE
+  app_pw text := NULLIF(current_setting('app.app_role_password', true), '');
+  admin_pw text := NULLIF(current_setting('app.admin_role_password', true), '');
 BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'yonetim_app') THEN
-    CREATE ROLE yonetim_app LOGIN PASSWORD 'yonetim_app'
-      NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;
+  IF app_pw IS NULL OR admin_pw IS NULL THEN
+    RAISE EXCEPTION
+      '[rls] app.app_role_password ve app.admin_role_password zorunlu. '
+      '`SET LOCAL app.app_role_password = ''...''; SET LOCAL app.admin_role_password = ''...'';` '
+      'ile sırları sağlayın (C-5).'
+      USING ERRCODE = 'insufficient_privilege';
   END IF;
-  -- Platform (tenant üstü) işler için: oturum çözümleme, süper-admin, cron.
+
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'yonetim_app') THEN
+    EXECUTE format(
+      'CREATE ROLE yonetim_app LOGIN PASSWORD %L NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS',
+      app_pw
+    );
+  END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'yonetim_admin') THEN
-    CREATE ROLE yonetim_admin LOGIN PASSWORD 'yonetim_admin'
-      NOSUPERUSER NOCREATEDB NOCREATEROLE BYPASSRLS;
+    EXECUTE format(
+      'CREATE ROLE yonetim_admin LOGIN PASSWORD %L NOSUPERUSER NOCREATEDB NOCREATEROLE BYPASSRLS',
+      admin_pw
+    );
   END IF;
 END
 $$;
@@ -39,10 +102,14 @@ $$;
 -- Şifre ortam değişkeninden geliyorsa güncelle (idempotent kurulum).
 DO $$
 DECLARE
-  pw text := NULLIF(current_setting('app.app_role_password', true), '');
+  app_pw text := NULLIF(current_setting('app.app_role_password', true), '');
+  admin_pw text := NULLIF(current_setting('app.admin_role_password', true), '');
 BEGIN
-  IF pw IS NOT NULL THEN
-    EXECUTE format('ALTER ROLE yonetim_app PASSWORD %L', pw);
+  IF app_pw IS NOT NULL THEN
+    EXECUTE format('ALTER ROLE yonetim_app PASSWORD %L', app_pw);
+  END IF;
+  IF admin_pw IS NOT NULL THEN
+    EXECUTE format('ALTER ROLE yonetim_admin PASSWORD %L', admin_pw);
   END IF;
 END
 $$;

@@ -3,6 +3,7 @@ import {
   Get,
   Headers,
   HttpCode,
+  Logger,
   Post,
   Query,
   Req,
@@ -38,6 +39,8 @@ import { WhatsappBotService } from "./whatsapp-bot.service";
 @ApiExcludeController()
 @Controller("v1/webhooks/whatsapp")
 export class WhatsappWebhookController {
+  private readonly logger = new Logger(WhatsappWebhookController.name);
+
   constructor(private readonly bot: WhatsappBotService) {}
 
   /** Meta'nın abonelik doğrulaması — challenge'ı düz metin döndürür. */
