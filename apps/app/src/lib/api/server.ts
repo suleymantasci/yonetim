@@ -35,6 +35,16 @@ export interface ApiRequestOptions {
   signal?: AbortSignal;
 }
 
+export function resolveApiOrigin(
+  incomingOrigin: string | null,
+  configuredOrigin: string | undefined,
+): string | undefined {
+  const incoming = incomingOrigin?.trim();
+  if (incoming) return incoming;
+  const configured = configuredOrigin?.trim();
+  return configured || undefined;
+}
+
 async function buildHeaders(
   options: ApiRequestOptions = {},
 ): Promise<Record<string, string>> {
@@ -45,6 +55,12 @@ async function buildHeaders(
     accept: "application/json",
     "x-request-id": headerList.get("x-request-id") ?? crypto.randomUUID(),
   };
+
+  const origin = resolveApiOrigin(
+    headerList.get("origin"),
+    process.env.NEXT_PUBLIC_APP_URL,
+  );
+  if (origin) result.origin = origin;
 
   const clientIp =
     headerList.get("x-client-ip") ?? headerList.get("x-forwarded-for");

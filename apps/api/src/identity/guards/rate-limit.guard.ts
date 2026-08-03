@@ -11,7 +11,8 @@ import { ClsService } from "nestjs-cls";
 
 import type { ClsStore } from "../../infra/cls/request-context";
 import { RedisService } from "../../infra/redis/redis.service";
-import { PUBLIC_KEY } from "../decorators";
+import { rateLimitFailOpen } from "../../infra/config/env";
+import { PUBLIC_KEY, RATE_LIMIT_SKIP_KEY } from "../decorators";
 
 /** Oturum yolunda genel API limiti; anahtar yolunda anahtar başına limit. */
 const SESSION_LIMIT_PER_MINUTE = 300;
@@ -43,6 +44,15 @@ export class RateLimitGuard implements CanActivate {
 
   async canActivate(exec: ExecutionContext): Promise<boolean> {
     if (
+      this.reflector.getAllAndOverride<boolean>(RATE_LIMIT_SKIP_KEY, [
+        exec.getHandler(),
+        exec.getClass(),
+      ])
+    ) {
+      return true;
+    }
+
+    if (
       this.reflector.getAllAndOverride<boolean>(PUBLIC_KEY, [
         exec.getHandler(),
         exec.getClass(),
@@ -60,7 +70,7 @@ export class RateLimitGuard implements CanActivate {
         "unknown";
       const count = await this.redis.incrWindow(`rl:public:${ip}`, 60);
       if (count === null) {
-        if (process.env.RATE_LIMIT_FAIL_OPEN === "true") return true;
+        if (rateLimitFailOpen()) return true;
         const res = exec.switchToHttp().getResponse<Response>();
         res.setHeader("Retry-After", "60");
         throw new HttpException(
@@ -89,7 +99,7 @@ export class RateLimitGuard implements CanActivate {
     const count = await this.redis.incrWindow(`rl:${identifier}`, 60);
     if (count === null) {
       // Redis yok/hata — geliştirmede fail-open opsiyonu, üretimde 503.
-      if (process.env.RATE_LIMIT_FAIL_OPEN === "true") return true;
+      if (rateLimitFailOpen()) return true;
       const res = exec.switchToHttp().getResponse<Response>();
       res.setHeader("Retry-After", "60");
       throw new HttpException(

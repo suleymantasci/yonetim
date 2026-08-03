@@ -30,6 +30,7 @@ import { RedisModule } from "./infra/redis/redis.module";
 import { DomainEventsBridge } from "./infra/events/domain-events.service";
 import { JobTriggerController } from "./infra/scheduler/job-trigger.controller";
 import { env } from "./infra/config/env";
+import { producerRedisConnection } from "./infra/redis/redis-connection";
 import { PropertyModule } from "./property/property.module";
 import { PublicModule } from "./public/public.module";
 
@@ -81,7 +82,9 @@ import { PublicModule } from "./public/public.module";
      */
     BullModule.forRootAsync({
       useFactory: () => ({
-        connection: { url: env().REDIS_URL ?? "redis://127.0.0.1:6379" },
+        connection: producerRedisConnection(
+          env().REDIS_URL ?? "redis://127.0.0.1:6379",
+        ),
       }),
     }),
     BullModule.registerQueue({ name: QUEUE_SCHEDULED }, { name: QUEUE_EVENTS }),

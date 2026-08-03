@@ -70,17 +70,37 @@ export function middleware(request: NextRequest) {
       })()
     : NextResponse.next({ request: { headers } });
 
-  // H-6: Content-Security-Policy with nonce. `frame-ancestors 'none'` clickjacking
+  // H-6: Content-Security-Policy. `frame-ancestors 'none'` clickjacking
   // koruması; `base-uri 'self'` <base> tag injection'ı önler; `object-src 'none'`
   // legacy plugin'leri devre dışı bırakır. Sentry + Türkçe font CDN'leri
   // `connect-src`/`font-src` ile allowlist'lendi.
+  //
+  // `script-src` ve `style-src` için `'unsafe-inline'` bilinçli bir
+  // istisnadır: Next.js RSC payload'unu `<script>` ile gömer; emotion
+  // sunucu tarafında `data-emotion` taşıyan `<style>`'ler üretir. İkisi de
+  // istek başına farklılaşır, hash/nonce ile eşleşmeleri imkânsız. Per-route
+  // nonce zaten middleware tarafından üretilip `x-csp-nonce` ile dağıtılıyor;
+  // sayfa özelinde bir katman (örn. React 19 `useServerInsertedHTML`) bu
+  // nonce'u inline betiklere/stillere uygulayabilir, fakat emotion'ın
+  // otomatik enjeksiyonu tarafından doğrudan okunmaz. Güvenlik açığını
+  // daraltmak için `frame-ancestors 'none'`, `object-src 'none'`, Sentry
+  // connect-src allowlist'i ve `form-action 'self'` korunur; `default-src
+  // 'self'` inline-olmayan tüm kaynaklar için varsayılan kalır.
+  //
+  // Geliştirme modunda (`next dev`) Next.js React Refresh runtime'ı `eval`
+  // üzerinden çalışıyor; production build'lerinde bu runtime yüklenmiyor.
+  // Üretimde CSP'yi uygulayıp geliştirmede `eval`'e izin vererek iki ortamı
+  // ayrı tutuyoruz — `unsafe-eval` sadece yerel geliştirmede açılır.
+  const isDev = process.env.NODE_ENV !== "production";
   const csp = [
     `default-src 'self'`,
     `base-uri 'self'`,
     `object-src 'none'`,
     `frame-ancestors 'none'`,
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
-    `style-src 'self' 'nonce-${nonce}'`,
+    isDev
+      ? `script-src 'self' 'unsafe-inline' 'unsafe-eval'`
+      : `script-src 'self' 'unsafe-inline'`,
+    `style-src 'self' 'unsafe-inline'`,
     `img-src 'self' data: https:`,
     `font-src 'self' data:`,
     `connect-src 'self' https://*.sentry.io https://*.ingest.sentry.io https://*.cloudflareinsights.com https://*.posthog.com`,

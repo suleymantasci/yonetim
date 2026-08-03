@@ -14,6 +14,11 @@ import { cleanupOpenApiDoc } from "nestjs-zod";
 
 import { AppModule } from "./app.module";
 import { env } from "./infra/config/env";
+import {
+  buildSafeOrigins,
+  isSafeCsrfRequest,
+  requiresCookieCsrf,
+} from "./infra/security/csrf";
 
 /**
  * `apps/api` — veritabanının **tek sahibi** (MIMARI-PLAN §4).
@@ -90,40 +95,32 @@ async function bootstrap(): Promise<void> {
    * cookie'ye ek koruma katmanı — özellikle subdomain'ler arası (panel
    * tenant subdomain'leri) ataklara karşı.
    *
-   * Mobil Bearer token akışında Origin header'ı olmayabilir; bu durumda
-   * auth source "mobile" ise skip edilir (Authorization header zaten
-   * CSRF'e karşı koruma sağlar).
+   * Session cookie taşımayan public/mobile/webhook istekleri kendi endpoint
+   * doğrulamalarına bırakılır; Bearer token akışları da cookie-CSRF kapsamı
+   * dışındadır.
    */
-  const safeOrigins = new Set(
-    e.CORS_ORIGINS.split(",")
-      .map((o) => o.trim())
-      .filter(Boolean),
-  );
-  // Ana domain'ler her zaman güvenli (Caddy reverse proxy üzerinden
-  // gelen istekler için). apps/api reverse proxy üzerinden erişildiği
-  // için kendi origin'i de güvenli.
-  safeOrigins.add(`http://localhost:${e.PORT}`);
-  safeOrigins.add(`https://localhost:${e.PORT}`);
-
-  app.use((req: import("express").Request, res: import("express").Response, next: import("express").NextFunction) => {
-    const method = req.method.toUpperCase();
-    if (method === "GET" || method === "HEAD" || method === "OPTIONS") return next();
-    // Mobil Bearer / internal token istekleri Authorization header taşır;
-    // cookie tabanlı CSRF bunlar için geçerli değil.
-    if (req.headers.authorization) return next();
-    // CSRF origin check — Origin veya Referer allowlist'te olmalı. Host
-    // header'a güvenmek YANLIŞ: saldırgan bazı senaryolarda Host'u
-    // ayarlayabilir. Yalnız Origin/Referer kabul.
-    const origin = req.headers.origin;
-    const referer = req.headers.referer;
-    const originOk = origin && safeOrigins.has(origin);
-    const refererOk =
-      referer && [...safeOrigins].some((o) => referer.startsWith(o));
-    if (originOk || refererOk) return next();
-    res
-      .status(403)
-      .json({ error: { code: "csrf_origin_check_failed", message: "Origin doğrulanamadı." } });
+  const safeOrigins = buildSafeOrigins({
+    corsOrigins: e.CORS_ORIGINS,
+    isProduction: e.isProduction,
+    port: e.PORT,
   });
+
+  app.use(
+    (
+      req: import("express").Request,
+      res: import("express").Response,
+      next: import("express").NextFunction,
+    ) => {
+      if (!requiresCookieCsrf(req)) return next();
+      if (isSafeCsrfRequest(req, safeOrigins)) return next();
+      res.status(403).json({
+        error: {
+          code: "csrf_origin_check_failed",
+          message: "Origin doğrulanamadı.",
+        },
+      });
+    },
+  );
 
   /**
    * Swagger yalnız geliştirmede açık. Üretimde `/v1/docs` + `/v1/docs.json`

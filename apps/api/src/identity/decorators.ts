@@ -11,9 +11,13 @@ import type { Permission } from "@yonetim/core";
 export const PUBLIC_KEY = "yonetim:public";
 export const PERMISSION_KEY = "yonetim:permission";
 export const ALLOW_ARCHIVED_KEY = "yonetim:allow-archived";
+export const RATE_LIMIT_SKIP_KEY = "yonetim:rate-limit-skip";
 
 /** Kimlik gerektirmeyen uç — health, webhook, OpenAPI dokümanı. */
 export const Public = () => SetMetadata(PUBLIC_KEY, true);
+
+/** Sağlık probu gibi altyapı uçlarını genel rate-limit'ten çıkarır. */
+export const SkipRateLimit = () => SetMetadata(RATE_LIMIT_SKIP_KEY, true);
 
 /**
  * Pasif/arşiv sitede de çalışan yazma ucu — `TenantWritableGuard` muafiyeti.

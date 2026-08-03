@@ -51,34 +51,89 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       include: ["packages/*/src/**/*.ts"],
-      exclude: ["**/*.test.ts", "packages/db/src/schema/**", "packages/db/src/seed*.ts"],
+      exclude: [
+        "**/*.test.ts",
+        "packages/db/src/schema/**",
+        "packages/db/src/seed*.ts",
+      ],
     },
   },
   resolve: {
     alias: {
-      "@yonetim/config": new URL("./packages/config/src/index.ts", import.meta.url).pathname,
-      "@yonetim/core/crypto": new URL("./packages/core/src/crypto.ts", import.meta.url).pathname,
-      "@yonetim/core": new URL("./packages/core/src/index.ts", import.meta.url).pathname,
-      "@yonetim/db": new URL("./packages/db/src/index.ts", import.meta.url).pathname,
-      "@yonetim/dues": new URL("./packages/dues/src/index.ts", import.meta.url).pathname,
-      "@yonetim/pricing": new URL("./packages/pricing/src/index.ts", import.meta.url).pathname,
-      "@yonetim/campaigns": new URL("./packages/campaigns/src/index.ts", import.meta.url).pathname,
-      "@yonetim/kvkk": new URL("./packages/kvkk/src/index.ts", import.meta.url).pathname,
-      "@yonetim/whatsapp": new URL("./packages/whatsapp/src/index.ts", import.meta.url).pathname,
-      "@yonetim/notifications": new URL("./packages/notifications/src/index.ts", import.meta.url).pathname,
-      "@yonetim/bank": new URL("./packages/bank/src/index.ts", import.meta.url).pathname,
-      "@yonetim/seo": new URL("./packages/seo/src/index.ts", import.meta.url).pathname,
-      "@yonetim/jobs": new URL("./packages/jobs/src/index.ts", import.meta.url).pathname,
-      "@yonetim/auth": new URL("./packages/auth/src/index.ts", import.meta.url).pathname,
-      "@yonetim/sms": new URL("./packages/sms/src/index.ts", import.meta.url).pathname,
-      "@yonetim/storage": new URL("./packages/storage/src/index.ts", import.meta.url).pathname,
-      "@yonetim/emails": new URL("./packages/emails/src/index.ts", import.meta.url).pathname,
-      "@yonetim/payment": new URL("./packages/payment/src/index.ts", import.meta.url).pathname,
-      "@yonetim/i18n/routing": new URL("./packages/i18n/src/routing.ts", import.meta.url).pathname,
-      "@yonetim/i18n": new URL("./packages/i18n/src/index.ts", import.meta.url).pathname,
-      "@yonetim/ui": new URL("./packages/ui/src/index.ts", import.meta.url).pathname,
-      "@yonetim/contracts/shared": new URL("./packages/contracts/src/_shared/index.ts", import.meta.url).pathname,
-      "@yonetim/contracts": new URL("./packages/contracts/src/index.ts", import.meta.url).pathname,
+      "@yonetim/config": new URL(
+        "./packages/config/src/index.ts",
+        import.meta.url,
+      ).pathname,
+      "@yonetim/core/crypto": new URL(
+        "./packages/core/src/crypto.ts",
+        import.meta.url,
+      ).pathname,
+      "@yonetim/core": new URL("./packages/core/src/index.ts", import.meta.url)
+        .pathname,
+      "@yonetim/db": new URL("./packages/db/src/index.ts", import.meta.url)
+        .pathname,
+      "@yonetim/dues": new URL("./packages/dues/src/index.ts", import.meta.url)
+        .pathname,
+      "@yonetim/pricing": new URL(
+        "./packages/pricing/src/index.ts",
+        import.meta.url,
+      ).pathname,
+      "@yonetim/campaigns": new URL(
+        "./packages/campaigns/src/index.ts",
+        import.meta.url,
+      ).pathname,
+      "@yonetim/kvkk": new URL("./packages/kvkk/src/index.ts", import.meta.url)
+        .pathname,
+      "@yonetim/whatsapp": new URL(
+        "./packages/whatsapp/src/index.ts",
+        import.meta.url,
+      ).pathname,
+      "@yonetim/notifications": new URL(
+        "./packages/notifications/src/index.ts",
+        import.meta.url,
+      ).pathname,
+      "@yonetim/bank": new URL("./packages/bank/src/index.ts", import.meta.url)
+        .pathname,
+      "@yonetim/seo": new URL("./packages/seo/src/index.ts", import.meta.url)
+        .pathname,
+      "@yonetim/jobs": new URL("./packages/jobs/src/index.ts", import.meta.url)
+        .pathname,
+      "@yonetim/auth/cookie": new URL(
+        "./packages/auth/src/cookie.ts",
+        import.meta.url,
+      ).pathname,
+      "@yonetim/auth": new URL("./packages/auth/src/index.ts", import.meta.url)
+        .pathname,
+      "@yonetim/sms": new URL("./packages/sms/src/index.ts", import.meta.url)
+        .pathname,
+      "@yonetim/storage": new URL(
+        "./packages/storage/src/index.ts",
+        import.meta.url,
+      ).pathname,
+      "@yonetim/emails": new URL(
+        "./packages/emails/src/index.ts",
+        import.meta.url,
+      ).pathname,
+      "@yonetim/payment": new URL(
+        "./packages/payment/src/index.ts",
+        import.meta.url,
+      ).pathname,
+      "@yonetim/i18n/routing": new URL(
+        "./packages/i18n/src/routing.ts",
+        import.meta.url,
+      ).pathname,
+      "@yonetim/i18n": new URL("./packages/i18n/src/index.ts", import.meta.url)
+        .pathname,
+      "@yonetim/ui": new URL("./packages/ui/src/index.ts", import.meta.url)
+        .pathname,
+      "@yonetim/contracts/shared": new URL(
+        "./packages/contracts/src/_shared/index.ts",
+        import.meta.url,
+      ).pathname,
+      "@yonetim/contracts": new URL(
+        "./packages/contracts/src/index.ts",
+        import.meta.url,
+      ).pathname,
     },
   },
 });

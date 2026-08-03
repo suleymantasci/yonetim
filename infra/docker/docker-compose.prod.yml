@@ -89,7 +89,8 @@ services:
     environment:
       <<: *api-env
       PORT: "3000"
-      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      # APP_DOMAIN panel.localhost'tan farklıysa CORS_ORIGINS'i açıkça verin.
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://panel.localhost}
     # MIGRATION SAHİBİ: init aşamasında advisory lock'lu migrate (§11).
     # Replika sayısı artsa da yalnız biri koşar; worker hiç koşmaz.
     depends_on:

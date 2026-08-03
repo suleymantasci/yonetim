@@ -4,7 +4,7 @@ import { sql } from "drizzle-orm";
 
 import { getDb } from "@yonetim/db";
 
-import { Public } from "../../identity/decorators";
+import { Public, SkipRateLimit } from "../../identity/decorators";
 import { RedisService } from "../redis/redis.service";
 
 /**
@@ -27,6 +27,7 @@ export class HealthController {
 
   @Get()
   @Public()
+  @SkipRateLimit()
   @ApiExcludeEndpoint()
   live() {
     return { status: "ok", uptime: Math.round(process.uptime()) };
@@ -34,10 +35,11 @@ export class HealthController {
 
   @Get("ready")
   @Public()
+  @SkipRateLimit()
   @ApiExcludeEndpoint()
   async ready() {
     const [db, redis] = await Promise.all([this.checkDb(), this.redis.ping()]);
-    const status = db ? "ok" : "degraded";
+    const status = readinessStatus(db, redis);
     return { status, checks: { database: db, redis } };
   }
 
@@ -49,4 +51,11 @@ export class HealthController {
       return false;
     }
   }
+}
+
+export function readinessStatus(
+  database: boolean,
+  redis: boolean,
+): "ok" | "degraded" {
+  return database && redis ? "ok" : "degraded";
 }

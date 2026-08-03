@@ -15,6 +15,7 @@ export class RedisService implements OnModuleDestroy {
   private readonly logger = new Logger(RedisService.name);
   private client: Redis | null = null;
   private warned = false;
+  private connectionErrorLogged = false;
 
   private conn(): Redis | null {
     const url = env().REDIS_URL;
@@ -27,11 +28,32 @@ export class RedisService implements OnModuleDestroy {
       }
       return null;
     }
-    this.client ??= new Redis(url, {
-      maxRetriesPerRequest: 2,
+
+    if (this.client) return this.client;
+
+    const client = new Redis(url, {
+      connectTimeout: 1_000,
+      enableOfflineQueue: false,
+      maxRetriesPerRequest: 1,
+      retryStrategy: (attempt) => (attempt <= 1 ? 100 : null),
       lazyConnect: false,
     });
-    return this.client;
+    client.on("error", (error) => {
+      if (this.connectionErrorLogged) return;
+      this.connectionErrorLogged = true;
+      this.logger.warn({
+        event: "redis.connection_failed",
+        error: String(error),
+      });
+    });
+    client.on("ready", () => {
+      this.connectionErrorLogged = false;
+    });
+    client.on("end", () => {
+      if (this.client === client) this.client = null;
+    });
+    this.client = client;
+    return client;
   }
 
   /** Ham istemci — BullMQ ve kuyruk modülleri için. */

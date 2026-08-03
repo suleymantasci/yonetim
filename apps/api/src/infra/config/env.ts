@@ -27,7 +27,8 @@ const envSchema = z.object({
   FIELD_ENCRYPTION_KEY: z
     .string()
     .regex(/^[0-9a-f]{64}$/i, {
-      message: "FIELD_ENCRYPTION_KEY 32 byte hex olmalı (openssl rand -hex 32).",
+      message:
+        "FIELD_ENCRYPTION_KEY 32 byte hex olmalı (openssl rand -hex 32).",
     })
     .refine((v) => v !== "0".repeat(64), {
       message:
@@ -61,18 +62,22 @@ const envSchema = z.object({
     .default("false")
     .transform((value) => value === "true" || value === "1"),
 
+  /** Redis kesintisinde geliştirme/test davranışı; production daima fail-closed. */
+  RATE_LIMIT_FAIL_OPEN: z
+    .enum(["true", "false", "1", "0"])
+    .optional()
+    .transform((value) =>
+      value === undefined ? undefined : value === "true" || value === "1",
+    ),
 
   REDIS_URL: z
     .string()
     .min(1)
     .optional()
-    .refine(
-      (v) => v !== undefined || process.env.NODE_ENV !== "production",
-      {
-        message:
-          "REDIS_URL üretimde zorunlu (H-4): oturum önbelleği ve hız sınırı için.",
-      },
-    ),
+    .refine((v) => v !== undefined || process.env.NODE_ENV !== "production", {
+      message:
+        "REDIS_URL üretimde zorunlu (H-4): oturum önbelleği ve hız sınırı için.",
+    }),
   /** Oturum önbelleği TTL'i, saniye — §17 kararı 5: 60 sn, invalidation'lı. */
   SESSION_CACHE_TTL: z.coerce.number().int().min(0).max(600).default(60),
 
@@ -110,12 +115,20 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): Env {
       .join("\n");
     throw new Error(`[api] Ortam değişkenleri geçersiz:\n${issues}`);
   }
-  return { ...parsed.data, isProduction: parsed.data.NODE_ENV === "production" };
+  return {
+    ...parsed.data,
+    isProduction: parsed.data.NODE_ENV === "production",
+  };
 }
 
 export function env(): Env {
   cached ??= loadEnv();
   return { ...cached, isProduction: cached.NODE_ENV === "production" };
+}
+
+export function rateLimitFailOpen(e: Env = env()): boolean {
+  if (e.isProduction) return false;
+  return e.RATE_LIMIT_FAIL_OPEN !== false;
 }
 
 /** Test yardımcısı: doğrulanmış ortamı sıfırlar. */
