@@ -1,8 +1,11 @@
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
+import { sessionProbe } from "@yonetim/contracts";
+import { AppError } from "@yonetim/core";
 import { BrandMark, Card, CardBody } from "@yonetim/ui";
 
+import { apiGet } from "@/lib/api/server";
 import { hasSessionCookie } from "@/lib/context";
 import { SetupForm } from "./setup-form";
 
@@ -16,8 +19,19 @@ import { SetupForm } from "./setup-form";
  * `lib/context.ts` içindeki çerez kontrolüyle kapatıldı.
  *
  * `requireContext()` BURADA ÇAĞRILMAZ: çağrılsaydı bu sayfa kendini tekrar
- * kendine yönlendirirdi. Kontrol yalnız çerezin varlığı; gerçek doğrulama
- * kurulum ucunda (oturum geçersizse 401 → `/giris`).
+ * kendine yönlendirirdi.
+ *
+ * Render sırasında `/v1/auth/session-probe` ile oturum probe'u: 200 ⇒
+ * çerezden geçerli oturum çözüldü (üyelik aranmaz), formu göster; 401 ⇒
+ * çerez yok ya da süresi dolmuş, `/giris`'e yönlendir. Bu, `lib/context.ts`
+ * içindeki çerez-varlığı proxy'sinin kaçırdığı "stale çerez" durumunu
+ * render sırasında eliyor — kurulum formunu yanlışlıkla görme yüzeyi
+ * kapanıyor.
+ *
+ * `auth/me` ve `auth/context` aynı amaçla kullanılamıyor: ikisi de
+ * `TenantContextGuard`'tan geçiyor ve üyeliksiz kullanıcı için 401 dönüyor;
+ * yani "stale çerez" ile "geçerli ama sitesi yok" durumlarını ayırt edemez.
+ * `session-probe` bu iki durumu bilinçli olarak ayırıyor.
  */
 export const dynamic = "force-dynamic";
 
@@ -28,6 +42,15 @@ export async function generateMetadata() {
 
 export default async function SetupPage() {
   if (!(await hasSessionCookie())) redirect("/giris?devam=/kurulum");
+
+  try {
+    await apiGet("/v1/auth/session-probe", sessionProbe);
+  } catch (error) {
+    if (error instanceof AppError && error.code === "unauthorized") {
+      redirect("/giris?devam=/kurulum");
+    }
+    throw error;
+  }
 
   const t = await getTranslations("app.setup");
 

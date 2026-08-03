@@ -1,12 +1,14 @@
-import { Body, Controller, Post, Req } from "@nestjs/common";
+import { Body, Controller, Get, Post, Req } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import type { Request } from "express";
 
 import {
   accessRequestCreate,
+  sessionProbe,
   setupTenant,
   signupStart,
   type AccessRequestCreate,
+  type SessionProbe,
   type SetupTenant,
   type SetupTenantResult,
   type SignupStart,
@@ -98,6 +100,33 @@ export class SignupController {
       dto,
       headerValue(req, "accept-language")?.slice(0, 2),
     );
+  }
+
+  /**
+   * Oturum çerezinin geçerli olup olmadığı, üyelikten bağımsız.
+   *
+   * `TenantContextGuard`'ın `fromSessionCookie` çözücüsü üyeliksiz kullanıcı
+   * için `null` dönüyor; `auth/context` ve `auth/me` aynı yüzden iki farklı
+   * durumu (stale çerez / geçerli ama üyeliksiz) aynı 401'e eşitliyor. Bu uç
+   * yalnız oturum kimliğini çözüyor ve üyelik beklmediği için iki durumu
+   * ayırabiliyor.
+   *
+   * Yalnız çerez → oturum yolu: API anahtarı / mobil JWT bu uçtan geçmez
+   * (ikisi de panel/sakin yüzeyi için, kurulum akışının orada işi yok).
+   * Dolayısıyla mobil ve API anahtarı istemcileri 401 alır — beklenen.
+   */
+  @Public()
+  @Get("session-probe")
+  @ApiOperation({
+    summary: "Oturum çerezi geçerli mi?",
+    description:
+      "Tenant bağlamı çözmeden yalnız çerezden oturumu doğrular. " +
+      "Yanıt 200 ise oturum canlı; 401 ise çerez yok ya da süresi dolmuş.",
+  })
+  async probe(@Req() req: Request): Promise<SessionProbe> {
+    const session = await resolveSession(readSessionCookie(req.headers.cookie));
+    if (!session) throw errors.unauthorized("session_required");
+    return sessionProbe.parse({ authenticated: true, userId: session.user.id });
   }
 }
 

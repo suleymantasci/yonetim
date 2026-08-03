@@ -360,3 +360,30 @@ export const webLoginFailure = z.object({
 });
 
 export type WebLoginFailure = z.infer<typeof webLoginFailure>;
+
+/**
+ * `GET /v1/auth/session-probe` — oturum çerezinin geçerli olup olmadığı,
+ * üyelikten bağımsız.
+ *
+ * NEDEN: `authMe` ve `auth/context` `TenantContextGuard`'tan geçiyor ve
+ * tenant çözücü üyeliksiz kullanıcı için `null` döndürüyor. Yani `/auth/me`
+ * "oturum geçerli mi?" sorusunu üyelikten bağımsız soramıyor; geçerli +
+ * üyeliksiz ile süresi dolmuş çerez aynı 401'e düşüyor.
+ *
+ * Bu uç iki amaca yarıyor:
+ *  1. **Kurulum sayfası** (`/kurulum`) — geçerli oturum kontrolüyle formu
+ *     yalnızca doğru kullanıcıya gösterir; stale çerezle gelen kişi `/giris`'e
+ *     yönlendirilir.
+ *  2. **İleride** herhangi bir "kimlik gerekmez ama kimlik sahipliği önemli"
+ *     sayfa (örn. `?devam` doğrulama, davet kabul önizleme) aynı uçtan
+ *     yararlanabilir.
+ *
+ * Üyelik bilgisi döndürmüyor — yetki kararı yine `apps/api`'de. `userId`
+ * yalnız kişinin "kim" olduğunu söylüyor; site/tenant iddiası taşımıyor.
+ */
+export const sessionProbe = z.object({
+  authenticated: z.literal(true),
+  userId: uuid,
+});
+
+export type SessionProbe = z.infer<typeof sessionProbe>;
