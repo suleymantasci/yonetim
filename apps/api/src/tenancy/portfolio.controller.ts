@@ -21,6 +21,15 @@ import { DbService } from "../infra/db/db.service";
  *
  * TEK SORGU: 20 siteli bir portföyde site başına dört ayrı sorgu atmak 80
  * gidiş-dönüş demekti. Sayaçlar `LATERAL` alt sorgularla tek turda toplanıyor.
+ *
+ * AYNI SİTEDE BİRDEN ÇOK ROL: bir kullanıcı kendi yönettiği sitede aynı
+ * zamanda malik olabilir (geliştirici müdür, sonra daire almış). JOIN
+ * `memberships` × `tenants` bu durumda aynı tenant için iki satır üretiyor;
+ * UI `tenantId`'yi React key olarak kullanıyor, çakışma crash ediyordu.
+ * `DISTINCT ON (t.id)` + role priority ORDER BY ile tenant başına **en
+ * yetkili** rol seçilir — `manager + owner` → `manager`. LATERAL
+ * agregatları tenant kapsamlı olduğu için DISTINCT sonrası da tutarlı
+ * kalıyor.
  */
 @ApiExcludeController()
 @Controller("v1/panel/portfolio")
@@ -35,7 +44,7 @@ export class PortfolioController {
 
     const rows = await this.db.bypass("portfolio:overview", async (tx) => {
       const result = await tx.execute(sql`
-        SELECT
+        SELECT DISTINCT ON (t.id)
           t.id                                        AS tenant_id,
           t.slug                                      AS slug,
           t.name                                      AS name,
@@ -86,7 +95,20 @@ export class PortfolioController {
         ) mt ON TRUE
         WHERE m.user_id = ${ctx.userId}
           AND t.deleted_at IS NULL
-        ORDER BY t.name
+        ORDER BY
+          t.id,
+          CASE m.role
+            WHEN 'company_admin'    THEN 1
+            WHEN 'company_operator' THEN 2
+            WHEN 'manager'          THEN 3
+            WHEN 'auditor'          THEN 4
+            WHEN 'accountant'       THEN 5
+            WHEN 'staff'            THEN 6
+            WHEN 'owner'            THEN 7
+            WHEN 'tenant_resident'  THEN 8
+            ELSE 99
+          END,
+          t.name
       `);
       return result as unknown as PortfolioSqlRow[];
     });
