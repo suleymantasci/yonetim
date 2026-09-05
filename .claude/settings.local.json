@@ -10,7 +10,11 @@
       "Bash(lsof -nP -iTCP -sTCP:LISTEN)",
       "Bash(psql -d postgres -c \"\\\\du\")",
       "Bash(psql -d postgres -c \"\\\\l\")",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "WebSearch",
+      "WebFetch(domain:ohvps.github.io)",
+      "WebFetch(domain:bkm.com.tr)",
+      "WebFetch(domain:www.tcmb.gov.tr)"
     ]
   }
 }
