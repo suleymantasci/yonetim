@@ -77,14 +77,14 @@ export default async function FaqPage({ params }: { params: Promise<{ locale: st
           <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
             <a
               href={`mailto:${siteConfig.brand.contact.email}`}
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-fg transition-colors hover:bg-primary-hover"
+              className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-fg shadow-sm transition-all duration-150 hover:bg-primary-hover hover:shadow active:scale-[0.98]"
             >
               <Mail aria-hidden className="h-4 w-4" />
               {siteConfig.brand.contact.email}
             </a>
             <Link
               href="/ozellikler"
-              className="inline-flex items-center gap-1.5 rounded-xl border border-border-strong px-5 py-3 text-sm font-semibold text-fg transition-colors hover:bg-hover"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-border-strong px-5 py-3 text-sm font-semibold text-fg shadow-sm transition-all duration-150 hover:border-fg/50 hover:bg-hover active:scale-[0.98]"
             >
               {t("ctaLink")}
               <ArrowRight aria-hidden className="h-4 w-4" />

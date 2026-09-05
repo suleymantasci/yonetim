@@ -58,88 +58,99 @@ export function ProductMock({ locale, labels }: { locale: string; labels: Produc
 
   return (
     <figure
-      className="relative rounded-2xl border border-border bg-surface p-3 shadow-2xl shadow-ink/10 sm:p-4"
+      className="relative rounded-3xl border border-border bg-surface p-4 shadow-lg transition-all duration-300 hover:border-border-strong sm:p-5"
       aria-label={labels.caption}
     >
-      {/* Pencere çubuğu — bunun bir uygulama ekranı olduğunu tek bakışta anlatır. */}
-      <div className="mb-3 flex items-center gap-1.5 px-1">
-        <span className="h-2.5 w-2.5 rounded-full bg-border-strong" />
-        <span className="h-2.5 w-2.5 rounded-full bg-border-strong" />
-        <span className="h-2.5 w-2.5 rounded-full bg-border-strong" />
+      {/* Pencere çubuğu — Tarayıcı / İşletim Sistemi Hissi */}
+      <div className="mb-4 flex items-center justify-between border-b border-border/80 pb-3">
+        <div className="flex items-center gap-2">
+          <span className="h-2.5 w-2.5 rounded-full bg-danger/80" />
+          <span className="h-2.5 w-2.5 rounded-full bg-warning/80" />
+          <span className="h-2.5 w-2.5 rounded-full bg-success/80" />
+        </div>
+        <div className="flex items-center gap-1.5 rounded-md bg-surface-sunken px-3 py-1 text-xs font-mono text-fg-subtle">
+          <span className="h-1.5 w-1.5 rounded-full bg-success" />
+          <span>yonetimcell.app / canlı mizan</span>
+        </div>
+        <div className="text-xs font-medium text-fg-subtle">
+          SLA &lt; 4s
+        </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-5">
-        <div className="space-y-3 sm:col-span-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-xl border border-border bg-canvas p-3">
-              <p className="text-xs text-fg-muted">{labels.collectionRate}</p>
-              <p className="mt-1 font-heading text-2xl font-bold text-fg">
-                <Counter value={94} locale={locale} suffix="%" />
-              </p>
-              <p className="mt-1 flex items-center gap-1 text-xs text-success-fg">
-                <ArrowUpRight aria-hidden className="h-3 w-3" />
-                {labels.trend}
-              </p>
+      <div className="grid gap-4 sm:grid-cols-5">
+        <div className="space-y-4 sm:col-span-3">
+          <div className="rounded-xl bg-surface-sunken/50 p-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs font-medium text-fg-muted">{labels.collectionRate}</p>
+                <p className="mt-1 font-heading text-2xl font-bold tabular-nums text-fg">
+                  <Counter value={94} locale={locale} suffix="%" />
+                </p>
+                <p className="mt-1 flex items-center gap-1 text-xs text-success-fg">
+                  <ArrowUpRight aria-hidden className="h-3 w-3" />
+                  {labels.trend}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-fg-muted">{labels.openRequests}</p>
+                <p className="mt-1 font-heading text-2xl font-bold tabular-nums text-fg">
+                  <Counter value={3} locale={locale} />
+                </p>
+                <p className="mt-1 text-xs text-fg-subtle">SLA 4s</p>
+              </div>
             </div>
-            <div className="rounded-xl border border-border bg-canvas p-3">
-              <p className="text-xs text-fg-muted">{labels.openRequests}</p>
-              <p className="mt-1 font-heading text-2xl font-bold text-fg">
-                <Counter value={3} locale={locale} />
-              </p>
-              <p className="mt-1 text-xs text-fg-subtle">SLA 4s</p>
-            </div>
-          </div>
 
-          <div className="rounded-xl border border-border bg-canvas p-3">
-            <p className="text-xs text-fg-muted">{labels.collected}</p>
-            <p className="mt-0.5 font-heading text-xl font-bold text-fg">
-              <Counter
-                value={182450}
-                locale={locale}
-                format={{ style: "currency", currency: "TRY", maximumFractionDigits: 0 }}
-              />
-            </p>
-            <svg
-              viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-              className="mt-2 w-full"
-              role="img"
-              aria-label={labels.collected}
-              preserveAspectRatio="none"
-            >
-              <defs>
-                <linearGradient id="mock-area" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--color-chart-1)" stopOpacity="0.28" />
-                  <stop offset="100%" stopColor="var(--color-chart-1)" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              <path d={area} fill="url(#mock-area)" />
-              <m.path
-                d={line}
-                fill="none"
-                stroke="var(--color-chart-1)"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                vectorEffect="non-scaling-stroke"
-                initial={{ pathLength: 0 }}
-                animate={{ pathLength: 1 }}
-                transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
-              />
-            </svg>
+            <div className="mt-5 border-t border-border/70 pt-4">
+              <p className="text-xs font-medium text-fg-muted">{labels.collected}</p>
+              <p className="mt-0.5 font-heading text-xl font-bold tabular-nums text-fg">
+                <Counter
+                  value={182450}
+                  locale={locale}
+                  format={{ style: "currency", currency: "TRY", maximumFractionDigits: 0 }}
+                />
+              </p>
+              <svg
+                viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+                className="mt-2 w-full"
+                role="img"
+                aria-label={labels.collected}
+                preserveAspectRatio="none"
+              >
+                <defs>
+                  <linearGradient id="mock-area" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--color-chart-1)" stopOpacity="0.28" />
+                    <stop offset="100%" stopColor="var(--color-chart-1)" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+                <path d={area} fill="url(#mock-area)" />
+                <m.path
+                  d={line}
+                  fill="none"
+                  stroke="var(--color-chart-1)"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  vectorEffect="non-scaling-stroke"
+                  initial={{ pathLength: 0 }}
+                  animate={{ pathLength: 1 }}
+                  transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
+                />
+              </svg>
+            </div>
           </div>
         </div>
 
-        <div className="space-y-3 sm:col-span-2">
-          <ul className="divide-y divide-border rounded-xl border border-border bg-canvas">
+        <div className="space-y-4 sm:col-span-2">
+          <ul className="divide-y divide-border/80 rounded-xl bg-surface-sunken/50 p-2">
             {labels.units.map((unit) => (
               <li key={unit.door} className="flex items-center justify-between gap-2 px-3 py-2.5">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-fg">{unit.door}</p>
+                  <p className="truncate text-sm font-semibold text-fg">{unit.door}</p>
                   <p className="truncate text-xs tabular-nums text-fg-subtle">{unit.amount}</p>
                 </div>
                 <span
                   className={
-                    "shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium " +
+                    "shrink-0 rounded-full px-2 py-0.5 text-xs font-medium " +
                     (unit.state === "paid"
                       ? "bg-success-soft text-success-fg"
                       : "bg-warning-soft text-warning-fg")
@@ -151,21 +162,14 @@ export function ProductMock({ locale, labels }: { locale: string; labels: Produc
             ))}
           </ul>
 
-          {/* WhatsApp akışı — ürünün en ayırt edici özelliği. */}
-          <div className="rounded-xl border border-border bg-canvas p-3">
-            <p className="flex items-center gap-1.5 text-xs font-medium text-fg-muted">
-              <MessageCircle aria-hidden className="h-3.5 w-3.5" />
+          {/* WhatsApp akışı */}
+          <div className="rounded-xl bg-surface-sunken/50 p-3.5">
+            <p className="flex items-center gap-1.5 text-xs font-semibold text-fg-muted">
+              <MessageCircle aria-hidden className="h-3.5 w-3.5 text-success" />
               WhatsApp
             </p>
-            {/*
-              `whileInView` DEĞİL, `animate`: bu kart hero içinde, sayfa
-              açıldığında zaten görünür durumda. Görünürlük tetikleyicisi,
-              `LazyMotion` özellik paketi henüz yüklenmemişken bir kez ateşleyip
-              `once: true` yüzünden bir daha çalışmıyordu — balonlar opaklık 0'da
-              takılı kalıyordu.
-            */}
             <m.p
-              className="mt-2 w-fit rounded-2xl rounded-tr-sm bg-primary-soft px-3 py-1.5 text-xs text-primary-soft-fg"
+              className="mt-2.5 w-fit rounded-lg bg-primary-soft px-3 py-1.5 text-xs text-primary-soft-fg"
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.7, duration: 0.32 }}
@@ -173,7 +177,7 @@ export function ProductMock({ locale, labels }: { locale: string; labels: Produc
               {labels.chatPrompt}
             </m.p>
             <m.p
-              className="mt-1.5 ms-auto w-fit rounded-2xl rounded-tl-sm bg-surface-sunken px-3 py-1.5 text-xs text-fg"
+              className="mt-1.5 ms-auto w-fit rounded-lg bg-surface px-3 py-1.5 text-xs text-fg"
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1.15, duration: 0.32 }}
@@ -184,6 +188,7 @@ export function ProductMock({ locale, labels }: { locale: string; labels: Produc
           </div>
         </div>
       </div>
+
     </figure>
   );
 }

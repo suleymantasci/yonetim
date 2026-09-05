@@ -1,26 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
-import { ArrowUpRight, Check } from "lucide-react";
+import { ArrowUpRight, Check, CheckCheck, FileText, MessageSquare, ShieldCheck } from "lucide-react";
 
 import { m } from "@/components/motion";
 import { PlotShape } from "@/components/home/plot-shape";
-
-/**
- * Hero görseli — fotoğraf + üstüne binen **canlı** arayüz parçaları.
- *
- * NEDEN İKİSİ BİRDEN: Yalnız fotoğraf kullanmak (sektörün alışkanlığı) ürünün
- * ne yaptığını göstermez; yalnız arayüz mock'u kullanmak (SaaS açılış
- * sayfalarının alışkanlığı) işin kimin işi olduğunu göstermez. Fotoğraf
- * bağlamı ("bunu yöneten bir insan var"), üstüne binen kartlar ürünü anlatır.
- *
- * ÜSTTEKİ KARTLAR EKRAN GÖRÜNTÜSÜ DEĞİL: gerçek token, gerçek tipografi,
- * gerçek yerelleştirme. Tema değişince dönerler, dil değişince çevrilirler.
- * Fotoğrafın içine gömülmüş bir arayüz bunu yapamaz — bu yüzden fotoğraftan
- * istenen tek şey **özne**, arayüz değil (ölçüler: public/images/README.md).
- *
- * ALTLIK ŞEKLİ `PlotShape`ten gelir; gerekçesi orada.
- */
 
 export interface HeroFigureLabels {
   /** Görselin alternatif metni. */
@@ -32,15 +17,13 @@ export interface HeroFigureLabels {
 }
 
 export function HeroFigure({ labels }: { labels: HeroFigureLabels }) {
+  const [chatStep, setChatStep] = useState<"query" | "paid">("query");
+
   return (
-    <div className="relative mx-auto w-full max-w-[32rem] lg:max-w-none">
+    <div className="relative mx-auto w-full max-w-[32rem] select-none lg:max-w-none">
       <PlotShape />
 
-      {/*
-        LCP: hero'nun görsel ağırlığı burada. `priority` ile ön yükleniyor ve
-        `sizes` gerçek yerleşimi anlatıyor — masaüstünde sütun ~34rem, mobilde
-        neredeyse tam genişlik.
-      */}
+      {/* LCP Ana Görsel */}
       <Image
         src="/images/tour-control-slide.png"
         alt={labels.alt}
@@ -48,40 +31,98 @@ export function HeroFigure({ labels }: { labels: HeroFigureLabels }) {
         height={676}
         priority
         sizes="(min-width: 1024px) 34rem, (min-width: 640px) 32rem, 92vw"
-        className="relative w-full"
+        className="relative w-full drop-shadow-2xl"
       />
 
-      {/* Tahsilat rozeti — sağ üst. Fotoğrafın "temiz bölge"si burası. */}
+      {/* KMK & Mevzuat Güvence Rozeti — Sol Üst */}
       <m.div
-        className="absolute end-0 top-[6%] w-[10.5rem] rounded-xl border border-border bg-surface/95 p-3 shadow-lg shadow-ink/10 backdrop-blur sm:top-[10%]"
+        className="absolute start-2 top-[4%] flex items-center gap-2 rounded-xl border border-border-strong/40 bg-surface px-3 py-2 text-xs font-semibold text-fg shadow-md transition-transform hover:scale-105 sm:top-[6%]"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.25, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <ShieldCheck aria-hidden="true" className="h-4 w-4 text-primary" />
+        <span className="tracking-tight">634 Sayılı KMK Uyumlu</span>
+      </m.div>
+
+      {/* Tahsilat rozeti — Sağ Üst */}
+      <m.div
+        className="absolute end-0 top-[6%] w-[11rem] rounded-2xl border border-border-strong/40 bg-surface p-3.5 shadow-md transition-all hover:border-primary/40 sm:top-[10%]"
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.35, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       >
-        <p className="text-[11px] font-medium text-fg-muted">{labels.collectionRate}</p>
-        <p className="mt-0.5 font-heading text-2xl font-bold leading-none tabular-nums text-fg">%94</p>
-        <p className="mt-1 flex items-center gap-1 text-[11px] text-success-fg">
-          <ArrowUpRight aria-hidden className="h-3 w-3" />
-          {labels.trend}
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-medium text-fg-muted">{labels.collectionRate}</p>
+          <span className="flex h-2 w-2 rounded-full bg-success" />
+        </div>
+        <p className="mt-1 font-heading text-3xl font-extrabold leading-none tabular-nums text-fg">%94</p>
+        <p className="mt-1.5 flex items-center gap-1 text-xs font-semibold text-success-fg">
+          <ArrowUpRight aria-hidden="true" className="h-3.5 w-3.5" />
+          <span>{labels.trend}</span>
         </p>
       </m.div>
 
-      {/* WhatsApp akışı — sol alt. Ürünün en ayırt edici parçası, en görünür
-          köşede duruyor. */}
+      {/* WhatsApp Canlı Akışı — Sol Alt (Tıklanabilir Demo) */}
       <m.div
-        className="absolute bottom-[4%] start-0 w-[13.5rem] rounded-xl border border-border bg-surface/95 p-3 shadow-lg shadow-ink/10 backdrop-blur sm:w-[15rem]"
+        role="button"
+        tabIndex={0}
+        onClick={() => setChatStep((prev) => (prev === "query" ? "paid" : "query"))}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setChatStep((prev) => (prev === "query" ? "paid" : "query"));
+          }
+        }}
+        title="WhatsApp etkileşimini değiştirmek için tıklayın"
+        className="group absolute bottom-[2%] start-0 w-[15.5rem] cursor-pointer rounded-2xl border border-border-strong/40 bg-surface p-3.5 shadow-lg transition-all duration-200 hover:border-primary/50 active:scale-[0.98] sm:w-[17rem]"
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.55, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       >
-        <p className="w-fit rounded-2xl rounded-tr-sm bg-primary-soft px-2.5 py-1 text-[11px] text-primary-soft-fg">
-          {labels.chatPrompt}
-        </p>
-        <p className="mt-1.5 ms-auto w-fit rounded-2xl rounded-tl-sm bg-surface-sunken px-2.5 py-1 text-[11px] leading-snug text-fg">
-          <Check aria-hidden className="me-1 inline h-3 w-3 text-success" />
-          {labels.chatReply}
-        </p>
+        <div className="mb-2 flex items-center justify-between border-b border-border/60 pb-1.5 text-xs text-fg-subtle">
+          <span className="flex items-center gap-1 font-semibold text-fg-muted">
+            <MessageSquare aria-hidden="true" className="h-3 w-3 text-success" />
+            WhatsApp Sakin Botu
+          </span>
+          <span className="text-xs font-semibold text-primary group-hover:underline">
+            {chatStep === "query" ? "Tıkla: Öde" : "Tıkla: Sıfırla"}
+          </span>
+        </div>
+
+        {chatStep === "query" ? (
+          <div className="space-y-2">
+            <div className="ms-auto w-fit rounded-lg rounded-tr-none bg-primary px-3 py-1.5 text-xs font-medium text-primary-fg">
+              {labels.chatPrompt}
+            </div>
+            <div className="w-fit rounded-lg rounded-tl-none bg-surface-sunken p-3">
+              <p className="block text-xs font-bold text-primary">Daire 14 Bakiye: 1.500 ₺</p>
+              <p className="mt-1 block text-xs leading-snug text-fg-muted">3D Secure ile kartla ödemek için tıklayın</p>
+            </div>
+          </div>
+        ) : (
+          <m.div
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="space-y-2"
+          >
+            <div className="w-fit rounded-lg rounded-tl-none bg-success-soft p-3 text-xs text-success-fg">
+              <div className="flex items-center gap-1 font-bold">
+                <Check className="h-3.5 w-3.5" />
+                <span>1.500 ₺ Tahsil Edildi</span>
+              </div>
+              <p className="mt-1 block text-[11px] leading-snug">Bakiyeniz: 0,00 ₺ · Makbuz SMS ile iletildi</p>
+            </div>
+            <div className="flex items-center gap-1 text-[11px] text-fg-subtle">
+              <CheckCheck className="h-3.5 w-3.5 text-success" />
+              <span>Otomatik banka mutabakatı yapıldı</span>
+            </div>
+          </m.div>
+        )}
       </m.div>
+
+
     </div>
   );
 }
+

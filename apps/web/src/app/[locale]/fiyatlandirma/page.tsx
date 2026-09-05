@@ -125,19 +125,36 @@ export default async function PricingPage({
             unitCountLabel: t("unitCountLabel"),
             unitCountPlaceholder: t("unitCountPlaceholder"),
             sliderLabel: t("sliderLabel"),
+            quickPresetsLabel: t("quickPresetsLabel"),
+            unitsSuffix: t("unitsSuffix"),
             periodLabel: t("periodLabel"),
             findPlan: t("findPlan"),
             recommendedFor: t("recommendedFor", { count: "{count}" }),
             installmentCount: t("installmentCount", { count: "{count}" }),
             yearlyTotal: t("yearlyTotal"),
+            annualEquivalent: t("annualEquivalent"),
+            annualUpfrontHint: t("annualUpfrontHint", { amount: "{amount}", savings: "{savings}" }),
+            switchToYearly: t("switchToYearly"),
             surcharge: t("surcharge", { amount: "{amount}" }),
             noSurcharge: t("noSurcharge"),
+            annualSavings: t("annualSavings", { amount: "{amount}" }),
+            periodSavings: t("periodSavings", { amount: "{amount}" }),
+            flexiblePayment: t("flexiblePayment"),
+            periodBadges: {
+              yearly: t("periodBadgeYearly"),
+              semiannual: t("periodBadgeSemiannual"),
+              quarterly: t("periodBadgeQuarterly"),
+              monthly: t("periodBadgeMonthly"),
+            },
             perUnitMonthly: t("perUnitMonthly"),
             smsIncluded: t("smsIncluded", { count: "{count}" }),
             savingsBadge: t("savingsBadge", { pct: "{pct}" }),
             comparePeer: t("comparePeer"),
             compareUs: siteConfig.brand.name,
             compareCaption: t("compareCaption"),
+            compareSubtitle: t("compareSubtitle"),
+            compareSavingsBadge: t("compareSavingsBadge", { amount: "{amount}", pct: "{pct}" }),
+            annualSwitchTip: t("annualSwitchTip", { amount: "{amount}" }),
             ctaTrial: t("ctaTrial"),
             ctaNote: t("ctaNote"),
           }}
@@ -145,13 +162,13 @@ export default async function PricingPage({
       </section>
 
       {/* TÜM PAKETLER */}
-      <section className="border-y border-border bg-surface-sunken py-16">
+      <section className="bg-surface-sunken py-16">
         <div className="mx-auto max-w-6xl px-4">
           <Reveal>
             <h2 className="font-heading text-3xl font-extrabold tracking-tight text-fg">
               {t("plansTitle")}
             </h2>
-            <p className="mt-3 max-w-2xl text-fg-muted">{t("plansSubtitle")}</p>
+            <p className="mt-3 max-w-prose text-fg-muted">{t("plansSubtitle")}</p>
           </Reveal>
 
           <div className="mt-8">
@@ -170,17 +187,19 @@ export default async function PricingPage({
             {t("guaranteesTitle")}
           </h2>
         </Reveal>
-        <ul className="mt-6 grid gap-3 sm:grid-cols-2">
-          {GUARANTEES.map((key) => (
-            <li
-              key={key}
-              className="flex gap-3 rounded-xl border border-border bg-surface p-4 text-sm text-fg-muted"
-            >
-              <Check aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-success" />
-              <span>{t(key, guaranteeValues[key])}</span>
-            </li>
-          ))}
-        </ul>
+        <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-surface">
+          <ul className="grid divide-y divide-border sm:grid-cols-2 sm:divide-y-0 sm:divide-x">
+            {GUARANTEES.map((key) => (
+              <li
+                key={key}
+                className="flex gap-3.5 border-b border-border p-5 text-sm text-fg-muted transition-colors hover:bg-hover/40 sm:last:border-b-0"
+              >
+                <Check aria-hidden className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+                <span className="leading-relaxed">{t(key, guaranteeValues[key])}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </section>
 
       {/* SSS */}

@@ -101,7 +101,7 @@ export function ComparisonTable({
   */
   return (
     <>
-      <div className="hidden rounded-2xl border border-border lg:block">
+      <div className="hidden rounded-2xl border border-border bg-surface p-2 shadow-xs lg:block">
         <table className="w-full border-separate border-spacing-0 text-sm">
           <caption className="sr-only">{labels.caption}</caption>
           <thead className="text-left text-fg-subtle">

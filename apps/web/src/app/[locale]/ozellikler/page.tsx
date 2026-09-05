@@ -98,9 +98,9 @@ export default async function FeaturesPage({
                   {feature.title}
                 </h2>
               </div>
-              <p className="mt-3 text-fg">{feature.description}</p>
-              <p className="mt-2 text-sm leading-relaxed text-fg-muted">{feature.detail}</p>
-              <span className="mt-4 inline-block rounded-full bg-surface-sunken px-2.5 py-1 text-[11px] font-medium text-fg-subtle">
+              <p className="mt-3 max-w-prose text-fg">{feature.description}</p>
+              <p className="mt-2 max-w-prose text-sm leading-relaxed text-fg-muted">{feature.detail}</p>
+              <span className="mt-4 inline-block rounded-full bg-surface-sunken px-3 py-1 text-xs font-semibold text-fg-subtle">
                 {t("specSection", { ref: feature.specRef })}
               </span>
             </Reveal>
@@ -109,7 +109,7 @@ export default async function FeaturesPage({
       </section>
 
       {/* MODÜL LİSTESİ */}
-      <section className="border-y border-border bg-surface-sunken py-16">
+      <section className="bg-surface-sunken py-16">
         <div className="mx-auto max-w-6xl px-4">
           <Reveal>
             <h2 className="font-heading text-3xl font-extrabold tracking-tight text-fg">
@@ -142,7 +142,7 @@ export default async function FeaturesPage({
           <h2 className="font-heading text-3xl font-extrabold tracking-tight text-fg">
             {t("comparisonTitle")}
           </h2>
-          <p className="mt-3 max-w-3xl text-sm text-fg-subtle">{t("comparisonDisclaimer")}</p>
+          <p className="mt-3 max-w-prose text-sm text-fg-subtle">{t("comparisonDisclaimer")}</p>
         </Reveal>
 
         <div className="mt-8">

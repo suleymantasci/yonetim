@@ -109,19 +109,14 @@ export function BlueprintGrid({
  * `GradientMesh` üç leke basıyordu; burada tek bir konik olmayan yumuşak geçiş
  * var ve köşeye sabitlenmiş. Amaç renk katmak, "aurora" yapmak değil.
  */
-export function BrandWash({ className }: { className?: string }) {
-  return (
-    <div
-      aria-hidden
-      className={cn("pointer-events-none absolute inset-0 overflow-hidden", className)}
-      style={{
-        background:
-          "radial-gradient(80rem 40rem at 8% -20%, color-mix(in oklab, var(--color-primary) 12%, transparent) 0%, transparent 62%)," +
-          "radial-gradient(52rem 34rem at 96% -10%, color-mix(in oklab, var(--color-secondary) 10%, transparent) 0%, transparent 60%)",
-      }}
-    />
-  );
+/**
+ * Anti-AI-slop: Yapay radyal haze/spotlight kaldırıldı.
+ * Yüzey kendi sadeliği ve mimari BlueprintGrid ile nefes alır.
+ */
+export function BrandWash({ className: _className }: { className?: string } = {}) {
+  return null;
 }
+
 
 /**
  * İmleci izleyen yumuşak ışık — kart hover'ı.

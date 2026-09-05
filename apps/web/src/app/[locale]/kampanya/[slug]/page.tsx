@@ -156,7 +156,7 @@ export default async function CampaignDetailPage({
       <div className="mx-auto max-w-3xl px-4 py-12">
         {/* ÖDÜL — sayfadaki tek en büyük rakam. */}
         <Reveal className="rounded-2xl border-2 border-primary bg-primary-soft p-6 sm:p-8">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-primary-soft-fg">
+          <h2 className="text-sm font-semibold text-primary-soft-fg">
             {t("rewardTitle")}
           </h2>
           <p className="mt-2 font-heading text-4xl font-extrabold leading-tight text-primary-soft-fg">
@@ -200,14 +200,14 @@ export default async function CampaignDetailPage({
         <div className="mt-10 flex flex-wrap items-center gap-3">
           <a
             href={`${siteConfig.env.appUrl}/kayit?kampanya=${template.key}`}
-            className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3.5 font-semibold text-primary-fg shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover hover:shadow-xl"
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3.5 font-semibold text-primary-fg shadow-md transition-all duration-150 hover:bg-primary-hover hover:shadow-lg active:scale-[0.98]"
           >
             {t("startWithCampaign")}
             <ArrowRight aria-hidden className="h-4 w-4" />
           </a>
           <Link
             href="/fiyatlandirma"
-            className="inline-flex items-center rounded-xl border border-border-strong px-6 py-3.5 font-semibold text-fg transition-colors hover:bg-hover"
+            className="inline-flex items-center rounded-xl border border-border-strong px-6 py-3.5 font-semibold text-fg shadow-sm transition-all duration-150 hover:border-fg/50 hover:bg-hover active:scale-[0.98]"
           >
             {t("seePricing")}
           </Link>

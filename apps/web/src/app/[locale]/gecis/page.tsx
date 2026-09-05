@@ -78,19 +78,19 @@ export default async function MigrationPage({
               className="relative rounded-2xl border border-border bg-surface p-5"
             >
               <span className="absolute -start-12 top-4 inline-flex h-12 w-12 items-center justify-center">
-                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border-4 border-canvas bg-primary font-heading text-sm font-bold text-primary-fg">
+                <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary font-heading text-sm font-bold text-primary-fg shadow-xs">
                   {step}
                 </span>
               </span>
               <h2 className="font-heading text-lg font-bold text-fg">{t(`step${step}Title`)}</h2>
-              <p className="mt-2 text-sm leading-relaxed text-fg-muted">{t(`step${step}Body`)}</p>
+              <p className="mt-2 max-w-prose text-sm leading-relaxed text-fg-muted">{t(`step${step}Body`)}</p>
             </Reveal>
           ))}
         </ol>
       </section>
 
       {/* KAYNAKLAR */}
-      <section className="border-y border-border bg-surface-sunken py-14">
+      <section className="bg-surface-sunken py-14">
         <div className="mx-auto max-w-4xl px-4">
           <Reveal>
             <h2 className="font-heading text-2xl font-extrabold tracking-tight text-fg">
@@ -110,7 +110,7 @@ export default async function MigrationPage({
                 </p>
                 <a
                   href={`${siteConfig.env.appUrl}/kayit?gecis=${source}`}
-                  className="mt-4 inline-flex w-fit items-center gap-1.5 rounded-lg border border-primary px-3.5 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary-soft"
+                  className="mt-4 inline-flex w-fit items-center gap-1.5 rounded-lg border border-primary px-3.5 py-2 text-sm font-semibold text-primary transition-all duration-150 hover:bg-primary-soft active:scale-[0.98]"
                 >
                   {t("importFrom", { name: tEnum(source) })}
                   <ArrowRight aria-hidden className="h-3.5 w-3.5" />
@@ -122,11 +122,11 @@ export default async function MigrationPage({
       </section>
 
       <section className="mx-auto max-w-4xl px-4 py-14">
-        <Reveal className="flex gap-4 rounded-2xl border border-warning-border bg-warning-soft p-6">
-          <ShieldCheck aria-hidden className="mt-0.5 h-5 w-5 shrink-0 text-warning-fg" />
+        <Reveal className="flex gap-4 rounded-2xl border border-border bg-surface p-6 sm:p-8">
+          <ShieldCheck aria-hidden="true" className="mt-0.5 h-6 w-6 shrink-0 text-primary" />
           <div>
-            <h2 className="font-heading font-bold text-warning-fg">{t("ownershipTitle")}</h2>
-            <p className="mt-2 text-sm leading-relaxed text-warning-fg">{t("ownershipBody")}</p>
+            <h2 className="font-heading text-lg font-bold text-fg">{t("ownershipTitle")}</h2>
+            <p className="mt-2 max-w-prose text-sm leading-relaxed text-fg-muted">{t("ownershipBody")}</p>
           </div>
         </Reveal>
       </section>

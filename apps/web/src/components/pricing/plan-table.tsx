@@ -50,10 +50,10 @@ export async function PlanTable({
 
   return (
     <>
-      <div className="hidden rounded-2xl border border-border md:block">
+      <div className="hidden rounded-2xl border border-border bg-surface p-2 shadow-xs md:block">
         <table className="w-full border-separate border-spacing-0 text-sm">
           <caption className="sr-only">{t("tableCaption")}</caption>
-          <thead className="text-left text-xs uppercase tracking-wide text-fg-subtle">
+          <thead className="text-left text-xs font-semibold text-fg-subtle">
             <tr>
               <th scope="col" className={`${headCell} rounded-ss-2xl`}>{t("planColumn")}</th>
               <th scope="col" className={headCell}>{t("unitsColumn")}</th>
@@ -78,7 +78,7 @@ export async function PlanTable({
                   <td className={`${cell} font-semibold text-fg`}>
                     {plan.name}
                     {isHit ? (
-                      <span className="ms-2 rounded bg-primary px-1.5 py-0.5 text-[11px] font-semibold text-primary-fg">
+                      <span className="ms-2 rounded bg-primary px-1.5 py-0.5 text-xs font-semibold text-primary-fg">
                         {t("suitableBadge")}
                       </span>
                     ) : null}
@@ -137,7 +137,7 @@ export async function PlanTable({
             <div className="flex items-baseline justify-between gap-2">
               <span className="font-heading font-bold text-fg">{plan.name}</span>
               {isHit ? (
-                <span className="rounded bg-primary px-1.5 py-0.5 text-[11px] font-semibold text-primary-fg">
+                <span className="rounded bg-primary px-1.5 py-0.5 text-xs font-semibold text-primary-fg">
                   {t("suitableBadge")}
                 </span>
               ) : savings ? (

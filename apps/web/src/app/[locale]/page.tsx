@@ -1,4 +1,4 @@
-import { ArrowRight, BadgeCheck, Check, Download, MessageSquare, Scale, ShieldCheck, Smartphone } from "lucide-react";
+import { ArrowRight, BadgeCheck, Check, Clock, CreditCard, Download, MessageSquare, Scale, ShieldCheck, Smartphone, Sparkles } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { siteConfig } from "@yonetim/config";
@@ -18,6 +18,8 @@ import { Ledger } from "@/components/home/ledger";
 import { PricingPreview } from "@/components/home/pricing-preview";
 import { ProductMock } from "@/components/home/product-mock";
 import { StoryRow } from "@/components/home/story-row";
+import { DuesSimulator } from "@/components/home/dues-simulator";
+import { MigrationDesk } from "@/components/home/migration-desk";
 import { getPathname } from "@/i18n/navigation";
 
 /** JSON-LD `featureList` anahtarları — metinler `marketing.home.schemaFeature.*`. */
@@ -101,7 +103,6 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         yalnız sağdaki görselin üstündeki rozetlerde.
       */}
       <section className="relative isolate overflow-hidden border-b border-border">
-        <BrandWash />
         <BlueprintGrid />
 
         {/* `relative`: konumlandırılmış dekor, konumlandırılmamış içeriğin
@@ -109,24 +110,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         <div className="relative mx-auto max-w-6xl px-4 pb-16 pt-14 sm:pb-20 sm:pt-20">
           <div className="grid items-center gap-12 lg:grid-cols-[minmax(0,6.5fr)_minmax(0,5fr)] lg:gap-12">
             <div>
-              {/*
-                Eski hâlinde burada nabız gibi atan yeşil noktalı bir hap vardı
-                ("30 gün ücretsiz · kredi kartı istemiyoruz"). O bileşen üretilmiş
-                her açılış sayfasında aynı biçimde duruyor ve iki şeyi birden
-                yanlış yapıyordu: yanıp sönen nokta "canlı veri" işaretidir, oysa
-                orada sabit bir pazarlama cümlesi vardı; deneme koşulu da karar
-                anına (butonun altına) değil sayfanın en tepesine konmuştu.
-
-                Yerine geçen şey bir rozet değil, bir **künye**: ürünün hangi
-                mevzuata göre kurgulandığını söylüyor. Bu cümleyi yazabilmek için
-                ürünü bilmek gerekir — jenerik bir şablondan çıkmaz.
-              */}
-              <p className="flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.16em] text-fg-muted">
-                <span aria-hidden className="h-px w-8 shrink-0 bg-primary" />
-                {t("heroEyebrow")}
-              </p>
-
-              <h1 className="mt-5 max-w-[17ch] font-heading text-4xl font-extrabold leading-[1.06] tracking-tight text-fg sm:text-5xl xl:text-6xl">
+              <h1 className="font-heading text-4xl font-extrabold leading-[1.06] tracking-tight text-fg sm:text-5xl xl:text-6xl">
                 {t("heroTitle")} <span className="text-primary">{t("heroTitleAccent")}</span>
               </h1>
 
@@ -134,24 +118,24 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                 {t.rich("heroSubtitle", richTags)}
               </p>
 
-              <div className="mt-8 flex flex-wrap items-center gap-3">
+              <div className="mt-8 flex flex-wrap items-center gap-3.5">
                 <a
                   href={`${siteConfig.env.appUrl}/kayit`}
-                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3.5 font-semibold text-primary-fg shadow-lg shadow-primary/20 transition-all hover:bg-primary-hover hover:shadow-xl hover:shadow-primary/25"
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3.5 font-semibold text-primary-fg shadow-md transition-all duration-150 hover:bg-primary-hover hover:shadow-lg active:scale-[0.98]"
                 >
                   {t("ctaPrimary")}
                   <ArrowRight aria-hidden className="h-4 w-4" />
                 </a>
                 <Link
                   href="/fiyatlandirma"
-                  className="inline-flex items-center rounded-xl border border-border-strong bg-surface/70 px-6 py-3.5 font-semibold text-fg backdrop-blur transition-colors hover:bg-hover"
+                  className="inline-flex items-center rounded-xl border border-border-strong bg-surface px-6 py-3.5 font-semibold text-fg shadow-sm transition-all duration-150 hover:border-fg/50 hover:bg-hover active:scale-[0.98]"
                 >
                   {t("ctaSecondary")}
                 </Link>
               </div>
 
               {/* Deneme koşulu artık kararın yanında: buton, sonra koşul. */}
-              <p className="mt-4 text-sm text-fg-subtle">{t("ctaNote")}</p>
+              <p className="mt-4 max-w-md text-sm text-fg-subtle">{t("ctaNote")}</p>
 
               <ul className="mt-9 grid gap-5 border-t border-border pt-6 sm:grid-cols-3">
                 {heroStats.map((stat) => (
@@ -186,18 +170,20 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         Ayraç `border-s` ile değil bu yolla çiziliyor çünkü kırılma noktası
         başına ilk/son hücre istisnası yazmak gerekmiyor.
       */}
-      <section className="border-b border-border" aria-label={t("trustTitle")}>
-        <ul className="mx-auto grid max-w-6xl gap-px bg-border sm:grid-cols-3 lg:grid-cols-6">
-          {TRUST.map(({ key, icon: Icon }) => (
-            <li
-              key={key}
-              className="flex items-center gap-2 bg-surface-sunken px-4 py-4 text-xs font-medium text-fg-muted"
-            >
-              <Icon aria-hidden className="h-4 w-4 shrink-0 text-primary" />
-              {t(key)}
-            </li>
-          ))}
-        </ul>
+      <section className="border-b border-border bg-surface-sunken py-3 sm:py-4" aria-label={t("trustTitle")}>
+        <div className="mx-auto max-w-6xl px-4">
+          <ul className="grid divide-y divide-border sm:grid-cols-3 sm:divide-y-0 sm:divide-x lg:grid-cols-6">
+            {TRUST.map(({ key, icon: Icon }) => (
+              <li
+                key={key}
+                className="flex items-center gap-2 px-3 py-3 text-xs font-medium text-fg-muted"
+              >
+                <Icon aria-hidden className="h-4 w-4 shrink-0 text-primary" />
+                {t(key)}
+              </li>
+            ))}
+          </ul>
+        </div>
       </section>
 
       {/* DEFTER — "bugün elle nasıl yürüyor" ↔ "panelde nereye düşüyor" */}
@@ -206,7 +192,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           <h2 className="font-heading text-3xl font-extrabold tracking-tight text-fg sm:text-4xl">
             {t("ledgerTitle")}
           </h2>
-          <p className="mt-3 text-fg-muted">{t("ledgerSubtitle")}</p>
+          <p className="mt-3 max-w-prose text-fg-muted">{t("ledgerSubtitle")}</p>
         </Reveal>
 
         <Reveal className="mt-10">
@@ -219,22 +205,17 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       </section>
 
       {/*
-        PANEL — arayüz gösterimi, yanında ne gösterdiğini anlatan metin.
-
-        Mock hero'dan buraya taşındı: hero'da ürün ekranı göstermek yaygın ama
-        ilk ekranda ziyaretçinin bilmediği bir arayüzü açıklamasız göstermek
-        demek. Burada solda ne bakacağı yazıyor.
+        ÜRÜN ÖNİZLEME — canlı ekran görüntüsü.
       */}
-      <section className="border-y border-border bg-surface-sunken py-20">
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 lg:grid-cols-[minmax(0,4fr)_minmax(0,7fr)] lg:gap-14">
+      <section className="bg-surface-sunken py-20">
+        <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
           <Reveal>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
-              {t("panelEyebrow")}
-            </p>
-            <h2 className="mt-3 font-heading text-3xl font-extrabold tracking-tight text-fg sm:text-4xl">
+            <h2 className="font-heading text-3xl font-extrabold tracking-tight text-fg sm:text-4xl">
               {t("panelTitle")}
             </h2>
-            <p className="mt-4 leading-relaxed text-fg-muted">{t("panelBody")}</p>
+            <p className="mt-4 max-w-prose text-lg leading-relaxed text-fg-muted">
+              {t("panelBody")}
+            </p>
             <ul className="mt-6 space-y-2.5">
               {t("panelPoints")
                 .split("|")
@@ -271,13 +252,20 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         </div>
       </section>
 
+      {/* İNTERAKTİF AİDAT & KAZANÇ SİMÜLATÖRÜ */}
+      <section className="mx-auto max-w-6xl px-4 py-20">
+        <Reveal>
+          <DuesSimulator locale={locale} />
+        </Reveal>
+      </section>
+
       {/* KİMLER KULLANIYOR — zikzak şeritler */}
       <section className="mx-auto max-w-6xl px-4 py-20">
         <Reveal className="max-w-2xl">
           <h2 className="font-heading text-3xl font-extrabold tracking-tight text-fg sm:text-4xl">
             {t("audienceTitle")}
           </h2>
-          <p className="mt-3 text-fg-muted">{t("audienceSubtitle")}</p>
+          <p className="mt-3 max-w-prose text-fg-muted">{t("audienceSubtitle")}</p>
         </Reveal>
 
         <div className="mt-14 space-y-16 sm:space-y-24">
@@ -304,13 +292,13 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       </section>
 
       {/* ÖZELLİK GÖSTERİMİ */}
-      <section className="border-y border-border bg-surface-sunken py-20">
+      <section className="bg-surface-sunken py-20">
         <div className="mx-auto max-w-6xl px-4">
           <Reveal>
             <h2 className="font-heading text-3xl font-extrabold tracking-tight text-fg sm:text-4xl">
               {t("killerTitle")}
             </h2>
-            <p className="mt-3 max-w-2xl text-fg-muted">{t("killerSubtitle")}</p>
+            <p className="mt-3 max-w-prose text-fg-muted">{t("killerSubtitle")}</p>
           </Reveal>
 
           <div className="mt-10">
@@ -335,43 +323,54 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       */}
       <section className="mx-auto max-w-6xl px-4 py-20">
         <Reveal>
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
-            {t("modulesIndexLabel")}
-          </p>
-          <h2 className="mt-3 font-heading text-3xl font-extrabold tracking-tight text-fg sm:text-4xl">
+          <h2 className="font-heading text-3xl font-extrabold tracking-tight text-fg sm:text-4xl">
             {t("modulesTitle")}
           </h2>
-          <p className="mt-3 max-w-2xl text-fg-muted">{t("modulesSubtitle")}</p>
+          <p className="mt-3 max-w-prose text-fg-muted">{t("modulesSubtitle")}</p>
         </Reveal>
 
-        <Stagger
-          className="mt-10 grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-2"
-          itemAs="div"
-        >
-          {MODULE_KEYS.map((key, index) => (
-            <article key={key} className="h-full bg-surface p-5 sm:p-6">
-              <div className="flex items-baseline gap-3">
-                <span aria-hidden className="font-heading text-xs font-bold tabular-nums text-fg-subtle">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <h3 className="font-heading font-bold text-fg">{tModule(`${key}Title`)}</h3>
+        <div className="mt-10 overflow-hidden rounded-2xl border border-border bg-surface shadow-xs">
+          {/* Üst Mimari Başlık Şeridi */}
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-surface-sunken/70 px-6 py-3.5">
+            <span className="font-mono text-xs font-bold uppercase tracking-wider text-fg-subtle">
+              {t("modulesTag")}
+            </span>
+            <span className="inline-flex items-center gap-1.5 font-mono text-xs font-semibold text-success">
+              <Check aria-hidden="true" className="h-3.5 w-3.5 text-success" />
+              {t("modulesBadge")}
+            </span>
+          </div>
+
+          <Stagger
+            className="grid bg-border gap-px sm:grid-cols-2"
+            itemAs="div"
+            itemClassName="bg-surface h-full"
+          >
+            {MODULE_KEYS.map((key, index) => (
+              <div key={key} className="flex h-full flex-col justify-start p-6 transition-colors hover:bg-hover/40">
+                <div className="flex items-baseline gap-3">
+                  <span aria-hidden="true" className="font-heading text-xs font-bold tabular-nums text-primary">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <h3 className="font-heading font-bold text-fg">{tModule(`${key}Title`)}</h3>
+                </div>
+                <p className="mt-2 text-sm leading-relaxed text-fg-muted ps-7">
+                  {tModule(`${key}Items`).split("|").join(" · ")}
+                </p>
               </div>
-              <p className="mt-2 text-sm leading-relaxed text-fg-muted ps-8">
-                {tModule(`${key}Items`).split("|").join(" · ")}
-              </p>
-            </article>
-          ))}
-        </Stagger>
+            ))}
+          </Stagger>
+        </div>
       </section>
 
       {/* FİYAT ÖNİZLEME */}
-      <section className="border-y border-border bg-surface-sunken py-20">
+      <section className="bg-surface-sunken py-20">
         <div className="mx-auto max-w-4xl px-4">
           <Reveal className="text-center">
             <h2 className="font-heading text-3xl font-extrabold tracking-tight text-fg sm:text-4xl">
               {t("pricingTitle")}
             </h2>
-            <p className="mx-auto mt-3 max-w-xl text-fg-muted">{t("pricingSubtitle")}</p>
+            <p className="mx-auto mt-3 max-w-prose text-fg-muted">{t("pricingSubtitle")}</p>
           </Reveal>
 
           <div className="mt-10">
@@ -397,12 +396,12 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       </section>
 
       {/* SSS */}
-      <section className="mx-auto max-w-3xl px-4 py-20">
+      <section className="mx-auto max-w-2xl px-4 py-20">
         <Reveal className="text-center">
           <h2 className="font-heading text-3xl font-extrabold tracking-tight text-fg sm:text-4xl">
             {t("faqTitle")}
           </h2>
-          <p className="mt-3 text-fg-muted">{t("faqSubtitle")}</p>
+          <p className="mx-auto mt-3 max-w-prose text-fg-muted">{t("faqSubtitle")}</p>
         </Reveal>
 
         <Accordion className="mt-8">
@@ -424,28 +423,115 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         </p>
       </section>
 
-      {/* KAPANIŞ */}
-      <section className="relative isolate overflow-hidden bg-ink px-4 py-20 text-ink-fg">
-        <BlueprintGrid className="text-ink-border" origin="top center" />
-        <div className="relative mx-auto max-w-3xl text-center">
-          <h2 className="font-heading text-3xl font-extrabold tracking-tight sm:text-4xl">
-            {t("ctaTitle")}
-          </h2>
-          <p className="mt-4 text-ink-muted-fg">{t("ctaBody")}</p>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-            <a
-              href={`${siteConfig.env.appUrl}/kayit`}
-              className="inline-flex items-center gap-2 rounded-xl bg-accent px-6 py-3.5 font-semibold text-accent-fg transition-colors hover:bg-accent-hover"
-            >
-              {t("ctaPrimary")}
-              <ArrowRight aria-hidden className="h-4 w-4" />
-            </a>
-            <Link
-              href="/gecis"
-              className="inline-flex items-center rounded-xl border border-ink-border px-6 py-3.5 font-semibold text-ink-fg transition-colors hover:bg-ink-hover"
-            >
-              {t("ctaSecondaryLink")}
-            </Link>
+      {/* KAPANIŞ — KESİNTİSİZ GEÇİŞ & VERİ AKTARIM MASASI */}
+      <section className="border-t border-border bg-surface-sunken/20 py-20 sm:py-24">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="grid gap-12 lg:grid-cols-2 lg:items-center">
+            {/* Sol Kolon: Doğrudan Değer, Eylem ve Şartname Güvencesi */}
+            <div>
+              <h2 className="font-heading text-3xl font-extrabold tracking-tight text-fg sm:text-4xl lg:text-5xl leading-[1.12]">
+                {t("ctaTitle")}
+              </h2>
+              <p className="mt-4 max-w-xl text-base leading-relaxed text-fg-muted sm:text-lg">
+                {t("ctaBody")}
+              </p>
+
+              <div className="mt-8 flex flex-wrap items-center gap-4">
+                <a
+                  href={`${siteConfig.env.appUrl}/kayit`}
+                  className="inline-flex items-center gap-2 rounded-xl bg-primary px-7 py-3.5 font-heading text-base font-bold text-primary-fg shadow-sm transition-all duration-150 hover:bg-primary-hover hover:shadow active:scale-[0.98]"
+                >
+                  <span>{t("ctaPrimary")}</span>
+                  <ArrowRight aria-hidden="true" className="h-4 w-4" />
+                </a>
+                <Link
+                  href="/gecis"
+                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-6 py-3.5 font-heading text-base font-semibold text-fg shadow-xs transition-all duration-150 hover:bg-hover hover:border-border-strong active:scale-[0.98]"
+                >
+                  <span>{t("ctaSecondaryLink")}</span>
+                  <ArrowRight aria-hidden="true" className="h-4 w-4 text-fg-muted" />
+                </Link>
+              </div>
+
+              {/* Mimari Güven & Şartname Şeridi */}
+              <div className="mt-10 border-t border-border/80 pt-6">
+                <div className="grid grid-cols-3 gap-4">
+                  <div>
+                    <div className="font-mono text-base font-bold text-fg sm:text-lg">
+                      {t("ctaTrustStat1Value")}
+                    </div>
+                    <div className="mt-0.5 text-xs text-fg-muted">
+                      {t("ctaTrustStat1Label")}
+                    </div>
+                  </div>
+                  <div className="border-s border-border ps-4">
+                    <div className="font-mono text-base font-bold text-fg sm:text-lg">
+                      {t("ctaTrustStat2Value")}
+                    </div>
+                    <div className="mt-0.5 text-xs text-fg-muted">
+                      {t("ctaTrustStat2Label")}
+                    </div>
+                  </div>
+                  <div className="border-s border-border ps-4">
+                    <div className="font-mono text-base font-bold text-fg sm:text-lg">
+                      {t("ctaTrustStat3Value")}
+                    </div>
+                    <div className="mt-0.5 text-xs text-fg-muted">
+                      {t("ctaTrustStat3Label")}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Sağ Kolon: Canlı Veri Aktarım & Eşleşme Konsolu */}
+            <div>
+              <MigrationDesk
+                labels={{
+                  tag: t("migrationDesk.tag"),
+                  status: t("migrationDesk.status"),
+                  tabApsiyon: t("migrationDesk.tabApsiyon"),
+                  tabExcel: t("migrationDesk.tabExcel"),
+                  tabNew: t("migrationDesk.tabNew"),
+                  formatLabel: t("migrationDesk.formatLabel"),
+                  timeLabel: t("migrationDesk.timeLabel"),
+                  apsiyonFormat: t("migrationDesk.apsiyonFormat"),
+                  apsiyonTime: t("migrationDesk.apsiyonTime"),
+                  excelFormat: t("migrationDesk.excelFormat"),
+                  excelTime: t("migrationDesk.excelTime"),
+                  newFormat: t("migrationDesk.newFormat"),
+                  newTime: t("migrationDesk.newTime"),
+                  apsiyonRow1Title: t("migrationDesk.apsiyonRow1Title"),
+                  apsiyonRow1Desc: t("migrationDesk.apsiyonRow1Desc"),
+                  apsiyonRow1Badge: t("migrationDesk.apsiyonRow1Badge"),
+                  apsiyonRow2Title: t("migrationDesk.apsiyonRow2Title"),
+                  apsiyonRow2Desc: t("migrationDesk.apsiyonRow2Desc"),
+                  apsiyonRow2Badge: t("migrationDesk.apsiyonRow2Badge"),
+                  apsiyonRow3Title: t("migrationDesk.apsiyonRow3Title"),
+                  apsiyonRow3Desc: t("migrationDesk.apsiyonRow3Desc"),
+                  apsiyonRow3Badge: t("migrationDesk.apsiyonRow3Badge"),
+                  excelRow1Title: t("migrationDesk.excelRow1Title"),
+                  excelRow1Desc: t("migrationDesk.excelRow1Desc"),
+                  excelRow1Badge: t("migrationDesk.excelRow1Badge"),
+                  excelRow2Title: t("migrationDesk.excelRow2Title"),
+                  excelRow2Desc: t("migrationDesk.excelRow2Desc"),
+                  excelRow2Badge: t("migrationDesk.excelRow2Badge"),
+                  excelRow3Title: t("migrationDesk.excelRow3Title"),
+                  excelRow3Desc: t("migrationDesk.excelRow3Desc"),
+                  excelRow3Badge: t("migrationDesk.excelRow3Badge"),
+                  newRow1Title: t("migrationDesk.newRow1Title"),
+                  newRow1Desc: t("migrationDesk.newRow1Desc"),
+                  newRow1Badge: t("migrationDesk.newRow1Badge"),
+                  newRow2Title: t("migrationDesk.newRow2Title"),
+                  newRow2Desc: t("migrationDesk.newRow2Desc"),
+                  newRow2Badge: t("migrationDesk.newRow2Badge"),
+                  newRow3Title: t("migrationDesk.newRow3Title"),
+                  newRow3Desc: t("migrationDesk.newRow3Desc"),
+                  newRow3Badge: t("migrationDesk.newRow3Badge"),
+                  guaranteeFooter: t("migrationDesk.guaranteeFooter"),
+                }}
+              />
+            </div>
           </div>
         </div>
       </section>

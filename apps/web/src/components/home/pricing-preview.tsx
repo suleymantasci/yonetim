@@ -111,29 +111,35 @@ export function PricingPreview({
           <p className="mt-1 text-sm text-fg-subtle">
             ≈ {formatAmount(monthlyPerUnit, locale)} {labels.perUnit}
           </p>
+          {period === "yearly" && quote.savingsVsMonthlyKurus > 0 ? (
+            <p className="mt-1 text-xs font-semibold text-success-fg">
+              Yıllık ödemede {formatAmount(quote.savingsVsMonthlyKurus / 100, locale)} tasarruf (2 ay bedava)
+            </p>
+          ) : null}
           {savings ? (
-            <p className="mt-3 inline-flex rounded-full bg-success-soft px-3 py-1 text-xs font-semibold text-success-fg">
+            <p className="mt-2.5 inline-flex rounded-full bg-success-soft px-3 py-1 text-xs font-semibold text-success-fg">
               {labels.savings.replace("{pct}", String(savings))}
             </p>
           ) : null}
         </div>
 
-        <div className="flex flex-col justify-end gap-2">
+        <div className="flex flex-col justify-end gap-2.5">
           <a
             href={`${signupUrl}?daire=${units}`}
-            className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-fg transition-colors hover:bg-primary-hover"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-fg shadow-md transition-all duration-150 hover:bg-primary-hover hover:shadow-lg active:scale-[0.98]"
           >
             {labels.cta}
             <ArrowRight aria-hidden className="h-4 w-4" />
           </a>
           <a
             href={pricingHref}
-            className="inline-flex items-center justify-center rounded-lg border border-border-strong px-5 py-3 text-sm font-medium text-fg transition-colors hover:bg-hover"
+            className="inline-flex items-center justify-center rounded-xl border border-border-strong bg-surface px-5 py-3 text-sm font-semibold text-fg transition-all duration-150 hover:border-fg/40 hover:bg-hover active:scale-[0.98]"
           >
             {labels.all}
           </a>
         </div>
       </div>
     </div>
+
   );
 }

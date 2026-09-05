@@ -54,11 +54,10 @@ export function StoryRow({ eyebrow, title, body, points, image, reverse = false 
       </div>
 
       <div className={reverse ? "lg:order-1" : undefined}>
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">{eyebrow}</p>
-        <h3 className="mt-3 font-heading text-2xl font-extrabold tracking-tight text-fg sm:text-3xl">
+        <h3 className="font-heading text-2xl font-extrabold tracking-tight text-fg sm:text-3xl">
           {title}
         </h3>
-        <p className="mt-4 leading-relaxed text-fg-muted">{body}</p>
+        <p className="mt-4 max-w-prose leading-relaxed text-fg-muted">{body}</p>
         <ul className="mt-6 space-y-2.5">
           {points.map((point) => (
             <li key={point} className="flex gap-2.5 text-sm text-fg">

@@ -147,6 +147,8 @@ export interface StaggerProps {
   direction?: Direction;
   /** Her çocuğu saran öğenin etiketi — `ul` içinde `li` olmalı. */
   itemAs?: RevealTag;
+  /** Her çocuğun Reveal sarmalayıcısına verilecek sınıf. */
+  itemClassName?: string;
   className?: string;
 }
 
@@ -161,6 +163,7 @@ export function Stagger({
   children,
   as = "div",
   itemAs = "div",
+  itemClassName,
   step = 0.06,
   direction = "up",
   className,
@@ -171,7 +174,13 @@ export function Stagger({
     as,
     { className: cn(className) },
     items.map((child, index) => (
-      <Reveal key={index} as={itemAs} direction={direction} delay={Math.min(index, 5) * step}>
+      <Reveal
+        key={index}
+        as={itemAs}
+        className={itemClassName}
+        direction={direction}
+        delay={Math.min(index, 5) * step}
+      >
         {child}
       </Reveal>
     )),

@@ -37,8 +37,8 @@ export function PlotShape({ mirrored = false }: { mirrored?: boolean }) {
         style={{
           clipPath: PLOT_CLIP,
           background:
-            "linear-gradient(135deg, color-mix(in oklab, var(--color-primary) 16%, transparent) 0%," +
-            " color-mix(in oklab, var(--color-secondary) 9%, transparent) 100%)",
+            "linear-gradient(135deg, color-mix(in oklab, var(--color-primary) 12%, transparent) 0%," +
+            " color-mix(in oklab, var(--color-ink) 8%, transparent) 100%)",
         }}
       />
       {/* Teknik çizim kontürü: aynı blok, birkaç piksel kaydırılmış. */}

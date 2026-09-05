@@ -64,7 +64,7 @@ export function SegmentedControl({
   linkComponent: Link = defaultAnchor,
 }: SegmentedControlProps) {
   const shell = cn(
-    "inline-flex items-center gap-1 rounded-full border border-border bg-surface-sunken p-1",
+    "inline-flex items-center gap-1 rounded-full bg-surface-sunken p-1",
     className,
   );
 
@@ -81,7 +81,7 @@ export function SegmentedControl({
   const badge = (active: boolean, content: ReactNode) => (
     <span
       className={cn(
-        "rounded-full px-1.5 py-0.5 text-[11px] font-medium",
+        "rounded-full px-1.5 py-0.5 text-xs font-semibold",
         active ? "bg-success-soft text-success-fg" : "bg-surface text-fg-subtle",
       )}
     >

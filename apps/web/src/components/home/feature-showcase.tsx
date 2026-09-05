@@ -122,10 +122,12 @@ export function FeatureShowcase({
             transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
           >
             <h3 className="font-heading text-xl font-bold text-fg">{current.title}</h3>
-            <p className="mt-3 text-fg-muted">{current.description}</p>
-            <p className="mt-4 rounded-xl border border-border bg-canvas p-4 text-sm leading-relaxed text-fg-muted">
-              {current.detail}
-            </p>
+            <p className="mt-3 max-w-prose text-fg-muted">{current.description}</p>
+            <div className="mt-5 border-t border-border/70 pt-4">
+              <p className="max-w-prose text-sm leading-relaxed text-fg-muted">
+                {current.detail}
+              </p>
+            </div>
             <a
               href={`${detailHref}#${current.slug}`}
               className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:underline"

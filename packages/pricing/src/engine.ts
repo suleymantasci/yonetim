@@ -11,12 +11,12 @@ export type BillingPeriod = "yearly" | "semiannual" | "quarterly" | "monthly";
 
 export const BILLING_PERIODS: Record<
   BillingPeriod,
-  { months: number; label: string; surchargePct: number }
+  { months: number; label: string; surchargePct: number; savingsPctVsMonthly: number }
 > = {
-  yearly: { months: 12, label: "Yıllık peşin", surchargePct: 0 },
-  semiannual: { months: 6, label: "6 aylık", surchargePct: 4 },
-  quarterly: { months: 3, label: "3 aylık", surchargePct: 7 },
-  monthly: { months: 1, label: "Aylık", surchargePct: 10 },
+  yearly: { months: 12, label: "Yıllık peşin", surchargePct: 0, savingsPctVsMonthly: 10 },
+  semiannual: { months: 6, label: "6 aylık", surchargePct: 4, savingsPctVsMonthly: 6 },
+  quarterly: { months: 3, label: "3 aylık", surchargePct: 7, savingsPctVsMonthly: 3 },
+  monthly: { months: 1, label: "Aylık", surchargePct: 10, savingsPctVsMonthly: 0 },
 };
 
 export interface PriceQuote {
@@ -27,8 +27,12 @@ export interface PriceQuote {
   /** Yıllık toplam (tüm taksitler). */
   yearlyTotalKurus: Kurus;
   listYearlyKurus: Kurus;
-  /** Taksitli ödeme farkı. */
+  /** Taksitli ödeme farkı (muhasebe iç kaydı). */
   surchargeKurus: Kurus;
+  /** Aylık esnek ödemeye kıyasla sağlanan tasarruf tutarı (Kuruş). */
+  savingsVsMonthlyKurus: Kurus;
+  /** Aylık esnek ödemeye kıyasla tasarruf oranı (%) */
+  savingsVsMonthlyPct: number;
   vatIncluded: true;
   installmentCount: number;
   monthlyEquivalentKurus: Kurus;
@@ -48,6 +52,13 @@ export function quoteForPlan(plan: PlanDefinition, period: BillingPeriod): Price
   const surcharge = applyPct(listYearly, cfg.surchargePct);
   const yearlyTotal = listYearly + surcharge;
   const installmentCount = 12 / cfg.months;
+
+  // Aylık baz maliyet (aylık faturalandırmanın 12 aylık kümülatifi)
+  const monthlyAnnualTotal = applyPct(listYearly, BILLING_PERIODS.monthly.surchargePct) + listYearly;
+  const savingsVsMonthlyKurus = Math.max(0, monthlyAnnualTotal - yearlyTotal);
+  const savingsVsMonthlyPct =
+    monthlyAnnualTotal > 0 ? Math.round((savingsVsMonthlyKurus / monthlyAnnualTotal) * 100) : 0;
+
   return {
     plan,
     period,
@@ -55,6 +66,8 @@ export function quoteForPlan(plan: PlanDefinition, period: BillingPeriod): Price
     yearlyTotalKurus: yearlyTotal,
     listYearlyKurus: listYearly,
     surchargeKurus: surcharge,
+    savingsVsMonthlyKurus,
+    savingsVsMonthlyPct,
     vatIncluded: true,
     installmentCount,
     monthlyEquivalentKurus: roundHalfUp(yearlyTotal / 12),

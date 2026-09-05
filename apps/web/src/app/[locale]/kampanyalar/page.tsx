@@ -125,7 +125,7 @@ export default async function CampaignsPage({
                   {rewardLabel(template, t)}
                 </p>
                 {template.badge ? (
-                  <span className="shrink-0 rounded-full bg-accent-soft px-2.5 py-0.5 text-[11px] font-bold text-accent-soft-fg">
+                  <span className="shrink-0 rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-semibold text-accent-soft-fg">
                     {t(`badge.${template.badge}`)}
                   </span>
                 ) : null}
@@ -153,7 +153,7 @@ export default async function CampaignsPage({
                 {template.audience.segments.map((segment) => (
                   <li
                     key={segment}
-                    className="rounded-full bg-surface-sunken px-2 py-0.5 text-[11px] font-medium text-fg-subtle"
+                    className="rounded-full bg-surface-sunken px-2.5 py-0.5 text-xs font-semibold text-fg-subtle"
                   >
                     {t(`segment.${segment}`)}
                   </li>
@@ -173,7 +173,7 @@ export default async function CampaignsPage({
                 </Link>
                 <a
                   href={`${siteConfig.env.appUrl}/kayit?kampanya=${template.key}`}
-                  className="rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-primary-fg transition-colors hover:bg-primary-hover"
+                  className="rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-primary-fg shadow-sm transition-all duration-150 hover:bg-primary-hover hover:shadow active:scale-[0.98]"
                 >
                   {tCommon("action.apply")}
                 </a>
