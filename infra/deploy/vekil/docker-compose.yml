@@ -1,0 +1,149 @@
+# Test/önizleme ortamı — vekil.tasci.cloud (Traefik arkasında).
+#
+# Sunucudaki çalışan kopya: /docker/yonetim/docker-compose.yml (+ .env, repoda
+# yok). CI bu dosyayı sunucuya KOPYALAMAZ; burada değişiklik yaparsanız
+# sunucudaki kopyayı da güncelleyip `docker compose up -d` çalıştırın.
+#
+# infra/docker/docker-compose.prod.yml'den farkları:
+#  - Caddy yok: TLS ve yönlendirme sunucudaki ortak Traefik'te (traefik-public).
+#  - İmajlar CI'de derlenip ghcr.io'dan çekiliyor (build yok).
+#  - Tüm site parola korumalı (basic auth) ve arama motorlarına kapalı
+#    (X-Robots-Tag: noindex). İkisi de yalnız bu ortamın router'larına bağlı;
+#    gerçek domain'e geçişte yeni router'lara bu middleware'ler eklenmez.
+#  - MinIO yok (bkz. api-env notu).
+name: yonetim
+
+x-api-env: &api-env
+  NODE_ENV: production
+  TZ: Europe/Istanbul
+  DATABASE_URL: postgres://yonetim_app:${PG_APP_PASSWORD:?zorunlu}@postgres:5432/${PG_DB:-yonetim}
+  DATABASE_ADMIN_URL: postgres://yonetim_admin:${PG_ADMIN_PASSWORD:?zorunlu}@postgres:5432/${PG_DB:-yonetim}
+  DATABASE_OWNER_URL: postgres://${PG_OWNER_USER:-yonetim}:${PG_OWNER_PASSWORD:?zorunlu}@postgres:5432/${PG_DB:-yonetim}
+  PG_APP_PASSWORD: ${PG_APP_PASSWORD}
+  PG_ADMIN_PASSWORD: ${PG_ADMIN_PASSWORD}
+  REDIS_URL: redis://redis:6379
+  AUTH_SECRET: ${AUTH_SECRET:?zorunlu}
+  FIELD_ENCRYPTION_KEY: ${FIELD_ENCRYPTION_KEY:?zorunlu}
+  INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:?zorunlu}
+  AUTH_OTP_ENABLED: ${AUTH_OTP_ENABLED:-false}
+  SESSION_CACHE_TTL: "60"
+  # Belge deposu (S3/R2) bu ortamda YOK: MinIO resmi imajları Docker Hub'dan
+  # kaldırıldı. Depo tanımsızken yükleme uçları anlaşılır bir hata döner;
+  # açmak için R2_* (veya S3_*) değişkenlerini .env'e ekleyip buraya geçirin.
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    command: ["postgres", "-c", "max_connections=200"]
+    environment:
+      POSTGRES_USER: ${PG_OWNER_USER:-yonetim}
+      POSTGRES_PASSWORD: ${PG_OWNER_PASSWORD:?zorunlu}
+      POSTGRES_DB: ${PG_DB:-yonetim}
+      TZ: Europe/Istanbul
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: [redisdata:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    image: ghcr.io/suleymantasci/yonetim:api-latest
+    restart: unless-stopped
+    environment:
+      <<: *api-env
+      PORT: "3000"
+      CORS_ORIGINS: https://${APP_DOMAIN:?zorunlu},https://${SITE_DOMAIN:?zorunlu}
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    networks: [default, traefik-public]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      # Dış sözleşme yüzeyi (/v1, /api/v1) panel host'unda doğrudan api'ye.
+      # /health dışarıya açılmıyor: hiçbir router onu eşlemiyor.
+      - traefik.http.routers.yonetim-api.rule=Host(`${APP_DOMAIN}`) && (PathPrefix(`/v1/`) || PathPrefix(`/api/v1`))
+      - traefik.http.routers.yonetim-api.priority=100
+      - traefik.http.routers.yonetim-api.entrypoints=websecure
+      - traefik.http.routers.yonetim-api.tls.certresolver=letsencrypt
+      - traefik.http.routers.yonetim-api.middlewares=yonetim-auth,yonetim-noindex
+      - traefik.http.services.yonetim-api.loadbalancer.server.port=3000
+      # Test ortamı koruması — bütün router'lar bu iki middleware'i kullanıyor.
+      # removeheader: Basic `Authorization` başlığı arka uca GİTMESİN; api onu
+      # Bearer sanıp reddeder ve çerezli isteklerde CSRF denetimini atlardı.
+      - traefik.http.middlewares.yonetim-auth.basicauth.users=${BASIC_AUTH_USERS:?zorunlu}
+      - traefik.http.middlewares.yonetim-auth.basicauth.removeheader=true
+      - traefik.http.middlewares.yonetim-auth.basicauth.realm=Yonetim test
+      - traefik.http.middlewares.yonetim-noindex.headers.customresponseheaders.X-Robots-Tag=noindex, nofollow, noarchive
+
+  worker:
+    image: ghcr.io/suleymantasci/yonetim:worker-latest
+    restart: unless-stopped
+    environment:
+      <<: *api-env
+      API_INTERNAL_URL: http://api:3000
+    depends_on:
+      api: { condition: service_healthy }
+
+  app:
+    image: ghcr.io/suleymantasci/yonetim:app-latest
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      TZ: Europe/Istanbul
+      PORT: "3001"
+      API_INTERNAL_URL: http://api:3000
+      NEXT_PUBLIC_BASE_URL: https://${SITE_DOMAIN}
+      NEXT_PUBLIC_APP_URL: https://${APP_DOMAIN}
+    depends_on:
+      api: { condition: service_healthy }
+    networks: [default, traefik-public]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.http.routers.yonetim-app.rule=Host(`${APP_DOMAIN}`)
+      - traefik.http.routers.yonetim-app.entrypoints=websecure
+      - traefik.http.routers.yonetim-app.tls.certresolver=letsencrypt
+      - traefik.http.routers.yonetim-app.middlewares=yonetim-auth,yonetim-noindex
+      - traefik.http.services.yonetim-app.loadbalancer.server.port=3001
+
+  web:
+    image: ghcr.io/suleymantasci/yonetim:web-latest
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      TZ: Europe/Istanbul
+      PORT: "3000"
+      NEXT_PUBLIC_BASE_URL: https://${SITE_DOMAIN}
+      NEXT_PUBLIC_APP_URL: https://${APP_DOMAIN}
+    networks: [default, traefik-public]
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.http.routers.yonetim-web.rule=Host(`${SITE_DOMAIN}`)
+      - traefik.http.routers.yonetim-web.entrypoints=websecure
+      - traefik.http.routers.yonetim-web.tls.certresolver=letsencrypt
+      - traefik.http.routers.yonetim-web.middlewares=yonetim-auth,yonetim-noindex
+      - traefik.http.services.yonetim-web.loadbalancer.server.port=3000
+
+volumes:
+  pgdata:
+  redisdata:
+
+networks:
+  traefik-public:
+    external: true

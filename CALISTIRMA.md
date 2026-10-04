@@ -123,6 +123,46 @@ DATABASE_OWNER_URL=postgres://yonetim:PAROLA@localhost:5434/yonetim pnpm db:seed
 
 ---
 
+## C. Test ortamı — vekil.tasci.cloud
+
+`main`'e her push'ta CI (`.github/workflows/ci.yml`) kalite kapılarından sonra
+dört imajı derler (`ghcr.io/suleymantasci/yonetim:{api,worker,app,web}-latest`)
+ve sunucuya SSH ile deploy eder.
+
+| Adres | Servis |
+| --- | --- |
+| https://vekil.tasci.cloud | Tanıtım sitesi (`web`) |
+| https://panel.vekil.tasci.cloud | Panel + sakin portalı (`app`), `/v1/*` → `api` |
+
+- Tüm site **basic auth** ile korunuyor ve her yanıtta
+  `X-Robots-Tag: noindex, nofollow, noarchive` var. İkisi de yalnız bu
+  ortamın Traefik router'larında; gerçek domain'e geçişte eklenmez.
+- Sunucu tarafı: `/docker/yonetim/` (`docker-compose.yml`, `.env` — sırlar
+  yalnız orada, `deploy.sh`). Repodaki kopya: `infra/deploy/vekil/`. CI
+  compose dosyasını **senkronlamaz**; değiştirirseniz sunucudaki kopyayı da
+  güncelleyip `docker compose up -d` çalıştırın.
+- Deploy anahtarı sunucuda `command="/docker/yonetim/deploy.sh",restrict` ile
+  kısıtlı; GitHub secret'ları: `SERVER_HOST`, `SERVER_USER`, `SERVER_SSH_KEY`.
+  Secret yoksa CI imajları gönderir, deploy adımı uyarıyla atlanır.
+- Domain değişince: workflow'daki `PUBLIC_BASE_URL` / `PUBLIC_APP_URL`
+  (imajlara derleme anında gömülüyor) ve sunucu `.env`'indeki
+  `SITE_DOMAIN` / `APP_DOMAIN`.
+- Belge deposu (S3/R2) bu ortamda yok — MinIO resmi imajları kaldırıldı.
+  Yükleme uçları "depo kurulu değil" hatası döner.
+- Demo verisi bir kez elle yüklendi (`api` imajında seed betiği yok):
+
+  ```bash
+  cd /docker/yonetim && set -a && . ./.env && set +a
+  docker run --rm --network yonetim_default -v /root/yonetim:/repo -w /repo \
+    -e DATABASE_OWNER_URL="postgres://yonetim:${PG_OWNER_PASSWORD}@postgres:5432/yonetim" \
+    -e DATABASE_URL="postgres://yonetim:${PG_OWNER_PASSWORD}@postgres:5432/yonetim" \
+    -e FIELD_ENCRYPTION_KEY="$FIELD_ENCRYPTION_KEY" -e AUTH_SECRET="$AUTH_SECRET" \
+    -e SEED_DEMO=true -e SEED_DEMO_PASSWORD='<parola>' \
+    node:22-bookworm-slim node_modules/.bin/tsx packages/db/src/seed.ts
+  ```
+
+---
+
 ## Üretim modunda değişen davranışlar
 
 Bunlar `pnpm dev`'de görünmez; "gerçek senaryo"da fark yaratan noktalar:

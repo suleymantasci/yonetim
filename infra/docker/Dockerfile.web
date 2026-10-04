@@ -16,6 +16,12 @@ RUN pnpm install --frozen-lockfile --ignore-scripts
 
 FROM deps AS build
 ENV NEXT_TELEMETRY_DISABLED=1
+# `NEXT_PUBLIC_*` derleme anında istemci paketine gömülüyor; çalışma anındaki
+# ortam değişkeni tarayıcı tarafını değiştirmez. Domain'e göre imaj derlenir
+# (CI: .github/workflows/ci.yml → deploy).
+ARG NEXT_PUBLIC_BASE_URL
+ARG NEXT_PUBLIC_APP_URL
+ENV NEXT_PUBLIC_BASE_URL=$NEXT_PUBLIC_BASE_URL NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 COPY tsconfig.base.json env-loader.mjs env-loader.d.mts ./
 COPY apps/web apps/web
 RUN pnpm --filter @yonetim/web build
@@ -27,7 +33,14 @@ WORKDIR /repo
 COPY --from=build /repo/node_modules ./node_modules
 COPY --from=build /repo/apps/web ./apps/web
 COPY --from=build /repo/packages ./packages
+# next.config.mjs kökteki .env yükleyicisini import ediyor.
+COPY --from=build /repo/env-loader.mjs ./env-loader.mjs
 
 USER node
 EXPOSE 3000
-CMD ["pnpm", "--filter", "@yonetim/web", "start"]
+# pnpm üzerinden değil, doğrudan: çalışma imajında kök package.json ve
+# pnpm-workspace.yaml yok; corepack başka bir pnpm sürümü indirip workspace'i
+# tanımıyor ve kökteki `node_modules/.bin/next`'i bulamıyordu ("next: not
+# found"). Doğrudan çağrı SIGTERM'i de aradaki kabuk olmadan Node'a iletir.
+WORKDIR /repo/apps/web
+CMD ["node", "/repo/node_modules/next/dist/bin/next", "start", "--port", "3000"]

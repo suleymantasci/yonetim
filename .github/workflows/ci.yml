@@ -46,17 +46,19 @@ jobs:
       DATABASE_URL: postgresql://yonetim_app:yonetim_app@localhost:5432/yonetim
       DATABASE_ADMIN_URL: postgresql://yonetim_admin:yonetim_admin@localhost:5432/yonetim
       DATABASE_OWNER_URL: postgresql://yonetim:yonetim@localhost:5432/yonetim
-      AUTH_SECRET: ci-secret
-      FIELD_ENCRYPTION_KEY: "1111111111111111111111111111111111111111111111111111111111111111"
+      # Yalnız CI'ye özel değerler — api açılışta uzunluk/entropi denetliyor
+      # (`ci-secret` ve tekrar eden hex reddediliyordu, API hiç açılmıyordu).
+      AUTH_SECRET: ci-only-auth-secret-not-for-production-0123456789
+      FIELD_ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
       NEXT_PUBLIC_BASE_URL: http://localhost:3000
       NEXT_PUBLIC_APP_URL: http://localhost:3001
 
     steps:
       - uses: actions/checkout@v4
 
+      # Sürüm package.json `packageManager` alanından; burada ikinci kez
+      # verilirse action "Multiple versions of pnpm specified" ile duruyor.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - uses: actions/setup-node@v4
         with:
@@ -87,8 +89,10 @@ jobs:
         run: pnpm test
 
       - name: Şema ve RLS uygula
+        # `db:generate` burada koşmuyor: migration'lar repoda; generate yeni
+        # migration üretmek için geliştirici komutu ve snapshot farkında
+        # etkileşimli soru sorup CI'yi kilitliyordu.
         run: |
-          pnpm db:generate
           pnpm db:migrate
           SEED_DEMO=false pnpm db:seed
 
@@ -137,9 +141,9 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      # Sürüm package.json `packageManager` alanından; burada ikinci kez
+      # verilirse action "Multiple versions of pnpm specified" ile duruyor.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -148,3 +152,77 @@ jobs:
       # SPEC Bölüm 21.2: sıfır kritik güvenlik açığı hedefi.
       - name: Bilinen güvenlik açıklarını tara
         run: pnpm audit --audit-level high
+
+  # ---------------------------------------------------------------------------
+  # Test ortamı: main'e her push'ta imajlar derlenip vekil.tasci.cloud'a çıkar.
+  # Domain gerçek adrese taşındığında `env` altındaki iki URL değişir; imajlar
+  # NEXT_PUBLIC_* değerlerini derleme anında gömüyor.
+  # ---------------------------------------------------------------------------
+  images:
+    name: İmaj (${{ matrix.service }})
+    needs: quality
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: true
+      matrix:
+        service: [api, worker, app, web]
+    env:
+      IMAGE: ghcr.io/${{ github.repository }}
+      PUBLIC_BASE_URL: https://vekil.tasci.cloud
+      PUBLIC_APP_URL: https://panel.vekil.tasci.cloud
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/Dockerfile.${{ matrix.service }}
+          push: true
+          build-args: |
+            NEXT_PUBLIC_BASE_URL=${{ env.PUBLIC_BASE_URL }}
+            NEXT_PUBLIC_APP_URL=${{ env.PUBLIC_APP_URL }}
+          tags: |
+            ${{ env.IMAGE }}:${{ matrix.service }}-latest
+            ${{ env.IMAGE }}:${{ matrix.service }}-${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+
+  deploy:
+    name: Deploy (vekil.tasci.cloud)
+    needs: images
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    concurrency:
+      group: deploy-vekil
+      cancel-in-progress: false
+    env:
+      HAS_DEPLOY_KEY: ${{ secrets.SERVER_SSH_KEY != '' }}
+    steps:
+      - name: Deploy anahtarı tanımlı mı
+        if: env.HAS_DEPLOY_KEY != 'true'
+        run: |
+          echo "::warning::SERVER_SSH_KEY secret'ı yok — imajlar ghcr.io'ya gönderildi ama sunucuya deploy edilmedi (CALISTIRMA.md §C)."
+      # Sunucudaki anahtar `command="/docker/yonetim/deploy.sh"` ile kısıtlı;
+      # gönderilen komut yok sayılıp yalnız deploy betiği koşuyor
+      # (infra/deploy/vekil/deploy.sh).
+      - uses: appleboy/ssh-action@v1.0.3
+        if: env.HAS_DEPLOY_KEY == 'true'
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: 22
+          command_timeout: 10m
+          script: deploy
