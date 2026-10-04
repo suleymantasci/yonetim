@@ -32,6 +32,7 @@ import {
  *   INTEGRATION=1 pnpm vitest run tests/integration/legal-write.test.ts
  */
 const BASE = process.env.API_INTERNAL_URL ?? "http://localhost:3100";
+const PANEL_ORIGIN = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3001";
 
 const TENANT = { id: randomUUID(), slug: `legal-${Date.now()}` };
 const MANAGER = randomUUID();
@@ -139,6 +140,9 @@ afterAll(async () => {
 function headers() {
   return {
     cookie: `${SESSION_COOKIE}=${cookie}`,
+    // Çerezli yazma isteklerinde CSRF koruması Origin istiyor; tarayıcı bunu
+    // her zaman gönderir, test de paneli taklit ediyor.
+    origin: PANEL_ORIGIN,
     "x-tenant-slug": TENANT.slug,
     "content-type": "application/json",
   };

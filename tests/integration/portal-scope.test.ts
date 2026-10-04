@@ -43,6 +43,7 @@ import {
  *   INTEGRATION=1 pnpm vitest run tests/integration/portal-scope.test.ts
  */
 const BASE = process.env.API_INTERNAL_URL ?? "http://localhost:3100";
+const PANEL_ORIGIN = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3001";
 
 const TENANT = { id: randomUUID(), slug: `portal-${Date.now()}` };
 const ALICE = { id: randomUUID(), unitId: "", debtId: "", requestId: "" };
@@ -219,7 +220,8 @@ afterAll(async () => {
 });
 
 function asResident(token: string) {
-  return { cookie: `${SESSION_COOKIE}=${token}`, "x-tenant-slug": TENANT.slug };
+  // Origin: çerezli yazma isteklerinde CSRF koruması bunu istiyor (tarayıcı gönderir).
+  return { cookie: `${SESSION_COOKIE}=${token}`, origin: PANEL_ORIGIN, "x-tenant-slug": TENANT.slug };
 }
 
 async function get(path: string, token: string) {

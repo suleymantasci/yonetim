@@ -1,6 +1,6 @@
 import { Body, Controller, HttpCode, Post } from "@nestjs/common";
 import { ApiExcludeController } from "@nestjs/swagger";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { errors, formatKurus } from "@yonetim/core";

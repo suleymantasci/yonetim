@@ -73,6 +73,11 @@ export default tseslint.config(
       "packages/db/drizzle/**",
       "**/*.d.ts",
       "**/*.d.mts",
+      // Ajan araçlarının skill betikleri (impeccable vb.) — uygulama kodu değil,
+      // üçüncü taraf kaynağından kopyalanıyor; kendi kurallarımızla lint'lenmez.
+      ".agents/**",
+      ".claude/**",
+      ".codex/**",
     ],
   },
 

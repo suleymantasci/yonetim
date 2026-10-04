@@ -1,9 +1,8 @@
 "use client";
 
 import { useId, useState } from "react";
-import { ArrowUpRight, CheckCircle2, Clock, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowUpRight, Clock, ShieldCheck, Sparkles } from "lucide-react";
 import { formatAmount } from "@yonetim/i18n";
-import { m } from "@/components/motion";
 
 interface DuesSimulatorProps {
   locale: string;

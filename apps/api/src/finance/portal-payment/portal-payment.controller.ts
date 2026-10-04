@@ -65,7 +65,9 @@ export class PortalPaymentController {
   ) {}
 
   @Get()
-  @RequirePermission("settings:read")
+  // Sakinin kendi borç özeti — portalın diğer okuma uçlarıyla aynı yetki.
+  // `settings:read` yönetici yetkisiydi; malik/kiracı ödeme ekranını açamıyordu.
+  @RequirePermission("debt:read_own")
   @ApiOperation({
     summary: "Ödeme özeti — komisyon kırılımı, kanal uygunluğu ve havale hedefi",
     description:

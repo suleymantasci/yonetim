@@ -1,4 +1,4 @@
-import { ArrowRight, BadgeCheck, Check, Clock, CreditCard, Download, MessageSquare, Scale, ShieldCheck, Smartphone, Sparkles } from "lucide-react";
+import { ArrowRight, BadgeCheck, Check, Download, MessageSquare, Scale, ShieldCheck, Smartphone } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 
 import { siteConfig } from "@yonetim/config";
@@ -6,7 +6,7 @@ import { formatAmount, type Locale } from "@yonetim/i18n";
 import { STANDARD_PLANS, savingsVsCompetitorPct } from "@yonetim/pricing";
 import { faqSchema, jsonLdScript, softwareApplicationSchema } from "@yonetim/seo";
 import { Accordion, AccordionItem } from "@yonetim/ui";
-import { BlueprintGrid, BrandWash, Reveal, Stagger } from "@yonetim/ui/motion";
+import { BlueprintGrid, Reveal, Stagger } from "@yonetim/ui/motion";
 
 import { Link } from "@/i18n/navigation";
 import { getContent } from "@/content";

@@ -32,16 +32,22 @@ async function main() {
   const adminPw = process.env.PG_ADMIN_PASSWORD ?? "yonetim_admin";
   const rls = await readFile(join(here, "..", "sql", "rls.sql"), "utf8");
   const client = getClient();
-  await client
-    .unsafe(`SET LOCAL app.app_role_password = '${appPw.replace(/'/g, "''")}'`);
-  await client
-    .unsafe(
-      `SET LOCAL app.admin_role_password = '${adminPw.replace(/'/g, "''")}'`,
-    );
-  await client.unsafe(rls);
+  // Parolalar rls.sql ile **aynı çağrıda** veriliyor: havuzdaki ayrı
+  // `unsafe()` çağrıları farklı bağlantılara düşebiliyor, `SET LOCAL` ise
+  // transaction dışında hiçbir etki bırakmıyordu — rls.sql "parola zorunlu"
+  // hatasıyla duruyordu. Çok ifadeli tek sorgu tek bağlantıda koşar.
+  await client.unsafe(rolePasswordPrelude(appPw, adminPw) + rls);
 
   console.log("✓ Veritabanı hazır.");
   await closeDb();
+}
+
+function rolePasswordPrelude(appPw: string, adminPw: string): string {
+  const q = (v: string) => `'${v.replace(/'/g, "''")}'`;
+  return (
+    `SELECT set_config('app.app_role_password', ${q(appPw)}, false);\n` +
+    `SELECT set_config('app.admin_role_password', ${q(adminPw)}, false);\n`
+  );
 }
 
 main().catch(async (error) => {

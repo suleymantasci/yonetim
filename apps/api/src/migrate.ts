@@ -42,6 +42,32 @@ function migrationsRoot(): string {
   );
 }
 
+/**
+ * `yonetim_app` / `yonetim_admin` parolaları. Önce açık değişken
+ * (`PG_APP_PASSWORD` / `PG_ADMIN_PASSWORD`), yoksa bu rollerin zaten kullandığı
+ * bağlantı adresi: parola orada yazılı olmak zorunda, ikinci bir kopyaya gerek
+ * yok. İkisi de yoksa varsayılan parolaya düşmek yerine hata veriyoruz.
+ */
+function rolePasswords(): { appPw: string; adminPw: string } {
+  const fromUrl = (raw: string | undefined): string | undefined => {
+    if (!raw) return undefined;
+    try {
+      const pw = decodeURIComponent(new URL(raw).password);
+      return pw || undefined;
+    } catch {
+      return undefined;
+    }
+  };
+  const appPw = process.env.PG_APP_PASSWORD || fromUrl(process.env.DATABASE_URL);
+  const adminPw = process.env.PG_ADMIN_PASSWORD || fromUrl(process.env.DATABASE_ADMIN_URL);
+  if (!appPw || !adminPw) {
+    throw new Error(
+      "[migrate] Rol parolaları yok: PG_APP_PASSWORD/PG_ADMIN_PASSWORD veya parolalı DATABASE_URL/DATABASE_ADMIN_URL verin.",
+    );
+  }
+  return { appPw, adminPw };
+}
+
 async function main(): Promise<void> {
   // Şema değişikliği ve rol oluşturma sahip/süper kullanıcı yetkisi ister;
   // uygulama rolü (RLS'e tabi) bunu yapamaz — bilinçli.
@@ -65,7 +91,16 @@ async function main(): Promise<void> {
     const rlsPath = join(root, "sql", "rls.sql");
     if (existsSync(rlsPath)) {
       console.log("→ RLS politikaları ve trigger'lar uygulanıyor…");
-      await client.unsafe(await readFile(rlsPath, "utf8"));
+      // rls.sql rol parolalarını oturum ayarlarından bekliyor (C-5); verilmezse
+      // "parola zorunlu" hatasıyla duruyor. Tek çok ifadeli sorgu = tek
+      // bağlantı, ayarlar rls.sql'e kesin ulaşıyor.
+      const { appPw, adminPw } = rolePasswords();
+      const q = (v: string) => `'${v.replace(/'/g, "''")}'`;
+      await client.unsafe(
+        `SELECT set_config('app.app_role_password', ${q(appPw)}, false);\n` +
+          `SELECT set_config('app.admin_role_password', ${q(adminPw)}, false);\n` +
+          (await readFile(rlsPath, "utf8")),
+      );
     }
     console.log("✓ Şema hazır.");
   } finally {

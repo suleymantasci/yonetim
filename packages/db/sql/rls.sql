@@ -27,6 +27,16 @@ LANGUAGE plpgsql AS $$
 DECLARE
   r RECORD;
 BEGIN
+  -- Aşağıdaki ENABLE/FORCE RLS komutlarının kendisi de 'ALTER TABLE' ve bu
+  -- trigger'ı yeniden tetikliyor; korumasız hâli sonsuz özyinelemeye girip
+  -- "stack depth limit exceeded" ile migration'ı düşürüyordu. Event
+  -- trigger'larda pg_trigger_depth() sayılmadığı için transaction kapsamlı bir
+  -- bayrak kullanılıyor.
+  IF current_setting('app.in_tenant_attach', true) = 'on' THEN
+    RETURN;
+  END IF;
+  PERFORM set_config('app.in_tenant_attach', 'on', true);
+
   FOR r IN
     SELECT c.relname AS table_name
     FROM pg_event_trigger_ddl_commands() e
@@ -48,6 +58,8 @@ BEGIN
         WITH CHECK (tenant_id = app_current_tenant())
     $p$, r.table_name);
   END LOOP;
+
+  PERFORM set_config('app.in_tenant_attach', 'off', true);
 END;
 $$;
 

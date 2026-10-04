@@ -20,8 +20,8 @@ describe("RLS kapsama (packages/db/sql/rls.sql)", () => {
 
   it("dynamic loop tüm tenant_id tablolarını RLS'liyor", () => {
     expect(source).toMatch(/pg_class/);
-    expect(source).toMatch(/ALTER TABLE public\.\%I ENABLE ROW LEVEL SECURITY/);
-    expect(source).toMatch(/ALTER TABLE public\.\%I FORCE ROW LEVEL SECURITY/);
+    expect(source).toMatch(/ALTER TABLE public\.%I ENABLE ROW LEVEL SECURITY/);
+    expect(source).toMatch(/ALTER TABLE public\.%I FORCE ROW LEVEL SECURITY/);
     expect(source).toMatch(/CREATE POLICY tenant_isolation/);
   });
 

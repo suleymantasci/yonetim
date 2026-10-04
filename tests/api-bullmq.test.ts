@@ -12,7 +12,7 @@ describe("API BullMQ producer Redis bağlantısı", () => {
       enableOfflineQueue: false,
       maxRetriesPerRequest: 1,
     });
-    expect(options.retryStrategy(1)).toBe(100);
-    expect(options.retryStrategy(2)).toBeNull();
+    expect(options.retryStrategy?.(1)).toBe(100);
+    expect(options.retryStrategy?.(2)).toBeNull();
   });
 });

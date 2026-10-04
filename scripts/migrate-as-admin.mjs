@@ -20,11 +20,8 @@
 // açıkça hata verir.
 
 import { readFile } from "node:fs/promises";
-import { spawnSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { tmpdir } from "node:os";
-import { unlink, mkdtemp } from "node:fs/promises";
 
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import { drizzle } from "drizzle-orm/postgres-js";

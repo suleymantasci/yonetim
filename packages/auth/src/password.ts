@@ -39,16 +39,12 @@ export async function verifyPassword(
   // L-15: Eski format `scrypt$salt$hash` (parametre yok) ve yeni format
   // `v1$N$r$p$salt$hash` kabul edilir; geriye uyumluluk korunur.
   const parts = stored.split("$");
-  let algo: string;
   let saltB64: string;
   let hashB64: string;
   let opts: { N?: number; r?: number; p?: number; maxmem?: number } | undefined;
   if (parts.length === 3 && parts[0] === "scrypt") {
-    [, algo, saltB64, hashB64] = [parts[0]!, parts[1]!, parts[2]!, parts[2]!];
     [saltB64, hashB64] = [parts[1]!, parts[2]!];
-    algo = parts[0]!;
   } else if (parts.length === 6 && parts[0] === VERSION) {
-    algo = parts[0]!;
     const n = Number(parts[1]);
     const r = Number(parts[2]);
     const p = Number(parts[3]);

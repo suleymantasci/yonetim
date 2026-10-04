@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { ArrowUpRight, Check, CheckCheck, FileText, MessageSquare, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, Check, CheckCheck, MessageSquare, ShieldCheck } from "lucide-react";
 
 import { m } from "@/components/motion";
 import { PlotShape } from "@/components/home/plot-shape";

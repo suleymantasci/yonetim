@@ -78,6 +78,34 @@
       "when": 1785342700000,
       "tag": "0010_backfill_subscriptions",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1785342800000,
+      "tag": "0011_alloc_unique",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1785342900000,
+      "tag": "0012_payment_partial",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1785343000000,
+      "tag": "0013_notif_unique",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1785343100000,
+      "tag": "0014_user_pii_encrypted",
+      "breakpoints": true
     }
   ]
 }

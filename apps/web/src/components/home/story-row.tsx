@@ -30,7 +30,7 @@ export interface StoryRowProps {
   reverse?: boolean;
 }
 
-export function StoryRow({ eyebrow, title, body, points, image, reverse = false }: StoryRowProps) {
+export function StoryRow({ eyebrow: _eyebrow, title, body, points, image, reverse = false }: StoryRowProps) {
   return (
     <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
       {/*

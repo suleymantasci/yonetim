@@ -3,6 +3,10 @@
   "compilerOptions": {
     "noEmit": true,
     "types": ["node"],
+    // Testler `apps/api` içinden NestJS dekoratörlü dosyaları da import ediyor
+    // (ör. health.controller); api'nin kendi tsconfig'i gibi legacy dekoratör.
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "paths": {
       /**
        * `@/*` üç uygulamada da tanımlı ama farklı köklere işaret ediyor.
