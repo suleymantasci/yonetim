@@ -8,8 +8,9 @@ global rakipler incelendi.
 
 ## 1. Özet
 
-- **API ↔ ekran uyumu iyi.** Panelde karşılığı olmayan yazma ucu yalnız üç tane:
-  sakinin telefon değiştirme uçları (2) ve rapor işi iptali.
+- **API ↔ ekran uyumu iyi.** Panelde karşılığı olmayan yazma ucu yalnız rapor işi
+  iptali. (İlk taramada sakinin telefon değiştirme uçları da sayılmıştı; yardımcı
+  fonksiyon üzerinden çağrıldıkları için ayrıştırıcı kaçırmış — bağlılar.)
 - **Sakin akışı tam çalışıyor:** ekle (KVKK aydınlatma onayı zorunlu) → düzenle →
   daireye bağla → çıkış (borç devri seçimiyle) → siteden çıkar (borçluysa engel,
   kişi kaydı ve geçmiş korunuyor).
@@ -36,7 +37,7 @@ global rakipler incelendi.
 | Erişim talebi | — | onay/ret ✓ | — | Yöneticiye bildirim yok (YAPILACAKLAR §1) |
 | Aidat planı | ✓ | ✓ | ✓ | Çalıştırma ✓ |
 | Borç | ✓ tek+toplu | ✓ gerekçeli | ✓ (s) gerekçeli iptal | Gecikme tazminatı muafiyeti ✓; DB trigger'ı değişiklik kütüğü yazıyor |
-| **Tahsilat (ödeme)** | ✓ | **✗** | **✗** | **Yanlış girilen tahsilat düzeltilemiyor / iptal edilemiyor; iade yok** |
+| Tahsilat (ödeme) | ✓ | — | ✓ iptal (ters kayıt) | 2026-10-05: gerekçeli iptal, mahsuplar geri alınır; kart iadesi yok |
 | Gider | ✓ | ✓ (upsert) | ✓ (s) | Onay + dairelere dağıtım ✓; kategori ✓ |
 | Banka hesabı | ✓ | ✓ | ✓ | Ekstre içe aktarma ve eşleştirme yok |
 | **Duyuru** | ✓ | **✗** | **✗** | Taslak düzenleme, silme, yayından kaldırma yok |
@@ -55,7 +56,7 @@ global rakipler incelendi.
 | Belgeler | ✓* | ✗ | ✓ | *Depo (S3/R2) gerekiyor — vekil'de yok, düğme gizli |
 | Hukuk / icra | ✓** | ✓ + olay, tutar, kapat | — | **Yalnız gecikmiş borçlu daireden açılıyor; borç dışı dava açılamıyor |
 | Borcu yoktur belgesi | ✓ | — | ✗ | Hatalı belgeyi iptal etme yok (doğrulama ucu var) |
-| **KVKK yönetimi** | **✗** | **✗** | **✗** | Yalnız okuma. Başvuru kaydı/yanıtı, silme-anonimleştirme, ihlal kaydı yok |
+| KVKK yönetimi | ✓ | ✓ | — | 2026-10-05: başvuru kaydı/işleme/ret, silme talebinde anonimleştirme, ihlal kaydı (72 saat), sakin portalından başvuru |
 | Panel kullanıcıları | ✓ (sakin formunda rol: personel, denetçi, muhasebeci) | ✓ | ✓ | İkinci yönetici / yönetim kurulu üyesi rolü eklenemiyor |
 | Ayarlar | — | ✓ | — | |
 | Denetim kütüğü | — | — | — | Doğru: salt okunur, değiştirilemez (trigger) |

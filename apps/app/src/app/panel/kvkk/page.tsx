@@ -1,18 +1,21 @@
 import { getTranslations } from "next-intl/server";
 
 import { siteConfig } from "@yonetim/config";
-import { kvkkOverviewResponse } from "@yonetim/contracts";
+import { dataBreachList, kvkkOverviewResponse, residentOptionList } from "@yonetim/contracts";
 import { Alert, Badge, Card, CardBody, CardHeader, Stat } from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
 import { apiGet } from "@/lib/api/server";
-import { requirePermission } from "@/lib/context";
+import { can, requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
+
+import { BreachActions, CreateBreachButton, CreateRequestButton, RequestActions } from "./kvkk-actions";
 
 export const dynamic = "force-dynamic";
 
 export default async function KvkkPage() {
-  await requirePermission("kvkk:read");
+  const ctx = await requirePermission("kvkk:read");
+  const canManage = can(ctx, "kvkk:manage");
   const t = await getTranslations("app.kvkkPanel");
   const tKvkk = await getTranslations("kvkk");
   const tEnum = await getTranslations("enum");
@@ -27,6 +30,16 @@ export default async function KvkkPage() {
     erasurePlan: erasure,
     totals,
   } = await apiGet("/v1/panel/kvkk", kvkkOverviewResponse);
+  const [breaches, residentOptions] = await Promise.all([
+    apiGet("/v1/panel/kvkk/breaches", dataBreachList),
+    canManage && can(ctx, "resident:read")
+      ? apiGet("/v1/panel/residents/options", residentOptionList)
+      : Promise.resolve({ rows: [] }),
+  ]);
+  const residents = residentOptions.rows.map((row) => ({
+    value: row.id,
+    label: [row.firstName, row.lastName].filter(Boolean).join(" ") + (row.phoneMasked ? ` · ${row.phoneMasked}` : ""),
+  }));
 
   return (
     <>
@@ -35,6 +48,7 @@ export default async function KvkkPage() {
         description={t("description", {
           days: Math.round(siteConfig.legal.kvkkResponseHours / 24),
         })}
+        action={canManage ? <CreateRequestButton residents={residents} /> : undefined}
       />
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4">
@@ -134,9 +148,21 @@ export default async function KvkkPage() {
                       {tEnum(`kvkkRequestStatus.${r.status}`)}
                     </Badge>
                   </div>
-                  <div className="mt-1 text-xs text-fg-subtle">
-                    {r.dueAt ? t("dueAt", { date: f.dateTime(r.dueAt) }) : null}
+                  <div className="mt-1 text-sm text-fg">
+                    {r.subjectName ?? r.requesterEmail ?? "—"}
                   </div>
+                  {r.detail ? <p className="mt-1 whitespace-pre-line text-xs text-fg-muted">{r.detail}</p> : null}
+                  <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-fg-subtle">
+                    <span className={r.overdue ? "font-semibold text-danger-fg" : undefined}>
+                      {t("legalDueAt", { date: f.date(r.legalDueAt) })}
+                    </span>
+                    {r.dueAt && !r.fulfilledAt ? <span>{t("dueAt", { date: f.dateTime(r.dueAt) })}</span> : null}
+                    {r.fulfilledAt ? <span>{t("fulfilledAt", { date: f.dateTime(r.fulfilledAt) })}</span> : null}
+                  </div>
+                  {r.responseNote ? (
+                    <p className="mt-1 rounded bg-surface-sunken p-2 text-xs text-fg-muted">{r.responseNote}</p>
+                  ) : null}
+                  {canManage ? <RequestActions requestId={r.id} type={r.type} status={r.status} /> : null}
                 </div>
               ))
             )}
@@ -186,6 +212,44 @@ export default async function KvkkPage() {
               ))}
             </ul>
           </div>
+        </CardBody>
+      </Card>
+      <Card className="mt-4">
+        <CardHeader
+          title={t("breachesTitle")}
+          description={t("breachesDescription")}
+          action={canManage ? <CreateBreachButton /> : undefined}
+        />
+        <CardBody className="space-y-2">
+          {breaches.rows.length === 0 ? (
+            <p className="text-sm text-fg-subtle">{t("noBreaches")}</p>
+          ) : (
+            breaches.rows.map((b) => (
+              <div key={b.id} className="rounded border border-border p-3 text-sm">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-medium text-fg">{b.title}</span>
+                  <Badge tone={b.boardOverdue ? "danger" : b.status === "closed" ? "success" : "warning"}>
+                    {t(`breachStatusOption.${b.status}`)}
+                  </Badge>
+                </div>
+                <p className="mt-1 whitespace-pre-line text-xs text-fg-muted">{b.description}</p>
+                <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-fg-subtle">
+                  <span>{t("detectedOn", { date: f.dateTime(b.detectedAt) })}</span>
+                  <span>{t("affectedCount", { count: b.affectedUserCount })}</span>
+                  {b.boardNotifiedAt ? (
+                    <span>{t("boardNotifiedOn", { date: f.dateTime(b.boardNotifiedAt) })}</span>
+                  ) : (
+                    <span className={b.boardOverdue ? "font-semibold text-danger-fg" : "font-semibold text-warning-fg"}>
+                      {t("boardDeadline", { date: f.dateTime(b.boardDeadlineAt) })}
+                    </span>
+                  )}
+                </div>
+                {canManage ? (
+                  <BreachActions breachId={b.id} status={b.status} boardNotified={Boolean(b.boardNotifiedAt)} />
+                ) : null}
+              </div>
+            ))
+          )}
         </CardBody>
       </Card>
     </>

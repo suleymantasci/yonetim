@@ -10,6 +10,8 @@ import { DocumentWriteService } from "../document/document-write.service";
 import { DocumentController } from "../document/document.controller";
 import { DocumentService } from "../document/document.service";
 import { LegalWriteService } from "../document/legal-write.service";
+import { KvkkController } from "../kvkk/kvkk.controller";
+import { KvkkWriteService } from "../kvkk/kvkk-write.service";
 
 /**
  * Denetim global: her modül **yazabilmeli**, ama tek bir uygulama üzerinden.
@@ -20,7 +22,7 @@ import { LegalWriteService } from "../document/legal-write.service";
  */
 @Global()
 @Module({
-  controllers: [AuditController, DocumentController, DecisionBookController],
+  controllers: [AuditController, DocumentController, DecisionBookController, KvkkController],
   providers: [
     AuditService,
     AuditReadService,
@@ -28,6 +30,7 @@ import { LegalWriteService } from "../document/legal-write.service";
     DocumentService,
     DocumentWriteService,
     LegalWriteService,
+    KvkkWriteService,
     // Karar defteri `governance` bağlamında: denetim kütüğü ve belge deposuyla
     // aynı yükümlülük ailesinden (kayıt tutma, hesap verme).
     DecisionBookService,

@@ -17,6 +17,20 @@ export const KVKK_REQUEST_TYPES: readonly KvkkRequestType[] = [
   "access", "rectification", "erasure", "objection", "portability",
 ];
 
+/**
+ * Yasal yanıt süresi — KVKK md.13/2: "en kısa sürede ve en geç otuz gün".
+ * `dueDateFor` bundan kısa bir **iç hedef** üretiyor; uyum göstergeleri
+ * (gecikme, kırmızı rozet) bu yasal süreye bakmalı.
+ */
+export const KVKK_LEGAL_RESPONSE_DAYS = 30;
+
+export function legalDueDateFor(receivedAt: Date): Date {
+  return new Date(receivedAt.getTime() + KVKK_LEGAL_RESPONSE_DAYS * 86_400_000);
+}
+
+/** Veri ihlalinin Kurul'a bildirimi — md.12/5, Kurul kararı 2019/10: 72 saat. */
+export const BREACH_BOARD_NOTICE_HOURS = 72;
+
 export function dueDateFor(type: KvkkRequestType, receivedAt = new Date()): Date {
   // Silme talebi "talep anında" işlenir; diğerleri 72 saat.
   const hours = type === "erasure" ? 24 : siteConfig.legal.kvkkResponseHours;

@@ -363,6 +363,13 @@ export async function runAction<TSchema extends z.ZodTypeAny, TData = undefined>
     // Mesajı kullanıcıya gösterilebilir: sunucu onu zaten kullanıcı için üretti
     // ve veritabanı ayrıntısı içermiyor.
     if (error instanceof AppError) {
+      // API özel sebebi `details.hint`'te gönderiyor ("conflict:erasure_open_debts").
+      // Çevirisi varsa yöneticiye ne yapması gerektiğini söyleyen mesaj; yoksa
+      // genel mesaj ("Kayıt çakışması.") — eski davranış.
+      const reason = hintKey(error.details);
+      if (reason && tError.has(`reason.${reason}`)) {
+        return errorState(tError(`reason.${reason}`), toFieldErrors(error.details));
+      }
       return errorState(error.message, toFieldErrors(error.details));
     }
     // Beklenmeyen hata: sunucuya yaz, kullanıcıya sızdırma.
@@ -376,6 +383,15 @@ export async function runAction<TSchema extends z.ZodTypeAny, TData = undefined>
  * hataları formun beklediği şekle çevirir. Tanınmayan biçimde `undefined` döner
  * ve yalnız özet mesaj gösterilir.
  */
+/** `{ hint: "conflict:payment_already_cancelled" }` → `payment_already_cancelled`. */
+function hintKey(details: unknown): string | null {
+  if (!details || typeof details !== "object") return null;
+  const hint = (details as { hint?: unknown }).hint;
+  if (typeof hint !== "string") return null;
+  const reason = hint.split(":")[1];
+  return reason && /^[a-z0-9_]+$/.test(reason) ? reason : null;
+}
+
 function toFieldErrors(details: unknown): Record<string, string[]> | undefined {
   if (!details || typeof details !== "object") return undefined;
   const flat = (details as { fieldErrors?: Record<string, string[] | undefined> }).fieldErrors;

@@ -13,11 +13,12 @@ import {
   kvkkRequests,
   legalCases,
   units,
+  users,
 } from "@yonetim/db";
 
 import { siteConfig } from "@yonetim/config";
 import { isStorageConfigured } from "@yonetim/storage";
-import { kvkkRiskScore, planErasure } from "@yonetim/kvkk";
+import { KVKK_LEGAL_RESPONSE_DAYS as KVKK_LEGAL_DAYS, kvkkRiskScore, planErasure } from "@yonetim/kvkk";
 
 import { DbService } from "../../infra/db/db.service";
 
@@ -201,8 +202,13 @@ export class DocumentService {
       async (tx) => {
         const [requests, consentRows, flagged] = await Promise.all([
           tx
-            .select()
+            .select({
+              request: kvkkRequests,
+              firstName: users.firstName,
+              lastName: users.lastName,
+            })
             .from(kvkkRequests)
+            .leftJoin(users, eq(users.id, kvkkRequests.userId))
             .orderBy(desc(kvkkRequests.createdAt))
             .limit(100),
           tx
@@ -223,19 +229,28 @@ export class DocumentService {
     );
 
     const now = Date.now();
-    const mapped = requests.map((r) => ({
-      id: r.id,
-      type: r.type,
-      status: r.status,
-      requesterEmail: r.requesterEmail,
-      detail: r.detail,
-      dueAt: r.dueAt,
-      fulfilledAt: r.fulfilledAt,
-      responseNote: r.responseNote,
-      // KVKK md.13: 30 gün. Bir uyum göstergesi, tarayıcı saatine bırakılamaz.
-      overdue: Boolean(r.dueAt && !r.fulfilledAt && r.dueAt.getTime() < now),
-      createdAt: r.createdAt,
-    }));
+    const mapped = requests.map(({ request: r, firstName, lastName }) => {
+      // KVKK md.13/2: en geç 30 gün. `dueAt` ise daha kısa iç hedef; gecikme
+      // göstergesi yasal süreye bakıyor — iç hedefi kaçırmak kanuna aykırılık
+      // değil ve "yasal süre aşıldı" demek yanlış alarm olurdu.
+      const legalDueAt = new Date(r.createdAt.getTime() + KVKK_LEGAL_DAYS * 86_400_000);
+      const closed = Boolean(r.fulfilledAt) || r.status === "rejected";
+      return {
+        id: r.id,
+        type: r.type,
+        status: r.status,
+        userId: r.userId,
+        subjectName: [firstName, lastName].filter(Boolean).join(" ") || null,
+        requesterEmail: r.requesterEmail,
+        detail: r.detail,
+        dueAt: r.dueAt,
+        legalDueAt,
+        fulfilledAt: r.fulfilledAt,
+        responseNote: r.responseNote,
+        overdue: !closed && legalDueAt.getTime() < now,
+        createdAt: r.createdAt,
+      };
+    });
 
     const mandatory = consentRows.filter((c) => c.kind === "acik_riza_zorunlu");
     // Payda en az 1: hiç zorunlu rıza kaydı yokken 0/0 yerine 0 kapsama
@@ -273,7 +288,7 @@ export class DocumentService {
       },
       erasurePlan: planErasure(),
       totals: {
-        open: mapped.filter((r) => !r.fulfilledAt).length,
+        open: mapped.filter((r) => !r.fulfilledAt && r.status !== "rejected").length,
         overdue: overdueCount,
         fulfilled: mapped.filter((r) => r.fulfilledAt).length,
         consentCount: consentRows.length,

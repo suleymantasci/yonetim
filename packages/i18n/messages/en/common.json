@@ -133,7 +133,20 @@
     "tenantMismatch": "This record belongs to another property.",
     "integrationUnavailable": "The {provider} integration is currently unavailable.",
     "internal": "An unexpected error occurred.",
-    "validationFailed": "The form is incomplete or invalid. Fix the highlighted fields."
+    "validationFailed": "The form is incomplete or invalid. Fix the highlighted fields.",
+    "reason": {
+      "payment_already_cancelled": "This payment has already been voided.",
+      "card_payment_requires_refund": "Card payments cannot be voided here; refund them at the payment provider.",
+      "kvkk_request_closed": "This request is already closed.",
+      "erasure_requires_erase_action": "An erasure request cannot be closed with \"Resolve\"; use \"Apply erasure\" so the data is actually removed.",
+      "erasure_subject_still_member": "The person is still registered on the site. Remove them from the Residents screen first.",
+      "erasure_open_debts": "The person has unpaid debts; identity cannot be erased before they are settled.",
+      "erasure_subject_active_elsewhere": "The person is still registered on another site, so their identity cannot be erased; nothing was changed. Reply to the requester accordingly.",
+      "erasure_subject_unknown": "The requester is not a registered person on this site; there is nothing to erase.",
+      "not_erasure_request": "This is not an erasure request.",
+      "kvkk_request_already_open": "You already have an open request of the same type.",
+      "subject": "The requester was not found on this site."
+    }
   },
   "errorPage": {
     "title": "Something went wrong",

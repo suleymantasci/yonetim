@@ -1,13 +1,14 @@
 import { getTranslations } from "next-intl/server";
 
-import { portalProfile } from "@yonetim/contracts";
-import { Alert, Card, CardBody, CardHeader, tableClasses as tc } from "@yonetim/ui";
+import { kvkkOwnRequestList, portalProfile } from "@yonetim/contracts";
+import { Alert, Badge, Card, CardBody, CardHeader, tableClasses as tc } from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
 import { apiGet } from "@/lib/api/server";
-import { requirePermission } from "@/lib/context";
+import { can, requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
 import { PasswordChange } from "./password-change";
+import { KvkkRequestForm } from "./kvkk-requests";
 import { PhoneChange } from "./phone-change";
 import { ProfileForm } from "./profile-form";
 
@@ -27,12 +28,18 @@ export async function generateMetadata() {
 }
 
 export default async function MyProfilePage() {
-  await requirePermission("unit:read");
+  const ctx = await requirePermission("unit:read");
+  const canKvkk = can(ctx, "kvkk:export_own");
   const t = await getTranslations("app.myProfile");
   const tEnum = await getTranslations("enum");
   const f = await formatters();
 
-  const profile = await apiGet("/v1/panel/portal/profile", portalProfile);
+  const [profile, kvkk] = await Promise.all([
+    apiGet("/v1/panel/portal/profile", portalProfile),
+    canKvkk
+      ? apiGet("/v1/panel/kvkk/my-requests", kvkkOwnRequestList)
+      : Promise.resolve({ rows: [] }),
+  ]);
 
   return (
     <>
@@ -54,6 +61,36 @@ export default async function MyProfilePage() {
               />
             </CardBody>
           </Card>
+
+          {canKvkk ? (
+            <Card className="mt-4">
+              <CardHeader title={t("kvkkTitle")} description={t("kvkkDescription")} />
+              <CardBody className="space-y-4">
+                {kvkk.rows.length > 0 ? (
+                  <ul className="space-y-2">
+                    {kvkk.rows.map((r) => (
+                      <li key={r.id} className="rounded border border-border p-3 text-sm">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="font-medium text-fg">{tEnum(`kvkkRequestType.${r.type}`)}</span>
+                          <Badge tone={r.status === "fulfilled" ? "success" : r.status === "rejected" ? "neutral" : "warning"}>
+                            {tEnum(`kvkkRequestStatus.${r.status}`)}
+                          </Badge>
+                        </div>
+                        <div className="mt-1 text-xs text-fg-subtle">
+                          {t("kvkkSentOn", { date: f.date(r.createdAt) })} ·{" "}
+                          {t("kvkkLegalDue", { date: f.date(r.legalDueAt) })}
+                        </div>
+                        {r.responseNote ? (
+                          <p className="mt-2 rounded bg-surface-sunken p-2 text-xs text-fg-muted">{r.responseNote}</p>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                <KvkkRequestForm />
+              </CardBody>
+            </Card>
+          ) : null}
         </div>
 
         <div className="space-y-4">

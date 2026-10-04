@@ -268,9 +268,15 @@ export const kvkkRequestRow = z.object({
   id: uuid,
   type: z.string(),
   status: z.string(),
+  /** Başvuran kişi sitede kayıtlıysa — adı ekranda, kimliği işlem için. */
+  userId: uuid.nullable(),
+  subjectName: z.string().nullable(),
   requesterEmail: z.string().nullable(),
   detail: z.string().nullable(),
+  /** İç hedef (`siteConfig.legal.kvkkResponseHours`) — yasal süreden kısa. */
   dueAt: dateTime.nullable(),
+  /** Yasal son gün: başvurudan itibaren 30 gün (KVKK md.13/2). */
+  legalDueAt: dateTime,
   fulfilledAt: dateTime.nullable(),
   responseNote: z.string().nullable(),
   /**
@@ -340,3 +346,111 @@ export const kvkkOverviewResponse = z.object({
 });
 
 export type KvkkOverviewResponse = z.infer<typeof kvkkOverviewResponse>;
+
+/* -------------------------------------------------------------------------- *
+ * KVKK yazma yolları — başvuru kaydı/sonuçlandırma, silme, ihlal kaydı
+ * -------------------------------------------------------------------------- */
+
+export const kvkkRequestType = z.enum(["access", "rectification", "erasure", "objection", "portability"]);
+
+/**
+ * Yöneticinin kaydettiği başvuru (dilekçe, e-posta, KEP). Başvuran sitede
+ * kayıtlıysa `userId`, değilse iletişim için `requesterEmail` zorunlu.
+ */
+export const kvkkRequestCreate = z
+  .object({
+    type: kvkkRequestType,
+    userId: uuid.nullable().optional(),
+    requesterEmail: z.string().trim().email().max(255).nullable().optional(),
+    detail: z.string().trim().min(5).max(2000),
+    /** Başvurunun ulaştığı gün — süre buradan işler (dilekçe geç girilebilir). */
+    receivedAt: z.coerce.date().optional(),
+  })
+  .refine((v) => Boolean(v.userId) || Boolean(v.requesterEmail), {
+    message: "subject_required",
+    path: ["userId"],
+  });
+
+export type KvkkRequestCreate = z.infer<typeof kvkkRequestCreate>;
+
+export const kvkkRequestUpdate = z.object({
+  status: z.enum(["in_progress", "fulfilled", "rejected"]),
+  /** Başvurana verilen yanıtın özeti — ret ve sonuçlandırmada zorunlu. */
+  responseNote: z.string().trim().min(10).max(2000),
+});
+
+export type KvkkRequestUpdate = z.infer<typeof kvkkRequestUpdate>;
+
+export const kvkkErasureResult = z.object({
+  requestId: uuid,
+  userId: uuid,
+  anonymizedAt: dateTime,
+});
+
+export type KvkkErasureResult = z.infer<typeof kvkkErasureResult>;
+
+/** Sakinin kendi adına başvurusu — kimlik oturumdan, iletişim kayıtlı. */
+export const kvkkOwnRequestCreate = z.object({
+  type: kvkkRequestType,
+  detail: z.string().trim().min(5).max(2000),
+});
+
+export type KvkkOwnRequestCreate = z.infer<typeof kvkkOwnRequestCreate>;
+
+export const kvkkOwnRequestList = z.object({
+  rows: z.array(
+    z.object({
+      id: uuid,
+      type: z.string(),
+      status: z.string(),
+      detail: z.string().nullable(),
+      responseNote: z.string().nullable(),
+      legalDueAt: dateTime,
+      fulfilledAt: dateTime.nullable(),
+      createdAt: dateTime,
+    }),
+  ),
+});
+
+export type KvkkOwnRequestList = z.infer<typeof kvkkOwnRequestList>;
+
+export const dataBreachCreate = z.object({
+  title: z.string().trim().min(5).max(200),
+  description: z.string().trim().min(10).max(4000),
+  detectedAt: z.coerce.date(),
+  affectedUserCount: z.coerce.number().int().min(0).max(1_000_000),
+  dataCategories: z.array(z.string().trim().min(1).max(60)).max(20).default([]),
+});
+
+export type DataBreachCreate = z.infer<typeof dataBreachCreate>;
+
+export const dataBreachUpdate = z.object({
+  boardNotifiedAt: z.coerce.date().nullable().optional(),
+  subjectsNotifiedAt: z.coerce.date().nullable().optional(),
+  mitigation: z.string().trim().max(4000).nullable().optional(),
+  status: z.enum(["open", "contained", "closed"]).optional(),
+});
+
+export type DataBreachUpdate = z.infer<typeof dataBreachUpdate>;
+
+export const dataBreachRow = z.object({
+  id: uuid,
+  title: z.string(),
+  description: z.string(),
+  detectedAt: dateTime,
+  affectedUserCount: z.number().int(),
+  dataCategories: z.array(z.string()),
+  boardNotifiedAt: dateTime.nullable(),
+  subjectsNotifiedAt: dateTime.nullable(),
+  mitigation: z.string().nullable(),
+  status: z.string(),
+  /** KVKK md.12/5 + Kurul kararı 2019/10: öğrenmeden itibaren 72 saat. */
+  boardDeadlineAt: dateTime,
+  boardOverdue: z.boolean(),
+});
+
+export type DataBreachRow = z.infer<typeof dataBreachRow>;
+
+export const dataBreachList = z.object({ rows: z.array(dataBreachRow) });
+
+export type DataBreachList = z.infer<typeof dataBreachList>;

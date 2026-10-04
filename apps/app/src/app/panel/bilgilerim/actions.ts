@@ -241,3 +241,31 @@ async function callPhoneEndpoint(
     throw error;
   }
 }
+
+/* ------------------------------------------------------------------ *
+ * KVKK başvurusu — sakinin kendi adına (md.11)
+ * ------------------------------------------------------------------ */
+
+const kvkkOwnSchema = z.object({
+  type: z.enum(["access", "rectification", "erasure", "objection", "portability"]),
+  detail: requiredText(5, 2000),
+});
+
+export async function createOwnKvkkRequest(
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  return runAction(
+    {
+      permission: "kvkk:export_own",
+      schema: kvkkOwnSchema,
+      meta: { action: "kvkk_request_created", resource: "kvkk_request" },
+    },
+    formData,
+    async ({ input }) => {
+      const tProfile = await getTranslations("app.myProfile");
+      await apiPost("/v1/panel/kvkk/my-requests", input, z.object({ id: z.string() }));
+      return okState(tProfile("kvkkRequestSent"));
+    },
+  );
+}

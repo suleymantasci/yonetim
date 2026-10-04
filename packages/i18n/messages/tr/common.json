@@ -133,7 +133,20 @@
     "tenantMismatch": "Kayıt başka bir siteye ait.",
     "integrationUnavailable": "{provider} entegrasyonu şu an kullanılamıyor.",
     "internal": "Beklenmeyen bir hata oluştu.",
-    "validationFailed": "Form eksik veya hatalı doldurulmuş. İşaretli alanları düzeltin."
+    "validationFailed": "Form eksik veya hatalı doldurulmuş. İşaretli alanları düzeltin.",
+    "reason": {
+      "payment_already_cancelled": "Bu tahsilat zaten iptal edilmiş.",
+      "card_payment_requires_refund": "Kartla alınan ödeme buradan iptal edilemez; ödeme sağlayıcısında iade yapılmalı.",
+      "kvkk_request_closed": "Bu başvuru zaten kapanmış.",
+      "erasure_requires_erase_action": "Silme talebi \"Sonuçlandır\" ile kapatılamaz; \"Silmeyi uygula\" ile veriler gerçekten silinmeli.",
+      "erasure_subject_still_member": "Kişi hâlâ sitede kayıtlı. Önce Sakinler ekranından siteden çıkarın.",
+      "erasure_open_debts": "Kişinin ödenmemiş borcu var; borç kapanmadan kimlik silinemez (mali kayıt yükümlülüğü).",
+      "erasure_subject_active_elsewhere": "Kişi başka bir sitede hâlâ kayıtlı olduğu için kimliği silinemez; hiçbir veri değiştirilmedi. Başvurana durumu yanıtlayın.",
+      "erasure_subject_unknown": "Başvuran sitede kayıtlı bir kişi değil; silinecek kayıt yok.",
+      "not_erasure_request": "Bu başvuru bir silme talebi değil.",
+      "kvkk_request_already_open": "Aynı türde açık bir başvurunuz zaten var.",
+      "subject": "Başvuran kişi bu sitede bulunamadı."
+    }
   },
   "errorPage": {
     "title": "Bir şeyler ters gitti",
