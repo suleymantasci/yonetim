@@ -5,7 +5,10 @@ import { tenants } from "@yonetim/db";
 import {
   applyLateFees,
   collectMaintenanceReminders,
+  expireTrial,
   generateDuesForTenant,
+  kvkkRequestSla,
+  kvkkRetentionScan,
 } from "@yonetim/jobs";
 
 import { DbService } from "@api/infra/db/db.service";
@@ -107,6 +110,12 @@ export class JobRegistry {
         return applyLateFees({ tenantId });
       case "maintenance.reminders":
         return collectMaintenanceReminders({ tenantId });
+      case "billing.trial-expiry":
+        return expireTrial({ tenantId });
+      case "kvkk.request-sla":
+        return kvkkRequestSla({ tenantId });
+      case "kvkk.retention":
+        return kvkkRetentionScan({ tenantId });
       default:
         return NO_HANDLER;
     }
