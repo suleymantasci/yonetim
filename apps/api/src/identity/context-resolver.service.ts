@@ -92,7 +92,7 @@ export class ContextResolver {
    * baksın yeni yetkiyi anında görür.
    */
   async invalidateSession(rawToken: string): Promise<void> {
-    const client = this.redis.raw();
+    const client = await this.redis.rawReady();
     const prefix = `${SESSION_CACHE_PREFIX}${sha256(rawToken)}:`;
     if (!client) return;
     const keys = await client.keys(`${prefix}*`).catch(() => [] as string[]);
@@ -120,7 +120,7 @@ export class ContextResolver {
    * edebilmeli.
    */
   async invalidateTenantSessions(tenantId: string): Promise<void> {
-    const client = this.redis.raw();
+    const client = await this.redis.rawReady();
     if (!client) return;
 
     const hashes = await this.db.bypass("ctx:tenant-session-hashes", async (tx) => {

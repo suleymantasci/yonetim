@@ -1,4 +1,4 @@
-import { Injectable, Logger, type OnModuleDestroy } from "@nestjs/common";
+import { Injectable, Logger, type OnModuleDestroy, type OnModuleInit } from "@nestjs/common";
 import Redis from "ioredis";
 
 import { env } from "../config/env";
@@ -11,7 +11,7 @@ import { env } from "../config/env";
  * kurulumunu Redis'e bağımlı yapmamak bilinçli; üretimde compose zaten veriyor.
  */
 @Injectable()
-export class RedisService implements OnModuleDestroy {
+export class RedisService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(RedisService.name);
   private client: Redis | null = null;
   private warned = false;
@@ -56,13 +56,51 @@ export class RedisService implements OnModuleDestroy {
     return client;
   }
 
+  /**
+   * Bağlantı hazır olana kadar (en çok `connectTimeout` kadar) bekler.
+   *
+   * `enableOfflineQueue: false` iken bağlantı kurulmadan gönderilen komut
+   * anında "Stream isn't writeable" ile düşüyor. İstemci ilk ihtiyaç anında
+   * oluşturulduğu için her açılıştan (ve her yeniden bağlanmadan) sonraki
+   * **ilk** komut kayboluyordu; üretimde bu, deploy sonrası ilk girişin hız
+   * sınırlayıcıdan 503 almasıydı. Kısa bekleme kuyruksuz davranışı koruyor:
+   * Redis gerçekten yoksa yine ~1 sn içinde `null`/hata yoluna düşülüyor.
+   */
+  private async ready(): Promise<Redis | null> {
+    const c = this.conn();
+    if (!c || c.status === "ready") return c;
+    if (c.status === "end" || c.status === "close") return c;
+    await new Promise<void>((resolve) => {
+      const done = () => {
+        clearTimeout(timer);
+        c.off("ready", done);
+        c.off("end", done);
+        resolve();
+      };
+      const timer = setTimeout(done, 1_000);
+      c.once("ready", done);
+      c.once("end", done);
+    });
+    return c;
+  }
+
+  /** Açılışta bağlantıyı kur — ilk isteği beklemesin. */
+  onModuleInit(): void {
+    this.conn();
+  }
+
+  /** Ham istemci, bağlantı hazır olduktan sonra — doğrudan komut gönderecekler için. */
+  async rawReady(): Promise<Redis | null> {
+    return this.ready();
+  }
+
   /** Ham istemci — BullMQ ve kuyruk modülleri için. */
   raw(): Redis | null {
     return this.conn();
   }
 
   async get(key: string): Promise<string | null> {
-    const c = this.conn();
+    const c = await this.ready();
     if (!c) return null;
     try {
       return await c.get(key);
@@ -78,7 +116,7 @@ export class RedisService implements OnModuleDestroy {
   }
 
   async setEx(key: string, ttlSeconds: number, value: string): Promise<void> {
-    const c = this.conn();
+    const c = await this.ready();
     if (!c || ttlSeconds <= 0) return;
     try {
       await c.set(key, value, "EX", ttlSeconds);
@@ -92,7 +130,7 @@ export class RedisService implements OnModuleDestroy {
   }
 
   async del(...keys: string[]): Promise<void> {
-    const c = this.conn();
+    const c = await this.ready();
     if (!c || keys.length === 0) return;
     try {
       await c.del(...keys);
@@ -103,7 +141,7 @@ export class RedisService implements OnModuleDestroy {
 
   /** Sabit pencereli sayaç — hız sınırı. Redis yoksa her zaman izin verir. */
   async incrWindow(key: string, windowSeconds: number): Promise<number | null> {
-    const c = this.conn();
+    const c = await this.ready();
     if (!c) return null;
     try {
       const count = await c.incr(key);
@@ -120,7 +158,7 @@ export class RedisService implements OnModuleDestroy {
   }
 
   async ping(): Promise<boolean> {
-    const c = this.conn();
+    const c = await this.ready();
     if (!c) return false;
     try {
       return (await c.ping()) === "PONG";
