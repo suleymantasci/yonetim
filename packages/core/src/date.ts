@@ -69,6 +69,21 @@ export function addDays(date: Date, days: number): Date {
   return new Date(date.getTime() + days * 86_400_000);
 }
 
+/**
+ * Tarihe takvim ayı ekler. Ay sonu taşmasında ayın son gününe sabitlenir:
+ * 31 Ocak + 1 ay = 28/29 Şubat (JS'nin varsayılanı 3 Mart'a kayardı ve
+ * abonelik dönemi bir sonraki ayın içine taşardı).
+ */
+export function addCalendarMonths(date: Date, months: number): Date {
+  const result = new Date(date.getTime());
+  const day = result.getUTCDate();
+  result.setUTCDate(1);
+  result.setUTCMonth(result.getUTCMonth() + months);
+  const lastDay = new Date(Date.UTC(result.getUTCFullYear(), result.getUTCMonth() + 1, 0)).getUTCDate();
+  result.setUTCDate(Math.min(day, lastDay));
+  return result;
+}
+
 export function addHours(date: Date, hours: number): Date {
   return new Date(date.getTime() + hours * 3_600_000);
 }

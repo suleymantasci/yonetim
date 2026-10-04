@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, Req } from "@nestjs/common";
+import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query, Req } from "@nestjs/common";
 import { ApiExcludeController } from "@nestjs/swagger";
 import { desc, sql } from "drizzle-orm";
 import type { Request } from "express";
@@ -6,6 +6,16 @@ import type { Request } from "express";
 import { SESSION_COOKIE } from "@yonetim/auth/cookie";
 import { assertPlatformAdmin } from "@yonetim/auth/guard";
 import {
+  campaignStatusUpdate,
+  promoCodeCreate,
+  promoCodeUpdate,
+  subscriptionAssignRequest,
+  subscriptionQuoteRequest,
+  type CampaignStatusUpdate,
+  type PromoCodeCreate,
+  type PromoCodeUpdate,
+  type SubscriptionAssignRequest,
+  type SubscriptionQuoteRequest,
   impersonateRequest,
   platformAccountAction,
   platformAddonGrant,
@@ -34,6 +44,7 @@ import { ZodBodyPipe } from "../infra/zod/zod-dto";
 import { ImpersonationService } from "./impersonation.service";
 import { LifecycleService } from "./lifecycle.service";
 import { PlatformAccountsService } from "./platform-accounts.service";
+import { PlatformBillingService } from "./platform-billing.service";
 
 /**
  * Platform paneli — `/v1/panel/platform/*` (SPEC Bölüm 18).
@@ -60,6 +71,7 @@ export class PlatformController {
     private readonly accounts: PlatformAccountsService,
     private readonly lifecycle: LifecycleService,
     private readonly impersonation: ImpersonationService,
+    private readonly billing: PlatformBillingService,
   ) {}
 
   @Get("overview")
@@ -269,6 +281,73 @@ export class PlatformController {
     this.assertPlatform();
     const result = await this.accounts.grantAddon(dto);
     return { ok: true, affected: result.affected };
+  }
+
+  /* ------------------------------------------------ paket / faturalandırma */
+
+  @Get("plans")
+  async planList(@Query("tenantId") tenantId?: string) {
+    this.assertPlatform();
+    return this.billing.plans(tenantId && /^[0-9a-f-]{36}$/i.test(tenantId) ? tenantId : undefined);
+  }
+
+  /** Önizleme — kod kilitlenmez, kayıt yazılmaz. */
+  @Post("subscriptions/quote")
+  @RequirePermission("admin:billing")
+  async quote(@Body(new ZodBodyPipe(subscriptionQuoteRequest)) dto: SubscriptionQuoteRequest) {
+    this.assertPlatform();
+    return this.billing.quote(dto);
+  }
+
+  /**
+   * Manuel paket atama — havale/elden tahsilat sonrası. Fiyat sunucuda yeniden
+   * hesaplanır; önceki canlı abonelik kapanır, site aktifleşir, fatura yazılır.
+   */
+  @Post("subscriptions/assign")
+  @RequirePermission("admin:billing")
+  async assign(@Body(new ZodBodyPipe(subscriptionAssignRequest)) dto: SubscriptionAssignRequest) {
+    this.assertPlatform();
+    this.billing.assertStart(dto.startsAt);
+    return this.billing.assign(dto);
+  }
+
+  @Get("promo-codes")
+  async promoCodeList() {
+    this.assertPlatform();
+    return this.billing.promoCodes();
+  }
+
+  @Post("promo-codes")
+  @RequirePermission("admin:billing")
+  async createPromoCode(@Body(new ZodBodyPipe(promoCodeCreate)) dto: PromoCodeCreate) {
+    this.assertPlatform();
+    return this.billing.createPromoCode(dto);
+  }
+
+  @Patch("promo-codes/:id")
+  @RequirePermission("admin:billing")
+  async updatePromoCode(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Body(new ZodBodyPipe(promoCodeUpdate)) dto: PromoCodeUpdate,
+  ) {
+    this.assertPlatform();
+    return this.billing.updatePromoCode(id, dto);
+  }
+
+  @Get("campaigns")
+  async campaignList() {
+    this.assertPlatform();
+    return this.billing.campaigns();
+  }
+
+  @Patch("campaigns/:id/status")
+  @RequirePermission("admin:billing")
+  async campaignStatus(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Body(new ZodBodyPipe(campaignStatusUpdate)) dto: CampaignStatusUpdate,
+  ) {
+    this.assertPlatform();
+    return this.billing.setCampaignStatus(id, dto);
   }
 
   /* ------------------------------------------------- site yaşam döngüsü */

@@ -771,3 +771,174 @@ export const impersonateResult = z.object({
 });
 
 export type ImpersonateResult = z.infer<typeof impersonateResult>;
+
+/* -------------------------------------------------------------------------- *
+ * Platform — manuel paket atama, promosyon kodları, kampanya durumu
+ * -------------------------------------------------------------------------- */
+
+export const billingPeriodName = z.enum(["yearly", "semiannual", "quarterly", "monthly"]);
+
+/**
+ * İndirim — ya promosyon kodu ya siteye özel indirim; ikisi birden değil
+ * (kampanyalar varsayılan olarak birleşmez, SPEC 16.7).
+ */
+export const subscriptionDiscount = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("none") }),
+  z.object({ kind: z.literal("promo"), code: z.string().trim().toUpperCase().min(3).max(30) }),
+  z.object({
+    kind: z.literal("special"),
+    type: z.enum(["percent", "amount"]),
+    /** Yüzde (0–100) ya da TL tutarı. */
+    value: z.coerce.number().positive().max(10_000_000),
+    note: z.string().trim().min(10).max(500),
+  }),
+]);
+
+export type SubscriptionDiscount = z.infer<typeof subscriptionDiscount>;
+
+export const subscriptionQuoteRequest = z.object({
+  tenantId: uuid,
+  planId: uuid,
+  period: billingPeriodName,
+  /** Kaç dönem peşin — 1 yıllık dönem = 12 ay. */
+  periodCount: z.coerce.number().int().min(1).max(36),
+  discount: subscriptionDiscount,
+});
+
+export type SubscriptionQuoteRequest = z.infer<typeof subscriptionQuoteRequest>;
+
+export const subscriptionQuote = z.object({
+  planName: z.string(),
+  months: z.number().int(),
+  listPriceMinor: moneyMinor,
+  discountMinor: moneyMinor,
+  finalPriceMinor: moneyMinor,
+  vatMinor: moneyMinor,
+  /** Geçerli kod / özel indirim açıklaması; geçersiz kodda neden. */
+  discountLabel: z.string().nullable(),
+  promoError: z.string().nullable(),
+});
+
+export type SubscriptionQuote = z.infer<typeof subscriptionQuote>;
+
+export const subscriptionAssignRequest = subscriptionQuoteRequest.extend({
+  startsAt: z.coerce.date(),
+  /** Ödeme alındı mı (havale/elden) — fatura `paid`, değilse `issued`. */
+  markPaid: z.boolean(),
+  note: z.string().trim().max(500).optional(),
+});
+
+export type SubscriptionAssignRequest = z.infer<typeof subscriptionAssignRequest>;
+
+export const subscriptionAssignResult = z.object({
+  subscriptionId: uuid,
+  invoiceId: uuid,
+  invoiceNo: z.string(),
+  periodEndAt: dateTime,
+  finalPriceMinor: moneyMinor,
+});
+
+export type SubscriptionAssignResult = z.infer<typeof subscriptionAssignResult>;
+
+export const promoCodeRow = z.object({
+  id: uuid,
+  code: z.string(),
+  discountType: z.enum(["percent", "amount"]),
+  /** Yüzde ya da TL. */
+  discountValue: z.number(),
+  validFrom: dateTime,
+  validUntil: dateTime,
+  usageLimit: z.number().int().nullable(),
+  usedCount: z.number().int(),
+  restrictedToTenantId: uuid.nullable(),
+  restrictedToTenantName: z.string().nullable(),
+  campaignName: z.string().nullable(),
+  isActive: z.boolean(),
+  /** Şu an kullanılabilir mi — aktif, tarih aralığında, limit dolmamış. */
+  usable: z.boolean(),
+  totalDiscountMinor: moneyMinor,
+  createdAt: dateTime,
+});
+
+export type PromoCodeRow = z.infer<typeof promoCodeRow>;
+
+export const promoCodeList = z.object({ rows: z.array(promoCodeRow) });
+
+export type PromoCodeList = z.infer<typeof promoCodeList>;
+
+export const promoCodeCreate = z
+  .object({
+    code: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .min(3)
+      .max(30)
+      .regex(/^[A-Z0-9_-]+$/, "code_format"),
+    discountType: z.enum(["percent", "amount"]),
+    discountValue: z.coerce.number().positive(),
+    validFrom: z.coerce.date(),
+    validUntil: z.coerce.date(),
+    usageLimit: z.coerce.number().int().positive().nullable().optional(),
+    restrictedToTenantId: uuid.nullable().optional(),
+    campaignId: uuid.nullable().optional(),
+  })
+  .refine((v) => v.validUntil > v.validFrom, { message: "range", path: ["validUntil"] })
+  .refine((v) => v.discountType !== "percent" || v.discountValue <= 100, {
+    message: "percent_max",
+    path: ["discountValue"],
+  });
+
+export type PromoCodeCreate = z.infer<typeof promoCodeCreate>;
+
+export const promoCodeUpdate = z.object({
+  isActive: z.boolean().optional(),
+  validUntil: z.coerce.date().optional(),
+  usageLimit: z.coerce.number().int().positive().nullable().optional(),
+});
+
+export type PromoCodeUpdate = z.infer<typeof promoCodeUpdate>;
+
+export const campaignStatusUpdate = z.object({
+  status: z.enum(["draft", "active", "paused", "expired"]),
+});
+
+export type CampaignStatusUpdate = z.infer<typeof campaignStatusUpdate>;
+
+export const platformCampaignList = z.object({
+  rows: z.array(
+    z.object({
+      id: uuid,
+      code: z.string(),
+      name: z.string(),
+      type: z.string(),
+      status: z.string(),
+      startsAt: dateTime,
+      endsAt: dateTime,
+      usageLimit: z.number().int().nullable(),
+      usageCount: z.number().int(),
+      showOnPricingPage: z.boolean(),
+      promoCodeCount: z.number().int(),
+    }),
+  ),
+});
+
+export type PlatformCampaignList = z.infer<typeof platformCampaignList>;
+
+export const platformPlanList = z.object({
+  rows: z.array(
+    z.object({
+      id: uuid,
+      code: z.string(),
+      name: z.string(),
+      minUnits: z.number().int(),
+      maxUnits: z.number().int().nullable(),
+      yearlyPriceMinor: moneyMinor,
+      /** Sitenin daire sayısına göre önerilen kademe mi. */
+      recommended: z.boolean().optional(),
+    }),
+  ),
+});
+
+export type PlatformPlanList = z.infer<typeof platformPlanList>;
+
