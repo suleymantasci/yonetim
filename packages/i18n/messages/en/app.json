@@ -2818,5 +2818,15 @@
       "lastLogin": "Last login",
       "action": "Action"
     }
+  },
+  "payments": {
+    "voidAction": "Void",
+    "voidTitle": "Void payment",
+    "voidConfirm": "Void payment",
+    "voidWarningTitle": "The record is reversed, not deleted",
+    "voidWarning": "The payment stays in the list as \"Cancelled\"; it is removed from the debts it was allocated to and settled debts reopen. The action is written to the audit log with its reason and cannot be undone. Card payments cannot be voided here.",
+    "voidReason": "Reason",
+    "voidReasonHint": "At least 10 characters, e.g. \"Entered for the wrong unit; correct entry is on unit 12.\"",
+    "voided": "Payment voided; {count} debts reopened."
   }
 }

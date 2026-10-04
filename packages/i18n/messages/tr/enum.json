@@ -109,7 +109,9 @@
     "completed": "Tamamlandı",
     "failed": "Başarısız",
     "refunded": "İade edildi",
-    "chargeback": "İtiraz"
+    "chargeback": "İtiraz",
+    "partial": "Kısmi tahsil",
+    "cancelled": "İptal edildi"
   },
   "expenseStatus": {
     "draft": "Taslak",

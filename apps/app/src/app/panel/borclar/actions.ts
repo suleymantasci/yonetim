@@ -10,6 +10,7 @@ import {
   debtBulkResultSimple,
   debtCreateResult,
   paymentCollectResult,
+  paymentVoidResult,
 } from "@yonetim/contracts";
 import { addMonths, currentPeriod, periodKey } from "@yonetim/core";
 
@@ -429,6 +430,39 @@ export async function collectPayment(
           },
         },
       );
+    },
+  );
+}
+
+const voidSchema = z.object({
+  paymentId: uuidField,
+  reason: requiredText(10, 500),
+});
+
+/**
+ * Tahsilat iptali — `payment:refund`. Kayıt silinmez; durum "iptal", mahsuplar
+ * geri alınır (bkz. `DebtWriteRepository.voidPayment`).
+ */
+export async function voidPayment(
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  return runAction(
+    {
+      permission: "payment:refund",
+      schema: voidSchema,
+      meta: { action: "payment_voided", resource: "payment" },
+    },
+    formData,
+    async ({ input }) => {
+      const t = await getTranslations("app.payments");
+      const result = await apiPost(
+        `/v1/panel/debts/payments/${input.paymentId}/void`,
+        { reason: input.reason },
+        paymentVoidResult,
+        { reason: input.reason },
+      );
+      return okState(t("voided", { count: result.reopenedDebtCount }));
     },
   );
 }

@@ -365,6 +365,103 @@ export class DebtWriteRepository {
     });
   }
 
+  /**
+   * Tahsilat iptali — elle girilmiş, tamamlanmış ödeme.
+   *
+   * SİLMİYOR, TERSİNE ÇEVİRİYOR: ödeme satırı `cancelled` olarak kalıyor
+   * (makbuz numarası, tutar, tarih denetimde görünür); mahsup satırları
+   * siliniyor ve her borcun `paid_kurus`'u geri düşülüp durumu yeniden
+   * hesaplanıyor. Mahsupların anlık görüntüsü `metadata.voided`'a yazılıyor —
+   * "iptalden önce hangi borçlara dağılmıştı" sorusunun cevabı kaybolmuyor.
+   *
+   * NEDEN MAHSUPLAR SİLİNİYOR: dökümler ve aylık tahsilat trendi doğrudan
+   * `payment_allocations`'ı topluyor. İptal edilmiş ödemenin mahsubunu
+   * yerinde bırakmak, her okuma yoluna ayrıca durum filtresi eklemeyi
+   * gerektirirdi; biri unutulursa iptal edilen para tahsil edilmiş görünürdü.
+   *
+   * KART ÖDEMESİ BU YOLLA İPTAL EDİLMEZ: para sağlayıcıda; orada iade
+   * yapılmadan kayıt iptali kasa ile banka arasında kalıcı fark bırakırdı.
+   */
+  async voidPayment(paymentId: string, reason: string) {
+    return this.db.txWithReason(reason, async (tx) => {
+      const ctx = this.db.ctx();
+      // FOR UPDATE: aynı tahsilatın iki sekmeden iki kez iptali yarışmasın.
+      const [payment] = await tx
+        .select({
+          id: payments.id,
+          status: payments.status,
+          processor: payments.processor,
+          amountKurus: payments.amountKurus,
+          metadata: payments.metadata,
+        })
+        .from(payments)
+        .where(eq(payments.id, paymentId))
+        .for("update");
+
+      if (!payment) throw new NotFoundException("not_found");
+      if (payment.status === "cancelled")
+        throw new ConflictException("conflict:payment_already_cancelled");
+      if (payment.processor !== "manual")
+        throw new BadRequestException("validation_failed:card_payment_requires_refund");
+      if (payment.status !== "completed")
+        throw new ConflictException(`conflict:payment_not_completed:${payment.status}`);
+
+      const allocations = await tx
+        .select({
+          debtId: paymentAllocations.debtId,
+          amountKurus: paymentAllocations.amountKurus,
+        })
+        .from(paymentAllocations)
+        .where(eq(paymentAllocations.paymentId, paymentId));
+
+      let reopened = 0;
+      for (const allocation of allocations) {
+        const [debt] = await tx
+          .select({
+            id: debts.id,
+            amountKurus: debts.amountKurus,
+            lateFeeKurus: debts.lateFeeKurus,
+            paidKurus: debts.paidKurus,
+            dueDate: debts.dueDate,
+            status: debts.status,
+          })
+          .from(debts)
+          .where(eq(debts.id, allocation.debtId))
+          .for("update");
+        if (!debt) continue;
+
+        const newPaid = Math.max(0, debt.paidKurus - allocation.amountKurus);
+        const status = resolveStatus(debt.amountKurus + debt.lateFeeKurus, newPaid, debt.dueDate);
+        if (debt.status === "paid" && status !== "paid") reopened += 1;
+        await tx.update(debts).set({ paidKurus: newPaid, status }).where(eq(debts.id, debt.id));
+      }
+
+      await tx.delete(paymentAllocations).where(eq(paymentAllocations.paymentId, paymentId));
+
+      await tx
+        .update(payments)
+        .set({
+          status: "cancelled",
+          metadata: {
+            ...((payment.metadata as Record<string, unknown>) ?? {}),
+            voided: {
+              at: new Date().toISOString(),
+              by: ctx.userId ?? null,
+              reason,
+              allocations,
+            },
+          },
+        })
+        .where(eq(payments.id, paymentId));
+
+      return {
+        paymentId,
+        reopenedDebtCount: reopened,
+        reversedMinor: allocations.reduce((sum, a) => sum + a.amountKurus, 0),
+      };
+    });
+  }
+
   /* ---------------------------------------------------------------- *
    * 5) Toplu işlemler
    * ---------------------------------------------------------------- */

@@ -429,6 +429,24 @@ export const paymentCollect = z.object({
 
 export type PaymentCollect = z.infer<typeof paymentCollect>;
 
+/**
+ * Tahsilat iptali — elle girilmiş, tamamlanmış ödeme.
+ *
+ * Kayıt silinmiyor: durum `cancelled`, mahsuplar geri alınıyor, borçlar yeniden
+ * açılıyor. Gerekçe zorunlu (makbuz iptali denetimde açıklanabilir olmalı).
+ */
+export const paymentVoid = z.object({ reason: changeReason });
+
+export type PaymentVoid = z.infer<typeof paymentVoid>;
+
+export const paymentVoidResult = z.object({
+  paymentId: uuid,
+  reopenedDebtCount: z.number().int(),
+  reversedMinor: moneyMinor,
+});
+
+export type PaymentVoidResult = z.infer<typeof paymentVoidResult>;
+
 export const paymentCollectResult = z.object({
   paymentId: uuid,
   allocatedMinor: moneyMinor,

@@ -188,6 +188,8 @@ export const residentDetail = z.object({
       amountMinor: moneyMinor,
       method: z.string(),
       status: z.string(),
+      /** `manual` = panelden girilen tahsilat; yalnız onlar panelden iptal edilir. */
+      processor: z.string(),
       paidAt: dateTime.nullable(),
       receiptNo: z.string().nullable(),
       /** Borçlu başkasıysa ödemenin kimin adına yapıldığı. */

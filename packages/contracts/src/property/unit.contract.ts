@@ -152,6 +152,8 @@ export const unitDetail = z.object({
       amountMinor: moneyMinor,
       method: z.string(),
       status: z.string(),
+      /** `manual` = panelden girilen tahsilat; yalnız onlar panelden iptal edilir. */
+      processor: z.string(),
       paidAt: z.coerce.date().nullable(),
       receiptNo: z.string().nullable(),
     }),

@@ -20,12 +20,14 @@ import {
   debtExemptPatch,
   debtListQuery,
   paymentCollect,
+  paymentVoid,
   unitDebtSummaryQuery,
   type DebtAdjust,
   type DebtBulkCreate,
   type DebtCreate,
   type DebtListQuery,
   type PaymentCollect,
+  type PaymentVoid,
   type UnitDebtSummaryQuery,
 } from "@yonetim/contracts";
 
@@ -111,6 +113,27 @@ export class DebtController {
   @RequirePermission("payment:create")
   collect(@Body(new ZodBodyPipe(paymentCollect)) dto: PaymentCollect) {
     return this.service.collect(dto);
+  }
+
+  /**
+   * Tahsilat iptali — `payment:refund`: yönetici; muhasebeci ve firma
+   * operatöründe yok. Tahsilatı giren kişinin kendi kaydını tek başına geri
+   * alamaması bilinçli (dört göz).
+   */
+  @Post("payments/:id/void")
+  @RequirePermission("payment:refund")
+  @ApiOperation({
+    summary: "Tahsilat iptali (ters kayıt)",
+    description:
+      "Yalnız panelden girilmiş (manual) ve tamamlanmış tahsilat. Kayıt silinmez; " +
+      "durum `cancelled` olur, mahsuplar geri alınır, kapanan borçlar yeniden açılır. " +
+      "Kart ödemesi için sağlayıcı iadesi gerekir.",
+  })
+  voidPayment(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Body(new ZodBodyPipe(paymentVoid)) dto: PaymentVoid,
+  ) {
+    return this.service.voidPayment(id, dto.reason);
   }
 
   @Post("cancel")

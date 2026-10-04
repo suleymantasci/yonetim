@@ -366,6 +366,7 @@ export class ResidentRepository {
               amountMinor: payments.amountKurus,
               method: payments.method,
               status: payments.status,
+              processor: payments.processor,
               paidAt: payments.paidAt,
               receiptNo: payments.receiptNo,
               debtorUserId: payments.debtorUserId,

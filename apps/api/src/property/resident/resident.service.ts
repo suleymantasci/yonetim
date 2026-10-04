@@ -153,6 +153,7 @@ export class ResidentService {
           amountMinor: row.amountMinor,
           method: row.method,
           status: row.status,
+          processor: row.processor,
           paidAt: row.paidAt,
           receiptNo: row.receiptNo,
           onBehalfOf: other

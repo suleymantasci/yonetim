@@ -185,6 +185,21 @@ export class DebtService {
     return result;
   }
 
+  async voidPayment(paymentId: string, reason: string) {
+    const result = await this.write.voidPayment(paymentId, reason);
+    await this.audit.record({
+      action: "payment_voided",
+      resource: "payment",
+      resourceId: paymentId,
+      reason,
+      diff: {
+        status: { from: "completed", to: "cancelled" },
+        reversedMinor: { from: result.reversedMinor, to: 0 },
+      },
+    });
+    return result;
+  }
+
   async cancel(ids: string[], reason: string) {
     const affected = await this.write.cancel(ids, reason);
     await this.audit.record({

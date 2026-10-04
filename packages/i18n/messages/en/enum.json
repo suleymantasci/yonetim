@@ -109,7 +109,9 @@
     "completed": "Completed",
     "failed": "Failed",
     "refunded": "Refunded",
-    "chargeback": "Chargeback"
+    "chargeback": "Chargeback",
+    "partial": "Partially collected",
+    "cancelled": "Cancelled"
   },
   "expenseStatus": {
     "draft": "Draft",

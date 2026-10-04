@@ -22,7 +22,8 @@ import {
 import { PageHeader } from "@/components/app-shell";
 import { CollectPaymentButton } from "@/components/collect-payment";
 import { apiGet } from "@/lib/api/server";
-import { requirePermission } from "@/lib/context";
+import { VoidPaymentButton } from "@/components/payments/void-payment-button";
+import { can, requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
 import type { SearchParamsInput } from "@/lib/list-params";
 
@@ -59,7 +60,8 @@ export default async function UnitDetailPage({
 }) {
   const { id } = await params;
   const query = await searchParams;
-  await requirePermission("unit:read");
+  const ctx = await requirePermission("unit:read");
+  const canVoid = can(ctx, "payment:refund");
   const t = await getTranslations("app.units");
   const tCommon = await getTranslations("common");
   const tEnum = await getTranslations("enum");
@@ -587,12 +589,17 @@ export default async function UnitDetailPage({
                           <th scope="col" className={tc.th}>
                             {t("receiptNo")}
                           </th>
+                          {canVoid ? (
+                            <th scope="col" className={tc.th}>
+                              <span className="sr-only">{tEnum("paymentStatus.cancelled")}</span>
+                            </th>
+                          ) : null}
                         </tr>
                       </thead>
                       <tbody>
                         {detail.recentPayments.length === 0 ? (
                           <tr>
-                            <td colSpan={5} className={tc.empty}>
+                            <td colSpan={canVoid ? 6 : 5} className={tc.empty}>
                               {t("noPayments")}
                             </td>
                           </tr>
@@ -615,7 +622,9 @@ export default async function UnitDetailPage({
                                   tone={
                                     payment.status === "completed"
                                       ? "success"
-                                      : "neutral"
+                                      : payment.status === "cancelled"
+                                        ? "danger"
+                                        : "neutral"
                                   }
                                 >
                                   {tEnum(`paymentStatus.${payment.status}`)}
@@ -624,6 +633,21 @@ export default async function UnitDetailPage({
                               <td className={tc.tdMuted}>
                                 {payment.receiptNo ?? "—"}
                               </td>
+                              {canVoid ? (
+                                <td className={tc.td}>
+                                  {payment.status === "completed" && payment.processor === "manual" ? (
+                                    <VoidPaymentButton
+                                      paymentId={payment.id}
+                                      summary={[
+                                        fmt.money(payment.amountMinor),
+                                        payment.paidAt ? fmt.date(payment.paidAt) : null,
+                                        tEnum(`paymentMethod.${payment.method}`),
+                                        payment.receiptNo,
+                                      ].filter(Boolean).join(" · ")}
+                                    />
+                                  ) : null}
+                                </td>
+                              ) : null}
                             </tr>
                           ))
                         )}

@@ -70,6 +70,8 @@ export const paymentStatusEnum = pgEnum("payment_status", [
   // M-30: amount drift durumunda kullanılan status; tahsilat tamamlanmadı
   // ama bir kısmı alındı. Reconciliation gerekir.
   "partial",
+  // Elle girilmiş hatalı tahsilatın iptali (0015) — mahsuplar geri alınır.
+  "cancelled",
 ]);
 
 export const paymentProcessorEnum = pgEnum("payment_processor", [

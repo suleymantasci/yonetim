@@ -321,6 +321,7 @@ export class UnitRepository {
             amountMinor: payments.amountKurus,
             method: payments.method,
             status: payments.status,
+            processor: payments.processor,
             paidAt: payments.paidAt,
             receiptNo: payments.receiptNo,
           })

@@ -2818,5 +2818,15 @@
       "lastLogin": "Son giriş",
       "action": "İşlem"
     }
+  },
+  "payments": {
+    "voidAction": "İptal et",
+    "voidTitle": "Tahsilatı iptal et",
+    "voidConfirm": "Tahsilatı iptal et",
+    "voidWarningTitle": "Kayıt silinmez, tersine çevrilir",
+    "voidWarning": "Tahsilat \"İptal edildi\" olarak listede kalır; dağıtıldığı borçlardan düşülür ve kapanan borçlar yeniden açılır. İşlem gerekçesiyle denetim kütüğüne yazılır ve geri alınamaz. Kartla alınan ödemeler buradan iptal edilemez.",
+    "voidReason": "İptal gerekçesi",
+    "voidReasonHint": "En az 10 karakter. Örn. \"Yanlış daireye girildi, doğru kayıt 12 numaralı dairede.\"",
+    "voided": "Tahsilat iptal edildi; {count} borç yeniden açıldı."
   }
 }
