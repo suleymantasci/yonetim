@@ -2780,6 +2780,43 @@
       "validUntil": "Valid until",
       "validUntilHint": "Empty = no expiry",
       "targetUser": "User"
+    },
+    "daysOverdue": "{days} days overdue",
+    "endsToday": "Ends today",
+    "noPlan": "No plan"
+  },
+  "platform": {
+    "title": "Platform Management",
+    "nav": {
+      "overview": "Overview",
+      "accounts": "Accounts",
+      "managers": "Managers"
+    },
+    "navLabel": "Platform menu"
+  },
+  "platformManagers": {
+    "title": "Managers",
+    "description": "Managers of every site: plan, time left and last login. Soonest to expire first.",
+    "searchLabel": "Search",
+    "searchHint": "Name, email or site name",
+    "filter": "Search",
+    "emptyTitle": "No managers found",
+    "emptyDescription": "Change the search or clear the filter.",
+    "footnote": "Showing {shown} of {total}.",
+    "neverLoggedIn": "Never logged in",
+    "openAccount": "Open account",
+    "totalManagers": "Managers",
+    "expiringSoon": "Ending within 7 days",
+    "expired": "Expired",
+    "neverActive": "Never logged in",
+    "col": {
+      "manager": "Manager",
+      "site": "Site",
+      "plan": "Plan",
+      "status": "Status",
+      "remaining": "Time left",
+      "lastLogin": "Last login",
+      "action": "Action"
     }
   }
 }

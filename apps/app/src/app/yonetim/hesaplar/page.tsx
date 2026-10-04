@@ -10,6 +10,8 @@ import { apiGet, toQuery } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
 
+import { RemainingBadge } from "../remaining";
+
 /**
  * Süper-admin hesap listesi — SPEC Bölüm 18.1 #1–#4.
  *
@@ -54,6 +56,13 @@ export default async function PlatformAccountsPage({
   const tEnum = await getTranslations("enum");
   const f = await formatters();
 
+  const remainingLabels = {
+    daysLeft: (days: number) => t("daysLeft", { days }),
+    daysOverdue: (days: number) => t("daysOverdue", { days }),
+    endsToday: t("endsToday"),
+    none: "—",
+  };
+
   const query = toQuery({ q: params.q, durum: params.durum });
   const data = await apiGet(
     `/v1/panel/platform/accounts${query ? `?${query}` : ""}`,
@@ -67,9 +76,6 @@ export default async function PlatformAccountsPage({
           <h1 className="font-heading text-2xl font-extrabold text-fg">{t("title")}</h1>
           <p className="text-sm text-fg-subtle">{t("description")}</p>
         </div>
-        <Link href="/yonetim" className="text-sm underline hover:no-underline">
-          {t("backToOverview")}
-        </Link>
       </header>
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-5">
@@ -133,10 +139,11 @@ export default async function PlatformAccountsPage({
                     <th scope="col" className={`${tc.th} text-right`}>{t("col.sites")}</th>
                     <th scope="col" className={`${tc.th} text-right`}>{t("col.units")}</th>
                     <th scope="col" className={`${tc.th} text-right`}>{t("col.users")}</th>
+                    <th scope="col" className={tc.th}>{t("col.plan")}</th>
                     <th scope="col" className={tc.th}>{t("col.subscription")}</th>
                     <th scope="col" className={`${tc.th} text-right`}>{t("col.yearly")}</th>
                     <th scope="col" className={`${tc.th} text-right`}>{t("col.outstanding")}</th>
-                    <th scope="col" className={tc.th}>{t("col.nextPeriod")}</th>
+                    <th scope="col" className={tc.th}>{t("col.remaining")}</th>
                     <th scope="col" className={tc.th}>
                       <span className="sr-only">{t("col.action")}</span>
                     </th>
@@ -172,6 +179,13 @@ export default async function PlatformAccountsPage({
                       <td className={tc.tdNum}>{row.unitCount}</td>
                       <td className={tc.tdNum}>{row.userCount}</td>
                       <td className={tc.td}>
+                        {row.planNames.length > 0 ? (
+                          <span className="text-sm text-fg">{row.planNames.join(", ")}</span>
+                        ) : (
+                          <span className="text-xs text-fg-subtle">{t("noPlan")}</span>
+                        )}
+                      </td>
+                      <td className={tc.td}>
                         {row.worstSubscriptionStatus ? (
                           <Badge tone={subscriptionTone(row.worstSubscriptionStatus)}>
                             {tEnum(`subscriptionStatus.${row.worstSubscriptionStatus}`)}
@@ -191,12 +205,18 @@ export default async function PlatformAccountsPage({
                           {f.money(row.outstandingMinor)}
                         </span>
                       </td>
-                      <td className={tc.tdMuted}>
-                        {row.nextPeriodEndAt
-                          ? f.date(row.nextPeriodEndAt)
-                          : row.trialEndsAt
-                            ? t("trialUntil", { date: f.date(row.trialEndsAt) })
-                            : "—"}
+                      <td className={tc.td}>
+                        <RemainingBadge
+                          until={row.nextPeriodEndAt ?? row.trialEndsAt}
+                          labels={remainingLabels}
+                        />
+                        {row.nextPeriodEndAt || row.trialEndsAt ? (
+                          <div className="mt-1 text-xs text-fg-subtle">
+                            {row.nextPeriodEndAt
+                              ? f.date(row.nextPeriodEndAt)
+                              : t("trialUntil", { date: f.date(row.trialEndsAt!) })}
+                          </div>
+                        ) : null}
                       </td>
                       <td className={tc.td}>
                         <Link

@@ -19,6 +19,7 @@ import {
   type PlatformActionResult,
   type PlatformAddonGrant,
   type PlatformExtendRequest,
+  type PlatformManagerList,
   type PlatformOverview,
   type PlatformTenantAction,
   type TenantLifecycleResult,
@@ -214,6 +215,20 @@ export class PlatformController {
       // Üst sınır sunucuda: istemciden gelen `limit` sınırsız olsaydı tek
       // istek bütün hesapları çeken bir ihraç ucuna dönüşürdü.
       limit: Math.min(Math.max(Number(limit ?? 50) || 50, 1), 200),
+      offset: Math.max(Number(offset ?? 0) || 0, 0),
+    });
+  }
+
+  @Get("managers")
+  async managerList(
+    @Query("q") query?: string,
+    @Query("limit") limit?: string,
+    @Query("offset") offset?: string,
+  ): Promise<PlatformManagerList> {
+    this.assertPlatform();
+    return this.accounts.managers({
+      query: query?.trim() || undefined,
+      limit: Math.min(Math.max(Number(limit ?? 100) || 100, 1), 200),
       offset: Math.max(Number(offset ?? 0) || 0, 0),
     });
   }

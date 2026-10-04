@@ -164,6 +164,15 @@ describe("platform bağlamı — siteye üye olmayan süper admin", () => {
     expect(count).toHaveLength(1);
   });
 
+  it("yöneticiler listesi açılıyor; platform dışı kullanıcıya kapalı", async ({ skip }) => {
+    if (!apiReachable) skip();
+    const ok = await get("/v1/panel/platform/managers", superCookie);
+    expect(ok.status).toBe(200);
+    expect(Array.isArray(ok.body.rows)).toBe(true);
+    const denied = await get("/v1/panel/platform/managers", lonerCookie);
+    expect(denied.status).toBeGreaterThanOrEqual(401);
+  });
+
   it("platform rolü ve üyeliği olmayan kullanıcı bağlam almıyor", async ({ skip }) => {
     if (!apiReachable) skip();
     const { status } = await get("/v1/auth/context", lonerCookie);

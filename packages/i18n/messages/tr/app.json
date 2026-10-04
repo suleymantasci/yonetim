@@ -2780,6 +2780,43 @@
       "validUntil": "Son kullanma",
       "validUntilHint": "Boş = süresiz",
       "targetUser": "Kullanıcı"
+    },
+    "daysOverdue": "{days} gün geçti",
+    "endsToday": "Bugün bitiyor",
+    "noPlan": "Paket yok"
+  },
+  "platform": {
+    "title": "Platform Yönetimi",
+    "nav": {
+      "overview": "Özet",
+      "accounts": "Hesaplar",
+      "managers": "Yöneticiler"
+    },
+    "navLabel": "Platform menüsü"
+  },
+  "platformManagers": {
+    "title": "Yöneticiler",
+    "description": "Tüm sitelerin yöneticileri: paket, kalan süre ve son giriş. Süresi en yakın bitenler üstte.",
+    "searchLabel": "Ara",
+    "searchHint": "Ad, e-posta veya site adı",
+    "filter": "Ara",
+    "emptyTitle": "Yönetici bulunamadı",
+    "emptyDescription": "Aramayı değiştirin ya da filtreyi temizleyin.",
+    "footnote": "{total} kaydın {shown} tanesi gösteriliyor.",
+    "neverLoggedIn": "Hiç giriş yapmadı",
+    "openAccount": "Hesabı aç",
+    "totalManagers": "Yönetici",
+    "expiringSoon": "7 gün içinde bitiyor",
+    "expired": "Süresi geçmiş",
+    "neverActive": "Hiç giriş yapmamış",
+    "col": {
+      "manager": "Yönetici",
+      "site": "Site",
+      "plan": "Paket",
+      "status": "Durum",
+      "remaining": "Kalan süre",
+      "lastLogin": "Son giriş",
+      "action": "İşlem"
     }
   }
 }

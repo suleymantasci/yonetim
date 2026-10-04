@@ -542,10 +542,52 @@ export const platformAccountRow = z.object({
   outstandingMinor: moneyMinor,
   overdueInvoiceCount: z.number().int(),
   addonCount: z.number().int(),
+  /**
+   * Hesabın sitelerinin **güncel** paket adları (site başına son abonelik).
+   * Tek siteli hesapta tek ad; yönetim firmasında farklı kademeler olabilir.
+   */
+  planNames: z.array(z.string()),
   createdAt: dateTime,
 });
 
 export type PlatformAccountRow = z.infer<typeof platformAccountRow>;
+
+/**
+ * Platform → yöneticiler listesi.
+ *
+ * Satır **üyelik** düzeyinde (kişi × site): aynı kişi iki siteyi yönetiyorsa
+ * iki satır görünür, çünkü her sitenin paketi ve kalan süresi ayrı.
+ */
+export const platformManagerRow = z.object({
+  userId: uuid,
+  name: z.string(),
+  email: z.string().nullable(),
+  /** Maskeli — platform ekranında tam numara gerekmiyor (KVKK md.4 ölçülülük). */
+  phone: maskedPhone,
+  role: z.string(),
+  lastLoginAt: dateTime.nullable(),
+  tenantId: uuid,
+  tenantName: z.string(),
+  tenantSlug: z.string(),
+  tenantStatus: z.string(),
+  /** Hesap detayına bağlantı için — `company:<id>` ya da `tenant:<id>`. */
+  accountKey: z.string(),
+  unitCount: z.number().int(),
+  planName: z.string().nullable(),
+  subscriptionStatus: z.string().nullable(),
+  trialEndsAt: dateTime.nullable(),
+  periodEndAt: dateTime.nullable(),
+  memberSince: dateTime,
+});
+
+export type PlatformManagerRow = z.infer<typeof platformManagerRow>;
+
+export const platformManagerList = z.object({
+  rows: z.array(platformManagerRow),
+  total: z.number().int(),
+});
+
+export type PlatformManagerList = z.infer<typeof platformManagerList>;
 
 export const platformAccountList = z.object({
   rows: z.array(platformAccountRow),

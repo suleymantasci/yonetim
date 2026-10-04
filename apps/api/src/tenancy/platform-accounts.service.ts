@@ -6,6 +6,7 @@ import type {
   PlatformAccountDetail,
   PlatformAccountList,
   PlatformAccountRow,
+  PlatformManagerList,
 } from "@yonetim/contracts";
 import { errors, maskPhone } from "@yonetim/core";
 
@@ -156,6 +157,20 @@ export class PlatformAccountsService {
           JOIN memberships m ON m.tenant_id = sc.id AND m.deleted_at IS NULL
           GROUP BY sc.account_key
         ),
+        -- Güncel paket: site başına EN SON abonelik (geçmiş satırlar sayılmaz).
+        account_plans AS (
+          SELECT sc.account_key, array_agg(DISTINCT lp.plan_name ORDER BY lp.plan_name) AS plan_names
+          FROM scoped sc
+          JOIN LATERAL (
+            SELECT p.name AS plan_name
+            FROM subscriptions s
+            JOIN plans p ON p.id = s.plan_id
+            WHERE s.tenant_id = sc.id
+            ORDER BY s.created_at DESC
+            LIMIT 1
+          ) lp ON true
+          GROUP BY sc.account_key
+        ),
         grouped AS (
           SELECT
             sc.account_key,
@@ -188,6 +203,7 @@ export class PlatformAccountsService {
           SELECT
             g.*,
             COALESCE(au.user_count, 0) AS user_count,
+            COALESCE(ap.plan_names, ARRAY[]::text[]) AS plan_names,
             -- Ad ve iletişim iki kaynaktan: firma kaydı varsa oradan, yoksa
             -- sitenin kendi adı ve yöneticisinden. Tek kaynağa indirgemek
             -- bağımsız yöneticileri isimsiz bırakırdı.
@@ -198,6 +214,7 @@ export class PlatformAccountsService {
                                           AS contact_name
           FROM grouped g
           LEFT JOIN account_users au ON au.account_key = g.account_key
+          LEFT JOIN account_plans ap ON ap.account_key = g.account_key
           LEFT JOIN companies c ON c.id::text = g.company_id AND c.deleted_at IS NULL
           LEFT JOIN tenants   t ON t.id::text = g.sample_tenant_id
           LEFT JOIN users     u ON u.id::text = g.manager_id AND u.deleted_at IS NULL
@@ -258,6 +275,93 @@ export class PlatformAccountsService {
           trialAccounts: t0?.trial_sites ?? 0,
           outstandingMinor: Number(t0?.outstanding_kurus ?? 0),
         },
+      };
+    });
+  }
+
+  /* ------------------------------------------------------- yöneticiler */
+
+  /**
+   * Bütün sitelerin yöneticileri — kişi × site satırı.
+   *
+   * Yönetim rolleri: site yöneticisi ve yönetim firması rolleri. Silinmiş
+   * üyelikler ve silinmiş siteler dışarıda. Paket ve dönem sonu sitenin EN SON
+   * aboneliğinden; deneme bitişi abonelikte yoksa siteninkinden.
+   */
+  async managers(params: {
+    query?: string;
+    limit: number;
+    offset: number;
+  }): Promise<PlatformManagerList> {
+    const like = params.query ? `%${params.query.trim().toLowerCase()}%` : null;
+    return this.db.bypass("platform:managers", async (tx) => {
+      const rows = (await tx.execute(sql`
+        SELECT
+          u.id AS user_id,
+          NULLIF(TRIM(COALESCE(u.first_name, '') || ' ' || COALESCE(u.last_name, '')), '') AS name,
+          u.email,
+          u.phone,
+          u.last_login_at,
+          m.role::text AS role,
+          m.created_at AS member_since,
+          t.id AS tenant_id,
+          t.name AS tenant_name,
+          t.slug AS tenant_slug,
+          t.status::text AS tenant_status,
+          t.unit_count,
+          CASE WHEN t.company_id IS NOT NULL
+               THEN 'company:' || t.company_id::text
+               ELSE 'tenant:'  || t.id::text END AS account_key,
+          ls.plan_name,
+          ls.status AS subscription_status,
+          COALESCE(ls.trial_ends_at, t.trial_ends_at) AS trial_ends_at,
+          ls.current_period_end,
+          COUNT(*) OVER ()::int AS total_count
+        FROM memberships m
+        JOIN users u   ON u.id = m.user_id AND u.deleted_at IS NULL
+        JOIN tenants t ON t.id = m.tenant_id AND t.deleted_at IS NULL
+        LEFT JOIN LATERAL (
+          SELECT p.name AS plan_name, s.status::text AS status, s.trial_ends_at, s.current_period_end
+          FROM subscriptions s
+          JOIN plans p ON p.id = s.plan_id
+          WHERE s.tenant_id = t.id
+          ORDER BY s.created_at DESC
+          LIMIT 1
+        ) ls ON true
+        WHERE m.deleted_at IS NULL
+          AND m.role IN ('manager', 'company_admin', 'company_operator')
+          AND (
+            ${like}::text IS NULL
+            OR lower(COALESCE(u.first_name, '') || ' ' || COALESCE(u.last_name, '')) LIKE ${like}
+            OR lower(COALESCE(u.email, '')) LIKE ${like}
+            OR lower(t.name) LIKE ${like}
+          )
+        ORDER BY COALESCE(ls.current_period_end, ls.trial_ends_at, t.trial_ends_at) ASC NULLS LAST,
+                 t.name ASC
+        LIMIT ${params.limit} OFFSET ${params.offset}
+      `)) as unknown as ManagerQueryRow[];
+
+      return {
+        total: rows[0]?.total_count ?? 0,
+        rows: rows.map((row) => ({
+          userId: row.user_id,
+          name: row.name ?? row.email ?? "—",
+          email: row.email,
+          phone: row.phone ? maskPhone(row.phone) : null,
+          role: row.role,
+          lastLoginAt: toDate(row.last_login_at),
+          tenantId: row.tenant_id,
+          tenantName: row.tenant_name,
+          tenantSlug: row.tenant_slug,
+          tenantStatus: row.tenant_status,
+          accountKey: row.account_key,
+          unitCount: row.unit_count,
+          planName: row.plan_name,
+          subscriptionStatus: row.subscription_status,
+          trialEndsAt: toDate(row.trial_ends_at),
+          periodEndAt: toDate(row.current_period_end),
+          memberSince: toDate(row.member_since)!,
+        })),
       };
     });
   }
@@ -819,9 +923,31 @@ function toAccountRow(row: AccountQueryRow): PlatformAccountRow {
     outstandingMinor: Number(row.outstanding_kurus ?? 0),
     overdueInvoiceCount: row.overdue_count,
     addonCount: row.addon_count,
+    planNames: row.plan_names ?? [],
     // `created_at` şemada NOT NULL; dönüşüm yine de tek yerden geçiyor.
     createdAt: toDate(row.created_at)!,
   };
+}
+
+interface ManagerQueryRow {
+  user_id: string;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  last_login_at: RawTimestamp;
+  role: string;
+  member_since: RawTimestamp;
+  tenant_id: string;
+  tenant_name: string;
+  tenant_slug: string;
+  tenant_status: string;
+  unit_count: number;
+  account_key: string;
+  plan_name: string | null;
+  subscription_status: string | null;
+  trial_ends_at: RawTimestamp;
+  current_period_end: RawTimestamp;
+  total_count: number;
 }
 
 interface AccountQueryRow {
@@ -843,6 +969,7 @@ interface AccountQueryRow {
   outstanding_kurus: string | number | null;
   overdue_count: number;
   addon_count: number;
+  plan_names: string[] | null;
   created_at: RawTimestamp;
   total_count: number;
 }

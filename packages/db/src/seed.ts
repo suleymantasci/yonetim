@@ -1,13 +1,15 @@
 import { randomBytes, randomUUID, scryptSync } from "node:crypto";
 
+import { eq } from "drizzle-orm";
+
 import { tlToKurus } from "@yonetim/core";
-import { planForUnitCount } from "@yonetim/pricing";
+import { planForUnitCount, planYearlyKurus } from "@yonetim/pricing";
 
 import { closeDb, getDb, withBypassRls } from "./client";
 import { loadRootEnv } from "../../../env-loader.mjs";
 import {
   blocks, campaigns, expenseCategories, maintenanceTemplates, memberships, plans, tenants, units,
-  users, duesPlans, resources,
+  users, duesPlans, resources, subscriptions,
 } from "./schema/index";
 import { CAMPAIGN_TEMPLATE_SEED } from "./seed-data/campaigns";
 import { EXPENSE_CATEGORY_SEED } from "./seed-data/expense-categories";
@@ -166,7 +168,13 @@ async function seedDemoTenant() {
       set: { passwordHash: hashPasswordSync(demoPassword) },
     });
 
-    const [planRow] = await tx.select().from(plans).limit(50);
+    // Kademe daire sayısından (kayıt akışıyla aynı kural); eskiden listedeki
+    // ilk plan ("Ücretsiz Deneme") alınıyordu.
+    const [planRow] = await tx
+      .select({ id: plans.id })
+      .from(plans)
+      .where(eq(plans.code, plan.code))
+      .limit(1);
     const planId = planRow?.id;
 
     await tx.insert(tenants).values({
@@ -187,6 +195,33 @@ async function seedDemoTenant() {
       landingPublished: true,
       settings: { duesDueDayOfMonth: 10, lateFeeEnabled: true, lateFeeMonthlyPct: 5 },
     }).onConflictDoNothing();
+
+    // Deneme aboneliği — kayıt akışının (`SignupService`) yazdığının aynısı.
+    // Olmadan platform panelinde demo site "Abonelik yok" görünüyordu.
+    const [hasSub] = await tx
+      .select({ id: subscriptions.id })
+      .from(subscriptions)
+      .where(eq(subscriptions.tenantId, tenantId))
+      .limit(1);
+    // Site bu çalıştırmada eklenmediyse (slug çakışması) `tenantId` yok:
+    // abonelik yalnız yeni eklenen siteye yazılıyor.
+    const [created] = await tx
+      .select({ id: tenants.id })
+      .from(tenants)
+      .where(eq(tenants.id, tenantId))
+      .limit(1);
+    if (planId && created && !hasSub) {
+      const priceKurus = planYearlyKurus(plan);
+      await tx.insert(subscriptions).values({
+        tenantId,
+        planId,
+        status: "trialing",
+        unitCountSnapshot: unitCount,
+        priceKurus,
+        listPriceKurus: priceKurus,
+        trialEndsAt: new Date(Date.now() + 30 * 86_400_000),
+      });
+    }
 
     await tx.insert(memberships).values({
       tenantId,

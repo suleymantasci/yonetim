@@ -1,7 +1,5 @@
-import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
-import { siteConfig } from "@yonetim/config";
 import { platformOverview } from "@yonetim/contracts";
 import type { TenantStatus } from "@yonetim/core";
 import {
@@ -9,7 +7,6 @@ import {
 } from "@yonetim/ui";
 
 import { apiGet } from "@/lib/api/server";
-import { requireContext } from "@/lib/context";
 import { formatters } from "@/lib/format";
 
 /**
@@ -17,7 +14,7 @@ import { formatters } from "@/lib/format";
  *
  * Yalnızca platform rolleri (super_admin / support_agent) erişebilir ve bu
  * kontrol **uçta**: `/v1/panel/platform/overview` yetkisiz çağrıyı 403 ile
- * kesiyor. Buradaki `requireContext()` yalnız oturum ve kullanıcı adı için —
+ * kesiyor. `layout.tsx`'teki rol kontrolü yalnız yönlendirme için —
  * ekranın kapısı olduğunu sanmak, veriyi çeken sorguyu korumasız bırakmak
  * olurdu.
  */
@@ -29,7 +26,6 @@ export async function generateMetadata() {
 }
 
 export default async function AdminPage() {
-  const ctx = await requireContext();
   const t = await getTranslations("app.admin");
   const tCommon = await getTranslations("common");
   const tEnum = await getTranslations("enum");
@@ -47,32 +43,8 @@ export default async function AdminPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-4 p-4 lg:p-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-heading text-2xl font-extrabold text-fg">{t("title")}</h1>
-          <p className="text-sm text-fg-subtle">
-            {siteConfig.brand.name} · {ctx.userName}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          {/*
-            Özet ekranı sayıları gösteriyor ama tek bir müşteri hakkında hiçbir
-            şey söylemiyordu; süre uzatma, dondurma, hesaba geçiş gibi işlerin
-            hepsi bir hesabın üzerinde çalışıyor ve o hesaba ulaşmanın yolu
-            yoktu. Bu bağlantı ekranın eksik yarısını açıyor.
-          */}
-          <Link
-            href="/yonetim/hesaplar"
-            className="rounded-lg bg-accent px-3 py-1.5 text-sm font-semibold text-accent-fg hover:opacity-90"
-          >
-            {t("manageAccounts")}
-          </Link>
-          <form action="/api/session/logout" method="post">
-            <button className="rounded-lg border border-border-strong px-3 py-1.5 text-sm text-fg hover:bg-hover">
-              {tCommon("action.logout")}
-            </button>
-          </form>
-        </div>
+      <header>
+        <h1 className="font-heading text-2xl font-extrabold text-fg">{t("title")}</h1>
       </header>
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-4">
