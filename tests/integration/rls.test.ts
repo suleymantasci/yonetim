@@ -82,6 +82,15 @@ afterAll(async () => {
   await closeDb();
 });
 
+/**
+ * drizzle-orm ≥0.44 veritabanı hatasını `DrizzleQueryError` ("Failed query:
+ * …") içine sarıyor; trigger'ın asıl mesajı `cause`'da. Testler mesajın
+ * kendisini doğruluyor, sarmalayıcıyı değil.
+ */
+function dbCause(error: unknown): never {
+  throw error instanceof Error && error.cause instanceof Error ? error.cause : error;
+}
+
 describe("multi-tenant izolasyon (SPEC 21.2)", () => {
   it("tenant A yalnızca kendi birimlerini görür", async () => {
     const rows = await withTenant(A.id, async (tx) => tx.select().from(units));
@@ -245,7 +254,7 @@ describe("gecikme tazminatı ve değişiklik kütüğü", () => {
           .update(debtChanges)
           .set({ reason: "geçmişi değiştirme denemesi" })
           .where(eq(debtChanges.id, change!.id));
-      }),
+      }).catch(dbCause),
     ).rejects.toThrow(/append-only/i);
   });
 
@@ -257,7 +266,7 @@ describe("gecikme tazminatı ve değişiklik kütüğü", () => {
     await expect(
       withBypassRls("test:audit-delete", async (tx) => {
         await tx.delete(auditLogs).where(eq(auditLogs.tenantId, A.id));
-      }),
+      }).catch(dbCause),
     ).rejects.toThrow(/silinemez/i);
   });
 
@@ -266,7 +275,7 @@ describe("gecikme tazminatı ve değişiklik kütüğü", () => {
       withTenant(A.id, async (tx) => {
         await tx.execute(sql`SELECT set_config('app.allow_log_purge', 'on', true)`);
         await tx.delete(debtChanges);
-      }),
+      }).catch(dbCause),
     ).rejects.toThrow(/silinemez/i);
   });
 

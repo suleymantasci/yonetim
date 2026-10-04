@@ -20,7 +20,7 @@
     "@yonetim/bank": "workspace:*",
     "@yonetim/kvkk": "workspace:*",
     "@yonetim/pricing": "workspace:*",
-    "drizzle-orm": "^0.38.3"
+    "drizzle-orm": "^0.45.3"
   },
   "devDependencies": {
     "typescript": "^5.7.2"

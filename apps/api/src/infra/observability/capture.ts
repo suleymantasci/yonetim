@@ -11,12 +11,14 @@ import * as Sentry from "@sentry/nestjs";
  */
 export function captureException(
   error: unknown,
-  context: { requestId?: string; path?: string; job?: string } = {},
+  context: { requestId?: string; path?: string; job?: string; query?: string } = {},
 ): void {
   Sentry.withScope((scope) => {
     if (context.requestId) scope.setTag("requestId", context.requestId);
     if (context.path) scope.setTag("path", context.path);
     if (context.job) scope.setTag("job", context.job);
+    // Yer tutuculu SQL ($1, $2…) — parametreler bilinçli olarak yok.
+    if (context.query) scope.setExtra("query", context.query);
     Sentry.captureException(error);
   });
 }

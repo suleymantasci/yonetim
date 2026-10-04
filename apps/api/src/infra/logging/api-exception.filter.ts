@@ -10,6 +10,7 @@ import {
 } from "@nestjs/common";
 import type { Request, Response } from "express";
 import { ClsService } from "nestjs-cls";
+import { DrizzleQueryError } from "drizzle-orm/errors";
 import { ZodError } from "zod";
 
 import {
@@ -52,15 +53,25 @@ export class ApiExceptionFilter implements ExceptionFilter {
     const { status, code, message, details } = translate(exception);
 
     if (status >= 500) {
+      // drizzle-orm ≥0.44 sürücü hatasını `DrizzleQueryError` içine sarıyor ve
+      // mesajına sorgu **parametrelerini** ekliyor (telefon, e-posta, ad…).
+      // Log ve Sentry'ye yalnız yer tutuculu SQL ile asıl Postgres hatası
+      // gidiyor; parametreler KVKK gereği hiçbir yere yazılmıyor.
+      const dbQuery = exception instanceof DrizzleQueryError ? exception.query : undefined;
+      const reported =
+        exception instanceof DrizzleQueryError
+          ? (exception.cause ?? new Error("Veritabanı sorgusu başarısız"))
+          : exception;
       this.logger.error({
         event: "request.failed",
         requestId,
         path: req.originalUrl,
-        error: exception instanceof Error ? exception.stack : String(exception),
+        ...(dbQuery ? { query: dbQuery } : {}),
+        error: reported instanceof Error ? reported.stack : String(reported),
       });
       // Yalnız 5xx Sentry'ye gidiyor. 4xx'ler kullanıcı hatası ve beklenen
       // durum; onları da göndermek gerçek arızaları gürültüye gömerdi.
-      captureException(exception, { requestId, path: req.originalUrl });
+      captureException(reported, { requestId, path: req.originalUrl, query: dbQuery });
     } else {
       this.logger.debug({
         event: "request.rejected",
