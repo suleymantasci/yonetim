@@ -555,6 +555,14 @@
 
   h1, h2, h3, h4 {
     font-family: var(--font-heading), ui-sans-serif, system-ui, sans-serif;
+  }
+
+  /*
+   * Negatif harf aralığı yalnız büyük başlıklarda. Plus Jakarta Sans'ın boşluk
+   * glifi dar; 14 px'lik bölüm başlıklarında (h3/h4) -0.015em kelimeleri
+   * birleştiriyordu — "Hedef ve tür" ekranda "Hedef vetür" okunuyordu.
+   */
+  h1, h2 {
     letter-spacing: -0.015em;
   }
 

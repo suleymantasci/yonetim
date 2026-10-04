@@ -64,7 +64,7 @@ export default async function MaintenancePage() {
         action={newRecordButton}
       />
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3">
         <Stat label={t("tracked")} value={String(totals.tracked)} />
         <Stat
           label={t("overdue")}

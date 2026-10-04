@@ -22,16 +22,16 @@ const VALUE_TONE: Record<NonNullable<StatProps["tone"]>, string> = {
 
 export function Stat({ label, value, hint, trend, icon, tone = "neutral" }: StatProps) {
   return (
-    <div className="rounded-xl border border-border bg-surface p-4 shadow-sm">
+    <div className="min-w-0 rounded-xl border border-border bg-surface p-3 shadow-sm sm:p-4">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-sm text-fg-muted">{label}</span>
+        <span className="text-xs text-fg-muted sm:text-sm">{label}</span>
         {icon ? (
           <span aria-hidden className="text-fg-subtle">
             {icon}
           </span>
         ) : null}
       </div>
-      <div className={cn("mt-2 text-2xl font-bold tabular-nums", VALUE_TONE[tone])}>{value}</div>
+      <div className={cn("mt-1.5 text-lg font-bold tabular-nums [overflow-wrap:anywhere] sm:mt-2 sm:text-2xl", VALUE_TONE[tone])}>{value}</div>
       {hint || trend ? (
         <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-fg-subtle">
           {trend ? (
@@ -97,7 +97,7 @@ export function KpiCard({
   const body = (
     <>
       <div className="flex items-start justify-between gap-2">
-        <span className="text-sm font-medium text-fg-muted">{label}</span>
+        <span className="text-xs font-medium text-fg-muted sm:text-sm">{label}</span>
         {icon ? (
           <span aria-hidden className="shrink-0 text-fg-subtle">
             {icon}
@@ -107,7 +107,7 @@ export function KpiCard({
 
       <div
         className={cn(
-          "mt-2 font-heading text-[1.75rem] font-extrabold leading-none tabular-nums",
+          "mt-2 font-heading text-xl font-extrabold leading-none tabular-nums [overflow-wrap:anywhere] sm:text-[1.75rem]",
           VALUE_TONE[tone],
         )}
       >
@@ -145,7 +145,7 @@ export function KpiCard({
     </>
   );
 
-  const shell = "block rounded-xl border border-border bg-surface p-4 shadow-sm transition-colors";
+  const shell = "block min-w-0 rounded-xl border border-border bg-surface p-3 shadow-sm transition-colors sm:p-4";
 
   if (href && Link) {
     return (

@@ -203,7 +203,7 @@ export function ResidentsTable({
             <Link
               href={`/panel/sakinler/${row.id}/duzenle`}
               aria-label={t("action.edit")}
-              className="inline-flex rounded p-1 text-fg-subtle hover:bg-hover hover:text-fg"
+              className="inline-flex rounded p-1.5 text-fg-subtle hover:bg-hover hover:text-fg"
             >
               <Pencil aria-hidden className="h-3.5 w-3.5" />
             </Link>

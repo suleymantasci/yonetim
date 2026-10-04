@@ -146,15 +146,19 @@ export function SelectCheckbox({
     if (ref.current) ref.current.indeterminate = Boolean(indeterminate) && !checked;
   }, [indeterminate, checked]);
 
+  // Görünen kutu 16 px kalıyor; dolgulu etiket tıklama alanını 28 px'e
+  // çıkarıyor (WCAG 2.2 — 2.5.8 hedef boyutu, en az 24×24).
   return (
-    <input
-      ref={ref}
-      type="checkbox"
-      checked={checked}
-      onChange={(event) => onChange(event.target.checked)}
-      aria-label={label}
-      className="h-4 w-4 rounded border-border-strong accent-primary"
-    />
+    <label className="-m-1.5 inline-flex cursor-pointer items-center justify-center p-1.5">
+      <input
+        ref={ref}
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => onChange(event.target.checked)}
+        aria-label={label}
+        className="h-4 w-4 cursor-pointer rounded border-border-strong accent-primary"
+      />
+    </label>
   );
 }
 

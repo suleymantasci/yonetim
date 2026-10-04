@@ -51,7 +51,7 @@ export default async function PortfolioPage() {
         description={t("description", { count: totals.tenantCount })}
       />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat label={t("tenantCount")} value={String(totals.tenantCount)} />
         <Stat label={t("unitCount")} value={String(totals.unitCount)} />
         <Stat

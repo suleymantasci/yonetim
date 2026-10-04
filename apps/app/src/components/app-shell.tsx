@@ -273,15 +273,22 @@ export async function AppShell({
             }}
           />
 
-          <ThemeToggle
-            initialPreference={themePreference}
-            labels={{
-              group: tCommon("theme.group"),
-              light: tCommon("theme.light"),
-              dark: tCommon("theme.dark"),
-              system: tCommon("theme.system"),
-            }}
-          />
+          {/*
+            Mobilde gizli: üç düğmelik seçici 390 px'te site adını "Örnek Ap…"
+            diye kesiyordu. Varsayılan "sistem" tercihi telefonun açık/koyu
+            temasını zaten izliyor; erişilebilirlik menüsü yerinde kalıyor.
+          */}
+          <div className="hidden sm:block">
+            <ThemeToggle
+              initialPreference={themePreference}
+              labels={{
+                group: tCommon("theme.group"),
+                light: tCommon("theme.light"),
+                dark: tCommon("theme.dark"),
+                system: tCommon("theme.system"),
+              }}
+            />
+          </div>
 
           <UserMenu
             userName={userName}

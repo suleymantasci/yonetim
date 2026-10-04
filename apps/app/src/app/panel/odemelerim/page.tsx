@@ -39,7 +39,7 @@ export default async function MyPaymentsPage() {
     <>
       <PageHeader title={t("title")} description={t("description")} />
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2">
         <Stat label={t("thisYear")} value={f.money(totals.thisYearMinor)} />
         <Stat label={t("allTime")} value={f.money(totals.allTimeMinor)} />
       </div>

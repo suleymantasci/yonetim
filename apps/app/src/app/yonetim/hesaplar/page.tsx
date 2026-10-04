@@ -72,7 +72,7 @@ export default async function PlatformAccountsPage({
         </Link>
       </header>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <Stat label={t("totalAccounts")} value={String(data.totals.accounts)} />
         <Stat label={t("totalSites")} value={String(data.totals.sites)} />
         <Stat label={t("totalUnits")} value={String(data.totals.units)} />

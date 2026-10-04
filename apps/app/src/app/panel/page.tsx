@@ -160,7 +160,7 @@ export default async function DashboardPage() {
        * karşılaştırması — `KpiCard` yönün iyi mi kötü mü olduğunu bilmiyor,
        * `positiveIsGood` ile söylüyoruz (tahsilatta artış iyi, borçta kötü).
        */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         <KpiCard
           label={t("totalReceivable")}
           value={f.money(summary.totalDebtMinor)}

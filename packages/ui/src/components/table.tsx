@@ -287,7 +287,8 @@ function LinkCell({
   return (
     <Link
       href={href}
-      className="rounded hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      // min-w/py: tek haneli daire numarası 6 px genişliğinde bir hedefti.
+      className="-my-1 inline-block min-w-6 rounded py-1 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
     >
       {children}
     </Link>

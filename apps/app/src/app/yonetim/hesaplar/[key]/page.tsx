@@ -98,7 +98,7 @@ export default async function PlatformAccountDetailPage({
         </Link>
       </header>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Stat label={t("col.sites")} value={String(account.siteCount)} />
         <Stat label={t("col.units")} value={String(account.unitCount)} />
         <Stat label={t("col.yearly")} value={f.money(account.yearlyPriceMinor)} />

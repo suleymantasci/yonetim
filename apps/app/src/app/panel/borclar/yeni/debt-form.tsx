@@ -94,7 +94,7 @@ export function DebtForm({
         title={t("sectionTarget")}
         description={t("sectionTargetHint")}
       >
-        <FormField name="unitId" label={tUnits("number")} required>
+        <FormField name="unitId" label={t("unit")} required>
           <Combobox
             name="unitId"
             options={units.map((unit) => ({
