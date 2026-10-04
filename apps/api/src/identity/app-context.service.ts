@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { and, eq, inArray, isNull } from "drizzle-orm";
 
 import type { AppContextResponse } from "@yonetim/contracts";
+import { isPlatformContext, PLATFORM_TENANT_ID, PLATFORM_TENANT_SLUG } from "@yonetim/core";
 import { memberships, tenants, users } from "@yonetim/db";
 
 import { DbService } from "../infra/db/db.service";
@@ -65,15 +66,34 @@ export class AppContextService {
       return { rows: tenantRows, person: personRows[0] ?? null };
     });
 
+    const userName =
+      [person?.firstName, person?.lastName].filter(Boolean).join(" ") ||
+      person?.email ||
+      "";
+
+    // Siteye üye olmayan platform kullanıcısı: kabuk "Platform" olarak
+    // çiziliyor, panel onu /yonetim'e yönlendiriyor (bkz. PLATFORM_TENANT_ID).
+    if (isPlatformContext(ctx)) {
+      return {
+        userId,
+        userName,
+        tenantId: PLATFORM_TENANT_ID,
+        tenantSlug: PLATFORM_TENANT_SLUG,
+        tenantName: "Platform",
+        tenantStatus: "platform",
+        roles: ctx.roles,
+        locale: ctx.locale,
+        impersonatedBy: ctx.impersonatedBy ?? null,
+        memberships: rows.map((row) => ({ id: row.id, slug: row.slug, name: row.name })),
+      };
+    }
+
     const active = rows.find((row) => row.id === ctx.tenantId);
     if (!active) throw new NotFoundException("tenant_not_found");
 
     return {
       userId,
-      userName:
-        [person?.firstName, person?.lastName].filter(Boolean).join(" ") ||
-        person?.email ||
-        "",
+      userName,
       tenantId: active.id,
       tenantSlug: active.slug,
       tenantName: active.name,

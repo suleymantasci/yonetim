@@ -191,6 +191,23 @@ export function isPlatformRole(role: Role): boolean {
   return role === "super_admin" || role === "support_agent";
 }
 
+/**
+ * Platform bağlamı — hiçbir siteye üye olmayan platform kullanıcısının kimliği.
+ *
+ * `RequestContext.tenantId` her yerde zorunlu ve RLS ona bakıyor. Platform
+ * ekibinin bir site üyeliği yok; ona sahte bir site yerine **nil UUID**
+ * veriliyor: hiçbir satırın `tenant_id`'si bu değer olmadığı için RLS'li her
+ * okuma boş, her yazma `WITH CHECK`'te reddediliyor (fail-closed). Platform
+ * uçları zaten `db.bypass` ile kendi kapısından geçiyor; site paneline girmek
+ * için hesaba geçiş (impersonation) kullanılıyor.
+ */
+export const PLATFORM_TENANT_ID = "00000000-0000-0000-0000-000000000000";
+export const PLATFORM_TENANT_SLUG = "platform";
+
+export function isPlatformContext(ctx: { tenantId: string }): boolean {
+  return ctx.tenantId === PLATFORM_TENANT_ID;
+}
+
 export function isResidentRole(role: Role): boolean {
   return role === "owner" || role === "tenant_resident";
 }

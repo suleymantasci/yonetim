@@ -5,7 +5,7 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 import type { Request } from "express";
 
 import { resolveSession, SESSION_COOKIE } from "@yonetim/auth";
-import type { Permission, Role } from "@yonetim/core";
+import { PLATFORM_TENANT_ID, PLATFORM_TENANT_SLUG, type Permission, type Role } from "@yonetim/core";
 import { apiKeys, memberships, tenants } from "@yonetim/db";
 
 import { env } from "../infra/config/env";
@@ -56,11 +56,12 @@ export class ContextResolver {
     const session = await resolveSession(token);
     if (!session) return null;
 
-    const resolved = await this.resolveTenantForUser(
-      session.user.id,
-      session.activeTenantId,
-      slug,
-    );
+    const resolved =
+      (await this.resolveTenantForUser(
+        session.user.id,
+        session.activeTenantId,
+        slug,
+      )) ?? platformFallback(session.user.platformRole, slug);
     if (!resolved) return null;
 
     const roles = [...resolved.roles];
@@ -431,4 +432,26 @@ export function readCookie(header: string | undefined, name: string): string | n
     }
   }
   return null;
+}
+
+/**
+ * Siteye üye olmayan platform kullanıcısı → platform bağlamı.
+ *
+ * Yalnız **slug istenmediğinde**: belirli bir siteyi isteyen çağrı
+ * (`x-tenant-slug`) o sitenin bağlamını alır ya da hiç almaz; slug'ı
+ * bulunamayan bir siteye platform bağlamıyla sessizce düşmek, çağıranın
+ * hangi sitede olduğunu yanlış sanmasına yol açardı. Rolleri boş: platform
+ * rolü çağıran tarafta ekleniyor.
+ */
+function platformFallback(
+  platformRole: Role | null | undefined,
+  slug: string | null,
+): { tenantId: string; tenantSlug: string; tenantStatus: string; roles: Role[] } | null {
+  if (!platformRole || slug) return null;
+  return {
+    tenantId: PLATFORM_TENANT_ID,
+    tenantSlug: PLATFORM_TENANT_SLUG,
+    tenantStatus: "platform",
+    roles: [],
+  };
 }

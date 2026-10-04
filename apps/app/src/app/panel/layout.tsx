@@ -1,5 +1,7 @@
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
+import { isPlatformContext } from "@yonetim/core";
 import {
   A11Y_COOKIE,
   parseA11y,
@@ -28,6 +30,9 @@ export default async function PanelLayout({
   modal: React.ReactNode;
 }) {
   const ctx = await requireContext();
+  // Siteye üye olmayan platform kullanıcısının site paneli yok; kendi ekranı
+  // platform yönetimi. Bir sitenin paneline hesaba geçişle giriliyor.
+  if (isPlatformContext(ctx)) redirect("/yonetim");
   const cookieStore = await cookies();
 
   // Menü hem izne hem kitleye bakar: sakinin `announcement:read` izni var ama
