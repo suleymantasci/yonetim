@@ -455,14 +455,14 @@ export async function voidPayment(
     },
     formData,
     async ({ input }) => {
-      const t = await getTranslations("app.payments");
+      const tPayments = await getTranslations("app.payments");
       const result = await apiPost(
         `/v1/panel/debts/payments/${input.paymentId}/void`,
         { reason: input.reason },
         paymentVoidResult,
         { reason: input.reason },
       );
-      return okState(t("voided", { count: result.reopenedDebtCount }));
+      return okState(tPayments("voided", { count: result.reopenedDebtCount }));
     },
   );
 }

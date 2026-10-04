@@ -43,7 +43,7 @@ global rakipler incelendi.
 | Anket / oylama | ✓ | ✓ | ✗ | Kapatma ✓; oy almamış taslak silinemiyor |
 | Toplantı | ✓ | ✓ | ✗ | İptal yok; çağrı tebliği, hazirun, vekâlet akışı eksik (bkz. §3) |
 | Toplantı kararı | ✓ | — | — | Doğru: karar sonradan değiştirilmez |
-| Karar defteri | ✓ | — | — | Doğru ama değiştirilemezlik yalnız uygulamada; DB trigger'ı yok |
+| Karar defteri | ✓ | — | — | Doğru: DB trigger'ı (0006) karar metnini ve silmeyi engelliyor; sayfa no/ek sonradan girilebiliyor |
 | Mesaj | ✓ | — | — | |
 | Talep / arıza | ✓ | ✓ + durum, atama, yorum | — | İptal durumu ile kapanıyor (doğru) |
 | Bakım takvimi | ✓ | ✓ | ✓ | Tamamlama ✓ |
@@ -70,7 +70,7 @@ global rakipler incelendi.
 | KMK md.29 | Kat malikleri kurulu yılda en az bir kez; **çağrı en az 15 gün önce**, gündem ile, imza karşılığı/taahhütlü/elektronik | ✗ çağrı tebliğ kaydı ve 15 gün kontrolü yok |
 | KMK md.30 | Toplantı ve karar yeter sayıları (sayı + arsa payı) | ✓ `@yonetim/dues` yeter sayı hesapları |
 | KMK md.31 | Vekâletle temsil (bir kişi birden fazla vekâlet sınırı) | ✗ vekâlet kaydı yok |
-| KMK md.32 | Kararlar **noter onaylı karar defterine** yazılıp imzalanır | ~ dijital karar defteri var; DB düzeyinde değiştirilemezlik + sayfa no ✓; tutanak dosyası depo yokluğunda eklenemiyor |
+| KMK md.32 | Kararlar **noter onaylı karar defterine** yazılıp imzalanır | ✓ dijital karar defteri, DB düzeyinde değiştirilemez (0006 trigger), sayfa no ✓; ~ tutanak dosyası depo yokluğunda eklenemiyor |
 | KMK md.35 | Yönetici: işletme projesi, karar ve **işletme defteri**, gelir-gider belgelerini saklama | ~ işletme defteri (kronolojik gelir-gider dökümü) raporu ayrıca olmalı |
 | KMK md.37 | İşletme projesi; tebliğden itibaren **7 gün** içinde itiraz edilmezse kesinleşir | ~ simülatör var; tebliğ tarihi ve kesinleşme takibi yok |
 | KMK md.41 | Denetçi en az 3 ayda bir denetler, rapor verir | ~ denetçi rolü var; dönemsel denetim raporu akışı yok |
@@ -131,7 +131,7 @@ global rakipler incelendi.
 1. Tahsilat iptali + ters kayıt (gerekçe zorunlu, makbuz "iptal" damgası, kütük)
 2. KVKK yönetimi: başvuru kaydı → 30 gün sayaç → yanıt; silme/anonimleştirme; ihlal kaydı (72 saat)
 3. Marka adının değiştirilmesi ("Yönetimcell" rakip markası)
-4. Karar defteri için DB düzeyinde değiştirilemezlik trigger'ı (denetim kütüğü gibi)
+4. ~~Karar defteri DB değiştirilemezliği~~ — zaten var (0006 trigger); 2026-10-05 testle doğrulandı
 
 5a. Yazılmamış zamanlanmış işler: önce `kvkk.retention`, `kvkk.request-sla`,
     `billing.trial-expiry`
