@@ -372,5 +372,11 @@
     "held": "Yapıldı",
     "cancelled": "İptal edildi",
     "postponed": "Ertelendi"
+  },
+  "campaignStatus": {
+    "draft": "Taslak",
+    "active": "Aktif",
+    "paused": "Duraklatıldı",
+    "expired": "Süresi doldu"
   }
 }

@@ -372,5 +372,11 @@
     "held": "Held",
     "cancelled": "Cancelled",
     "postponed": "Postponed"
+  },
+  "campaignStatus": {
+    "draft": "Draft",
+    "active": "Active",
+    "paused": "Paused",
+    "expired": "Expired"
   }
 }

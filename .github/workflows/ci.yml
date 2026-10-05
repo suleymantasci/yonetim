@@ -10,9 +10,12 @@ on:
     branches: [main]
   pull_request:
 
+# PR'da yeni push eskisini iptal eder; main'de etmez — sık push'ta her çalışma
+# iptal ediliyor ve hiçbiri deploy'a ulaşmıyordu. main koşuları sırayla biter
+# (deploy job'unun kendi `deploy-vekil` grubu çakışmayı zaten engelliyor).
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   NEXT_TELEMETRY_DISABLED: "1"

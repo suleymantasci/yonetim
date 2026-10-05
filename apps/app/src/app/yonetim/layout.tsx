@@ -46,6 +46,7 @@ export default async function PlatformLayout({ children }: { children: React.Rea
               { href: "/yonetim", label: t("nav.overview"), exact: true },
               { href: "/yonetim/hesaplar", label: t("nav.accounts") },
               { href: "/yonetim/yoneticiler", label: t("nav.managers") },
+              { href: "/yonetim/kampanyalar", label: t("nav.campaigns") },
             ]}
           />
 

@@ -2853,18 +2853,71 @@
       "addonPriceHint": "0 = bedelsiz tanım",
       "validUntil": "Son kullanma",
       "validUntilHint": "Boş = süresiz",
-      "targetUser": "Kullanıcı"
+      "targetUser": "Kullanıcı",
+      "plan": "Paket",
+      "period": "Ödeme dönemi",
+      "periodCount": "Dönem sayısı",
+      "periodCountHint": "Kaç dönem peşin ödendi (yıllık 1 = 12 ay).",
+      "startsAt": "Başlangıç",
+      "discount": "İndirim",
+      "promoCode": "Promosyon kodu",
+      "specialType": "İndirim türü",
+      "specialValue": "İndirim",
+      "specialNote": "Gerekçe",
+      "specialNoteHint": "En az 10 karakter; denetim kütüğüne ve faturaya yazılır.",
+      "assignNote": "Not",
+      "assignNoteHint": "Örn. \"Havale ile tahsil edildi, dekont no 123\".",
+      "markPaid": "Ödeme alındı",
+      "markPaidHint": "İşaretli değilse fatura 7 gün vadeli \"kesildi\" olarak kalır."
     },
     "daysOverdue": "{days} gün geçti",
     "endsToday": "Bugün bitiyor",
-    "noPlan": "Paket yok"
+    "noPlan": "Paket yok",
+    "assignTitle": "Paket ata",
+    "assignDescription": "Havale ya da elden tahsilattan sonra paketi tanımlayın. Önceki abonelik kapanır, site aktifleşir (askı kalkar) ve KDV ayrıştırılmış fatura kaydı oluşur.",
+    "assignSubmit": "Paketi ata",
+    "assignDone": "Paket atandı; fatura {invoice} oluşturuldu.",
+    "recommended": "önerilen",
+    "period": {
+      "yearly": "Yıllık",
+      "semiannual": "6 aylık",
+      "quarterly": "3 aylık",
+      "monthly": "Aylık"
+    },
+    "discount": {
+      "none": "İndirim yok",
+      "promo": "Promosyon kodu",
+      "special": "Siteye özel indirim"
+    },
+    "discountType": {
+      "percent": "Yüzde (%)",
+      "amount": "Tutar (TL)"
+    },
+    "quote": {
+      "list": "Liste fiyatı ({months} ay)",
+      "discount": "İndirim",
+      "total": "Toplam (KDV dahil)",
+      "vat": "İçindeki KDV",
+      "loading": "Fiyat hesaplanıyor…",
+      "unavailable": "Fiyat hesaplanamadı."
+    },
+    "promoError": {
+      "not_found": "Bu kod bulunamadı.",
+      "inactive": "Kod pasif durumda.",
+      "not_started": "Kodun geçerlilik tarihi henüz başlamadı.",
+      "expired": "Kodun süresi dolmuş.",
+      "exhausted": "Kodun kullanım limiti dolmuş.",
+      "other_tenant": "Bu kod başka bir siteye özel.",
+      "already_used": "Bu site kodu daha önce kullandı."
+    }
   },
   "platform": {
     "title": "Platform Yönetimi",
     "nav": {
       "overview": "Özet",
       "accounts": "Hesaplar",
-      "managers": "Yöneticiler"
+      "managers": "Yöneticiler",
+      "campaigns": "Kampanyalar"
     },
     "navLabel": "Platform menüsü"
   },
@@ -2902,5 +2955,73 @@
     "voidReason": "İptal gerekçesi",
     "voidReasonHint": "En az 10 karakter. Örn. \"Yanlış daireye girildi, doğru kayıt 12 numaralı dairede.\"",
     "voided": "Tahsilat iptal edildi; {count} borç yeniden açıldı."
+  },
+  "platformCampaigns": {
+    "title": "Kampanyalar ve kodlar",
+    "description": "Promosyon kodlarını tanımlayın, kullanımını izleyin; vitrindeki kampanyaları açıp kapatın. Kodlar paket atamada uygulanır.",
+    "newCode": "Yeni kod",
+    "newCodeHint": "Yüzde ya da tutar indirimi; tarih aralığı ve kullanım limitiyle. İsterseniz tek bir siteye özel yapın.",
+    "field": {
+      "code": "Kod",
+      "codeHint": "Harf, rakam, - ve _. Büyük harfe çevrilir.",
+      "discountType": "İndirim türü",
+      "discountValue": "İndirim",
+      "discountValueHint": "Yüzde için 1–100, tutar için TL.",
+      "usageLimit": "Kullanım limiti",
+      "usageLimitHint": "Boş bırakılırsa sınırsız.",
+      "validFrom": "Başlangıç",
+      "validUntil": "Bitiş (dahil)",
+      "restrictedTo": "Yalnız bu site",
+      "restrictedToHint": "Boşsa tüm siteler kullanabilir.",
+      "anySite": "Tüm siteler",
+      "searchSite": "Site ara",
+      "noSite": "Site bulunamadı",
+      "campaign": "Bağlı kampanya",
+      "noCampaign": "Kampanyasız"
+    },
+    "discountType": {
+      "percent": "Yüzde (%)",
+      "amount": "Tutar (TL)"
+    },
+    "stat": {
+      "codes": "Toplam kod",
+      "usable": "Kullanılabilir",
+      "redemptions": "Kullanım",
+      "given": "Verilen indirim"
+    },
+    "codesTitle": "Promosyon kodları",
+    "codesDescription": "Durum anlık: aktif, tarih aralığında ve limiti dolmamış kod \"kullanılabilir\".",
+    "noCodes": "Henüz kod yok",
+    "noCodesHint": "\"Yeni kod\" ile ilk kodu oluşturun.",
+    "col": {
+      "code": "Kod",
+      "discount": "İndirim",
+      "validity": "Geçerlilik",
+      "usage": "Kullanım",
+      "scope": "Kapsam",
+      "given": "Verilen",
+      "state": "Durum",
+      "action": "İşlem",
+      "campaign": "Kampanya",
+      "period": "Tarih aralığı"
+    },
+    "state": {
+      "usable": "Kullanılabilir",
+      "inactive": "Pasif",
+      "expired": "Süresi doldu",
+      "exhausted": "Limit doldu",
+      "scheduled": "Başlamadı"
+    },
+    "allSites": "Tüm siteler",
+    "deactivate": "Pasifleştir",
+    "activate": "Aktifleştir",
+    "pause": "Duraklat",
+    "campaignsTitle": "Kampanyalar",
+    "campaignsDescription": "Aktif kampanyalar fiyatlandırma sayfasında görünür.",
+    "onPricingPage": "vitrinde",
+    "codeCreated": "{code} kodu oluşturuldu.",
+    "codeActivated": "Kod aktifleştirildi.",
+    "codeDeactivated": "Kod pasifleştirildi.",
+    "campaignStatusChanged": "Kampanya durumu güncellendi."
   }
 }

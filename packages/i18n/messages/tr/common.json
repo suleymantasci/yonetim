@@ -145,7 +145,19 @@
       "erasure_subject_unknown": "Başvuran sitede kayıtlı bir kişi değil; silinecek kayıt yok.",
       "not_erasure_request": "Bu başvuru bir silme talebi değil.",
       "kvkk_request_already_open": "Aynı türde açık bir başvurunuz zaten var.",
-      "subject": "Başvuran kişi bu sitede bulunamadı."
+      "subject": "Başvuran kişi bu sitede bulunamadı.",
+      "promo_not_found": "Bu kod bulunamadı.",
+      "promo_inactive": "Kod pasif durumda.",
+      "promo_not_started": "Kodun geçerlilik tarihi henüz başlamadı.",
+      "promo_expired": "Kodun süresi dolmuş.",
+      "promo_exhausted": "Kodun kullanım limiti dolmuş.",
+      "promo_other_tenant": "Bu kod başka bir siteye özel.",
+      "promo_already_used": "Bu site kodu daha önce kullandı.",
+      "promo_code_taken": "Bu kod zaten tanımlı.",
+      "tenant_archived": "Site arşivde; önce geri açın.",
+      "tenant_cancelled": "Site iptal edilmiş.",
+      "trial_plan_not_assignable": "Deneme planı atanamaz.",
+      "start_out_of_range": "Başlangıç tarihi bugünden en fazla bir yıl uzakta olabilir."
     }
   },
   "errorPage": {

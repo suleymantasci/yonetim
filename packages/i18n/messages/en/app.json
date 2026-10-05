@@ -2853,18 +2853,71 @@
       "addonPriceHint": "0 = free grant",
       "validUntil": "Valid until",
       "validUntilHint": "Empty = no expiry",
-      "targetUser": "User"
+      "targetUser": "User",
+      "plan": "Package",
+      "period": "Billing period",
+      "periodCount": "Number of periods",
+      "periodCountHint": "How many periods were paid upfront (yearly 1 = 12 months).",
+      "startsAt": "Starts",
+      "discount": "Discount",
+      "promoCode": "Promo code",
+      "specialType": "Discount type",
+      "specialValue": "Discount",
+      "specialNote": "Reason",
+      "specialNoteHint": "At least 10 characters; written to the audit log and invoice.",
+      "assignNote": "Note",
+      "assignNoteHint": "E.g. \"Paid by bank transfer, receipt no 123\".",
+      "markPaid": "Payment received",
+      "markPaidHint": "If unchecked the invoice stays \"issued\" with a 7-day due date."
     },
     "daysOverdue": "{days} days overdue",
     "endsToday": "Ends today",
-    "noPlan": "No plan"
+    "noPlan": "No plan",
+    "assignTitle": "Assign package",
+    "assignDescription": "Define the package after a bank transfer or cash collection. The previous subscription closes, the site is activated (suspension lifted) and an invoice with VAT is recorded.",
+    "assignSubmit": "Assign package",
+    "assignDone": "Package assigned; invoice {invoice} created.",
+    "recommended": "recommended",
+    "period": {
+      "yearly": "Yearly",
+      "semiannual": "6 months",
+      "quarterly": "3 months",
+      "monthly": "Monthly"
+    },
+    "discount": {
+      "none": "No discount",
+      "promo": "Promo code",
+      "special": "Site-specific discount"
+    },
+    "discountType": {
+      "percent": "Percent (%)",
+      "amount": "Amount (TRY)"
+    },
+    "quote": {
+      "list": "List price ({months} months)",
+      "discount": "Discount",
+      "total": "Total (incl. VAT)",
+      "vat": "VAT included",
+      "loading": "Calculating…",
+      "unavailable": "Could not calculate price."
+    },
+    "promoError": {
+      "not_found": "Code not found.",
+      "inactive": "Code is inactive.",
+      "not_started": "Code is not valid yet.",
+      "expired": "Code has expired.",
+      "exhausted": "Code usage limit reached.",
+      "other_tenant": "This code is restricted to another site.",
+      "already_used": "This site has already used the code."
+    }
   },
   "platform": {
     "title": "Platform Management",
     "nav": {
       "overview": "Overview",
       "accounts": "Accounts",
-      "managers": "Managers"
+      "managers": "Managers",
+      "campaigns": "Campaigns"
     },
     "navLabel": "Platform menu"
   },
@@ -2902,5 +2955,73 @@
     "voidReason": "Reason",
     "voidReasonHint": "At least 10 characters, e.g. \"Entered for the wrong unit; correct entry is on unit 12.\"",
     "voided": "Payment voided; {count} debts reopened."
+  },
+  "platformCampaigns": {
+    "title": "Campaigns and codes",
+    "description": "Define promo codes, track their use; switch storefront campaigns on and off. Codes are applied when assigning a package.",
+    "newCode": "New code",
+    "newCodeHint": "Percent or amount discount with a date range and usage limit. Optionally restrict it to a single site.",
+    "field": {
+      "code": "Code",
+      "codeHint": "Letters, digits, - and _. Converted to upper case.",
+      "discountType": "Discount type",
+      "discountValue": "Discount",
+      "discountValueHint": "1–100 for percent, TRY for amount.",
+      "usageLimit": "Usage limit",
+      "usageLimitHint": "Leave empty for unlimited.",
+      "validFrom": "Starts",
+      "validUntil": "Ends (inclusive)",
+      "restrictedTo": "Only this site",
+      "restrictedToHint": "Empty means all sites can use it.",
+      "anySite": "All sites",
+      "searchSite": "Search site",
+      "noSite": "No site found",
+      "campaign": "Linked campaign",
+      "noCampaign": "No campaign"
+    },
+    "discountType": {
+      "percent": "Percent (%)",
+      "amount": "Amount (TRY)"
+    },
+    "stat": {
+      "codes": "Codes",
+      "usable": "Usable",
+      "redemptions": "Redemptions",
+      "given": "Discount given"
+    },
+    "codesTitle": "Promo codes",
+    "codesDescription": "Live status: an active code within its date range and below its limit is \"usable\".",
+    "noCodes": "No codes yet",
+    "noCodesHint": "Create the first one with \"New code\".",
+    "col": {
+      "code": "Code",
+      "discount": "Discount",
+      "validity": "Validity",
+      "usage": "Usage",
+      "scope": "Scope",
+      "given": "Given",
+      "state": "Status",
+      "action": "Action",
+      "campaign": "Campaign",
+      "period": "Date range"
+    },
+    "state": {
+      "usable": "Usable",
+      "inactive": "Inactive",
+      "expired": "Expired",
+      "exhausted": "Limit reached",
+      "scheduled": "Not started"
+    },
+    "allSites": "All sites",
+    "deactivate": "Deactivate",
+    "activate": "Activate",
+    "pause": "Pause",
+    "campaignsTitle": "Campaigns",
+    "campaignsDescription": "Active campaigns appear on the pricing page.",
+    "onPricingPage": "on storefront",
+    "codeCreated": "Code {code} created.",
+    "codeActivated": "Code activated.",
+    "codeDeactivated": "Code deactivated.",
+    "campaignStatusChanged": "Campaign status updated."
   }
 }

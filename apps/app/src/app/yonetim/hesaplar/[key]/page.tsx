@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
-import { platformAccountDetail } from "@yonetim/contracts";
+import { platformAccountDetail, platformPlanList } from "@yonetim/contracts";
 import {
   Alert, Badge, Card, CardBody, CardHeader, Stat, tableClasses as tc,
 } from "@yonetim/ui";
@@ -16,6 +16,7 @@ import {
   ImpersonateForm,
   TenantActionForm,
 } from "./action-forms";
+import { AssignPackageForm } from "./assign-form";
 
 /**
  * Hesap detayı — SPEC Bölüm 18.1 #1–#4 ve #2'nin impersonation kısmı.
@@ -61,6 +62,11 @@ export default async function PlatformAccountDetailPage({
   const canImpersonate = can(ctx, "admin:impersonate");
   const canPurge = can(ctx, "tenant:delete");
   const canBill = can(ctx, "admin:billing");
+  const planList = canBill ? await apiGet("/v1/panel/platform/plans", platformPlanList) : { rows: [] };
+  // Paket atanabilecek siteler: arşiv/iptal dışındakiler.
+  const assignableSites = sites
+    .filter((site) => site.status !== "archived" && site.status !== "cancelled")
+    .map((site) => ({ id: site.id, name: site.name, unitCount: site.unitCount }));
 
   /*
    * Aksiyon formlarının site listesi: arşivdekiler de dâhil. Geri açma ve
@@ -341,6 +347,25 @@ export default async function PlatformAccountDetailPage({
           )}
         </CardBody>
       </Card>
+
+      {/* ------------------------------------------------------ paket atama */}
+      {canBill && assignableSites.length > 0 && planList.rows.length > 0 ? (
+        <Card>
+          <CardHeader title={t("assignTitle")} description={t("assignDescription")} />
+          <CardBody>
+            <AssignPackageForm
+              sites={assignableSites}
+              plans={planList.rows.map((plan) => ({
+                id: plan.id,
+                name: plan.name,
+                yearlyPriceMinor: plan.yearlyPriceMinor,
+                minUnits: plan.minUnits,
+                maxUnits: plan.maxUnits,
+              }))}
+            />
+          </CardBody>
+        </Card>
+      ) : null}
 
       {/* --------------------------------------------------------- aksiyonlar */}
       <div className="grid gap-4 lg:grid-cols-2">

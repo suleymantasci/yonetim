@@ -145,7 +145,19 @@
       "erasure_subject_unknown": "The requester is not a registered person on this site; there is nothing to erase.",
       "not_erasure_request": "This is not an erasure request.",
       "kvkk_request_already_open": "You already have an open request of the same type.",
-      "subject": "The requester was not found on this site."
+      "subject": "The requester was not found on this site.",
+      "promo_not_found": "Code not found.",
+      "promo_inactive": "Code is inactive.",
+      "promo_not_started": "Code is not valid yet.",
+      "promo_expired": "Code has expired.",
+      "promo_exhausted": "Code usage limit reached.",
+      "promo_other_tenant": "This code is restricted to another site.",
+      "promo_already_used": "This site has already used the code.",
+      "promo_code_taken": "This code already exists.",
+      "tenant_archived": "The site is archived; restore it first.",
+      "tenant_cancelled": "The site is cancelled.",
+      "trial_plan_not_assignable": "The trial plan cannot be assigned.",
+      "start_out_of_range": "The start date must be within one year of today."
     }
   },
   "errorPage": {

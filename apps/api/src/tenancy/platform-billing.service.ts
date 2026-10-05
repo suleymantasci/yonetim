@@ -107,7 +107,6 @@ export class PlatformBillingService {
   }
 
   async assign(dto: SubscriptionAssignRequest): Promise<SubscriptionAssignResult> {
-    const ctx = this.db.ctx();
     const result = await this.db.bypass("platform:assign", async (tx) => {
       const [tenant] = await tx
         .select({ id: tenants.id, status: tenants.status, unitCount: tenants.unitCount, deletedAt: tenants.deletedAt })

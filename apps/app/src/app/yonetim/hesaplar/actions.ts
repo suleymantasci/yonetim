@@ -7,12 +7,19 @@ import { z } from "zod";
 import {
   impersonateResult,
   platformActionResult,
+  subscriptionAssignResult,
+  subscriptionQuote,
   tenantLifecycleResult,
+  type SubscriptionQuote,
 } from "@yonetim/contracts";
+import { AppError } from "@yonetim/core";
 
 import { apiPost } from "@/lib/api/server";
+import { requirePermission } from "@/lib/context";
 import { beginImpersonation } from "@/lib/impersonation-cookie";
 import {
+  checkboxField,
+  dateField,
   intField,
   kurusField,
   okState,
@@ -231,3 +238,91 @@ export async function startImpersonation(
   if (state.status === "ok") redirect("/panel");
   return state;
 }
+
+/* ------------------------------------------------------------------ *
+ * Paket atama (manuel) — önizleme + kayıt
+ * ------------------------------------------------------------------ */
+
+const periodEnum = z.enum(["yearly", "semiannual", "quarterly", "monthly"]);
+
+export interface QuoteInput {
+  tenantId: string;
+  planId: string;
+  period: z.infer<typeof periodEnum>;
+  periodCount: number;
+  discount:
+    | { kind: "none" }
+    | { kind: "promo"; code: string }
+    | { kind: "special"; type: "percent" | "amount"; value: number; note: string };
+}
+
+/**
+ * Önizleme — istemciden doğrudan çağrılıyor (alan değiştikçe). Kayıt yazmıyor;
+ * hata durumunda form bozulmasın diye `null` dönüyor.
+ */
+export async function quoteSubscription(input: QuoteInput): Promise<SubscriptionQuote | null> {
+  await requirePermission("admin:billing");
+  try {
+    return await apiPost("/v1/panel/platform/subscriptions/quote", input, subscriptionQuote);
+  } catch (error) {
+    if (error instanceof AppError) return null;
+    throw error;
+  }
+}
+
+const assignSchema = z
+  .object({
+    tenantId: uuidField,
+    planId: uuidField,
+    period: periodEnum,
+    periodCount: intField({ min: 1, max: 36 }),
+    discountKind: z.enum(["none", "promo", "special"]),
+    promoCode: z.string().trim().optional(),
+    specialType: z.enum(["percent", "amount"]).optional(),
+    specialValue: z.preprocess((v) => (v === "" || v === undefined ? undefined : String(v).replace(",", ".")), z.coerce.number().positive().optional()),
+    specialNote: z.string().trim().optional(),
+    startsAt: dateField,
+    markPaid: checkboxField,
+    note: z.string().trim().max(500).optional(),
+  })
+  .superRefine((v, ctx) => {
+    if (v.discountKind === "promo" && !(v.promoCode && v.promoCode.length >= 3))
+      ctx.addIssue({ code: "custom", path: ["promoCode"], message: "required" });
+    if (v.discountKind === "special") {
+      if (!v.specialValue) ctx.addIssue({ code: "custom", path: ["specialValue"], message: "required" });
+      if (!v.specialNote || v.specialNote.length < 10)
+        ctx.addIssue({ code: "custom", path: ["specialNote"], message: "min10" });
+    }
+  });
+
+export async function assignSubscription(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  return runAction(
+    { permission: "admin:billing", schema: assignSchema, meta: { action: "subscription_assigned", resource: "subscription" } },
+    formData,
+    async ({ input }) => {
+      const t = await getTranslations("app.platformAccounts");
+      const discount =
+        input.discountKind === "promo"
+          ? { kind: "promo" as const, code: input.promoCode!.toUpperCase() }
+          : input.discountKind === "special"
+            ? { kind: "special" as const, type: input.specialType ?? "percent", value: input.specialValue!, note: input.specialNote! }
+            : { kind: "none" as const };
+      const result = await apiPost(
+        "/v1/panel/platform/subscriptions/assign",
+        {
+          tenantId: input.tenantId,
+          planId: input.planId,
+          period: input.period,
+          periodCount: input.periodCount,
+          discount,
+          startsAt: input.startsAt,
+          markPaid: input.markPaid,
+          note: input.note || undefined,
+        },
+        subscriptionAssignResult,
+      );
+      return okState(t("assignDone", { invoice: result.invoiceNo }));
+    },
+  );
+}
+
