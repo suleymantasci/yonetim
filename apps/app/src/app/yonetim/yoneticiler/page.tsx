@@ -37,7 +37,7 @@ export default async function PlatformManagersPage({
   const f = await formatters();
 
   const data = await apiGet(
-    `/v1/panel/platform/managers${toQuery({ q: params.q, limit: "200" })}`,
+    `/v1/panel/platform/managers?${toQuery({ q: params.q, limit: "200" })}`,
     platformManagerList,
   );
 
