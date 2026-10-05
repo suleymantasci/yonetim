@@ -157,7 +157,10 @@
       "tenant_archived": "Site arşivde; önce geri açın.",
       "tenant_cancelled": "Site iptal edilmiş.",
       "trial_plan_not_assignable": "Deneme planı atanamaz.",
-      "start_out_of_range": "Başlangıç tarihi bugünden en fazla bir yıl uzakta olabilir."
+      "start_out_of_range": "Başlangıç tarihi bugünden en fazla bir yıl uzakta olabilir.",
+      "announcement_already_published": "Yayımlanmış duyuru düzenlenemez veya silinemez; yayından kaldırabilirsiniz.",
+      "announcement_not_published": "Bu duyuru henüz yayımlanmadı.",
+      "announcement_already_withdrawn": "Duyuru zaten yayından kaldırılmış."
     }
   },
   "errorPage": {

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseUUIDPipe,
@@ -11,12 +12,15 @@ import { ApiOperation, ApiTags } from "@nestjs/swagger";
 
 import {
   announcementCreate,
+  announcementUpdate,
+  announcementWithdraw,
   meetingDecisionSave,
   meetingSave,
   messageSend,
   pollClose,
   pollSave,
   type AnnouncementCreate,
+  type AnnouncementUpdate,
   type MeetingDecisionSave,
   type MeetingSave,
   type MessageSend,
@@ -56,6 +60,33 @@ export class CommunicationController {
     @Body(new ZodBodyPipe(announcementCreate)) dto: AnnouncementCreate,
   ) {
     return this.service.createAnnouncement(dto);
+  }
+
+  @Patch("announcements/:id")
+  @RequirePermission("announcement:write")
+  @ApiOperation({ summary: "Taslak duyuruyu düzenle / yayınla", description: "Yayımlanmış duyuru düzenlenemez (409)." })
+  updateAnnouncement(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Body(new ZodBodyPipe(announcementUpdate)) dto: AnnouncementUpdate,
+  ) {
+    return this.service.updateAnnouncement(id, dto);
+  }
+
+  @Delete("announcements/:id")
+  @RequirePermission("announcement:write")
+  @ApiOperation({ summary: "Taslak duyuruyu sil", description: "Yayımlanmış duyuru silinmez; yayından kaldırılır." })
+  deleteAnnouncement(@Param("id", new ParseUUIDPipe()) id: string) {
+    return this.service.deleteDraft(id);
+  }
+
+  @Post("announcements/:id/withdraw")
+  @RequirePermission("announcement:write")
+  @ApiOperation({ summary: "Yayımlanmış duyuruyu yayından kaldır (gerekçeli)" })
+  withdrawAnnouncement(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Body(new ZodBodyPipe(announcementWithdraw)) dto: { reason: string },
+  ) {
+    return this.service.withdraw(id, dto.reason);
   }
 
   @Get("polls")

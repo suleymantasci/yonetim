@@ -1221,7 +1221,17 @@
     "channelRequired": "En az bir kanal seçin.",
     "sending": "Gönderiliyor…",
     "draft": "Taslak",
-    "urgentForbidden": "Acil duyuru gönderme yetkiniz yok. Duyuruyu acil işaretlemeden yayınlayabilirsiniz."
+    "urgentForbidden": "Acil duyuru gönderme yetkiniz yok. Duyuruyu acil işaretlemeden yayınlayabilirsiniz.",
+    "editDraft": "Düzenle",
+    "deleteDraft": "Sil",
+    "draftDeleted": "Taslak silindi.",
+    "withdraw": "Yayından kaldır",
+    "withdrawTitle": "Duyuruyu yayından kaldır",
+    "withdrawHint": "Duyuru sakin portalından ve WhatsApp botundan kalkar. Gönderilmiş bildirimler geri alınamaz; kayıt ve gerekçe denetim kütüğünde kalır.",
+    "withdrawReason": "Gerekçe",
+    "withdrawn": "Duyuru yayından kaldırıldı.",
+    "withdrawnOn": "yayından kaldırıldı: {date}",
+    "editingDraft": "Taslak düzenleniyor"
   },
   "polls": {
     "title": "Anketler & Oylama",

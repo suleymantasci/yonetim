@@ -157,7 +157,10 @@
       "tenant_archived": "The site is archived; restore it first.",
       "tenant_cancelled": "The site is cancelled.",
       "trial_plan_not_assignable": "The trial plan cannot be assigned.",
-      "start_out_of_range": "The start date must be within one year of today."
+      "start_out_of_range": "The start date must be within one year of today.",
+      "announcement_already_published": "A published announcement cannot be edited or deleted; you can withdraw it.",
+      "announcement_not_published": "This announcement is not published yet.",
+      "announcement_already_withdrawn": "Announcement is already withdrawn."
     }
   },
   "errorPage": {

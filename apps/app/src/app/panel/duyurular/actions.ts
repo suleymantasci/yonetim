@@ -4,10 +4,12 @@ import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
 import { announcementCreateResult } from "@yonetim/contracts";
+import { AppError } from "@yonetim/core";
 import { filterContent, type FindingSeverity } from "@yonetim/kvkk";
 
-import { apiPost } from "@/lib/api/server";
+import { apiDelete, apiPatch, apiPost } from "@/lib/api/server";
 import { can, requirePermission } from "@/lib/context";
+import { okState, requiredText, runAction, uuidField, type ActionState } from "@/lib/form";
 
 /**
  * Duyuru oluşturma — SPEC Bölüm 6.4 (KVKK filtresi zorunlu).
@@ -91,18 +93,26 @@ export async function createAnnouncement(
     return { ok: false, message: t("urgentForbidden") };
   }
 
-  const result = await apiPost(
-    "/v1/panel/communication/announcements",
-    {
-      title: data.title,
-      body: data.body,
-      audience: data.audience,
-      channels: data.channels,
-      isUrgent: data.isUrgent,
-      publish: data.publish,
-    },
-    announcementCreateResult,
-  );
+  const payload = {
+    title: data.title,
+    body: data.body,
+    audience: data.audience,
+    channels: data.channels,
+    isUrgent: data.isUrgent,
+    publish: data.publish,
+  };
+  // `id` varsa taslak düzenleniyor (bkz. AnnouncementComposer `draft`).
+  const draftId = formData.get("id");
+  let result;
+  try {
+    result =
+      typeof draftId === "string" && /^[0-9a-f-]{36}$/i.test(draftId)
+        ? await apiPatch(`/v1/panel/communication/announcements/${draftId}`, payload, announcementCreateResult)
+        : await apiPost("/v1/panel/communication/announcements", payload, announcementCreateResult);
+  } catch (error) {
+    if (error instanceof AppError) return { ok: false, message: error.message };
+    throw error;
+  }
 
   const kvkk = {
     blocked: result.kvkk.blocked,
@@ -146,3 +156,41 @@ export async function checkAnnouncementKvkk(text: string): Promise<{
     redacted: result.redacted,
   };
 }
+
+/* ------------------------------------------------------------------ *
+ * Taslak sil / yayından kaldır
+ * ------------------------------------------------------------------ */
+
+const idSchema = z.object({ id: uuidField });
+
+export async function deleteAnnouncementDraft(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  return runAction(
+    { permission: "announcement:write", schema: idSchema, meta: { action: "announcement_draft_deleted", resource: "announcement" } },
+    formData,
+    async ({ input }) => {
+      const tAnn = await getTranslations("app.announcements");
+      await apiDelete(`/v1/panel/communication/announcements/${input.id}`);
+      return okState(tAnn("draftDeleted"));
+    },
+  );
+}
+
+const withdrawSchema = z.object({ id: uuidField, reason: requiredText(10, 500) });
+
+export async function withdrawAnnouncement(_prev: ActionState, formData: FormData): Promise<ActionState> {
+  return runAction(
+    { permission: "announcement:write", schema: withdrawSchema, meta: { action: "announcement_withdrawn", resource: "announcement" } },
+    formData,
+    async ({ input }) => {
+      const tAnn = await getTranslations("app.announcements");
+      await apiPost(
+        `/v1/panel/communication/announcements/${input.id}/withdraw`,
+        { reason: input.reason },
+        z.object({ id: z.string() }),
+        { reason: input.reason },
+      );
+      return okState(tAnn("withdrawn"));
+    },
+  );
+}
+

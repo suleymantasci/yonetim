@@ -9,6 +9,8 @@ import { apiGet } from "@/lib/api/server";
 import { can, requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
 
+import { AnnouncementRowActions } from "./row-actions";
+
 export const dynamic = "force-dynamic";
 
 /**
@@ -20,7 +22,12 @@ export const dynamic = "force-dynamic";
  * gizleniyor — öncesinde herkese render ediliyordu ve sakin, gönderemeyeceği
  * bir formu görüyordu.
  */
-export default async function AnnouncementsPage() {
+export default async function AnnouncementsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ duzenle?: string }>;
+}) {
+  const { duzenle } = await searchParams;
   const ctx = await requirePermission("announcement:read");
   const canCompose = can(ctx, "announcement:write");
   const t = await getTranslations("app.announcements");
@@ -32,6 +39,9 @@ export default async function AnnouncementsPage() {
     "/v1/panel/communication/announcements",
     announcementListResponse,
   );
+  // `?duzenle=<id>`: yalnız taslak düzenlenebilir; yayımlanmışsa yok sayılır.
+  const editing = canCompose ? rows.find((r) => r.id === duzenle && !r.publishedAt) : undefined;
+  const now = Date.now();
 
   return (
     <>
@@ -46,7 +56,21 @@ export default async function AnnouncementsPage() {
           kutuyu göstermiyor.
         */}
         {canCompose ? (
-          <AnnouncementComposer canSendUrgent={can(ctx, "announcement:send_urgent")} />
+          <AnnouncementComposer
+            canSendUrgent={can(ctx, "announcement:send_urgent")}
+            draft={
+              editing
+                ? {
+                    id: editing.id,
+                    title: editing.title,
+                    body: editing.body,
+                    audience: editing.audience,
+                    channels: editing.channels,
+                    isUrgent: editing.isUrgent,
+                  }
+                : undefined
+            }
+          />
         ) : null}
 
         <Card>
@@ -81,7 +105,17 @@ export default async function AnnouncementsPage() {
                   <div className="mt-2 text-xs text-fg-subtle">
                     {a.publishedAt ? f.dateTime(a.publishedAt) : t("draft")} ·{" "}
                     {a.channels.map((c) => tEnum(`channel.${c}`)).join(", ")}
+                    {a.expiresAt && a.expiresAt.getTime() <= now ? (
+                      <> · {t("withdrawnOn", { date: f.dateTime(a.expiresAt) })}</>
+                    ) : null}
                   </div>
+                  {canCompose ? (
+                    <AnnouncementRowActions
+                      id={a.id}
+                      published={Boolean(a.publishedAt)}
+                      withdrawn={Boolean(a.expiresAt && a.expiresAt.getTime() <= now)}
+                    />
+                  ) : null}
                 </article>
               ))
             )}

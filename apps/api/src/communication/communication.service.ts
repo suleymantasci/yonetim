@@ -1,14 +1,17 @@
 import {
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
+import { and, eq, isNull } from "drizzle-orm";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 
 import type {
   AnnouncementCreate,
   AnnouncementCreateResult,
   AnnouncementListResponse,
+  AnnouncementUpdate,
   MeetingListResponse,
   MessageListResponse,
   MessageThreadDetail,
@@ -27,6 +30,7 @@ import { AuditService } from "../governance/audit/audit.service";
 import { grants } from "../identity/permission";
 import { DbService } from "../infra/db/db.service";
 import { CommunicationRepository } from "./communication.repository";
+import { announcements } from "@yonetim/db";
 
 /** `communication` iş akışı — MIMARI-PLAN §8.5, §9a. */
 @Injectable()
@@ -135,6 +139,113 @@ export class CommunicationService {
     }
 
     return { id, published: dto.publish, kvkk, channels };
+  }
+
+  /**
+   * Taslağı düzenle (ve isterse yayınla). Yayımlanmış duyuru 409: gönderilen
+   * metinle kayıttaki metin ayrışmasın. Acil yetkisi ve KVKK filtresi
+   * oluşturmadaki kuralların aynısı — düzenleme bir kaçış yolu olmasın.
+   */
+  async updateAnnouncement(id: string, dto: AnnouncementUpdate): Promise<AnnouncementCreateResult> {
+    if (dto.isUrgent && !grants(this.db.maybeCtx(), "announcement:send_urgent")) {
+      throw new ForbiddenException("forbidden:announcement:send_urgent");
+    }
+    const channels = dto.isUrgent
+      ? [...new Set([...dto.channels, "whatsapp", "sms", "email", "in_app"])]
+      : dto.channels;
+    const filtered = filterContent(`${dto.title}\n${dto.body}`);
+    const kvkk = {
+      blocked: filtered.blocked,
+      score: filtered.score,
+      findings: filtered.findings.map((f) => ({ severity: f.severity, code: f.code, match: f.match })),
+      requiresIndividual: requiresIndividualDelivery(filtered),
+    };
+
+    await this.db.tx(async (tx) => {
+      const [row] = await tx
+        .select({ publishedAt: announcements.publishedAt })
+        .from(announcements)
+        .where(and(eq(announcements.id, id), isNull(announcements.deletedAt)))
+        .for("update");
+      if (!row) throw new NotFoundException("not_found");
+      if (row.publishedAt) throw new ConflictException("conflict:announcement_already_published");
+      if (filtered.blocked) return;
+      await tx
+        .update(announcements)
+        .set({
+          title: dto.title,
+          body: dto.body,
+          audience: dto.audience,
+          channels,
+          isUrgent: dto.isUrgent,
+          publishedAt: dto.publish ? new Date() : null,
+          kvkkFlagged: filtered.findings.length > 0,
+          kvkkFindings: kvkk.findings,
+        })
+        .where(eq(announcements.id, id));
+    });
+
+    if (filtered.blocked) {
+      await this.audit.record({
+        action: "announcement_blocked_kvkk",
+        resource: "announcement",
+        resourceId: id,
+        reason: filtered.findings.map((f) => f.code).join(","),
+      });
+      return { id: null, published: false, kvkk, channels };
+    }
+
+    await this.audit.record({
+      action: dto.publish ? "announcement_published" : "announcement_edited",
+      resource: "announcement",
+      resourceId: id,
+    });
+    if (dto.publish) {
+      this.events.emit("announcement.published", {
+        event: "announcement.published",
+        resourceId: id,
+        params: { title: dto.title },
+      });
+    }
+    return { id, published: dto.publish, kvkk, channels };
+  }
+
+  /** Taslağı sil (yumuşak). Yayımlanmış duyuru silinmez — yayından kaldırılır. */
+  async deleteDraft(id: string): Promise<{ id: string }> {
+    await this.db.tx(async (tx) => {
+      const [row] = await tx
+        .select({ publishedAt: announcements.publishedAt })
+        .from(announcements)
+        .where(and(eq(announcements.id, id), isNull(announcements.deletedAt)))
+        .for("update");
+      if (!row) throw new NotFoundException("not_found");
+      if (row.publishedAt) throw new ConflictException("conflict:announcement_already_published");
+      await tx.update(announcements).set({ deletedAt: new Date() }).where(eq(announcements.id, id));
+    });
+    await this.audit.record({ action: "announcement_draft_deleted", resource: "announcement", resourceId: id });
+    return { id };
+  }
+
+  /**
+   * Yayından kaldır — bitiş zamanı şimdi. Kayıt ve gönderim geçmişi kalır
+   * (kim neyi ne zaman duyurdu sorusunun cevabı silinmemeli); sakin portalı
+   * ve WhatsApp botu bitişi geçmiş duyuruyu göstermiyor.
+   */
+  async withdraw(id: string, reason: string): Promise<{ id: string }> {
+    await this.db.tx(async (tx) => {
+      const [row] = await tx
+        .select({ publishedAt: announcements.publishedAt, expiresAt: announcements.expiresAt })
+        .from(announcements)
+        .where(and(eq(announcements.id, id), isNull(announcements.deletedAt)))
+        .for("update");
+      if (!row) throw new NotFoundException("not_found");
+      if (!row.publishedAt) throw new ConflictException("conflict:announcement_not_published");
+      if (row.expiresAt && row.expiresAt.getTime() <= Date.now())
+        throw new ConflictException("conflict:announcement_already_withdrawn");
+      await tx.update(announcements).set({ expiresAt: new Date() }).where(eq(announcements.id, id));
+    });
+    await this.audit.record({ action: "announcement_withdrawn", resource: "announcement", resourceId: id, reason });
+    return { id };
   }
 
   async announcements(): Promise<AnnouncementListResponse> {

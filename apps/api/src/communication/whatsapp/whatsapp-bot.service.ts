@@ -290,6 +290,8 @@ export class WhatsappBotService {
           and(
             isNull(announcements.deletedAt),
             sql`${announcements.publishedAt} IS NOT NULL`,
+            // Yayından kaldırılan (bitişi geçmiş) duyuru botta da görünmesin.
+            sql`(${announcements.expiresAt} IS NULL OR ${announcements.expiresAt} > now())`,
           ),
         )
         .orderBy(desc(announcements.publishedAt))

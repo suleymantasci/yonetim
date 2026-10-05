@@ -1221,7 +1221,17 @@
     "channelRequired": "Select at least one channel.",
     "sending": "Sending…",
     "draft": "Draft",
-    "urgentForbidden": "You do not have permission to send urgent announcements. You can publish it without the urgent flag."
+    "urgentForbidden": "You do not have permission to send urgent announcements. You can publish it without the urgent flag.",
+    "editDraft": "Edit",
+    "deleteDraft": "Delete",
+    "draftDeleted": "Draft deleted.",
+    "withdraw": "Withdraw",
+    "withdrawTitle": "Withdraw announcement",
+    "withdrawHint": "The announcement is removed from the resident portal and the WhatsApp bot. Notifications already sent cannot be recalled; the record and reason stay in the audit log.",
+    "withdrawReason": "Reason",
+    "withdrawn": "Announcement withdrawn.",
+    "withdrawnOn": "withdrawn: {date}",
+    "editingDraft": "Editing draft"
   },
   "polls": {
     "title": "Polls & voting",

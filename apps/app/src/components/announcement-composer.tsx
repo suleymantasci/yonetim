@@ -17,11 +17,23 @@ const AUDIENCES = ["all", "owners", "tenants", "new_residents"] as const;
 const CHANNELS = ["whatsapp", "sms", "email", "in_app"] as const;
 
 /** Duyuru oluşturucu — canlı KVKK kontrolü (SPEC Bölüm 6.4). */
+export interface AnnouncementDraft {
+  id: string;
+  title: string;
+  body: string;
+  audience: string;
+  channels: string[];
+  isUrgent: boolean;
+}
+
 export function AnnouncementComposer({
   /** `announcement:send_urgent` — acil kutusu tüm kanalları açtığı için ayrı. */
   canSendUrgent,
+  /** Verilirse taslak düzenleme modu: alanlar dolu, kayıt PATCH ile. */
+  draft,
 }: {
   canSendUrgent: boolean;
+  draft?: AnnouncementDraft;
 }) {
   const t = useTranslations("app.announcements");
   const tEnum = useTranslations("enum");
@@ -32,17 +44,18 @@ export function AnnouncementComposer({
     ReturnType<typeof checkAnnouncementKvkk>
   > | null>(null);
   const [checking, startCheck] = useTransition();
-  const [text, setText] = useState("");
+  const [text, setText] = useState(draft?.body ?? "");
 
   const findings = preview?.findings ?? state.kvkk?.findings ?? [];
 
   return (
     <Card>
       <CardHeader title={t("composerTitle")} description={t("composerDescription")} />
-      <form action={formAction}>
+      <form action={formAction} key={draft?.id ?? "new"}>
+        {draft ? <input type="hidden" name="id" value={draft.id} /> : null}
         <CardBody className="space-y-4">
           <Field label={t("titleLabel")} required>
-            <Input name="title" required maxLength={200} placeholder={t("titlePlaceholder")} />
+            <Input name="title" required maxLength={200} placeholder={t("titlePlaceholder")} defaultValue={draft?.title} />
           </Field>
 
           <Field label={t("bodyLabel")} required hint={t("bodyHint")}>
@@ -64,7 +77,7 @@ export function AnnouncementComposer({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label={t("audienceLabel")}>
-              <Select name="audience" defaultValue="all">
+              <Select name="audience" defaultValue={draft?.audience ?? "all"}>
                 {AUDIENCES.map((a) => (
                   <option key={a} value={a}>
                     {tEnum(`audience.${a}`)}
@@ -81,7 +94,7 @@ export function AnnouncementComposer({
                     type="checkbox"
                     name="channels"
                     value={c}
-                    defaultChecked={c === "whatsapp" || c === "in_app"}
+                    defaultChecked={draft ? draft.channels.includes(c) : c === "whatsapp" || c === "in_app"}
                   />
                   {tEnum(`channel.${c}`)}
                 </label>
@@ -91,7 +104,7 @@ export function AnnouncementComposer({
 
           {canSendUrgent ? (
             <label className="flex items-center gap-2 text-sm text-fg">
-              <input type="checkbox" name="isUrgent" />
+              <input type="checkbox" name="isUrgent" defaultChecked={draft?.isUrgent} />
               <span>
                 <strong>{t("urgentLabel")}</strong> — {t("urgentDescription")}
               </span>

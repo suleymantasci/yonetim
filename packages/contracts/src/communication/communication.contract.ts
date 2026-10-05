@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { dateTime, uuid } from "../_shared/fields";
+import { dateTime, uuid, changeReason } from "../_shared/fields";
 
 /**
  * `communication` bağlamı — duyuru, anket, mesaj, toplantı (MIMARI-PLAN §6.3).
@@ -230,6 +230,17 @@ export const announcementCreate = z.object({
 });
 
 export type AnnouncementCreate = z.infer<typeof announcementCreate>;
+
+/**
+ * Taslak düzenleme — yayımlanmış duyuru düzenlenemez (sakinlere gitti;
+ * metni sonradan değiştirmek, gönderilenle kayıttakini ayırırdı).
+ */
+export const announcementUpdate = announcementCreate;
+export type AnnouncementUpdate = AnnouncementCreate;
+
+/** Yayından kaldırma — gerekçe denetim kütüğüne. */
+export const announcementWithdraw = z.object({ reason: changeReason });
+export type AnnouncementWithdraw = z.infer<typeof announcementWithdraw>;
 
 export const kvkkFinding = z.object({
   severity: z.string(),
