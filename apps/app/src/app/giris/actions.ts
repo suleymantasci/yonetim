@@ -278,7 +278,11 @@ export async function verifyLoginCode(
 
 /** Açık yönlendirme koruması: yalnız kendi origin'imizdeki göreli adresler. */
 function safeNext(next: string): string {
-  return next.startsWith("/") && !next.startsWith("//") ? next : "/panel";
+  if (!next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) {
+    return "/panel";
+  }
+  // Oturum/API uçları gezinme hedefi değil (eski bağlantılarda `devam` olarak kalmış olabilir).
+  return next.startsWith("/api/") ? "/panel" : next;
 }
 
 function reasonOf(details: unknown): string | null {

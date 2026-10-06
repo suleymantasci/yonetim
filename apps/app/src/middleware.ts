@@ -65,7 +65,10 @@ export function middleware(request: NextRequest) {
     ? (() => {
         const url = request.nextUrl.clone();
         url.pathname = "/giris";
-        url.searchParams.set("devam", pathname);
+        url.search = "";
+        // API uçları (ör. `/api/session/logout`) gezinme hedefi değil: girişten
+        // sonra oraya dönmek 405'e düşürür. Yalnız sayfa yolları taşınır.
+        if (!pathname.startsWith("/api/")) url.searchParams.set("devam", pathname);
         return NextResponse.redirect(url);
       })()
     : NextResponse.next({ request: { headers } });

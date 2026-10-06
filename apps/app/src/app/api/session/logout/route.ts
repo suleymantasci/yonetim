@@ -11,7 +11,16 @@ import { clearSessionCookie } from "@/lib/session-cookie";
  * kendi tarayıcısında oturum açmış gösterirdi.
  */
 export async function POST(request: Request) {
-  await apiPost("/v1/auth/web/logout", {});
-  await clearSessionCookie();
+  try {
+    await apiPost("/v1/auth/web/logout", {});
+  } finally {
+    // API erişilemese de tarayıcı kopyası düşmeli; kullanıcı 500 ekranında kalmasın.
+    await clearSessionCookie();
+  }
+  return NextResponse.redirect(new URL("/giris", request.url), { status: 303 });
+}
+
+/** Eski sekme/ön yükleme gibi GET gelirse oturuma dokunmadan girişe döner. */
+export function GET(request: Request) {
   return NextResponse.redirect(new URL("/giris", request.url), { status: 303 });
 }
