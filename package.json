@@ -50,7 +50,7 @@
     "turbo": "^2.3.3",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.65.0",
-    "vitest": "^3.2.7"
+    "vitest": "^4.1.11"
   },
   "pnpm": {
     "overrides": {
@@ -62,7 +62,9 @@
       "multer@>=2 <3": "^2.4.0",
       "nanoid@>=3 <4": "^3.3.19",
       "postcss@>=8 <9": "^8.5.28",
+      "proxy-addr@<2.0.8": "^2.0.8",
       "sharp": "^0.35.5",
+      "source-map-js@<1.2.2": "^1.2.2",
       "undici@>=8 <9": "^8.11.2"
     },
     "auditConfig": {

@@ -66,6 +66,6 @@
     "tsc-alias": "^1.9.1",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.2",
-    "vitest": "^3.2.7"
+    "vitest": "^4.1.11"
   }
 }
