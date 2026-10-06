@@ -2599,6 +2599,8 @@
     "noStaff": "No staff recorded."
   },
   "portfolio": {
+    "newTenant": "Add new site",
+    "newTenantDescription": "Adding a site does not extend your trial: the new site inherits the current trial end date.",
     "title": "Portfolio",
     "description": "Summary of the {count} properties you manage. Those needing attention come first.",
     "tenantCount": "Properties",

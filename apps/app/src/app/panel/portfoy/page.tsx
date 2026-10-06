@@ -1,4 +1,5 @@
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Plus } from "lucide-react";
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 
 import { portfolioResponse } from "@yonetim/contracts";
@@ -49,6 +50,17 @@ export default async function PortfolioPage() {
       <PageHeader
         title={t("title")}
         description={t("description", { count: totals.tenantCount })}
+        action={
+          ctx.roles.some((r) => r === "manager" || r === "company_admin") ? (
+            <Link
+              href="/panel/portfoy/yeni"
+              className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-fg hover:bg-primary-hover"
+            >
+              <Plus aria-hidden className="h-4 w-4" />
+              {t("newTenant")}
+            </Link>
+          ) : null
+        }
       />
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4">

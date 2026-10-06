@@ -41,6 +41,22 @@ export async function createFirstTenant(
   _previous: SetupState,
   formData: FormData,
 ): Promise<SetupState> {
+  return submitSetup(formData, "/panel");
+}
+
+/**
+ * Zaten sitesi olan yöneticinin ikinci/üçüncü sitesi (`/panel/portfoy/yeni`).
+ * Aynı uç, aynı doğrulama; fark yalnız dönüş adresi. Deneme süresini yeni
+ * site uzatmıyor — o kural API'de (`SignupService.trialEndFor`).
+ */
+export async function createAnotherTenant(
+  _previous: SetupState,
+  formData: FormData,
+): Promise<SetupState> {
+  return submitSetup(formData, "/panel/portfoy");
+}
+
+async function submitSetup(formData: FormData, returnTo: string): Promise<SetupState> {
   const t = await getTranslations("app.setup");
 
   const parsed = schema.safeParse({
@@ -79,7 +95,7 @@ export async function createFirstTenant(
   }
 
   // Yeni site oturuma bağlandı; kabuk yeniden çözülmeli.
-  redirect("/panel");
+  redirect(returnTo);
 }
 
 function emptyToUndefined(value: FormDataEntryValue | null): string | undefined {

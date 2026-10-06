@@ -10,14 +10,16 @@ import { TR_CITIES } from "@/lib/tr-cities";
 
 import { createFirstTenant, type SetupState } from "./actions";
 
+type SetupAction = (previous: SetupState, formData: FormData) => Promise<SetupState>;
+
 const PROPERTY_TYPES = [
   "apartment", "site", "residence", "plaza", "avm", "office", "vakif", "dernek",
 ] as const;
 
-export function SetupForm() {
+export function SetupForm({ action = createFirstTenant }: { action?: SetupAction }) {
   const t = useTranslations("app.setup");
   const tEnum = useTranslations("enum");
-  const [state, formAction] = useActionState<SetupState, FormData>(createFirstTenant, {
+  const [state, formAction] = useActionState<SetupState, FormData>(action, {
     status: "idle",
   });
 

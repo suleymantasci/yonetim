@@ -115,8 +115,8 @@ export class SignupService {
         : null;
 
       const slug = await this.uniqueSlug(tx, tenants, dto.propertyName);
-      const trialDays = siteConfig.billing.trial.durationDays;
       const now = new Date();
+      const trialEndsAt = await this.trialEndFor(tx, userId, now);
 
       const tenant = (
         await tx
@@ -131,7 +131,7 @@ export class SignupService {
             companyId,
             status: "trial",
             trialStartedAt: now,
-            trialEndsAt: new Date(now.getTime() + trialDays * 86_400_000),
+            trialEndsAt,
             // Kampanya ve rakip geçişi kaydı: pazarlama tarafı hangi kanalın
             // dönüştüğünü ancak burada öğrenebiliyor.
             settings: {
@@ -155,7 +155,7 @@ export class SignupService {
       await this.openTrialSubscription(tx, {
         tenantId: tenant.id,
         unitCount: dto.unitCount,
-        trialEndsAt: new Date(now.getTime() + trialDays * 86_400_000),
+        trialEndsAt,
       });
 
       return { tenantId: tenant.id, slug: tenant.slug, userId };
@@ -250,11 +250,23 @@ export class SignupService {
     locale?: string,
   ): Promise<SetupTenantResult> {
     return this.db.bypass("signup:setup-tenant", async (tx) => {
+      // Üyeliği olan biri yalnız site yönetici rolündeyse yeni site açabilir;
+      // sakin/personel hesabı bu uçtan site üretemesin. Hiç üyeliği olmayan
+      // kullanıcı (ilk kurulum) etkilenmiyor.
+      const roles = await tx
+        .select({ role: memberships.role })
+        .from(memberships)
+        .where(and(eq(memberships.userId, userId), isNull(memberships.deletedAt)));
+      if (
+        roles.length > 0 &&
+        !roles.some((r) => r.role === "manager" || r.role === "company_admin")
+      ) {
+        throw errors.forbidden("site_create_not_allowed");
+      }
+
       const slug = await this.uniqueSlug(tx, tenants, dto.propertyName);
       const now = new Date();
-      const trialEndsAt = new Date(
-        now.getTime() + siteConfig.billing.trial.durationDays * 86_400_000,
-      );
+      const trialEndsAt = await this.trialEndFor(tx, userId, now);
 
       // Kullanıcı zaten bir firmaya bağlıysa yeni site de o firmaya bağlanıyor;
       // yoksa portföy ekranı siteleri ayrı ayrı gösterirdi.
@@ -336,6 +348,34 @@ export class SignupService {
    * abonelik açılamaz — bu durumda kurulumu düşürmüyoruz, uyarı loglayıp
    * geçiyoruz: site açamamak, faturalama kaydı eksik kalmasından daha kötü.
    */
+  /**
+   * Yeni sitenin deneme bitişi.
+   *
+   * Deneme **kişiye** ait, siteye değil: yeni site açmak süreyi uzatmıyor.
+   * Kullanıcının deneme durumundaki sitelerinden en erken bitiş devralınıyor
+   * (1 gün kala açılan site de 1 gün sonra bitiyor). Deneme sitesi yoksa
+   * tam süre veriliyor. Geçmişte kalmış bir bitiş de devralınıyor — site
+   * açılıyor ama deneme baştan bitmiş sayılıyor; süreyi sıfırlamak, her
+   * yeni site ile denemeyi yeniden başlatmanın yolu olurdu.
+   */
+  private async trialEndFor(tx: Database, userId: string, now: Date): Promise<Date> {
+    const rows = await tx
+      .select({ trialEndsAt: sql<Date | null>`min(${tenants.trialEndsAt})` })
+      .from(tenants)
+      .innerJoin(memberships, eq(memberships.tenantId, tenants.id))
+      .where(
+        and(
+          eq(memberships.userId, userId),
+          isNull(memberships.deletedAt),
+          isNull(tenants.deletedAt),
+          eq(tenants.status, "trial"),
+        ),
+      );
+    const inherited = rows[0]?.trialEndsAt;
+    if (inherited) return new Date(inherited);
+    return new Date(now.getTime() + siteConfig.billing.trial.durationDays * 86_400_000);
+  }
+
   private async openTrialSubscription(
     tx: Database,
     params: { tenantId: string; unitCount: number; trialEndsAt: Date },

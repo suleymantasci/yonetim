@@ -2599,6 +2599,8 @@
     "noStaff": "Kayıtlı personel yok."
   },
   "portfolio": {
+    "newTenant": "Yeni site ekle",
+    "newTenantDescription": "Deneme süreniz yeni site eklemekle uzamaz: yeni site mevcut denemenin bitiş tarihini devralır.",
     "title": "Portföy",
     "description": "Yönettiğiniz {count} sitenin özeti. Dikkat gerektirenler üstte.",
     "tenantCount": "Site",
