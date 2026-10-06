@@ -117,6 +117,15 @@ export const JOBS: JobDefinition[] = [
     specRef: "Bölüm 15.3",
   },
   {
+    id: "billing.archive-purge",
+    name: "Arşiv tasfiyesi",
+    cron: "30 3 * * *",
+    description: "Kurtarma penceresi (90 gün) dolan arşivli siteleri kalıcı olarak tasfiye eder.",
+    timeoutSeconds: 300,
+    singleton: true,
+    specRef: "Bölüm 2.3",
+  },
+  {
     id: "billing.renewal",
     name: "Yenileme ve fatura",
     cron: "0 1 * * *",

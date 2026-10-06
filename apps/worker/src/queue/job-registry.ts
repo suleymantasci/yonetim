@@ -9,6 +9,9 @@ import {
   generateDuesForTenant,
   kvkkRequestSla,
   kvkkRetentionScan,
+  purgeExpiredArchive,
+  renewSubscription,
+  runDunning,
 } from "@yonetim/jobs";
 
 import { DbService } from "@api/infra/db/db.service";
@@ -45,7 +48,7 @@ export interface JobRunSummary {
  * gece hiçbir sitede aidat üretilmemesine yol açması demekti.
  *
  * TANIMLI AMA HENÜZ YAZILMAMIŞ İŞLER `skipped: no_handler` döndürüyor,
- * sessizce başarılı sayılmıyor. `packages/jobs` 19 iş tanımlıyor; bunların
+ * sessizce başarılı sayılmıyor. `packages/jobs` 20 iş tanımlıyor; bunların
  * bir kısmının gövdesi Track E'de yazılacak. Tanımı silmek yerine görünür
  * bırakmak, "bu iş neden hiç çalışmıyor" sorusunu log'dan cevaplanabilir
  * kılıyor.
@@ -60,7 +63,7 @@ export class JobRegistry {
   ) {}
 
   async run(jobId: string, only?: string): Promise<JobRunSummary> {
-    const targets = await this.writableTenants(only);
+    const targets = await this.writableTenants(only, JOB_TENANT_STATUSES[jobId]);
     const outcomes: JobOutcome[] = [];
 
     for (const { id: tenantId, status } of targets) {
@@ -112,6 +115,12 @@ export class JobRegistry {
         return collectMaintenanceReminders({ tenantId });
       case "billing.trial-expiry":
         return expireTrial({ tenantId });
+      case "billing.renewal":
+        return renewSubscription({ tenantId });
+      case "billing.dunning":
+        return runDunning({ tenantId });
+      case "billing.archive-purge":
+        return purgeExpiredArchive({ tenantId });
       case "kvkk.request-sla":
         return kvkkRequestSla({ tenantId });
       case "kvkk.retention":
@@ -138,14 +147,17 @@ export class JobRegistry {
    * ya da yazılamaz durumdaki site hedef listesinden düşüyor — elle tetiklenen
    * bir koşunun, zamanlanmış koşunun atladığı siteye yazması tutarsız olurdu.
    */
-  private writableTenants(only?: string): Promise<{ id: string; status: string }[]> {
+  private writableTenants(
+    only?: string,
+    statuses: readonly string[] = DEFAULT_TENANT_STATUSES,
+  ): Promise<{ id: string; status: string }[]> {
     return this.db.bypass("job:tenants", async (tx) =>
       tx
         .select({ id: tenants.id, status: tenants.status })
         .from(tenants)
         .where(
           and(
-            inArray(tenants.status, ["trial", "active", "past_due"]),
+            inArray(tenants.status, [...statuses] as never),
             isNull(tenants.deletedAt),
             ...(only ? [eq(tenants.id, only)] : []),
           ),
@@ -153,6 +165,20 @@ export class JobRegistry {
     );
   }
 }
+
+/** Çoğu iş yalnız yazılabilir sitelerde koşuyor. */
+const DEFAULT_TENANT_STATUSES = ["trial", "active", "past_due"] as const;
+
+/**
+ * Hedef kitlesi farklı olan işler. Dunning askıdaki (`suspended`) siteyi de
+ * görmek zorunda (30. gün arşiv adımı orada); tasfiye yalnız arşivdekileri;
+ * yenileme `trial`'ı hiç görmemeli.
+ */
+const JOB_TENANT_STATUSES: Record<string, readonly string[]> = {
+  "billing.dunning": ["active", "past_due", "suspended"],
+  "billing.renewal": ["active", "past_due"],
+  "billing.archive-purge": ["archived"],
+};
 
 /** Gövdesi henüz yazılmamış iş — `skipped` olarak raporlanır. */
 const NO_HANDLER = Symbol("no_handler");

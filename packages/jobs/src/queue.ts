@@ -17,7 +17,7 @@ export interface ScheduledJobData {
   /**
    * Hangi tenant için — boşsa job tüm aktif siteleri dolaşır.
    *
-   * Fan-out **job içinde** yapılıyor, kuyrukta değil: 19 job × N site kadar
+   * Fan-out **job içinde** yapılıyor, kuyrukta değil: 20 job × N site kadar
    * repeatable tanım üretmek, site sayısı arttıkça Redis'te yönetilemez bir
    * tablo bırakırdı. Alan yine de var, çünkü elle tetiklemede tek bir siteyi
    * yeniden koşturmak gerçek bir ihtiyaç.
