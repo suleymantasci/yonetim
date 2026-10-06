@@ -12,6 +12,7 @@ import {
   generateDuesForTenant,
   kvkkRequestSla,
   kvkkRetentionScan,
+  legalEscalation,
   meetingReminders,
   purgeExpiredArchive,
   renewSubscription,
@@ -130,6 +131,8 @@ export class JobRegistry {
         return duesReminder({ tenantId });
       case "dues.late-warning":
         return duesLateWarning({ tenantId });
+      case "legal.escalate":
+        return legalEscalation({ tenantId });
       case "billing.renewal":
         return renewSubscription({ tenantId });
       case "billing.dunning":

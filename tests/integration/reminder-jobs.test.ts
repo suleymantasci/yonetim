@@ -7,7 +7,7 @@ import {
   blocks, closeDb, debts, documents, meetings, memberships, notifications, requests, tenants, units, users,
   withBypassRls,
 } from "@yonetim/db";
-import { documentExpiry, duesLateWarning, duesReminder, meetingReminders, slaBreachCheck } from "@yonetim/jobs";
+import { documentExpiry, duesLateWarning, duesReminder, legalEscalation, meetingReminders, slaBreachCheck } from "@yonetim/jobs";
 
 /** Hatırlatma işleri: SLA ihlali, toplantı, belge süresi, borç hatırlatma/uyarı. */
 const RUN = process.env.INTEGRATION === "1";
@@ -128,5 +128,18 @@ describe.skipIf(!RUN)("dues.reminder / dues.late-warning", () => {
     await withBypassRls("t", (tx) => tx.insert(debts).values([debt(-7.5), debt(-3), debt(-7.5, { status: "paid", paidKurus: 50_000 })]));
     expect(await duesLateWarning({ tenantId: T, now: NOW })).toMatchObject({ notified: 1 });
     expect(await notes("dues_late_7")).toHaveLength(1);
+  });
+});
+
+describe.skipIf(!RUN)("legal.escalate", () => {
+  it("90+ gün gecikmiş açık borçları ayda bir özetler", async () => {
+    await withBypassRls("t", (tx) => tx.insert(debts).values([
+      { tenantId: T, unitId, debtorUserId: OWNER, description: "Eski", amountKurus: 40_000, dueDate: new Date(NOW.getTime() - 120 * DAY) },
+      { tenantId: T, unitId, debtorUserId: OWNER, description: "Eski ödenmiş", amountKurus: 40_000, paidKurus: 40_000, status: "paid", dueDate: new Date(NOW.getTime() - 120 * DAY) },
+      { tenantId: T, unitId, debtorUserId: OWNER, description: "Yeni", amountKurus: 40_000, dueDate: new Date(NOW.getTime() - 30 * DAY) },
+    ]));
+    expect(await legalEscalation({ tenantId: T, now: NOW })).toMatchObject({ candidates: 1, totalKurus: 40_000, notified: 1 });
+    expect((await legalEscalation({ tenantId: T, now: NOW })).notified).toBe(0);
+    expect(await notes("legal_escalate_2026-10")).toHaveLength(1);
   });
 });

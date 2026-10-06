@@ -342,3 +342,65 @@ export function duesLateWarning(params: { tenantId: string; now?: Date }): Promi
     en: { subject: "Your payment is overdue", body: `Your ${amount} balance was due 7 days ago. Late fees may apply.` },
   }));
 }
+
+/* -------------------------------------------------------------------------- */
+
+export interface LegalEscalationResult {
+  tenantId: string;
+  candidates: number;
+  totalKurus: number;
+  notified: number;
+}
+
+/**
+ * `legal.escalate` — 90+ gün gecikmiş, henüz icraya devredilmemiş borçlar için
+ * yöneticiye **ayda bir** özet uyarı.
+ *
+ * İcra dosyasını **kendisi açmıyor**: dosya açmak geri alınması zor, masraf
+ * doğuran bir karar (`legal:write` + gerekçe). İş yalnız "bu borçlar eşiği
+ * geçti" bilgisini veriyor; karar yöneticide. Bildirim ay anahtarlı
+ * (`legal_escalate_YYYY-MM`) olduğu için günlük/haftalık koşu aynı ay içinde
+ * tekrar yazmıyor.
+ */
+export async function legalEscalation(params: { tenantId: string; now?: Date }): Promise<LegalEscalationResult> {
+  const now = params.now ?? new Date();
+  const cutoff = new Date(now.getTime() - 90 * DAY_MS);
+  const month = now.toISOString().slice(0, 7);
+  return withTenant(params.tenantId, async (tx) => {
+    const [row] = await tx
+      .select({
+        count: sql<number>`count(*)`.mapWith(Number),
+        total: sql<number>`COALESCE(sum(${debts.amountKurus} + ${debts.lateFeeKurus} - ${debts.paidKurus}), 0)`.mapWith(Number),
+      })
+      .from(debts)
+      .where(
+        and(
+          isNull(debts.deletedAt),
+          isNull(debts.legalCaseId),
+          inArray(debts.status, [...OPEN_DEBT]),
+          lt(debts.dueDate, cutoff),
+        ),
+      );
+    const candidates = row?.count ?? 0;
+    const total = row?.total ?? 0;
+    if (candidates === 0) return { tenantId: params.tenantId, candidates: 0, totalKurus: 0, notified: 0 };
+
+    const amount = `${(total / 100).toLocaleString("tr-TR", { minimumFractionDigits: 2 })} ₺`;
+    let notified = 0;
+    for (const m of await usersWithRoles(tx, MANAGER_ROLES)) {
+      notified += await writeInApp(tx, {
+        tenantId: params.tenantId,
+        recipient: m,
+        template: `legal_escalate_${month}`,
+        resourceType: "tenant",
+        resourceId: params.tenantId,
+        text: {
+          tr: { subject: "İcra takibi eşiğini geçen borçlar", body: `${candidates} borç 90 günden uzun süredir ödenmedi (toplam ${amount}). Hukuk ekranından icra takibi değerlendirebilirsiniz.` },
+          en: { subject: "Debts past the legal-action threshold", body: `${candidates} debts have been unpaid for over 90 days (total ${amount}). You can consider legal action from the Legal screen.` },
+        },
+        now,
+      });
+    }
+    return { tenantId: params.tenantId, candidates, totalKurus: total, notified };
+  });
+}
