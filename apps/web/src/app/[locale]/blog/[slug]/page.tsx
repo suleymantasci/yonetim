@@ -92,7 +92,7 @@ export default async function BlogPostPage({
       />
 
       <header className="border-b border-border bg-surface-sunken">
-        <div className="mx-auto max-w-3xl px-4 pb-12 pt-10">
+        <div className="marketing-container pb-12 pt-10">
           <Link
             href="/blog"
             className="inline-flex items-center gap-1 text-sm font-medium text-fg-muted transition-colors hover:text-fg"
@@ -124,7 +124,7 @@ export default async function BlogPostPage({
         ekranda yapışkan bir sütun metnin ölçüsünü okunmaz hâle getiriyordu,
         başlıkların üstüne katlanan bir liste de yazının başını itiyordu.
       */}
-      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 xl:grid-cols-[minmax(0,1fr)_16rem]">
+      <div className="marketing-container grid gap-10 py-12 xl:grid-cols-[minmax(0,1fr)_16rem]">
         <article className="mx-auto w-full max-w-[68ch] xl:mx-0">
           {renderMarkdown(post.body)}
 
@@ -166,7 +166,7 @@ export default async function BlogPostPage({
 
       {related.length > 0 ? (
         <section className="border-t border-border bg-surface-sunken py-14">
-          <div className="mx-auto max-w-6xl px-4">
+          <div className="marketing-container">
             <h2 className="font-heading text-2xl font-extrabold tracking-tight text-fg">
               {t("relatedTitle")}
             </h2>

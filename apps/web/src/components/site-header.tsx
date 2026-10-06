@@ -32,7 +32,7 @@ export async function SiteHeader({ themePreference }: { themePreference: ThemePr
     <Link
       key={item.href}
       href={item.href}
-      className="whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium text-fg-muted transition-colors hover:bg-hover hover:text-fg"
+      className="whitespace-nowrap rounded px-2 py-2 text-[13px] font-medium text-fg-muted transition-colors hover:bg-hover hover:text-fg"
     >
       {t(item.key)}
     </Link>
@@ -52,7 +52,7 @@ export async function SiteHeader({ themePreference }: { themePreference: ThemePr
       />
       <a
         href={`${siteConfig.env.appUrl}/giris`}
-        className="hidden whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium text-fg-muted transition-colors hover:bg-hover hover:text-fg xl:block"
+        className="hidden whitespace-nowrap rounded px-2 py-2 text-[13px] font-medium text-fg-muted transition-colors hover:bg-hover hover:text-fg lg:block"
       >
         {t("signIn")}
       </a>

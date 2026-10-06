@@ -1,4 +1,4 @@
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Minus, Plus } from "lucide-react";
 import type { ReactNode } from "react";
 
 import { cn } from "../cn";
@@ -39,6 +39,7 @@ export interface AccordionItemProps {
   /** Aynı ada sahip öğelerden yalnız biri açık kalır (tarayıcı yönetir). */
   name?: string;
   className?: string;
+  indicator?: "chevron" | "plus";
 }
 
 export function AccordionItem({
@@ -47,6 +48,7 @@ export function AccordionItem({
   defaultOpen = false,
   name,
   className,
+  indicator = "chevron",
 }: AccordionItemProps) {
   return (
     <details open={defaultOpen} name={name} className={cn("group", className)}>
@@ -60,10 +62,15 @@ export function AccordionItem({
         )}
       >
         {title}
-        <ChevronDown
+        {indicator === "plus" ? (
+          <span aria-hidden className="shrink-0 text-primary">
+            <Plus className="h-6 w-6 group-open:hidden" />
+            <Minus className="hidden h-6 w-6 group-open:block" />
+          </span>
+        ) : <ChevronDown
           aria-hidden
           className="h-4 w-4 shrink-0 text-fg-subtle transition-transform duration-200 group-open:rotate-180"
-        />
+        />}
       </summary>
       <div className="px-5 pb-5 pt-0 text-sm leading-relaxed text-fg-muted">{children}</div>
     </details>

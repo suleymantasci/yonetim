@@ -50,7 +50,7 @@ export async function SiteFooter() {
 
   return (
     <footer className="border-t border-border bg-surface-sunken">
-      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 md:grid-cols-2 lg:grid-cols-4">
+      <div className="marketing-container grid gap-10 py-14 md:grid-cols-2 lg:grid-cols-4">
         <div className="lg:pe-8">
           <BrandLockup />
           <p className="mt-3 max-w-xs text-sm text-fg-muted">{tCommon("brand.tagline")}</p>
@@ -102,7 +102,7 @@ export async function SiteFooter() {
       </div>
 
       <div className="border-t border-border">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-4 py-5 text-xs text-fg-subtle sm:flex-row">
+        <div className="marketing-container flex flex-col items-center justify-between gap-3 py-5 text-xs text-fg-subtle sm:flex-row">
           <p>
             © {new Date().getFullYear()} {siteConfig.brand.legalName}.{" "}
             {tCommon("legal.allRightsReserved")}

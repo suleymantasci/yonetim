@@ -177,7 +177,7 @@ export function PlanCalculator({
             </div>
 
             {/* Stepper ve Sayı Girişi */}
-            <div className="mt-3 flex items-center gap-2">
+            <div className="mt-3 flex flex-wrap items-center gap-2">
               {enhanced ? (
                 <button
                   type="button"
@@ -189,7 +189,7 @@ export function PlanCalculator({
                 </button>
               ) : null}
 
-              <div className="relative flex-1">
+              <div className="relative min-w-0 flex-1">
                 <input
                   id={unitFieldId}
                   type="number"
@@ -218,7 +218,7 @@ export function PlanCalculator({
               {/* JS'siz fallback için Submit Butonu */}
               <button
                 type="submit"
-                className="h-12 rounded-xl border border-border-strong bg-surface px-5 text-sm font-semibold text-fg transition-colors hover:bg-hover active:scale-[0.98] lg:hidden"
+                className="h-12 basis-full shrink-0 rounded-xl border border-border-strong bg-surface px-5 text-sm font-semibold text-fg transition-colors hover:bg-hover active:scale-[0.98] sm:basis-auto lg:hidden"
               >
                 {labels.findPlan}
               </button>
@@ -357,11 +357,9 @@ export function PlanCalculator({
             </span>
             <div className="mt-1 flex items-center gap-3">
               <h3 className="font-heading text-3xl font-extrabold tracking-tight text-fg">
-                {plan.name}
+                {plan.minUnits}{plan.maxUnits ? `–${plan.maxUnits}` : "+"} {labels.unitsSuffix}
               </h3>
-              <span className="rounded-md border border-border bg-surface-sunken px-2.5 py-1 text-xs font-semibold text-fg-muted">
-                {plan.minUnits}–{plan.maxUnits ?? "1000+"} Bölüm
-              </span>
+
             </div>
           </div>
 
@@ -575,4 +573,3 @@ export function PlanCalculator({
     </div>
   );
 }
-

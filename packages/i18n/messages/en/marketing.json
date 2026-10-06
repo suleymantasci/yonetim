@@ -28,13 +28,13 @@
   },
   "home": {
     "metaTitle": "{brand} — {tagline}",
-    "heroTitle": "Property management belongs on your phone,",
-    "heroTitleAccent": "not in a spreadsheet",
+    "heroTitle": "Management gets lighter.",
+    "heroTitleAccent": "Life finds its place.",
     "heroSubtitle": "From dues accrual to online collection, from the maintenance calendar to the general assembly — everything in one panel. Residents check and pay their balance <strong>over WhatsApp</strong>.",
     "ctaPrimary": "Start free now",
     "ctaSecondary": "See pricing",
-    "killerTitle": "What the others don't have",
-    "killerSubtitle": "We started by solving the most complained-about problems in this market, one by one.",
+    "killerTitle": "Details that simplify everyday work",
+    "killerSubtitle": "A closer look at everyday tasks for managers and residents.",
     "modulesTitle": "Every module in every package",
     "modulesSubtitle": "Price differs only by unit count and SMS quota; no feature is held back.",
     "modulesTag": "8 Core Modules · Technical Specification Scope",
@@ -116,7 +116,7 @@
     "pricingTitle": "How many units do you have?",
     "pricingSubtitle": "Price depends only on unit count; no plan restricts features.",
     "pricingUnits": "Number of units",
-    "pricingPlan": "Recommended plan",
+    "pricingPlan": "Your property price",
     "pricingMonthly": "Monthly",
     "pricingYearly": "Yearly",
     "pricingYearlyBadge": "2 months free",
@@ -141,7 +141,7 @@
     "trustExport": "Export your data anytime",
     "ctaSecondaryLink": "Switch from another system",
     "heroEyebrow": "Built around Turkey's Condominium Law No. 634",
-    "heroImageAlt": "A building manager running field teams and blocks from a laptop",
+    "heroImageAlt": "Tree-lined residential courtyard with limestone facades — architectural illustration",
     "ctaNote": "30 days free · no credit card · export your data and leave whenever you want",
     "heroStat1Value": "{savings}% cheaper",
     "heroStat1Label": "from {price} per year",
@@ -165,19 +165,91 @@
     "residentTitle": "Residents find out without asking the manager",
     "residentBody": "No waiting for office hours to learn what you owe. A resident checks their balance over WhatsApp with a single word and pays by card without installing anything; the mobile app is there for whoever wants it.",
     "residentPoints": "Balance lookup over WhatsApp and payment with 3-D Secure|Receipts and bank slips as PDFs, instantly|Fault reports with photos, and a status you can follow|Announcements go out through a data protection filter",
-    "residentImageAlt": "Two phone screens from the resident app: cash balance, pending tasks and action cards",
+    "residentImageAlt": "Shared residential lounge — architectural illustration",
     "siteEyebrow": "For the property",
     "siteTitle": "One panel, from a single building to a multi-block estate",
     "siteBody": "Blocks, units, parking, common areas and staff live in one hierarchy. Manage more than one property and you get a combined view; auditors get read-only access.",
     "sitePoints": "Block–unit hierarchy and accrual based on land share|Common area booking, meter reading and cost sharing|Staff, timesheets and supplier contracts|Read-only access for auditors, with a complete audit trail",
-    "siteImageAlt": "Three-dimensional building blocks representing the estate and its blocks",
-    "modulesIndexLabel": "Module index"
+    "siteImageAlt": "Apartment blocks around a shared courtyard — architectural illustration",
+    "modulesIndexLabel": "Module index",
+    "heroOverlay": "For more liveable communities",
+    "actualPanelLabel": "An excerpt from the real dashboard",
+    "actualPanelCaption": "Sample Apartment · Dashboard excerpt, sample data",
+    "actualPanelAlt": "Actual property management dashboard with search, theme controls, navigation, 24 units and a populated balance table.",
+    "managerLabel": "For apartment and community managers",
+    "managerTitle": "Less chasing. More peace of mind.",
+    "managerBody": "Manage dues, meetings and daily work in one place. Keep resident information within reach.",
+    "companyLabel": "For management companies",
+    "companyTitle": "Consistent across properties. Controlled from one place.",
+    "companyBody": "Manage multiple properties with a shared workflow. Follow finances, teams and daily operations together.",
+    "unifiedTitle": "Every part of management, together.",
+    "unifiedBody": "From finances and resident communication to maintenance and meeting records: the essentials for daily management.",
+    "allFeaturesLink": "Explore all features and details",
+    "whatsappTitle": "Just a message away for your residents.",
+    "whatsappBody": "Announcements, reminders and balances reach residents through WhatsApp. Enquiries and payment links stay in the same conversation.",
+    "whatsappLink": "Explore the WhatsApp experience",
+    "chatExample": "Sample resident conversation · Interactive demonstration",
+    "portfolioTitle": "Order in one building. Oversight across your portfolio.",
+    "portfolioBody": "Follow your own apartment or every property you manage in the same workflow. See finances, track operations and keep information together.",
+    "portfolioExample": "Portfolio view · Illustrative properties",
+    "compactPricingTitle": "Every feature included. Priced by your unit count.",
+    "compactMigrationTitle": "An organised move to your new system.",
+    "compactMigrationBody": "Transfer your existing data and verify your records before starting the next period.",
+    "notesTitle": "Management notes",
+    "notesBody": "Practical information, regulatory notes and guides for property management.",
+    "notesLink": "Blog and guides",
+    "notesRead": "Read article",
+    "compactCtaTitle": "Turn a new page in management.",
+    "moduleSummary": {
+      "dues": "Track dues, balances and their change history together.",
+      "collection": "Payment links, collections and transparent commission details.",
+      "finance": "Record expenses, plan budgets and follow cash flow.",
+      "communication": "Reach residents through WhatsApp, SMS and announcements.",
+      "decision": "Organise meetings and record decisions and votes.",
+      "maintenance": "Track recurring maintenance and open requests.",
+      "operations": "Manage units, residents, documents and data migration.",
+      "compliance": "Follow privacy records and legal collection workflows."
+    },
+    "chatSteps": {
+      "ask": {
+        "title": "Ask",
+        "body": "Residents enquire about their balance through WhatsApp."
+      },
+      "see": {
+        "title": "See",
+        "body": "Their current balance and payment information appear in the conversation."
+      },
+      "pay": {
+        "title": "Open the payment link",
+        "body": "The link leads to the secure payment screen."
+      }
+    },
+    "migrationSteps": {
+      "source": {
+        "title": "Select source",
+        "body": "Identify the source of your existing records."
+      },
+      "match": {
+        "title": "Match",
+        "body": "Match units, residents and financial records."
+      },
+      "balance": {
+        "title": "Verify balances",
+        "body": "Check transferred records and balances."
+      },
+      "start": {
+        "title": "Get started",
+        "body": "Begin working with your team in the new system."
+      }
+    },
+    "portfolioUnits": "units",
+    "heroDiscover": "Explore the product"
   },
   "features": {
     "metaTitle": "Features — dues, collection, maintenance, compliance, enforcement",
     "metaDescription": "Dues accrual, online collection, a WhatsApp bot, maintenance calendar, general assembly, data protection audit log and debt enforcement on one platform.",
-    "title": "Features",
-    "subtitle": "Every package includes all modules. The headings below map one-to-one to the module numbers in the technical specification.",
+    "title": "Every part of management, together.",
+    "subtitle": "Dues, payments, communication and daily operations in one place. All modules are available regardless of unit count.",
     "specSection": "Specification section {ref}",
     "moduleListTitle": "Module list",
     "comparisonTitle": "Comparison",

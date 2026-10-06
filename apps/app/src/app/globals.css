@@ -31,3 +31,24 @@
   --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
   --font-heading: var(--font-heading), ui-sans-serif, system-ui, sans-serif;
 }
+
+/* Shared palette, compact operational typography and restrained shell surfaces. */
+.panel-shell { font-size: .875rem; }
+.panel-shell h1 { font-weight: 600; letter-spacing: -.035em; }
+.panel-shell h2, .panel-shell h3 { font-weight: 600; letter-spacing: -.02em; }
+.panel-toolbar { background: var(--t-surface); backdrop-filter: none; }
+.panel-shell aside { background: var(--t-surface-sunken); }
+.panel-shell :is(table, input[type="number"]) { font-variant-numeric: tabular-nums; }
+.panel-shell :is(.shadow-md, .shadow-lg) { box-shadow: none; }
+
+/* Values adapt to their card width, including tablet and sidebar layouts. */
+.panel-shell .stat-card { container-type: inline-size; }
+.panel-shell .stat-value { font-size: clamp(1rem, 7cqi, 1.375rem); font-weight: 600; line-height: 1.25; }
+.panel-shell h1 { font-size: clamp(1.125rem, 2vw, 1.375rem); line-height: 1.3; overflow-wrap: anywhere; }
+.panel-shell .text-2xl { font-size: 1.375rem; }
+.panel-shell :is(main, figure) { min-width: 0; }
+@media (max-width: 639px) {
+  .panel-toolbar { gap: .375rem; padding-inline: .5rem; }
+  .panel-shell main > div { padding: .75rem; }
+  .panel-shell .text-2xl { font-size: 1.125rem; }
+}

@@ -63,7 +63,7 @@ export function PricingPreview({
   const monthlyPerUnit = quote.yearlyTotalKurus / 12 / 100 / units;
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-6 sm:p-8">
+    <div className="home-pricing-preview rounded-2xl border border-border bg-surface p-6 sm:p-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0 flex-1">
           <label htmlFor={sliderId} className="text-sm font-medium text-fg-muted">

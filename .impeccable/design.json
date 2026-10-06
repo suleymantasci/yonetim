@@ -1,0 +1,335 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-06T08:00:38.263756+00:00",
+  "title": "Design System: Yönetimcell",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Primary",
+        "tonalRamp": [
+          "oklch(15% 0.12 38)",
+          "oklch(26% 0.12 38)",
+          "oklch(37% 0.12 38)",
+          "oklch(48% 0.12 38)",
+          "oklch(59% 0.12 38)",
+          "oklch(70% 0.12 38)",
+          "oklch(81% 0.12 38)",
+          "oklch(95% 0.12 38)"
+        ]
+      },
+      "primary-dark": {
+        "role": "primary",
+        "displayName": "Primary Dark",
+        "tonalRamp": [
+          "oklch(15% 0.1 49)",
+          "oklch(26% 0.1 49)",
+          "oklch(37% 0.1 49)",
+          "oklch(48% 0.1 49)",
+          "oklch(59% 0.1 49)",
+          "oklch(70% 0.1 49)",
+          "oklch(81% 0.1 49)",
+          "oklch(95% 0.1 49)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "tonalRamp": [
+          "oklch(15% 0.018 321)",
+          "oklch(26% 0.018 321)",
+          "oklch(37% 0.018 321)",
+          "oklch(48% 0.018 321)",
+          "oklch(59% 0.018 321)",
+          "oklch(70% 0.018 321)",
+          "oklch(81% 0.018 321)",
+          "oklch(95% 0.018 321)"
+        ]
+      },
+      "canvas": {
+        "role": "neutral",
+        "displayName": "Canvas",
+        "tonalRamp": [
+          "oklch(15% 0.015 78)",
+          "oklch(26% 0.015 78)",
+          "oklch(37% 0.015 78)",
+          "oklch(48% 0.015 78)",
+          "oklch(59% 0.015 78)",
+          "oklch(70% 0.015 78)",
+          "oklch(81% 0.015 78)",
+          "oklch(95% 0.015 78)"
+        ]
+      },
+      "canvas-dark": {
+        "role": "neutral",
+        "displayName": "Canvas Dark",
+        "tonalRamp": [
+          "oklch(15% 0.016 311)",
+          "oklch(26% 0.016 311)",
+          "oklch(37% 0.016 311)",
+          "oklch(48% 0.016 311)",
+          "oklch(59% 0.016 311)",
+          "oklch(70% 0.016 311)",
+          "oklch(81% 0.016 311)",
+          "oklch(95% 0.016 311)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Surface",
+        "tonalRamp": [
+          "oklch(15% 0.01 78)",
+          "oklch(26% 0.01 78)",
+          "oklch(37% 0.01 78)",
+          "oklch(48% 0.01 78)",
+          "oklch(59% 0.01 78)",
+          "oklch(70% 0.01 78)",
+          "oklch(81% 0.01 78)",
+          "oklch(95% 0.01 78)"
+        ]
+      },
+      "surface-dark": {
+        "role": "neutral",
+        "displayName": "Surface Dark",
+        "tonalRamp": [
+          "oklch(15% 0.018 321)",
+          "oklch(26% 0.018 321)",
+          "oklch(37% 0.018 321)",
+          "oklch(48% 0.018 321)",
+          "oklch(59% 0.018 321)",
+          "oklch(70% 0.018 321)",
+          "oklch(81% 0.018 321)",
+          "oklch(95% 0.018 321)"
+        ]
+      },
+      "accent": {
+        "role": "secondary",
+        "displayName": "Accent",
+        "tonalRamp": [
+          "oklch(15% 0.1 49)",
+          "oklch(26% 0.1 49)",
+          "oklch(37% 0.1 49)",
+          "oklch(48% 0.1 49)",
+          "oklch(59% 0.1 49)",
+          "oklch(70% 0.1 49)",
+          "oklch(81% 0.1 49)",
+          "oklch(95% 0.1 49)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Editorial display",
+        "purpose": "Shared serif interior h1: clamp(2.25rem, 4vw, 4rem), about 60.5px in the reviewed desktop viewport, max 64px; mobile 32–40px with existing route overrides."
+      },
+      "home-display": {
+        "displayName": "Homepage display",
+        "purpose": "Manrope homepage h1: about 78.7px in the reviewed desktop viewport and 42.4px below 640px, paired with the copper true-italic serif accent."
+      },
+      "panel-body": {
+        "displayName": "Operational body",
+        "purpose": "Compact panel text; tabular figures for numerical data."
+      },
+      "panel-title": {
+        "displayName": "Compact panel title",
+        "purpose": "18–22px responsive Manrope h1 with wrapping."
+      },
+      "panel-stat": {
+        "displayName": "Card-relative stat",
+        "purpose": "16–22px value driven by the inline-size stat card container."
+      },
+      "home-accent": {
+        "displayName": "True italic companion",
+        "purpose": "Loaded Source Serif 4 italic face, weight 400, in the semantic primary color, paired with the Manrope hero headline."
+      },
+      "home-lead": {
+        "displayName": "Homepage lead",
+        "purpose": "Responsive Manrope hero lead, 18–22px at the default root size."
+      },
+      "marketing-wordmark": {
+        "displayName": "Editorial wordmark",
+        "purpose": "Marketing-only serif wordmark at 28px, 22px at 1024–1279px and 20px below 640px; panel identity unchanged."
+      },
+      "body": {
+        "displayName": "Marketing body",
+        "purpose": "1rem Manrope marketing copy; panel body remains compact."
+      },
+      "hero-photo-caption": {
+        "displayName": "Hero photo caption",
+        "purpose": "Loaded Source Serif 4 italic face at clamp(1rem,1.45vw,1.375rem), line-height 1.15; subordinate 16–22px photo message."
+      }
+    },
+    "shadows": [
+      {
+        "name": "shared-card-low",
+        "value": "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
+        "purpose": "Shared Card shadow-sm; larger marketing/panel shadows are scoped out."
+      }
+    ],
+    "motion": [
+      {
+        "name": "motion-fast",
+        "value": "120ms",
+        "purpose": "Shared motion token; honor reduced-motion settings."
+      },
+      {
+        "name": "motion-base",
+        "value": "220ms",
+        "purpose": "Shared motion token; honor reduced-motion settings."
+      },
+      {
+        "name": "motion-slow",
+        "value": "420ms",
+        "purpose": "Shared motion token; honor reduced-motion settings."
+      },
+      {
+        "name": "motion-slower",
+        "value": "720ms",
+        "purpose": "Shared motion token; honor reduced-motion settings."
+      },
+      {
+        "name": "motion-ease-out",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Shared motion token; honor reduced-motion settings."
+      },
+      {
+        "name": "motion-ease-in-out",
+        "value": "cubic-bezier(0.65, 0, 0.35, 1)",
+        "purpose": "Shared motion token; honor reduced-motion settings."
+      },
+      {
+        "name": "motion-ease-spring",
+        "value": "cubic-bezier(0.34, 1.28, 0.64, 1)",
+        "purpose": "Shared motion token; honor reduced-motion settings."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "xl",
+        "value": "1280px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Shared medium control; semantic theme colors and keyboard focus.",
+      "html": "<button class=\"ds-button-primary\">Kaydet</button>",
+      "css": ".ds-button-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 16px;border-radius:8px;font-size:14px;font-weight:600;transition:background-color 150ms,color 150ms;font-family:var(--font-body),Manrope,sans-serif;background:var(--t-primary);color:var(--t-primary-fg);border:0;} .ds-button-primary:hover{background:var(--t-primary-hover);} .ds-button-primary:focus-visible{outline:2px solid var(--t-ring);outline-offset:2px;} .ds-button-primary:disabled{opacity:.5;pointer-events:none;}"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Current shared Input uses 8px corners, not the unused 4px input radius.",
+      "html": "<label class=\"ds-field\">Site adı<input class=\"ds-input\" placeholder=\"Site adı\" /></label>",
+      "css": ".ds-field{display:grid;gap:6px;color:var(--t-fg);font-size:14px;font-family:var(--font-body),Manrope,sans-serif;} .ds-input{height:40px;padding:0 12px;border:1px solid var(--t-border-strong);border-radius:8px;background:var(--t-surface);color:var(--t-fg);font-size:14px;font-family:var(--font-body),Manrope,sans-serif;transition:border-color 150ms;} .ds-input::placeholder{color:var(--t-fg-subtle);} .ds-input:hover{border-color:var(--t-fg-subtle);} .ds-input:focus{border-color:var(--t-primary);outline:none;box-shadow:0 0 0 2px color-mix(in oklab,var(--t-ring) 40%,transparent);} .ds-input[aria-invalid=\"true\"]{border-color:var(--t-danger);} .ds-input:disabled{background:var(--t-surface-sunken);color:var(--t-fg-subtle);cursor:not-allowed;}"
+    },
+    {
+      "name": "Shared Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Panel card with a divided header and quiet low elevation.",
+      "html": "<section class=\"ds-card\"><header class=\"ds-card-head\">Site özeti</header><div class=\"ds-card-body\">Aidat ve günlük işler</div></section>",
+      "css": ".ds-card{border:1px solid var(--t-border);border-radius:8px;background:var(--t-surface);color:var(--t-fg);box-shadow:0 1px 3px 0 rgb(0 0 0 / .1),0 1px 2px -1px rgb(0 0 0 / .1);font-family:var(--font-body),Manrope,sans-serif;} .ds-card-head{padding:16px;border-bottom:1px solid var(--t-border);font-size:16px;font-weight:600;} .ds-card-body{padding:16px;font-size:14px;color:var(--t-fg-muted);}"
+    },
+    {
+      "name": "Success Badge",
+      "kind": "chip",
+      "refersTo": "badge-success",
+      "description": "Text and green semantic status remain meaningful in both themes.",
+      "html": "<span class=\"ds-badge\">Tahsil edildi</span>",
+      "css": ".ds-badge{display:inline-flex;align-items:center;gap:4px;border-radius:9999px;padding:2px 10px;font-size:12px;font-weight:500;background:var(--t-success-soft);color:var(--t-success-fg);font-family:var(--font-body),Manrope,sans-serif;}"
+    },
+    {
+      "name": "URL Tabs",
+      "kind": "nav",
+      "refersTo": "tabs-active",
+      "description": "Active section uses a primary underline and retains link semantics.",
+      "html": "<nav class=\"ds-tabs\" aria-label=\"Site bölümleri\"><a href=\"#ozet\" aria-current=\"page\">Özet</a><a href=\"#borclar\">Borçlar</a></nav>",
+      "css": ".ds-tabs{display:flex;gap:4px;border-bottom:1px solid var(--t-border);font-family:var(--font-body),Manrope,sans-serif;} .ds-tabs a{padding:10px 12px;border-bottom:2px solid transparent;color:var(--t-fg-muted);text-decoration:none;font-size:14px;font-weight:500;} .ds-tabs a[aria-current=\"page\"]{border-color:var(--t-primary);color:var(--t-fg);} .ds-tabs a:hover{color:var(--t-fg);} .ds-tabs a:focus-visible{outline:2px solid var(--t-ring);outline-offset:2px;}"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "button-outline",
+      "description": "Shared medium secondary action with semantic hover and focus.",
+      "html": "<button class=\"ds-button-outline\">Vazgeç</button>",
+      "css": ".ds-button-outline{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 16px;border-radius:8px;font:600 14px var(--font-body),Manrope,sans-serif;transition:background-color 150ms,color 150ms;background:var(--t-surface);color:var(--t-fg);border:1px solid var(--t-border-strong);} .ds-button-outline:hover{background:var(--t-hover);color:var(--t-fg);} .ds-button-outline:focus-visible{outline:2px solid var(--t-ring);outline-offset:2px;} .ds-button-outline:disabled{opacity:.5;pointer-events:none;}"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Shared medium secondary action with semantic hover and focus.",
+      "html": "<button class=\"ds-button-ghost\">Vazgeç</button>",
+      "css": ".ds-button-ghost{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:0 16px;border-radius:8px;font:600 14px var(--font-body),Manrope,sans-serif;transition:background-color 150ms,color 150ms;background:transparent;color:var(--t-fg-muted);border:0;} .ds-button-ghost:hover{background:var(--t-hover);color:var(--t-fg);} .ds-button-ghost:focus-visible{outline:2px solid var(--t-ring);outline-offset:2px;} .ds-button-ghost:disabled{opacity:.5;pointer-events:none;}"
+    },
+    {
+      "name": "Responsive Stat",
+      "kind": "custom",
+      "description": "Panel value scales with its own card width; amount is sample data.",
+      "html": "<section class=\"ds-stat\"><span class=\"ds-stat-label\">Tahsilat</span><div class=\"ds-stat-value\">45.000,00 ₺</div></section>",
+      "css": ".ds-stat{container-type:inline-size;min-width:0;padding:16px;border:1px solid var(--t-border);border-radius:12px;background:var(--t-surface);font-family:var(--font-body),Manrope,sans-serif;} .ds-stat-label{font-size:14px;color:var(--t-fg-muted);} .ds-stat-value{margin-top:8px;font-size:clamp(1rem,7cqi,1.375rem);font-weight:600;line-height:1.25;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;color:var(--t-fg);}"
+    },
+    {
+      "name": "Module Directory Article",
+      "kind": "custom",
+      "description": "A flat module article with related detail beneath its h2; one continuous directory preserves original deep links.",
+      "html": "<article class=\"ds-module\"><h2>Aidat ve borç takibi</h2><p class=\"ds-module-summary\">Tahakkuk ve tahsilatı aynı yerde izleyin.</p><section class=\"ds-module-detail\"><h3>Daire bazında borç takibi</h3><p>Her dairenin bakiyesini ve ödeme durumunu görün.</p></section><a href=\"#module-dues\">Modüle git</a></article>",
+      "css": ".ds-module{padding:40px 0;border-bottom:1px solid var(--t-border);color:var(--t-fg);font-family:var(--font-body),Manrope,sans-serif;} .ds-module h2{margin:0;font-family:var(--font-editorial),Georgia,serif;font-size:clamp(1.75rem,2.6vw,2.5rem);font-weight:600;letter-spacing:-.035em;line-height:1.15;} .ds-module-summary{margin-top:20px;color:var(--t-fg-muted);line-height:1.6;} .ds-module-detail{margin-top:32px;padding-top:28px;border-top:1px solid var(--t-border);} .ds-module-detail h3{margin:0;font-family:var(--font-editorial),Georgia,serif;font-size:clamp(1.375rem,2vw,1.75rem);font-weight:500;line-height:1.25;} .ds-module-detail p{line-height:1.6;} .ds-module a{color:var(--t-primary);text-decoration:underline;text-underline-offset:4px;} .ds-module a:hover{color:var(--t-primary-hover);} .ds-module a:focus-visible{outline:2px solid var(--t-ring);outline-offset:2px;}"
+    },
+    {
+      "name": "Actual Product Evidence Frame",
+      "kind": "custom",
+      "description": "Homepage signature: imagegen-retouched real populated demo-panel capture, disclosed identity cleanup, sample-data caption, container-width rounded frame and CSS excerpt. Actual PNG is 1507 × 1044 and served unoptimized. Desktop photo bleeds right and extends 112px behind this frame; approved full flow remains intact.",
+      "html": "<figure class=\"ds-product-frame\"><figcaption>Örnek Apartmanı · Panelden kesit, örnek veriler</figcaption><div class=\"ds-product-viewport\"><img src=\"/images/panel-retouched.png\" width=\"1507\" height=\"1044\" alt=\"Yönetim panelinin gerçek bağımsız bölümler ekranı: arama, tema düğmeleri, menüler, 24 daire ve dolu bakiye tablosu.\" /></div></figure>",
+      "css": ".ds-product-frame{margin:0;overflow:hidden;border:1px solid var(--t-ink-border);border-radius:12px;background:var(--t-ink);font-family:var(--font-body),Manrope,sans-serif;} .ds-product-frame figcaption{padding:.6rem 1rem;font-size:.75rem;color:var(--t-ink-muted-fg);border-bottom:1px solid var(--t-ink-border);} .ds-product-viewport{aspect-ratio:2.75;overflow:hidden;} .ds-product-viewport img{display:block;width:100%;height:auto;} @media(max-width:639px){.ds-product-viewport{aspect-ratio:1.6;} .ds-product-viewport img{width:175%;max-width:none;margin-left:-27%;}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Warm architectural clarity.",
+    "overview": "The implemented identity pairs the warmth of an architectural publication with the precision of a financial workspace. Parchment surfaces, copper actions, charcoal identity bands and original courtyard/shared-space photography make property management feel grounded in the places people live. Dark mode translates the same roles into charcoal surfaces and apricot actions.\n\nMarketing uses compact editorial sections, a Manrope homepage headline with a copper true-italic serif companion, and actual populated product evidence. Operational screens keep compact Manrope typography, readable labels and comparable figures. Shared color roles connect both surfaces without imposing a landing-page composition on the panel. Brand strings remain centralized in `packages/config/src/site.ts`; Yönetimcell is the currently configured placeholder, and Vekil is not a shipped rebrand.",
+    "keyCharacteristics": [
+      "Warm, restrained surfaces with hairline divisions.",
+      "Editorial marketing headings; practical sans forms and tables.",
+      "Semantic light/dark themes and meaningful financial status colors.",
+      "Real product captures with disclosed image retouch and sample-data captions, interactive illustrations with example labels, and traceable architectural imagery."
+    ],
+    "rules": [
+      {
+        "name": "Semantic Role",
+        "body": "Component JSX uses `bg-canvas`, `text-fg`, `border-border`, `bg-primary` and related roles. Hex values and raw Tailwind color utilities belong outside component JSX; do not add `dark:` color pairs. Theme mapping remains centralized under `data-theme`.",
+        "section": "colors"
+      }
+    ],
+    "dos": [
+      "**Do** use the executable semantic CSS tokens and their theme pairs; refresh this document when those sources change.",
+      "**Do** keep serif editorial scale in marketing and compact Manrope in operational screens.",
+      "**Do** preserve financial status semantics, chart-series identity, legends and table alternatives.",
+      "**Do** retain visible focus, readable long labels, reduced-motion support, responsive records and user density/font preferences.",
+      "**Do** read brand names from configuration; disclose retouched product captures and caption them with their sample-data context and label interactive or portfolio illustrations as examples."
+    ],
+    "donts": [
+      "**Don't** introduce raw color utilities, inline hex color values or `dark:` color pairs in component JSX.",
+      "**Don't** recolor every chart copper, or prohibit chart blue because blue is no longer the primary brand action.",
+      "**Don't** impose marketing 6px container overrides, display font sizes or a page-specific hero arrangement on the panel.",
+      "**Don't** replace real interactions with a raster, invent customer claims, or turn illustrative controls into feature promises.",
+      "**Don't** add heavy decorative shadows, gradient headline text, nested empty cards or perpetual motion to express this warm identity."
+    ]
+  }
+}

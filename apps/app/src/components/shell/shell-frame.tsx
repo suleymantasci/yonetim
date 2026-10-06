@@ -40,11 +40,11 @@ export function ShellFrame({
         {labels.skipToContent}
       </a>
 
-      <div className="flex min-h-dvh">
+      <div className="panel-shell flex min-h-dvh">
         <Sidebar {...sidebar} open={drawerOpen} onClose={() => setDrawerOpen(false)} />
 
         <div className="flex min-w-0 flex-1 flex-col">
-          <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-border bg-surface/85 px-3 backdrop-blur-md sm:px-4">
+          <header className="panel-toolbar sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-border bg-surface/85 px-3 backdrop-blur-md sm:px-4">
             <button
               type="button"
               onClick={() => setDrawerOpen(true)}
@@ -67,7 +67,7 @@ export function ShellFrame({
            * duvara germek satır takibini imkânsızlaştırıyor. Sınır kabukta,
            * sayfalarda değil — yoksa 40 sayfada tek tek unutulurdu.
            */}
-          <main id="panel-content" className="flex-1 bg-canvas">
+          <main id="panel-content" className="min-w-0 flex-1 bg-canvas">
             <div className="mx-auto w-full max-w-[1600px] p-4 lg:p-6">{children}</div>
           </main>
         </div>

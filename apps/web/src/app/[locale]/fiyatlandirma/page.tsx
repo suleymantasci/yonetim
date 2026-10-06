@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Check } from "lucide-react";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import type { Metadata } from "next";
@@ -9,7 +10,7 @@ import { BILLING_PERIODS, planForUnitCount, type BillingPeriod } from "@yonetim/
 import type { Locale } from "@yonetim/i18n";
 import { faqSchema, jsonLdScript, pageMeta } from "@yonetim/seo";
 import { Accordion, AccordionItem } from "@yonetim/ui";
-import { BlueprintGrid, BrandWash, Reveal } from "@yonetim/ui/motion";
+import { Reveal } from "@yonetim/ui/motion";
 
 import { alternatePaths, localizedPath } from "@/lib/paths";
 import { DEFAULT_UNIT_COUNT } from "@/lib/pricing-stops";
@@ -85,10 +86,8 @@ export default async function PricingPage({
       />
 
       <section className="relative isolate overflow-hidden border-b border-border">
-        <BrandWash />
-        <BlueprintGrid origin="top center" />
 
-        <div className="relative mx-auto max-w-4xl px-4 pb-14 pt-16 text-center">
+        <div className="marketing-container relative pb-14 pt-16 text-center">
           <h1 className="font-heading text-4xl font-extrabold tracking-tight text-fg sm:text-5xl">
             {t("title")}
           </h1>
@@ -111,7 +110,7 @@ export default async function PricingPage({
       </section>
 
       {/* HESAPLAYICI — sunucuda da render edilir, JS'siz form olarak çalışır. */}
-      <section className="mx-auto max-w-4xl px-4 py-12">
+      <section className="marketing-container pricing-workspace grid items-start gap-8 py-12 xl:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
         <PlanCalculator
           locale={locale}
           initialUnits={unitCount}
@@ -159,11 +158,12 @@ export default async function PricingPage({
             ctaNote: t("ctaNote"),
           }}
         />
+        <Image src="/images/courtyard.webp" alt="" width={1536} height={1024} sizes="(min-width: 1280px) 25vw, 100vw" className="hidden aspect-[1/2] w-full object-cover xl:block" />
       </section>
 
       {/* TÜM PAKETLER */}
       <section className="bg-surface-sunken py-16">
-        <div className="mx-auto max-w-6xl px-4">
+        <div className="marketing-container">
           <Reveal>
             <h2 className="font-heading text-3xl font-extrabold tracking-tight text-fg">
               {t("plansTitle")}
@@ -181,7 +181,7 @@ export default async function PricingPage({
       </section>
 
       {/* GARANTİLER */}
-      <section className="mx-auto max-w-4xl px-4 py-16">
+      <section className="marketing-container py-16">
         <Reveal>
           <h2 className="font-heading text-2xl font-extrabold tracking-tight text-fg">
             {t("guaranteesTitle")}
@@ -203,7 +203,7 @@ export default async function PricingPage({
       </section>
 
       {/* SSS */}
-      <section className="mx-auto max-w-3xl px-4 pb-20">
+      <section className="marketing-container pb-20">
         <Reveal>
           <h2 className="font-heading text-2xl font-extrabold tracking-tight text-fg">
             {t("faqTitle")}

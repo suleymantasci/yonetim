@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { cookies } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
-import { Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { Manrope, Source_Serif_4 } from "next/font/google";
 import type { Metadata, Viewport } from "next";
 
 import { siteConfig } from "@yonetim/config";
@@ -22,12 +22,14 @@ import { SiteFooter } from "@/components/site-footer";
 import { CLIENT_NAMESPACES } from "@/i18n/client-namespaces";
 import { hreflangEntries, localizedPath } from "@/lib/paths";
 
-const body = Inter({ subsets: ["latin", "latin-ext"], variable: "--font-body-src", display: "swap" });
-const heading = Plus_Jakarta_Sans({
+const body = Manrope({ subsets: ["latin", "latin-ext"], variable: "--font-body-src", display: "swap" });
+const heading = Manrope({
   subsets: ["latin", "latin-ext"],
   variable: "--font-heading-src",
   display: "swap",
 });
+
+const editorial = Source_Serif_4({ style: ["normal", "italic"], subsets: ["latin", "latin-ext"], variable: "--font-editorial-src", display: "swap" });
 
 export function generateStaticParams() {
   return LOCALES.map((locale) => ({ locale }));
@@ -107,7 +109,7 @@ export default async function LocaleLayout({
       data-theme={themeAttribute}
       data-theme-preference={themePreference}
       {...serverA11yAttributes(a11yCookie)}
-      className={`${body.variable} ${heading.variable}`}
+      className={`${body.variable} ${heading.variable} ${editorial.variable}`}
     >
       <head>
         <style>{`:root{
@@ -117,6 +119,7 @@ export default async function LocaleLayout({
           --brand-accent:${c.accent};
           --font-body:var(--font-body-src);
           --font-heading:var(--font-heading-src);
+          --font-editorial:var(--font-editorial-src);
         }`}</style>
         {/* Tema atlamasını (FOUC) engeller: stil sonrası, gövde öncesi çalışır. */}
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
@@ -131,7 +134,7 @@ export default async function LocaleLayout({
           }}
         />
       </head>
-      <body className="min-h-dvh bg-canvas font-sans text-fg antialiased">
+      <body className="marketing min-h-dvh bg-canvas font-sans text-fg antialiased">
         <NextIntlClientProvider locale={locale} messages={clientMessages}>
           <a
             href="#icerik"

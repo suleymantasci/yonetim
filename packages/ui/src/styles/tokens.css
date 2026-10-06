@@ -34,10 +34,10 @@
 
      `primary` ile `ink` bilinçli olarak ayrı: birincisi EYLEM (buton, bağlantı),
      ikincisi KİMLİK (koyu bant, logo, başlık) rengidir. Gerekçe site.ts'te. */
-  --brand-primary: #2563eb;
-  --brand-ink: #0b3a66;
-  --brand-secondary: #06b6d4;
-  --brand-accent: #f59e0b;
+  --brand-primary: #a54b32;
+  --brand-ink: #302932;
+  --brand-secondary: #eba987;
+  --brand-accent: #eba987;
 
   /* Hareket: süre ve yumuşatma eğrileri. CSS keyframe'leri ile
      `packages/ui/src/motion/*` içindeki JS animasyonları aynı ritmi paylaşsın
@@ -52,17 +52,17 @@
   --motion-ease-spring: cubic-bezier(0.34, 1.28, 0.64, 1);
 
   /* Yüzeyler */
-  --t-canvas: #f8fafc;
-  --t-surface: #ffffff;
-  --t-surface-raised: #ffffff;
-  --t-surface-sunken: #f1f5f9;
+  --t-canvas: #f4eee5;
+  --t-surface: #fffaf4;
+  --t-surface-raised: #fffaf4;
+  --t-surface-sunken: #f4eee5;
   --t-overlay: rgb(15 23 42 / 0.45);
 
   /* Metin */
-  --t-fg: #0f172a;
-  --t-fg-muted: #475569;
-  --t-fg-subtle: #64748b;
-  --t-fg-inverted: #f8fafc;
+  --t-fg: #302932;
+  --t-fg-muted: #60565e;
+  --t-fg-subtle: #70666c;
+  --t-fg-inverted: #f4eee5;
 
   /* Kenarlık ve odak
      `border-strong` girdi alanlarının ve outline butonların sınırıdır; bu
@@ -70,40 +70,40 @@
      karşı ≥ 3:1 olmak zorunda (eski #cbd5e1 yalnız 1.48:1 idi).
      Odak halkası da aynı eşiğe tabi: turkuaz beyaz üstünde 2.43:1 kalıyordu,
      eylem mavisine alındı. Dekoratif ayraçlar `--t-border` ile çizilir. */
-  --t-border: #e2e8f0;
-  --t-border-strong: #7d8da2;
+  --t-border: #ded3c8;
+  --t-border-strong: #918079;
   --t-ring: var(--brand-primary);
 
   /* Etkileşim durumları */
-  --t-hover: #f1f5f9;
-  --t-selected: color-mix(in oklab, var(--brand-primary) 10%, #ffffff);
+  --t-hover: #f4eee5;
+  --t-selected: color-mix(in oklab, var(--brand-primary) 10%, #fffaf4);
 
   /* Marka yüzeyleri */
   --t-primary: var(--brand-primary);
   --t-primary-hover: color-mix(in oklab, var(--brand-primary) 85%, #000000);
-  --t-primary-fg: #ffffff;
-  --t-primary-soft: color-mix(in oklab, var(--brand-primary) 10%, #ffffff);
+  --t-primary-fg: #fffaf4;
+  --t-primary-soft: color-mix(in oklab, var(--brand-primary) 10%, #fffaf4);
   --t-primary-soft-fg: color-mix(in oklab, var(--brand-primary) 80%, #000000);
 
   /* Kimlik yüzeyi: koyu bantlar, footer, logo işareti, hero zemini.
      Eylem rengi değildir — birincil buton `--t-primary` kullanır. */
   --t-ink: var(--brand-ink);
   --t-ink-hover: color-mix(in oklab, var(--brand-ink) 88%, #000000);
-  --t-ink-fg: #ffffff;
-  --t-ink-muted-fg: color-mix(in oklab, #ffffff 78%, var(--brand-ink));
-  --t-ink-soft: color-mix(in oklab, var(--brand-ink) 8%, #ffffff);
+  --t-ink-fg: #fffaf4;
+  --t-ink-muted-fg: color-mix(in oklab, #fffaf4 78%, var(--brand-ink));
+  --t-ink-soft: color-mix(in oklab, var(--brand-ink) 8%, #fffaf4);
   --t-ink-soft-fg: color-mix(in oklab, var(--brand-ink) 92%, #000000);
-  --t-ink-border: color-mix(in oklab, var(--brand-ink) 22%, #ffffff);
+  --t-ink-border: color-mix(in oklab, var(--brand-ink) 22%, #fffaf4);
 
   --t-secondary: var(--brand-secondary);
   --t-secondary-hover: color-mix(in oklab, var(--brand-secondary) 85%, #000000);
   /* Turkuaz açık bir renk: üstünde beyaz metin 2.43:1 ile okunmuyordu. */
-  --t-secondary-fg: #04303a;
+  --t-secondary-fg: #302932;
 
   --t-accent: var(--brand-accent);
-  --t-accent-hover: color-mix(in oklab, var(--brand-accent) 88%, #ffffff);
-  --t-accent-fg: #1f2937;
-  --t-accent-soft: color-mix(in oklab, var(--brand-accent) 16%, #ffffff);
+  --t-accent-hover: color-mix(in oklab, var(--brand-accent) 88%, #fffaf4);
+  --t-accent-fg: #302932;
+  --t-accent-soft: color-mix(in oklab, var(--brand-accent) 16%, #fffaf4);
   --t-accent-soft-fg: #713f12;
 
   /* Durum renkleri — ana renk + yumuşak zemin + okunur metin + kenarlık */
@@ -112,7 +112,7 @@
   --t-success-fg: #065f46;
   --t-success-border: #a7f3d0;
 
-  --t-warning: #f59e0b;
+  --t-warning: #b87926;
   --t-warning-soft: #fffbeb;
   --t-warning-fg: #78350f;
   --t-warning-border: #fde68a;
@@ -124,10 +124,10 @@
   --t-danger-fg: #991b1b;
   --t-danger-border: #fecaca;
 
-  --t-info: #0ea5e9;
-  --t-info-soft: #f0f9ff;
-  --t-info-fg: #075985;
-  --t-info-border: #bae6fd;
+  --t-info: #a54b32;
+  --t-info-soft: #f2e5dc;
+  --t-info-fg: #70402e;
+  --t-info-border: #d7b4a0;
 
   /*
    * VERİ GÖRSELLEŞTİRME SERİSİ (SPEC Bölüm 6.13 raporlar)
@@ -176,73 +176,73 @@
  * açılarak kullanılır.
  * -------------------------------------------------------------------------- */
 :root[data-theme="dark"] {
-  --t-canvas: #0a0f1a;
-  --t-surface: #111827;
-  --t-surface-raised: #1a2334;
-  --t-surface-sunken: #070b13;
+  --t-canvas: #221e25;
+  --t-surface: #302932;
+  --t-surface-raised: #3b333d;
+  --t-surface-sunken: #1b171e;
   --t-overlay: rgb(0 0 0 / 0.6);
 
-  --t-fg: #f1f5f9;
-  --t-fg-muted: #a8b3c4;
-  --t-fg-subtle: #8b97a8;
-  --t-fg-inverted: #0f172a;
+  --t-fg: #f4eee5;
+  --t-fg-muted: #c2b5ba;
+  --t-fg-subtle: #b3a6ad;
+  --t-fg-inverted: #302932;
 
-  --t-border: #263041;
+  --t-border: #4b414c;
   /* Açık temadaki gerekçenin koyu karşılığı: #3a475c yalnız 1.89:1 idi. */
-  --t-border-strong: #5a6779;
-  --t-ring: #38bdf8;
+  --t-border-strong: #887981;
+  --t-ring: #eba987;
 
-  --t-hover: #1a2334;
-  --t-selected: color-mix(in oklab, var(--brand-primary) 32%, #111827);
+  --t-hover: #3b333d;
+  --t-selected: color-mix(in oklab, var(--brand-primary) 32%, #302932);
 
-  --t-primary: color-mix(in oklab, var(--brand-primary) 62%, #ffffff);
-  --t-primary-hover: color-mix(in oklab, var(--brand-primary) 78%, #ffffff);
-  --t-primary-fg: #0a0f1a;
-  --t-primary-soft: color-mix(in oklab, var(--brand-primary) 26%, #111827);
-  --t-primary-soft-fg: color-mix(in oklab, var(--brand-primary) 45%, #ffffff);
+  --t-primary: #eba987;
+  --t-primary-hover: color-mix(in oklab, var(--t-primary) 88%, #fffaf4);
+  --t-primary-fg: #221e25;
+  --t-primary-soft: color-mix(in oklab, var(--brand-primary) 26%, #302932);
+  --t-primary-soft-fg: color-mix(in oklab, var(--brand-primary) 45%, #fffaf4);
 
   /*
    * Kimlik bandı koyu temada da bir **bant** olarak okunmalı; laciverti
    * açmak yerine zeminle karıştırıp lacivert tonlu bir yüzey üretiyoruz.
    * Aksi hâlde koyu temada bant ile canvas ayırt edilemez hâle geliyordu.
    */
-  --t-ink: color-mix(in oklab, var(--brand-ink) 55%, #0a0f1a);
-  --t-ink-hover: color-mix(in oklab, var(--brand-ink) 72%, #0a0f1a);
-  --t-ink-fg: #f1f5f9;
-  --t-ink-muted-fg: #a8b3c4;
-  --t-ink-soft: color-mix(in oklab, var(--brand-ink) 30%, #111827);
-  --t-ink-soft-fg: color-mix(in oklab, var(--brand-ink) 22%, #ffffff);
-  --t-ink-border: color-mix(in oklab, var(--brand-ink) 48%, #111827);
+  --t-ink: color-mix(in oklab, var(--brand-ink) 55%, #221e25);
+  --t-ink-hover: color-mix(in oklab, var(--brand-ink) 72%, #221e25);
+  --t-ink-fg: #f4eee5;
+  --t-ink-muted-fg: #c2b5ba;
+  --t-ink-soft: color-mix(in oklab, var(--brand-ink) 30%, #302932);
+  --t-ink-soft-fg: color-mix(in oklab, var(--brand-ink) 22%, #fffaf4);
+  --t-ink-border: color-mix(in oklab, var(--brand-ink) 48%, #302932);
 
-  --t-secondary: color-mix(in oklab, var(--brand-secondary) 78%, #ffffff);
-  --t-secondary-hover: color-mix(in oklab, var(--brand-secondary) 90%, #ffffff);
+  --t-secondary: color-mix(in oklab, var(--brand-secondary) 78%, #fffaf4);
+  --t-secondary-hover: color-mix(in oklab, var(--brand-secondary) 90%, #fffaf4);
   --t-secondary-fg: #062a33;
 
-  --t-accent: color-mix(in oklab, var(--brand-accent) 88%, #ffffff);
+  --t-accent: color-mix(in oklab, var(--brand-accent) 88%, #fffaf4);
   --t-accent-hover: var(--brand-accent);
-  --t-accent-fg: #1f2937;
-  --t-accent-soft: color-mix(in oklab, var(--brand-accent) 22%, #111827);
-  --t-accent-soft-fg: #fcd34d;
+  --t-accent-fg: #302932;
+  --t-accent-soft: color-mix(in oklab, var(--brand-accent) 22%, #302932);
+  --t-accent-soft-fg: #f2c6a6;
 
   --t-success: #34d399;
-  --t-success-soft: color-mix(in oklab, #10b981 18%, #111827);
+  --t-success-soft: color-mix(in oklab, #10b981 18%, #302932);
   --t-success-fg: #6ee7b7;
-  --t-success-border: color-mix(in oklab, #10b981 38%, #111827);
+  --t-success-border: color-mix(in oklab, #10b981 38%, #302932);
 
   --t-warning: #fbbf24;
-  --t-warning-soft: color-mix(in oklab, #f59e0b 18%, #111827);
+  --t-warning-soft: color-mix(in oklab, #b87926 18%, #302932);
   --t-warning-fg: #fcd34d;
-  --t-warning-border: color-mix(in oklab, #f59e0b 38%, #111827);
+  --t-warning-border: color-mix(in oklab, #b87926 38%, #302932);
 
   --t-danger: #f87171;
-  --t-danger-soft: color-mix(in oklab, #ef4444 18%, #111827);
+  --t-danger-soft: color-mix(in oklab, #ef4444 18%, #302932);
   --t-danger-fg: #fca5a5;
-  --t-danger-border: color-mix(in oklab, #ef4444 38%, #111827);
+  --t-danger-border: color-mix(in oklab, #ef4444 38%, #302932);
 
-  --t-info: #38bdf8;
-  --t-info-soft: color-mix(in oklab, #0ea5e9 18%, #111827);
-  --t-info-fg: #7dd3fc;
-  --t-info-border: color-mix(in oklab, #0ea5e9 38%, #111827);
+  --t-info: #eba987;
+  --t-info-soft: color-mix(in oklab, #a54b32 18%, #302932);
+  --t-info-fg: #f2c6a6;
+  --t-info-border: color-mix(in oklab, #a54b32 38%, #302932);
 
   /*
    * Koyu tema serisi otomatik çevrim DEĞİL: aynı 6 ton, koyu zemin için
@@ -279,11 +279,11 @@
  */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
-    --t-canvas: #0a0f1a;
-    --t-surface: #111827;
-    --t-fg: #f1f5f9;
-    --t-fg-muted: #a8b3c4;
-    --t-border: #263041;
+    --t-canvas: #221e25;
+    --t-surface: #302932;
+    --t-fg: #f4eee5;
+    --t-fg-muted: #c2b5ba;
+    --t-border: #4b414c;
     color-scheme: dark;
   }
 }

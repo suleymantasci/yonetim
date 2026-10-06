@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
-import { Inter, Plus_Jakarta_Sans } from "next/font/google";
+import { Manrope } from "next/font/google";
 import type { Metadata, Viewport } from "next";
 
 import { siteConfig } from "@yonetim/config";
@@ -17,8 +17,8 @@ import { CLIENT_NAMESPACES } from "@/i18n/client-namespaces";
 
 import "./globals.css";
 
-const body = Inter({ subsets: ["latin", "latin-ext"], variable: "--font-body-src", display: "swap" });
-const heading = Plus_Jakarta_Sans({
+const body = Manrope({ subsets: ["latin", "latin-ext"], variable: "--font-body-src", display: "swap" });
+const heading = Manrope({
   subsets: ["latin", "latin-ext"],
   variable: "--font-heading-src",
   display: "swap",

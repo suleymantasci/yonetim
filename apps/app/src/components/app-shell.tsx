@@ -190,17 +190,17 @@ export async function AppShell({
         },
       }}
       headerLeft={
-        <>
+        <div className="flex min-w-0 flex-1 items-center gap-2">
           {/*
            * Palet `lg` altında tümüyle gizliydi — yani 26 sayfalık gezinmenin
            * en hızlı yolu tabletlerde hiç yoktu. Artık `sm`'den itibaren
            * görünüyor; dar ekranda düğme yalnız büyütece iniyor (kendi
            * `sm:` sınıflarıyla), site adı ise yalnız en dar ekranda kalıyor.
            */}
-          <Link href="/panel" className="truncate font-heading font-bold text-fg sm:hidden">
+          <Link href="/panel" className="min-w-0 truncate font-heading font-semibold text-fg sm:hidden">
             {tenantName}
           </Link>
-          <div className="hidden sm:block">
+          <div className="shrink-0">
             <CommandPalette
               entries={paletteEntries}
               labels={{
@@ -214,7 +214,7 @@ export async function AppShell({
               }}
             />
           </div>
-        </>
+        </div>
       }
       headerRight={
         <>

@@ -6,7 +6,7 @@ import { siteConfig } from "@yonetim/config";
 import { MIGRATION_SOURCES } from "@yonetim/core";
 import type { Locale } from "@yonetim/i18n";
 import { pageMeta } from "@yonetim/seo";
-import { BlueprintGrid, BrandWash, Reveal, Stagger } from "@yonetim/ui/motion";
+import { Reveal, Stagger } from "@yonetim/ui/motion";
 
 import { alternatePaths, localizedPath } from "@/lib/paths";
 
@@ -48,10 +48,8 @@ export default async function MigrationPage({
   return (
     <>
       <section className="relative isolate overflow-hidden border-b border-border">
-        <BrandWash />
-        <BlueprintGrid origin="top center" />
-        <div className="relative mx-auto max-w-4xl px-4 pb-12 pt-16">
-          <h1 className="font-heading text-4xl font-extrabold tracking-tight text-fg sm:text-5xl">
+        <div className="marketing-container relative pb-12 pt-16">
+          <h1 className="migration-title font-heading text-4xl font-extrabold tracking-tight text-fg sm:text-5xl">
             {t("title")}
           </h1>
           <p className="mt-4 max-w-2xl text-lg leading-relaxed text-fg-muted">{t("subtitle")}</p>
@@ -64,18 +62,18 @@ export default async function MigrationPage({
         bakışta veriyor. Çizgi `aria-hidden` bir sözde-öğe; sıralama bilgisi
         `<ol>` semantiğinden geliyor, çizgiden değil.
       */}
-      <section className="mx-auto max-w-3xl px-4 py-14">
-        <ol className="relative space-y-6 ps-12">
+      <section className="marketing-container py-14">
+        <ol className="migration-steps relative grid gap-8 ps-12 md:grid-cols-2">
           <span
             aria-hidden
-            className="absolute inset-y-4 start-[1.4375rem] w-px bg-border"
+            className="hidden"
           />
           {([1, 2, 3, 4] as const).map((step) => (
             <Reveal
               key={step}
               as="li"
               delay={(step - 1) * 0.06}
-              className="relative rounded-2xl border border-border bg-surface p-5"
+              className="relative border-t border-border py-5 ps-3"
             >
               <span className="absolute -start-12 top-4 inline-flex h-12 w-12 items-center justify-center">
                 <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary font-heading text-sm font-bold text-primary-fg shadow-xs">
@@ -91,7 +89,7 @@ export default async function MigrationPage({
 
       {/* KAYNAKLAR */}
       <section className="bg-surface-sunken py-14">
-        <div className="mx-auto max-w-4xl px-4">
+        <div className="marketing-container">
           <Reveal>
             <h2 className="font-heading text-2xl font-extrabold tracking-tight text-fg">
               {t("sourcesTitle")}
@@ -121,7 +119,7 @@ export default async function MigrationPage({
         </div>
       </section>
 
-      <section className="mx-auto max-w-4xl px-4 py-14">
+      <section className="marketing-container py-14">
         <Reveal className="flex gap-4 rounded-2xl border border-border bg-surface p-6 sm:p-8">
           <ShieldCheck aria-hidden="true" className="mt-0.5 h-6 w-6 shrink-0 text-primary" />
           <div>

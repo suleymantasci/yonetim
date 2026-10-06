@@ -8,7 +8,7 @@ import { siteConfig } from "@yonetim/config";
 import { formatAmount, LOCALES } from "@yonetim/i18n";
 import type { Locale } from "@yonetim/i18n";
 import { breadcrumbSchema, jsonLdScript, pageMeta } from "@yonetim/seo";
-import { BlueprintGrid, BrandWash, Reveal } from "@yonetim/ui/motion";
+import { Reveal } from "@yonetim/ui/motion";
 
 import { alternatePaths, localizedPath } from "@/lib/paths";
 import { campaignSlug, rewardLabel } from "@/lib/campaign-reward";
@@ -113,9 +113,7 @@ export default async function CampaignDetailPage({
         geri dönüş yolu olmadan ziyaretçi listeye ulaşamıyordu.
       */}
       <section className="relative isolate overflow-hidden border-b border-border">
-        <BrandWash />
-        <BlueprintGrid origin="top center" />
-        <div className="relative mx-auto max-w-3xl px-4 pb-12 pt-10">
+        <div className="marketing-container relative pb-12 pt-10">
           <Link
             href="/kampanyalar"
             className="inline-flex items-center gap-1 text-sm font-medium text-fg-muted transition-colors hover:text-fg"
@@ -153,7 +151,7 @@ export default async function CampaignDetailPage({
         </div>
       </section>
 
-      <div className="mx-auto max-w-3xl px-4 py-12">
+      <div className="marketing-container py-12">
         {/* ÖDÜL — sayfadaki tek en büyük rakam. */}
         <Reveal className="rounded-2xl border-2 border-primary bg-primary-soft p-6 sm:p-8">
           <h2 className="text-sm font-semibold text-primary-soft-fg">

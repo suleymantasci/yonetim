@@ -74,7 +74,7 @@ export default async function GuidePage({
       />
 
       <header className="border-b border-border bg-surface-sunken">
-        <div className="mx-auto max-w-3xl px-4 pb-10 pt-12">
+        <div className="marketing-container pb-10 pt-12">
           <h1 className="max-w-[24ch] font-heading text-4xl font-extrabold leading-[1.12] tracking-tight text-fg sm:text-5xl">
             {guide.title}
           </h1>
@@ -82,7 +82,7 @@ export default async function GuidePage({
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 xl:grid-cols-[minmax(0,1fr)_16rem]">
+      <div className="marketing-container grid gap-10 py-12 xl:grid-cols-[minmax(0,1fr)_16rem]">
         <article className="mx-auto w-full max-w-[68ch] xl:mx-0">
           {guide.sections.map((section, index) => (
             <section key={section.heading}>

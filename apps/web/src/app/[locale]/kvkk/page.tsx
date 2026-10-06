@@ -48,7 +48,7 @@ export default async function KvkkPage({ params }: { params: Promise<{ locale: s
   return (
     <>
       <header className="border-b border-border bg-surface-sunken">
-        <div className="mx-auto max-w-3xl px-4 pb-10 pt-12">
+        <div className="marketing-container pb-10 pt-12">
           <h1 className="font-heading text-3xl font-extrabold tracking-tight text-fg sm:text-4xl">
             {t("title")}
           </h1>
@@ -62,8 +62,8 @@ export default async function KvkkPage({ params }: { params: Promise<{ locale: s
         Başlık kimlikleri `renderMarkdown` ile aynı fonksiyondan üretiliyor,
         bu yüzden bağlantılar JavaScript olmadan da doğru yere gidiyor.
       */}
-      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 xl:grid-cols-[minmax(0,1fr)_16rem]">
-        <div className="mx-auto w-full max-w-[68ch] xl:mx-0">
+      <div className="marketing-container grid gap-10 py-12 xl:grid-cols-[minmax(0,1fr)_16rem]">
+        <div className="min-w-0 w-full">
           {renderMarkdown(text)}
 
           <p className="mt-10 flex flex-wrap items-center gap-2 border-t border-border pt-6 text-sm text-fg-muted">

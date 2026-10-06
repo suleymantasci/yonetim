@@ -1,164 +1,26 @@
-# Pazarlama görselleri — alan ölçüleri ve teslim kuralları
+# Pazarlama görselleri
 
-Açılış sayfasındaki görsel alanları **tek bir ölçüyü** paylaşır. Amaç, üretilen
-her yeni görselin hiçbir kod değişikliği gerektirmeden yerine oturması.
+2026-10-06 revizyonu, onaylanan sıcak mimari kimliği uygular.
 
-Alanların bileşenleri: `src/components/home/hero-figure.tsx`,
-`src/components/home/story-row.tsx`, altlık şekli `src/components/home/plot-shape.tsx`.
-
----
-
-## 1. Ortak slot — 1520 × 1352 px
-
-| | |
-|---|---|
-| **Teslim ölçüsü** | **1520 × 1352 px** (2×) |
-| Oran | 760 : 676 ≈ **1,124 : 1** (yataya yatık, kareye yakın) |
-| Biçim | PNG-24 **alfa kanallı** (şeffaf zemin) — ya da alfa'lı WebP |
-| Ekranda kapladığı en büyük alan | 544 CSS px genişlik (masaüstü), 480 CSS px (tablet), ~%92 genişlik (mobil) |
-| Dosya boyutu hedefi | **≤ 250 KB** (sıkıştırma sonrası) |
-
-Kod tarafında `width={760} height={676}` yazılı; bu yalnız **oranı** bildirir.
-1520 × 1352 teslim edildiğinde kod değişmez, Next.js kaynaktan uygun boyutu üretir.
-
-> Şu an dizindeki üç PNG 760 × 676 ve 178–584 KB. Oran doğru, çözünürlük ve
-> `tour-control-slide.png`'nin boyutu düşük kaliteli/ağır kalıyor. Nihai
-> görsellerde yukarıdaki hedefleri tutturun.
-
-### Zemin kuralı — en önemli madde
-
-**Görselin içine arka plan şekli veya marka rengi koymayın.** Şu an elimizdeki
-geçici PNG'lerde açık mavi bir "ev/ok" şekli gömülü; o şekil:
-
-- koyu temada yanlış renkte kalıyor,
-- marka rengi (`#2563EB`) değiştiğinde bayatlıyor,
-- CSS'teki parsel çerçevesiyle (`PlotShape`) yarışıyor.
-
-Altlık şekli ve marka rengi **kodda** duruyor ve temayla birlikte dönüyor.
-Görselden istenen tek şey **şeffaf zeminli özne**.
-
-### Kompozisyon
-
-```
-      1520 px
- ┌───────────────────────────────────────┐
- │  ← %8 pay →                  ← %8 →   │   ▲
- │   ┌───────────────────────────────┐   │   │
- │   │                               │   │   │
- │   │        ÖZNE BU ALANDA         │   │   │  1352 px
- │   │      (yatayda ortalı,         │   │   │
- │   │     dikeyde alta yaslı)       │   │   │
- │   │                               │   │   │
- │   └───────────────────────────────┘   │   ▼
- │                  ← %4 pay →           │
- └───────────────────────────────────────┘
-```
-
-- Özne kenarlara **değmesin**: her yönden en az %4 (≈ 60 px) boşluk kalsın.
-- Dikeyde alta yaslayın; üstte %8–10 boşluk iyi durur.
-- Gölge kullanacaksanız görselin içinde, yumuşak ve nötr (siyah %8–12) olsun.
-
-### Tema uyumu
-
-Görsel hem `#f8fafc` (açık tema) hem `#0a0f1a` (koyu tema) üstünde duracak.
-
-- Saf beyaz ya da saf siyah geniş alanlardan kaçının; koyu temada beyaz bir
-  yüzey delik gibi parlıyor.
-- Öznenin dış kenarı orta tonda olsun (ne #fff ne #000).
-- Kırpma (matting) temiz olsun: beyaz zemin artığı koyu temada halo yapar.
-
----
-
-## 2. Doldurulmuş alanlar
-
-### 2.1 Hero — `tour-control-slide.png`
-
-Sayfanın ilk ekranı, sağ sütun. Üstüne **iki canlı kart** biniyor (gerçek DOM,
-gerçek token — görselin içine çizilmeyecek). Bu iki bölgeyi öznenin **önemli
-detayından arındırın**; özne oraya taşabilir ama yüz, yazı, ekran gibi
-okunması gereken bir şey kalmasın.
-
-```
-        1520 px
- ┌───────────────────────────────────────┐
- │                       ┌─────────────┐ │  ← "Tahsilat oranı %94" kartı
- │                       │    TEMİZ    │ │     560 × 280 px
- │                       │   BÖLGE 1   │ │     sağ kenardan 0, üstten 135 px
- │                       └─────────────┘ │
- │                                       │
- │              ÖZNE                     │
- │                                       │
- │ ┌───────────────────┐                 │  ← WhatsApp kartı
- │ │       TEMİZ       │                 │     800 × 320 px
- │ │      BÖLGE 2      │                 │     sol kenardan 0, alttan 55 px
- │ └───────────────────┘                 │
- └───────────────────────────────────────┘
-```
-
-| Bölge | Genişlik × yükseklik | Konum (1520 × 1352 içinde) |
+| Varlık | Kullanım | Görsel davranışı |
 |---|---|---|
-| 1 — tahsilat rozeti | 560 × 280 px | sağ: 0, üst: 135 |
-| 2 — WhatsApp kartı | 800 × 320 px | sol: 0, alt: 55 |
+| courtyard.webp | Hero, site anlatımı, blog/fiyat sayfası | Dolu zeminli özgün mimari fotoğraf; hero masaüstünde en az 31,5 rem ve metin alanıyla aynı yükseklikte; mobilde 20 rem; anlatım 3:4 |
+| shared-space.webp | Sakin anlatımı ve kampanya bandı | Dolu zeminli ortak yaşam fotoğrafı, object-fit cover |
+| panel-preview-light.webp | Önceki açık tema tasarım arşivi (sayfada kullanılmaz) | 1536×1024 temsili panel; örnek veriler, geniş menü, arama ve tema kontrolleri |
+| panel-preview-dark.webp | Önceki koyu tema tasarım arşivi (sayfada kullanılmaz) | Aynı kompozisyonun koyu tema karşılığı |
 
-Kartlar `rem` ölçüsünde, yani dar ekranda görsele oranla **büyüyorlar**;
-yukarıdaki değerler en dar hâl (masaüstü, 466 px sütun) için hesaplandı.
+Yeni görseller ImageGen ile üretildi. Kesin promptlar her WebP yanındaki .json dosyasında ve docs/design/landing-revision-2026-10-05/asset-prompts.json içinde. Arşivdeki panel görselleri mevcut ürün menüsünü referans alır; canlı müşteri ekran görüntüsü değildir. Ana sayfa artık tam boy panel rasteri kullanmaz: hero altında üç ölçüm, üç tablo satırı ve mevcut WhatsApp demosunu içeren kısa HTML ürün özeti gösterilir. Özet örnek veriler olarak etiketlenir. Gerçek panelin işlevleri ve kontrolleri korunur.
 
-**İçerik yönergesi:** Bir site yöneticisi ve yönettiği alanlar. Türkiye'den bir
-site/apartman bağlamı — abartılı "kurumsal stok fotoğraf" havası olmasın.
-Alternatif metin `marketing.home.heroImageAlt` anahtarında; görsel değişirse o
-metin de değişmeli.
+Önceki tour-control-slide.png, mobile-app-slide.png, social-life-slide.png varlıkları eski tasarım arşividir; bu revizyonun ana sayfasında kullanılmaz. Şeffaf PNG ve PlotShape sözleşmesi artık bu yüzeyler için geçerli değildir.
 
-### 2.2 Sakin şeridi — `mobile-app-slide.png`
+## Full-flow correction — 2026-10-06
 
-Zikzak bölümünün ilk satırı, solda. Üstüne kart binmiyor, temiz bölge yok.
+`panel-actual-dark.jpg` is the original actual local panel capture with populated Örnek Apartmanı demo data, sourced from `verification/panel-units-dark-desktop.jpg`. The landing frame clips the top excerpt through CSS; it does not use generated UI. Original pixels preserved. It is a screenshot, not interactive controls.
 
-**İçerik yönergesi:** Sakin mobil uygulamasının iki telefon ekranı. Ekran
-içerikleri **Türkçe ve gerçekçi** olsun (bakiye, bekleyen işler, arıza kaydı);
-uydurma kişi adı ve gerçek görünümlü tutar kullanmayın.
+`olive-canopy.png` is a transparent organic olive branch generated with ImageGen. Its exact prompt is embedded and recorded in the adjacent JSON. It extends toward the hero/header boundary, stays decorative and ignores pointer input.
 
-### 2.3 Site şeridi — `social-life-slide.png`
+The homepage follows `08-ana-sayfa-tam-akis-light.png`: container-framed actual panel, equal audiences, one eight-module directory, resident WhatsApp, portfolio, compact pricing/migration/notes. The removed simulator is absent only from homepage marketing; underlying product features remain available.
 
-Zikzak bölümünün ikinci satırı, sağda. Altlık şekli bu satırda **aynalanır**
-(`mirrored`), yani görselin kendi kompozisyonu simetriye yakın durursa iyi olur.
+## Image-only retouch and hero refinement
 
-**İçerik yönergesi:** Blok/bina kütleleri — izometrik ya da yumuşak 3B. Tek
-bina değil, birden fazla blok görünsün: bölümün iddiası "tek apartmandan çok
-bloklu siteye kadar".
-
----
-
-## 3. Henüz üretilmemiş — üretilirse yerine takılır
-
-### 3.1 Paylaşım görseli (Open Graph) — 1200 × 630 px
-
-Şu an **yok**. Site bağlantısı WhatsApp'ta, LinkedIn'de veya Slack'te
-paylaşıldığında görselsiz, zayıf bir kart çıkıyor.
-
-| | |
-|---|---|
-| Ölçü | **1200 × 630 px** (zorunlu, sabit) |
-| Biçim | PNG veya JPG, **şeffaflık yok** (zemin dolu) |
-| Dosya | ≤ 300 KB |
-| Güvenli alan | Kenarlardan 60 px içeride kalın; bazı istemciler kenarları kırpıyor |
-| Metin | En fazla 6–7 kelime, en az 48 px punto |
-
-Teslim edilince `apps/web/src/app/[locale]/layout.tsx` içindeki `openGraph`
-bloğuna `images` alanı eklenecek.
-
-### 3.2 Favicon / uygulama ikonu
-
-`apps/web/src/app/icon.svg` mevcut ve SVG olduğu için ölçek sorunu yok —
-yeni bir şey gerekmiyor.
-
----
-
-## 4. Teslim kontrol listesi
-
-- [ ] 1520 × 1352 px, alfa kanallı PNG
-- [ ] İçinde arka plan şekli / marka rengi **yok**
-- [ ] Özne kenarlardan en az %4 içeride
-- [ ] Açık ve koyu zeminde ayrı ayrı bakıldı
-- [ ] Sıkıştırıldı, ≤ 250 KB
-- [ ] Hero görseliyse iki temiz bölge boş
-- [ ] Dosya adı değiştiyse `page.tsx` içindeki `src` ve ilgili `*ImageAlt`
-      çeviri anahtarı güncellendi
+`panel-retouched.png` replaces the shipping JPEG. Real panel source was retouched through ImageGen solely for marketing: Ahmet Yılmaz/AY, no Deneme labels or development badge; sharp lettering, lossless PNG delivered without Next image recompression. Actual tool output1507×1044; no claim of2x output. Source screenshot remains in verification history. No panel code/data changes. Hero photo now bleeds to viewport right and112px below its layout; smaller22px-max photo caption, no hero bottom border. Four desktop migration circles connected. Header breakpoint1024px with compact1024–1279 layout.

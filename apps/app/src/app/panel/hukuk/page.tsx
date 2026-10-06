@@ -45,7 +45,7 @@ export default async function LegalPage() {
         description={t("description", { days: thresholdDays })}
       />
 
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Stat label={t("openCases")} value={String(totals.open)} />
         <Stat label={t("principal")} value={f.money(totals.principalMinor)} />
         <Stat

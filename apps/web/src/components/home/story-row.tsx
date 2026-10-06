@@ -1,8 +1,5 @@
 import Image from "next/image";
 import { Check } from "lucide-react";
-
-import { PlotShape } from "@/components/home/plot-shape";
-
 /**
  * Görsel + metin şeridi; sırası satır satır değişir (zikzak).
  *
@@ -10,12 +7,12 @@ import { PlotShape } from "@/components/home/plot-shape";
  * Dördüncüsü bir doku hâline geliyor ve içinde ne yazdığı okunmuyordu. Zikzak
  * her satırda okuma yönünü değiştirdiği için göz duruyor; ayrıca her satıra
  * tam genişlikte bir görsel alanı açıyor — sektörün yaptığı da bu, ama burada
- * görselin altındaki şekil ve üstündeki rozet token'lardan geliyor.
+ * mimari fotoğraflar ortak yaşam bağlamını kuruyor.
  *
  * SUNUCU BİLEŞENİ: Etkileşim yok, JavaScript yok. Görsel `priority` değil —
  * ilk ekranın altında, `loading="lazy"` (Next varsayılanı) doğru davranış.
  *
- * GÖRSEL SÖZLEŞMESİ: 760×676 şeffaf PNG, özne ortada, kendi arka planı yok.
+ * GÖRSEL SÖZLEŞMESİ: Dolu zeminli özgün WebP fotoğraf, 3:4 kırpma.
  * Ölçüler ve güvenli alanlar: `apps/web/public/images/README.md`.
  */
 
@@ -41,14 +38,14 @@ export function StoryRow({ eyebrow: _eyebrow, title, body, points, image, revers
       */}
       <div className={"relative" + (reverse ? " lg:order-2" : "")}>
         <div className="relative mx-auto w-full max-w-[30rem] lg:max-w-none">
-          <PlotShape mirrored={reverse} />
+
           <Image
             src={image.src}
             alt={image.alt}
-            width={760}
-            height={676}
+            width={1536}
+            height={1024}
             sizes="(min-width: 1024px) 30rem, 88vw"
-            className="relative w-full"
+            className="relative aspect-[4/3] w-full object-cover"
           />
         </div>
       </div>

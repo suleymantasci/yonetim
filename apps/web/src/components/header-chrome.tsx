@@ -64,10 +64,10 @@ export function HeaderChrome({ brand, nav, actions, mobilePanel, labels }: Heade
           "data-[scrolled]:border-border data-[scrolled]:bg-surface/90 data-[scrolled]:shadow-sm"
         }
       >
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4">
+        <div className="marketing-header-row marketing-container flex h-[4.5rem] items-center justify-between gap-3">
           <div className="shrink-0">{brand}</div>
 
-          <nav className="hidden items-center gap-0.5 lg:flex">{nav}</nav>
+          <nav className="marketing-desktop-nav hidden items-center gap-0.5 lg:flex">{nav}</nav>
 
           <div className="flex shrink-0 items-center gap-1.5">
             {actions}

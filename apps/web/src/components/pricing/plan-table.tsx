@@ -55,8 +55,7 @@ export async function PlanTable({
           <caption className="sr-only">{t("tableCaption")}</caption>
           <thead className="text-left text-xs font-semibold text-fg-subtle">
             <tr>
-              <th scope="col" className={`${headCell} rounded-ss-2xl`}>{t("planColumn")}</th>
-              <th scope="col" className={headCell}>{t("unitsColumn")}</th>
+              <th scope="col" className={`${headCell} rounded-ss-2xl`}>{t("unitsColumn")}</th>
               <th scope="col" className={headCell}>{t("smsColumn")}</th>
               <th scope="col" className={`${headCell} text-right`}>{t("yearlyColumn")}</th>
               <th scope="col" className={`${headCell} text-right`}>{t("monthlyColumn")}</th>
@@ -76,16 +75,12 @@ export async function PlanTable({
                   className={"transition-colors " + (isHit ? "bg-selected" : "hover:bg-hover")}
                 >
                   <td className={`${cell} font-semibold text-fg`}>
-                    {plan.name}
+                    {plan.minUnits}{plan.maxUnits ? `–${plan.maxUnits}` : "+"}
                     {isHit ? (
                       <span className="ms-2 rounded bg-primary px-1.5 py-0.5 text-xs font-semibold text-primary-fg">
                         {t("suitableBadge")}
                       </span>
                     ) : null}
-                  </td>
-                  <td className={`${cell} tabular-nums text-fg-muted`}>
-                    {plan.minUnits}
-                    {plan.maxUnits ? `–${plan.maxUnits}` : "+"}
                   </td>
                   <td className={`${cell} tabular-nums text-fg-muted`}>{plan.smsQuotaYearly}</td>
                   <td className={`${cell} text-right font-semibold tabular-nums text-fg`}>
@@ -114,8 +109,8 @@ export async function PlanTable({
             <tr className="bg-surface-sunken">
               <td className="rounded-es-2xl border-t border-border px-4 py-3 font-semibold text-fg">
                 {t("enterprise")}
+                <span className="ms-2 font-normal text-fg-muted">{t("unlimited")}</span>
               </td>
-              <td className="border-t border-border px-4 py-3 text-fg-muted">{t("unlimited")}</td>
               <td className="border-t border-border px-4 py-3 text-fg-muted">{t("negotiated")}</td>
               <td className="rounded-ee-2xl border-t border-border px-4 py-3 text-fg-muted" colSpan={3}>
                 {t("enterpriseNote")}
@@ -135,7 +130,7 @@ export async function PlanTable({
             }
           >
             <div className="flex items-baseline justify-between gap-2">
-              <span className="font-heading font-bold text-fg">{plan.name}</span>
+              <span className="font-heading font-bold text-fg">{plan.minUnits}{plan.maxUnits ? `–${plan.maxUnits}` : "+"} {t("unitsColumn")}</span>
               {isHit ? (
                 <span className="rounded bg-primary px-1.5 py-0.5 text-xs font-semibold text-primary-fg">
                   {t("suitableBadge")}
@@ -147,8 +142,7 @@ export async function PlanTable({
               ) : null}
             </div>
             <p className="mt-1 text-sm text-fg-muted">
-              {plan.minUnits}
-              {plan.maxUnits ? `–${plan.maxUnits}` : "+"} · {plan.smsQuotaYearly} {t("smsColumn")}
+              {plan.smsQuotaYearly} {t("smsColumn")}
             </p>
             <p className="mt-3 font-heading text-xl font-extrabold tabular-nums text-fg">
               {formatAmount(plan.yearlyPriceTl, locale)}

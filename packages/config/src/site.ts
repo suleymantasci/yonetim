@@ -66,23 +66,23 @@ export const siteConfig = {
      * denetleniyor (WCAG 2.1 AA, hem açık hem koyu tema).
      */
     colors: {
-      primary: "#2563EB", // [DEĞİŞEBİLİR] Aksiyon mavisi — birincil eylem
-      ink: "#0B3A66", // [DEĞİŞEBİLİR] Mürekkep laciverti — kurumsal kimlik
-      secondary: "#06B6D4", // [DEĞİŞEBİLİR] Turkuaz — odak halkası, ikincil vurgu
-      accent: "#F59E0B", // [DEĞİŞEBİLİR] Amber
+      primary: "#A54B32", // [DEĞİŞEBİLİR] Bakır — birincil eylem
+      ink: "#302932", // [DEĞİŞEBİLİR] Koyu mürdüm — kurumsal kimlik
+      secondary: "#EBA987", // [DEĞİŞEBİLİR] Kayısı — ikincil vurgu
+      accent: "#EBA987", // [DEĞİŞEBİLİR] Amber
       success: "#10B981",
-      warning: "#F59E0B",
+      warning: "#B87926",
       /* Üstünde beyaz metinle AA'yı geçen en açık kırmızı (#EF4444 3.76:1 idi). */
       danger: "#DC2626",
-      background: "#FFFFFF",
-      foreground: "#0F172A",
+      background: "#F4EEE5",
+      foreground: "#302932",
       /** Koyu temanın zemin rengi — tarayıcı çubuğu (`themeColor`) için gerekir. */
-      backgroundDark: "#0A0F1A",
+      backgroundDark: "#221E25",
       foregroundDark: "#E8EDF6",
     },
     fonts: {
-      heading: "Plus Jakarta Sans", // [SEÇİLECEK] Bölüm 12.2
-      body: "Inter", // [SEÇİLECEK] Bölüm 12.2
+      heading: "Manrope", // [SEÇİLECEK] Bölüm 12.2
+      body: "Manrope", // [SEÇİLECEK] Bölüm 12.2
       mono: "JetBrains Mono", // [SEÇİLECEK] Bölüm 12.2
     },
     radius: {

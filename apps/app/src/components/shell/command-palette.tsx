@@ -101,10 +101,11 @@ export function CommandPalette({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex h-9 items-center gap-2 rounded-lg border border-border-strong px-2.5 text-sm text-fg-subtle hover:bg-hover hover:text-fg sm:min-w-52"
+        aria-label={labels.trigger}
+        className="inline-flex h-9 items-center gap-2 rounded-lg border border-border-strong px-2.5 text-sm text-fg-subtle hover:bg-hover hover:text-fg md:min-w-52"
       >
         <Search aria-hidden className="h-4 w-4" />
-        <span className="hidden sm:inline">{labels.trigger}</span>
+        <span className="hidden md:inline">{labels.trigger}</span>
         <kbd className="ml-auto hidden rounded border border-border px-1.5 py-0.5 text-[10px] font-medium sm:inline">
           ⌘K
         </kbd>

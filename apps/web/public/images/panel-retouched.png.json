@@ -1,0 +1,10 @@
+{
+  "prompt": "Upscale this edited Turkish application screenshot to EXACTLY 3008 × 2080 pixels, landscape. Deliver a high-resolution 2x raster for retina web display. Preserve ALL content, layout, colors, labels and figures exactly, including Ahmet Yılmaz with AY avatar at top right and no Deneme labels. Reconstruct text and UI linework sharply at full target resolution, avoid soft interpolation. Do not redesign, reframe, crop, add or remove anything. Output resolution must be 3008 pixels wide and 2080 pixels tall.",
+  "origin": "ImageGen retouch of original actual sample-tenant capture verification/panel-units-dark-desktop.jpg. First edit replaced Claude Test/CT with Ahmet Yılmaz/AY and removed Deneme labels/development bubble. No panel code or database changes.",
+  "actualDimensions": [
+    1507,
+    1044
+  ],
+  "note": "Requested 3008x2080 but tool returned1507x1044; no 2x-resolution claim. Sharp PNG rendered unoptimized to avoid JPEG recompression.",
+  "createdAt": "2026-10-06"
+}

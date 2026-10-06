@@ -15,20 +15,9 @@ import { cn } from "../cn";
  * `apps/web/public/logo-light.svg` ve `logo-dark.svg` ayrıca duruyor —
  * ikisi de bu işaretin birebir aynısıdır.
  *
- * GEOMETRİ: üç yükselen kütle. Hem bina siluetini hem büyüme grafiğini
- * okutuyor; 16px'te de ayrışsın diye çubuklar kalın ve az sayıda tutuldu.
+ * GEOMETRİ: ortak yaşamı temsil eden kemer ve eşik. Küçük ölçekte de
+ * okunabilmesi için iki sade geometrik parça kullanılır.
  */
-
-const BAR_BASELINE = 18.5;
-
-/** [x, yükseklik] — en yüksek kütle vurgu rengiyle boyanır. */
-const BARS: ReadonlyArray<readonly [number, number]> = [
-  [5, 5.5],
-  [10.25, 10.5],
-  [15.5, 7.5],
-];
-
-const TALLEST = 1;
 
 export interface BrandMarkProps {
   /** Piksel cinsinden kenar uzunluğu. */
@@ -45,20 +34,10 @@ export function BrandMark({ size = 32, className }: BrandMarkProps) {
       role="img"
       aria-hidden
       focusable="false"
-      className={cn("text-ink", className)}
+      className={cn("text-primary", className)}
     >
-      <rect width={24} height={24} rx={6} fill="currentColor" />
-      {BARS.map(([x, height], index) => (
-        <rect
-          key={x}
-          x={x}
-          y={BAR_BASELINE - height}
-          width={3.5}
-          height={height}
-          rx={1.25}
-          className={index === TALLEST ? "fill-accent" : "fill-ink-fg"}
-        />
-      ))}
+      <path d="M3 22V11a9 9 0 0 1 18 0v11h-5V11a4 4 0 0 0-8 0v11Z" fill="currentColor" />
+      <path d="M11 6h2v16h-2Z" fill="currentColor" />
     </svg>
   );
 }
@@ -78,7 +57,7 @@ export function BrandLockup({ size = 32, markOnly = false, className }: BrandLoc
       {markOnly ? (
         <span className="sr-only">{siteConfig.brand.name}</span>
       ) : (
-        <span className="font-heading text-[17px] font-bold tracking-tight text-fg">
+        <span className="brand-wordmark font-heading text-[17px] font-bold tracking-tight text-fg">
           {siteConfig.brand.name}
         </span>
       )}
