@@ -649,7 +649,11 @@ export class WebAuthService {
     const session = await resolveSession(token);
     if (!session) throw errors.unauthorized("session_required");
 
-    const member = await this.db.platform(async (tx) =>
+    // `db.platform` RLS'i baypas ETMEZ: `memberships.tenant_id` fail-closed
+    // politikalı ve platform bağlamında tenant boş, yani sorgu hep boş dönüyor
+    // ve her geçiş 403 `not_a_member` oluyordu. Kapsam yine tek kullanıcı +
+    // tek site: koşul sorgunun kendisinde.
+    const member = await this.db.bypass("auth:switch-tenant-membership", async (tx) =>
       tx
         .select({ id: memberships.id })
         .from(memberships)
