@@ -81,7 +81,9 @@ async function submitSetup(formData: FormData, returnTo: string): Promise<SetupS
       {
         propertyName: parsed.data.propertyName,
         propertyType: parsed.data.propertyType,
-        city: parsed.data.city ?? null,
+        // Sözleşme `city`i `optional()` tanımlıyor, `null` kabul etmiyor: boş şehir
+        // alanı hiç gönderilmeli (null göndermek 422 verip siteyi açtırmıyordu).
+        ...(parsed.data.city ? { city: parsed.data.city } : {}),
         unitCount: parsed.data.unitCount,
         generateUnits: parsed.data.generateUnits,
       },
@@ -90,6 +92,11 @@ async function submitSetup(formData: FormData, returnTo: string): Promise<SetupS
   } catch (error) {
     if (error instanceof AppError && error.code === "unauthorized") {
       redirect("/giris?devam=/kurulum");
+    }
+    // Doğrulama/yetki hatası form içinde gösterilir; hata ekranı kullanıcıyı
+    // formu yeniden doldurmaya zorluyordu.
+    if (error instanceof AppError && (error.code === "validation" || error.code === "forbidden")) {
+      return { status: "error", message: error.message };
     }
     throw error;
   }

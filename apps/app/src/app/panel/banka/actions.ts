@@ -115,7 +115,8 @@ export async function deleteBankAccount(
  */
 const statementSchema = z.object({
   accountId: uuidField,
-  csv: z.string().min(10).max(2_000_000),
+  // Dosya seçilmediyse alan boş gelir: ham Zod metni yerine "zorunlu" mesajı.
+  csv: z.string().min(10, { message: V.required }).max(2_000_000, { message: V.max(2_000_000) }),
 });
 
 export async function importBankStatement(
