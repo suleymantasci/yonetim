@@ -192,14 +192,17 @@ export const siteConfig = {
      * Bu parametrelerin yürürlük tarihi (ISO). Ekran bunu sonucun yanında
      * yazıyor: tarih eskiyse rakama güvenilmemesi gerektiği anlaşılsın.
      */
-    effectiveFrom: "2026-01-01",
+    effectiveFrom: "2026-07-01",
     /**
-     * Kıdem tazminatı yıllık tavanı — **kuruş**.
+     * Kıdem tazminatı tavanı — **kuruş**.
      *
-     * Kurulumdan önce Hazine ve Maliye Bakanlığı'nın yayımladığı güncel
-     * tutarla değiştirin. Buradaki değer bir yer tutucudur.
+     * 1 Temmuz – 31 Aralık 2026 dönemi: 73.729,84 TL (memur maaş katsayısı
+     * artışıyla; önceki dönem 64.948,77 TL). Tavan **yılda iki kez**
+     * değişiyor: her Ocak ve Temmuz'da Hazine ve Maliye Bakanlığı / Resmî
+     * Gazete duyurusuna göre güncelleyin ve `effectiveFrom`'u da çekin —
+     * ekran bu tarihi sonucun yanında gösteriyor.
      */
-    severanceCeilingMinor: 5_300_000,
+    severanceCeilingMinor: 7_372_984,
     /**
      * İhbar tazminatına uygulanacak gelir vergisi oranı.
      *
