@@ -1,5 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { and, count, eq, isNull, sql } from "drizzle-orm";
+import { and, count, eq, inArray, isNull, sql } from "drizzle-orm";
 
 import { checkPasswordPolicy, hashPassword } from "@yonetim/auth";
 import { siteConfig } from "@yonetim/config";
@@ -16,6 +16,7 @@ import {
   accessRequests,
   companies,
   memberships,
+  notifications,
   plans,
   subscriptions,
   tenants,
@@ -209,7 +210,7 @@ export class SignupService {
           .where(eq(users.phone, phone))
           .limit(1);
 
-        await tx
+        const created = await tx
           .insert(accessRequests)
           .values({
             tenantId: tenant[0].id,
@@ -226,7 +227,48 @@ export class SignupService {
           // Bekleyen talep varken gelen tekrar sessizce yutuluyor: kısmi
           // benzersiz index zaten engelliyor, hata döndürmek başvuranın
           // numarasının kuyrukta olduğunu doğrulamak olurdu.
-          .onConflictDoNothing();
+          .onConflictDoNothing()
+          .returning({ id: accessRequests.id });
+
+        // Yeni talep → yöneticilere uygulama içi bildirim. Tekrar eden (zaten
+        // bekleyen) başvuruda satır dönmüyor, bildirim de çoğalmıyor.
+        const requestId = created[0]?.id;
+        if (!requestId) return;
+        const recipients = await tx
+          .select({ userId: memberships.userId, locale: users.locale })
+          .from(memberships)
+          .innerJoin(users, eq(users.id, memberships.userId))
+          .where(
+            and(
+              eq(memberships.tenantId, tenant[0].id),
+              isNull(memberships.deletedAt),
+              isNull(users.deletedAt),
+              inArray(memberships.role, ["manager", "company_admin"]),
+            ),
+          );
+        const unit = [dto.blockLabel, dto.unitLabel].filter(Boolean).join(" / ");
+        for (const r of recipients) {
+          const en = r.locale === "en";
+          await tx
+            .insert(notifications)
+            .values({
+              tenantId: tenant[0].id,
+              userId: r.userId,
+              channel: "in_app",
+              template: "access_request_new",
+              subject: en ? "New access request" : "Yeni erişim talebi",
+              body: en
+                ? `${dto.fullName} (${unit}) asked for access. Review it under Residents → Requests.`
+                : `${dto.fullName} (${unit}) erişim talebinde bulundu. Sakinler → Talepler ekranından inceleyin.`,
+              params: { requestId },
+              recipient: r.userId,
+              status: "sent",
+              sentAt: new Date(),
+              resourceType: "access_request",
+              resourceId: requestId,
+            })
+            .onConflictDoNothing();
+        }
       })
       .catch((error: unknown) => {
         // Talep alınamasa bile yanıt değişmiyor; hata yalnız loga düşüyor.
