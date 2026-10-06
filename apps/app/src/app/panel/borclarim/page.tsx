@@ -1,5 +1,5 @@
 import { CreditCard } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { getTranslations } from "next-intl/server";
 
 import { portalDebtsResponse } from "@yonetim/contracts";

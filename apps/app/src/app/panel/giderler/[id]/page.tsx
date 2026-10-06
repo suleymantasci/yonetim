@@ -1,5 +1,5 @@
 import { ExternalLink, Pencil } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 

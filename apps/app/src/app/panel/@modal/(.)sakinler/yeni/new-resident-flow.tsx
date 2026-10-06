@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowRight, Plus } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { useState } from "react";
 
 import { pageActionClasses } from "@yonetim/ui";

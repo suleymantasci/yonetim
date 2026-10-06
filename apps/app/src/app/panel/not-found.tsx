@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/link";
 import { getTranslations } from "next-intl/server";
 
 import { EmptyState } from "@yonetim/ui";

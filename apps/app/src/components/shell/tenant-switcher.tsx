@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, ChevronsUpDown, LayoutGrid } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { useEffect, useRef, useState } from "react";
 
 import { switchTenant } from "@/app/panel/portfoy/actions";

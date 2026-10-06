@@ -5,7 +5,7 @@ import {
   Gauge, Gavel, Handshake, LayoutDashboard, LineChart, Megaphone, MessageSquare, Pin, PinOff,
   Receipt, ScrollText, ShieldCheck, Sparkles, Truck, Users, Vote, Wallet, Wrench, X,
 } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState, type ComponentType } from "react";
 

@@ -1,5 +1,5 @@
 import { CalendarPlus, Pencil, Plus } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { getTranslations } from "next-intl/server";
 
 import { hasPermission } from "@yonetim/auth/guard";

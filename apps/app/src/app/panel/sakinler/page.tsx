@@ -1,5 +1,5 @@
 import { Plus, Siren, Users } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { getTranslations } from "next-intl/server";
 
 import { residentListResponse, RESIDENT_SORT_KEYS } from "@yonetim/contracts";

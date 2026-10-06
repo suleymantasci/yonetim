@@ -7,6 +7,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { foldTurkish } from "@yonetim/core";
 import { CommandOverlay, cn } from "@yonetim/ui";
 
+import { isDrawerHref } from "@/lib/drawer-routes";
+
 /**
  * Komut paleti (⌘K / Ctrl+K) — GAP 4.3.1 / 4.4.2.
  *
@@ -93,7 +95,7 @@ export function CommandPalette({
     if (!entry) return;
     setOpen(false);
     setQuery("");
-    router.push(entry.href);
+    router.push(entry.href, { scroll: !isDrawerHref(entry.href) });
   }
 
   return (

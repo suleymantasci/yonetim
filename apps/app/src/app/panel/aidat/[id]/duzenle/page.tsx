@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { Layers } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/link";
 
 import { blockListResponse, duesPlanRow } from "@yonetim/contracts";
 import { AppError, addMonths, currentPeriod, periodKey } from "@yonetim/core";

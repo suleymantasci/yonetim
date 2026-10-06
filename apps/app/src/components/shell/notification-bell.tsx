@@ -1,7 +1,7 @@
 "use client";
 
 import { Bell, CheckCheck } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 
 import { Badge, cn } from "@yonetim/ui";

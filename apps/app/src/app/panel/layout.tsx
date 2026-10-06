@@ -10,6 +10,7 @@ import {
 } from "@yonetim/ui";
 
 import { AppShell } from "@/components/app-shell";
+import { ScrollMemory } from "@/components/scroll-memory";
 import { audienceOf, navItemsFor } from "@/components/shell/nav";
 import { requireContext } from "@/lib/context";
 import { getInAppNotifications, getNavBadges } from "@/lib/shell-data";
@@ -71,6 +72,7 @@ export default async function PanelLayout({
       notifications={notifications.items}
       unreadNotificationCount={notifications.unreadCount}
     >
+      <ScrollMemory />
       {children}
       {modal}
     </AppShell>

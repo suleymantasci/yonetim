@@ -1,7 +1,7 @@
 "use client";
 
 import { Building2, CheckCircle2, Users } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { useTranslations } from "next-intl";
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";

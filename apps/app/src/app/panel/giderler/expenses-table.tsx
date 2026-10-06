@@ -1,7 +1,7 @@
 "use client";
 
 import { Paperclip, Split } from "lucide-react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { useTranslations } from "next-intl";
 
 import { Badge, DataTable, type DataColumn } from "@yonetim/ui";

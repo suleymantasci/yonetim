@@ -1,9 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 
 import { Drawer } from "@yonetim/ui";
+
+import { getLastPageScrollY } from "./scroll-memory";
 
 /**
  * Rota kesen çekmece (intercepting route kabuğu) — UI Faz 2.4.
@@ -29,6 +31,49 @@ import { Drawer } from "@yonetim/ui";
  * kullanıcının çekmece öncesi geçmişini de silerdi.
  */
 const RouteDrawerCloseContext = createContext<(() => void) | null>(null);
+
+/**
+ * Kaydırma konumunu koruma.
+ *
+ * SORUN: Next, her gezinmede değişen segmentin ilk DOM düğümünü görünür
+ * alana kaydırıyor (`InnerScrollAndFocusHandler`). Çekmece rotasında bu
+ * düğüm sayfanın dışında kaldığı için kullanıcı sayfayı kaydırmış olsa da
+ * açılışta konum sıfırlanıyor/atlıyordu; kapanışta da (geri gezinme) aynı
+ * şey oluyordu. Çekmece sayfanın **üstünde** duran bir katman: arkadaki
+ * sayfanın konumu hiç değişmemeli.
+ *
+ * ÇÖZÜM: konumu, Next'in kaydırmasından **önce** yakalayıp sonra geri
+ * yazmak. Next kaydırmayı commit'in yerleşim aşamasında yapıyor; bu yüzden
+ * geri yazma ilk karelerde birkaç kez deneniyor. Kullanıcı bu sırada
+ * kendisi kaydırırsa (tekerlek, dokunma, klavye) vazgeçiliyor — kullanıcının
+ * hareketiyle savaşılmıyor.
+ */
+const GUARD_MS = 900;
+
+function restoreScrollSoon(target: number) {
+  if (typeof window === "undefined") return;
+  const start = performance.now();
+  let cancelled = false;
+  const cancel = () => {
+    cancelled = true;
+  };
+  const events = ["wheel", "touchstart", "keydown", "mousedown"] as const;
+  for (const name of events) window.addEventListener(name, cancel, { once: true, passive: true });
+
+  const tick = () => {
+    if (cancelled || performance.now() - start > GUARD_MS) {
+      for (const name of events) window.removeEventListener(name, cancel);
+      return;
+    }
+    if (Math.abs(window.scrollY - target) > 1) {
+      window.scrollTo({ top: target, left: 0, behavior: "instant" });
+    }
+    // `setTimeout`, `requestAnimationFrame` değil: arka plan sekmesinde rAF
+    // duruyor, geri yazma da o zaman hiç çalışmıyordu.
+    setTimeout(tick, 16);
+  };
+  setTimeout(tick, 0);
+}
 
 /**
  * Çekmeceyi içeriden kapatmak için.
@@ -69,11 +114,18 @@ export function RouteDrawer({
   const router = useRouter();
   const [open, setOpen] = useState(true);
 
+  // Açılışta Next'in kaydırmasını geri al: konum, hiçbir diyalog açık değilken
+  // izlenen son değer (aşağıdaki izleyici).
+  useEffect(() => {
+    restoreScrollSoon(getLastPageScrollY());
+  }, []);
+
   const close = useCallback(() => {
     // Önce kapanış animasyonu, sonra gezinme: `back()`'i doğrudan çağırmak
     // paneli tek karede yok ediyor ve kapanış hareketi hiç görünmüyor.
     setOpen(false);
     router.back();
+    restoreScrollSoon(getLastPageScrollY());
   }, [router]);
 
   return (
