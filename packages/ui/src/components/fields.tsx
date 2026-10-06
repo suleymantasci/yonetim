@@ -123,6 +123,12 @@ export function ModalFormBar({ children }: { children: ReactNode }) {
  *    `FormField`'lar çerçeveli olduğu için hizasız görünüyordu. Artık
  *    `RadioGroup` seçenekleriyle aynı kutu dilinde ve açıkken kutunun kendisi
  *    de işaretleniyor: durum yalnız 22 pikselik topuzdan okunmuyor.
+ *
+ * 3. **Dokununca sayfa kayıyordu.** Checkbox `sr-only` idi ve konumlanmış bir
+ *    atası yoktu; `position: absolute` öğe `body`'ye göre yerleşiyor, odak
+ *    alınca (iOS Safari başta) tarayıcı onu görünür kılmak için sayfayı
+ *    kaydırıyordu. Artık kutunun tamamını kaplayan şeffaf bir input: odak
+ *    hedefi görünen kutunun kendisi, kaydırılacak bir şey kalmıyor.
  */
 export function Switch({
   label,
@@ -146,7 +152,7 @@ export function Switch({
   return (
     <label
       className={cn(
-        "flex items-start justify-between gap-4 rounded-lg border border-border bg-surface p-3 transition-colors",
+        "relative flex items-start justify-between gap-4 rounded-lg border border-border bg-surface p-3 transition-colors",
         "has-[:checked]:border-primary has-[:checked]:bg-primary-soft",
         disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:border-border-strong",
       )}
@@ -162,7 +168,7 @@ export function Switch({
         type="checkbox"
         role="switch"
         name={name}
-        className="peer sr-only"
+        className="peer absolute inset-0 m-0 h-full w-full cursor-[inherit] appearance-none rounded-lg opacity-0"
         disabled={disabled}
         {...(controlled
           ? { checked, onChange: (event) => onCheckedChange?.(event.target.checked) }
@@ -894,8 +900,13 @@ export function FileInput({
           setFiles(ok);
           if (inputRef.current) inputRef.current.files = event.dataTransfer.files;
         }}
+        // Input görünmez ama kutunun tamamını kaplıyor (`sr-only` değil): bütün
+        // kutu dokunma hedefi oluyor ve odak alındığında tarayıcı `body`'ye göre
+        // yerleşmiş 1 px'lik bir öğeye kaydırmaya kalkmıyor (iOS'ta sayfa
+        // zıplıyordu). Bkz. `Switch` madde 3.
         className={cn(
-          "rounded-lg border-2 border-dashed p-4 text-center transition-colors",
+          "relative rounded-lg border-2 border-dashed p-4 text-center transition-colors",
+          "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-offset-2",
           dragging ? "border-primary bg-primary-soft" : "border-border-strong",
           disabled && "opacity-50",
         )}
@@ -917,7 +928,7 @@ export function FileInput({
           multiple={multiple}
           disabled={disabled}
           onChange={(event) => setFiles(accepted(event.target.files))}
-          className="sr-only"
+          className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
         />
       </div>
 

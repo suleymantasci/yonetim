@@ -6,7 +6,6 @@ import { useState } from "react";
 import {
   Alert,
   DateInput,
-  FileInput,
   FormSection,
   Input,
   MoneyInput,
@@ -79,7 +78,6 @@ export function ExpenseForm({
 }) {
   const t = useTranslations("app.expenses");
   const tEnum = useTranslations("enum");
-  const tCommon = useTranslations("common");
 
   const [categoryId, setCategoryId] = useState(defaults?.categoryId ?? "");
   const [amountKurus, setAmountKurus] = useState(defaults?.amountKurus ?? 0);
@@ -345,20 +343,11 @@ export function ExpenseForm({
           />
         </FormField>
 
-        {/* Dosya yükleme akışı depolama entegrasyonuna bağlı; bu alan
-            şimdilik yalnız bağlantı kabul ediyor. Yükleme açıldığında
-            aynı bileşen doğrudan kullanılabilir. */}
-        <FileInput
-          name="attachmentFile"
-          accept="image/*,application/pdf"
-          maxSizeMb={10}
-          labels={{
-            prompt: t("uploadPrompt"),
-            hint: t("uploadHint"),
-            tooLarge: t("uploadTooLarge"),
-            remove: tCommon("action.delete"),
-          }}
-        />
+        {/* Dosya yükleme alanı vardı ama seçilen dosya hiçbir yere
+            kaydedilmiyordu; üstelik Server Action gövdesine binip 1 MB'ı aşan
+            faturada isteği 500'e düşürüyor, doğrulama hiç çalışmıyordu.
+            Yükleme, Belgeler modülünün imzalı-URL akışına bağlanınca
+            (`packages/ui` `FileInput`) geri gelecek; o güne kadar bağlantı. */}
       </FormSection>
     </ActionForm>
   );

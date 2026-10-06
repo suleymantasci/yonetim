@@ -20,6 +20,15 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   /**
+   * Server Action gövde sınırı (Next varsayılanı 1 MB). Geçiş sihirbazı 5 MB'a
+   * kadar dosya, banka ekstresi CSV'yi metin olarak gönderiyor; 1 MB'ı aşınca
+   * istek aksiyona ulaşmadan 500 dönüyor ve form doğrulaması hiç çalışmıyordu.
+   * Asıl dosya yüklemeleri (Belgeler) imzalı URL ile doğrudan depoya gider.
+   */
+  experimental: {
+    serverActions: { bodySizeLimit: "6mb" },
+  },
+  /**
    * Workspace paketleri kaynak TypeScript olarak yayınlanıyor; Next bunları
    * kendisi derliyor.
    *
