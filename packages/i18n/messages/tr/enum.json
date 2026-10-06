@@ -274,6 +274,7 @@
     "diger": "Diğer"
   },
   "matchStatus": {
+    "suggested": "Öneri bekliyor",
     "unmatched": "Eşleşmedi",
     "auto": "Otomatik eşleşti",
     "manual": "Elle eşleştirildi",

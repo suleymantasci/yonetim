@@ -3,7 +3,7 @@
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
-import { bankAccountSaveResult } from "@yonetim/contracts";
+import { bankAccountSaveResult, bankStatementResult, bankTxActionResult } from "@yonetim/contracts";
 
 import { apiDelete, apiPatch, apiPost } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
@@ -106,4 +106,68 @@ export async function deleteBankAccount(
   await apiDelete(`/v1/panel/bank/accounts/${id}`);
 
   return { ok: true, message: t("accountDeleted") };
+}
+
+/**
+ * Banka ekstresi (CSV) yükleme. Dosya istemcide okunup metin olarak
+ * gönderiliyor: server action'a `File` taşımak yerine tek bir metin alanı —
+ * 2 MB sınırı API'de (`bankStatementImport`).
+ */
+const statementSchema = z.object({
+  accountId: uuidField,
+  csv: z.string().min(10).max(2_000_000),
+});
+
+export async function importBankStatement(
+  _previous: ActionState<undefined>,
+  formData: FormData,
+): Promise<ActionState<undefined>> {
+  return runAction(
+    {
+      permission: "bank:reconcile",
+      schema: statementSchema,
+      meta: { action: "bank_statement_imported", resource: "bank_account" },
+    },
+    formData,
+    async ({ input }) => {
+      const t = await getTranslations("app.bank");
+      const result = await apiPost("/v1/panel/bank/statement", input, bankStatementResult);
+      return okState(
+        t("statementResult", {
+          inserted: result.inserted,
+          suggested: result.suggested,
+          unmatched: result.unmatched,
+          duplicates: result.duplicates,
+          errors: result.errors.length,
+        }),
+      );
+    },
+  );
+}
+
+/** Önerilen eşleşmeyi onaylar → tahsilat kaydı açar. */
+export async function confirmBankTransaction(id: string): Promise<BankAccountMutationResult> {
+  await requirePermission("bank:reconcile");
+  const t = await getTranslations("app.bank");
+  try {
+    await apiPost(`/v1/panel/bank/transactions/${id}/confirm`, {}, bankTxActionResult);
+  } catch (error) {
+    return { ok: false, message: error instanceof Error ? error.message : t("confirmFailed") };
+  }
+  return { ok: true, message: t("confirmed") };
+}
+
+export async function ignoreBankTransaction(
+  id: string,
+  reason: string,
+): Promise<BankAccountMutationResult> {
+  await requirePermission("bank:reconcile");
+  const t = await getTranslations("app.bank");
+  if (reason.trim().length < 3) return { ok: false, message: t("ignoreReasonShort") };
+  try {
+    await apiPost(`/v1/panel/bank/transactions/${id}/ignore`, { reason }, bankTxActionResult);
+  } catch (error) {
+    return { ok: false, message: error instanceof Error ? error.message : t("confirmFailed") };
+  }
+  return { ok: true, message: t("ignored") };
 }

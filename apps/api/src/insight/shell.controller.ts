@@ -55,7 +55,7 @@ export class ShellController {
       const [bankRow] = await tx
         .select({ value: sql<number>`COUNT(*)` })
         .from(bankTransactions)
-        .where(eq(bankTransactions.matchStatus, "unmatched"));
+        .where(sql`${bankTransactions.matchStatus} IN ('unmatched','suggested')`);
 
       const [maintRow] = await tx
         .select({ value: sql<number>`COUNT(*)` })

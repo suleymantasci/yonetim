@@ -274,6 +274,7 @@
     "diger": "Other"
   },
   "matchStatus": {
+    "suggested": "Suggested — awaiting confirmation",
     "unmatched": "Unmatched",
     "auto": "Matched automatically",
     "manual": "Matched manually",

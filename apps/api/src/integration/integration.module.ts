@@ -1,6 +1,8 @@
 import { Module } from "@nestjs/common";
 
+import { FinanceModule } from "../finance/finance.module";
 import { PropertyModule } from "../property/property.module";
+import { BankReconcileService } from "./bank-reconcile.service";
 import { BankAccountWriteService } from "./bank-account-write.service";
 import { IntegrationController } from "./integration.controller";
 import { IntegrationService } from "./integration.service";
@@ -14,9 +16,9 @@ import { IyzicoWebhookController } from "./payment/iyzico-webhook.controller";
  * yolu, anahtar döndürme gününde iki ayrı yerin güncellenmesi demekti.
  */
 @Module({
-  imports: [PropertyModule],
+  imports: [PropertyModule, FinanceModule],
   controllers: [IntegrationController, IyzicoWebhookController],
-  providers: [IntegrationService, BankAccountWriteService],
+  providers: [IntegrationService, BankAccountWriteService, BankReconcileService],
   exports: [IntegrationService],
 })
 export class IntegrationModule {}

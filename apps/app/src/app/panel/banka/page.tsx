@@ -19,6 +19,8 @@ import { PageHeader } from "@/components/app-shell";
 import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
+import { StatementUpload } from "./statement-upload";
+import { TransactionActions } from "./transaction-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +41,8 @@ export default async function BankPage() {
   } = await apiGet("/v1/panel/bank", bankOverviewResponse);
 
   const canWrite = hasPermission(ctx.roles, "bank:write");
+  const canReconcile = hasPermission(ctx.roles, "bank:reconcile");
+  const activeAccounts = accounts.filter((a) => a.isActive);
   const newAccountButton = canWrite ? (
     <Link
       href="/panel/banka/hesap/yeni"
@@ -312,6 +316,20 @@ export default async function BankPage() {
         </CardBody>
       </Card>
 
+      {canReconcile && activeAccounts.length > 0 ? (
+        <Card className="mt-4">
+          <CardHeader title={t("statementTitle")} />
+          <CardBody>
+            <StatementUpload
+              accounts={activeAccounts.map((a) => ({
+                id: a.id,
+                label: [a.bankName, a.accountName, a.ibanMasked].filter(Boolean).join(" · "),
+              }))}
+            />
+          </CardBody>
+        </Card>
+      ) : null}
+
       <Card className="mt-4">
         <CardHeader title={t("recentTransactions")} />
         <CardBody className="p-0">
@@ -343,6 +361,11 @@ export default async function BankPage() {
                     <th scope="col" className={`${tc.th} text-right`}>
                       {t("amount")}
                     </th>
+                    {canReconcile ? (
+                      <th scope="col" className={tc.th}>
+                        <span className="sr-only">{t("actionsColumn")}</span>
+                      </th>
+                    ) : null}
                   </tr>
                 </thead>
                 <tbody>
@@ -368,6 +391,11 @@ export default async function BankPage() {
                         >
                           {tEnum(`matchStatus.${x.matchStatus}`)}
                         </Badge>
+                        {x.matchedUnitNumber ? (
+                          <span className="ml-1.5 text-xs text-fg-subtle">
+                            {t("suggestedUnit", { unit: x.matchedUnitNumber })}
+                          </span>
+                        ) : null}
                       </td>
                       <td
                         className={`${tc.tdNum} ${x.direction === "in" ? "text-success-fg" : ""}`}
@@ -375,6 +403,17 @@ export default async function BankPage() {
                         {x.direction === "in" ? "+" : "−"}
                         {f.money(x.amountMinor)}
                       </td>
+                      {canReconcile ? (
+                        <td className={tc.td}>
+                          {x.direction === "in" &&
+                          (x.matchStatus === "unmatched" || x.matchStatus === "suggested") ? (
+                            <TransactionActions
+                              id={x.id}
+                              canConfirm={x.matchStatus === "suggested"}
+                            />
+                          ) : null}
+                        </td>
+                      ) : null}
                     </tr>
                   ))}
                 </tbody>

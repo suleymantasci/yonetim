@@ -186,7 +186,10 @@ export class IntegrationService {
         };
       });
 
-    const matched = transactions.filter((t) => t.matchStatus === "matched");
+    // Durumlar: unmatched | suggested (öneri, onay bekliyor) | auto | manual | ignored.
+    // `matched` hiç yazılmayan bir değerdi; eşleşme oranı hep %0, bekleyen sayısı
+    // da tüm hareketler çıkıyordu.
+    const matched = transactions.filter((t) => t.matchStatus === "auto" || t.matchStatus === "manual");
 
     const incomingByBucket = new Map(
       incoming.map((row) => [row.bucket, row.totalKurus]),
@@ -329,8 +332,9 @@ export class IntegrationService {
       },
       totals: {
         balanceMinor: accounts.reduce((s, a) => s + a.balanceKurus, 0),
-        unmatched: transactions.filter((t) => t.matchStatus !== "matched")
-          .length,
+        unmatched: transactions.filter(
+          (t) => t.matchStatus === "unmatched" || t.matchStatus === "suggested",
+        ).length,
         openIssues: issues.length,
         matchRatePct:
           transactions.length > 0

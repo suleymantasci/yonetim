@@ -12,14 +12,21 @@ import { ApiOperation, ApiTags } from "@nestjs/swagger";
 
 import {
   bankAccountSave,
+  bankStatementImport,
+  bankTxConfirm,
+  bankTxIgnore,
   migrationCommit,
   type BankAccountSave,
+  type BankStatementImport,
+  type BankTxConfirm,
+  type BankTxIgnore,
   type MigrationCommit,
 } from "@yonetim/contracts";
 
 import { RequirePermission } from "../identity/decorators";
 import { ZodBodyPipe } from "../infra/zod/zod-dto";
 import { BankAccountWriteService } from "./bank-account-write.service";
+import { BankReconcileService } from "./bank-reconcile.service";
 import { IntegrationService } from "./integration.service";
 
 /** Panel iç BFF yüzeyi — banka mutabakatı ve veri göçü. */
@@ -29,6 +36,7 @@ export class IntegrationController {
   constructor(
     private readonly service: IntegrationService,
     private readonly accounts: BankAccountWriteService,
+    private readonly reconcile: BankReconcileService,
   ) {}
 
   @Get("bank")
@@ -91,6 +99,44 @@ export class IntegrationController {
   })
   deleteBankAccount(@Param("id", ParseUUIDPipe) id: string) {
     return this.accounts.remove(id);
+  }
+
+  @Post("bank/statement")
+  @RequirePermission("bank:reconcile")
+  @ApiOperation({
+    summary: "Banka ekstresi (CSV) yükle ve eşleştir",
+    description:
+      "Hareketler yazılır, gelenler için daire önerisi üretilir (`suggested`). " +
+      "Öneri tahsilat açmaz; onay `bank/transactions/:id/confirm` ile. Aynı " +
+      "ekstrenin tekrar yüklenmesi hareketleri çoğaltmaz.",
+  })
+  importStatement(@Body(new ZodBodyPipe(bankStatementImport)) dto: BankStatementImport) {
+    return this.reconcile.importStatement(dto);
+  }
+
+  @Post("bank/transactions/:id/confirm")
+  @RequirePermission("bank:reconcile")
+  @ApiOperation({
+    summary: "Hareketi onayla — tahsilat kaydı açar",
+    description:
+      "`unitId` boşsa önerilen daire; doluysa elle seçim. `payment:create` de " +
+      "gerekir. Zaten çözülmüş hareket 400 (`already_resolved`).",
+  })
+  confirmTransaction(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body(new ZodBodyPipe(bankTxConfirm)) dto: BankTxConfirm,
+  ) {
+    return this.reconcile.confirm(id, dto.unitId);
+  }
+
+  @Post("bank/transactions/:id/ignore")
+  @RequirePermission("bank:reconcile")
+  @ApiOperation({ summary: "Hareketi yok say (gerekçeli)" })
+  ignoreTransaction(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body(new ZodBodyPipe(bankTxIgnore)) dto: BankTxIgnore,
+  ) {
+    return this.reconcile.ignore(id, dto.reason);
   }
 
   @Get("migrations")

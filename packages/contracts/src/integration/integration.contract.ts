@@ -260,3 +260,52 @@ export const migrationCommitResult = z.object({
 });
 
 export type MigrationCommitResult = z.infer<typeof migrationCommitResult>;
+
+/* ------------------------------------------------------------------ *
+ * Banka ekstresi içe aktarma ve mutabakat eylemleri
+ * ------------------------------------------------------------------ */
+
+/**
+ * `POST /v1/panel/bank/statement` — CSV ekstre. Metin gövdede geliyor (dosya
+ * yükleme depoya bağlı değil); 2 MB, bir yıllık hareket için fazlasıyla yeter.
+ */
+export const bankStatementImport = z.object({
+  accountId: uuid,
+  csv: z.string().min(10).max(2_000_000),
+});
+
+export const bankStatementResult = z.object({
+  /** Dosyada okunabilen hareket sayısı. */
+  parsed: z.number().int(),
+  /** Yeni yazılan; aynı ekstrenin tekrar yüklenmesi çoğaltmaz. */
+  inserted: z.number().int(),
+  duplicates: z.number().int(),
+  /** Daire önerisi çıkan gelen hareket — onay bekliyor. */
+  suggested: z.number().int(),
+  /** Öneri çıkmayan gelen hareket — elle daire seçilecek. */
+  unmatched: z.number().int(),
+  /** Çıkan hareket — aidatla eşleştirilmiyor, `ignored` yazılır. */
+  outgoing: z.number().int(),
+  errors: z.array(z.object({ line: z.number().int(), reason: z.string() })),
+});
+
+export const bankTxConfirm = z.object({
+  /** Boşsa önerilen daire kullanılır; doluysa elle seçim (öneriyi ezer). */
+  unitId: uuid.optional(),
+});
+
+export const bankTxIgnore = z.object({
+  reason: z.string().trim().min(3).max(300),
+});
+
+export const bankTxActionResult = z.object({
+  id: uuid,
+  status: z.string(),
+  paymentId: uuid.nullable(),
+});
+
+export type BankStatementImport = z.infer<typeof bankStatementImport>;
+export type BankStatementResult = z.infer<typeof bankStatementResult>;
+export type BankTxConfirm = z.infer<typeof bankTxConfirm>;
+export type BankTxIgnore = z.infer<typeof bankTxIgnore>;
+export type BankTxActionResult = z.infer<typeof bankTxActionResult>;
