@@ -174,7 +174,7 @@ export function Tabs({
   linkComponent?: AnchorLike;
 }) {
   return (
-    <nav aria-label={label} className="-mb-px overflow-x-auto border-b border-border">
+    <nav aria-label={label} className="relative -mb-px overflow-x-auto border-b border-border">
       <ul className="flex min-w-max gap-1">
         {items.map((item) => {
           const active = item.key === activeKey;

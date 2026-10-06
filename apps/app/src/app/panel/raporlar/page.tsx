@@ -93,16 +93,20 @@ export default async function ReportsPage() {
         <Card>
           <CardHeader title={t("topDebtorsTitle")} />
           <CardBody className="p-0">
-            <table className={tc.table}>
-              <tbody>
-                {unitDebts.slice(0, 10).map((u) => (
-                  <tr key={u.unitId} className={tc.tr}>
-                    <td className={tc.td}>{u.number}</td>
-                    <td className={tc.tdNum}>{f.money(u.outstandingMinor)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className={tc.wrapper}>
+              <table className={tc.table}>
+                <tbody>
+                  {unitDebts.slice(0, 10).map((u) => (
+                    <tr key={u.unitId} className={tc.tr}>
+                      <td className={tc.td}>{u.number}</td>
+                      <td className={tc.tdNum}>
+                        {f.money(u.outstandingMinor)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </CardBody>
         </Card>
       </div>

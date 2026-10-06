@@ -19,6 +19,7 @@ import { PageHeader } from "@/components/app-shell";
 import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
+import { MaintenanceHistory } from "./maintenance-history";
 
 /** Bakım takvimi — SPEC Bölüm 3.7. Şablon adları `maintenance.template.*` altındadır. */
 export const dynamic = "force-dynamic";
@@ -36,6 +37,7 @@ export default async function MaintenancePage() {
   const {
     records,
     templates: library,
+    recentLogs,
     totals,
   } = await apiGet("/v1/panel/operations/maintenance", maintenanceListResponse);
 
@@ -100,35 +102,17 @@ export default async function MaintenancePage() {
                 />
               </div>
             ) : (
-              <div className={tc.wrapper}>
-                <table className={tc.table} style={{ minWidth: 520 }}>
-                  <thead className={tc.thead}>
-                    <tr>
-                      <th scope="col" className={tc.th}>
-                        {t("planTitle")}
-                      </th>
-                      <th scope="col" className={tc.th}>
-                        {t("intervalDays", { days: "" })}
-                      </th>
-                      <th scope="col" className={tc.th}>
-                        {t("within30Days")}
-                      </th>
-                      {canWrite ? (
-                        <th scope="col" className={`${tc.th} w-10`}>
-                          <span className="sr-only">
-                            {tCommon("action.edit")}
-                          </span>
-                        </th>
-                      ) : null}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {records.map((r) => {
-                      const days = r.daysUntilDue;
-                      return (
-                        <tr key={r.id} className={tc.tr}>
-                          <td className={tc.td}>
-                            <div className="font-medium text-fg">
+              <>
+                {/* Telefon: kart listesi. 520 px'lik tablo dar ekranda yatay
+                  kaydırma istiyordu; vade ve son bakım bir bakışta okunmalı. */}
+                <ul className="divide-y divide-border sm:hidden">
+                  {records.map((r) => {
+                    const days = r.daysUntilDue;
+                    const body = (
+                      <>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="font-medium text-fg [overflow-wrap:anywhere]">
                               {labelFor(r.templateCode, r.label)}
                             </div>
                             {r.location ? (
@@ -136,45 +120,135 @@ export default async function MaintenancePage() {
                                 {r.location}
                               </div>
                             ) : null}
-                          </td>
-                          <td className={tc.tdMuted}>
+                          </div>
+                          <Badge
+                            tone={
+                              days < 0
+                                ? "danger"
+                                : days <= 30
+                                  ? "warning"
+                                  : "neutral"
+                            }
+                          >
+                            {days < 0
+                              ? t("daysOverdue", { days: Math.abs(days) })
+                              : t("daysRemaining", { days })}
+                          </Badge>
+                        </div>
+                        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-fg-muted">
+                          <span>{f.date(r.nextDueAt)}</span>
+                          <span>
                             {t("intervalLabel", { days: r.intervalDays })}
-                          </td>
-                          <td className={tc.td}>
-                            <div className="text-xs text-fg-muted">
-                              {f.date(r.nextDueAt)}
-                            </div>
-                            <Badge
-                              tone={
-                                days < 0
-                                  ? "danger"
-                                  : days <= 30
-                                    ? "warning"
-                                    : "neutral"
-                              }
-                            >
-                              {days < 0
-                                ? t("daysOverdue", { days: Math.abs(days) })
-                                : t("daysRemaining", { days })}
-                            </Badge>
-                          </td>
-                          {canWrite ? (
+                          </span>
+                          <span>
+                            {r.lastDoneAt
+                              ? t("lastDoneShort", {
+                                  date: f.date(r.lastDoneAt),
+                                })
+                              : t("neverDoneShort")}
+                          </span>
+                        </div>
+                      </>
+                    );
+                    return (
+                      <li key={r.id}>
+                        {canWrite ? (
+                          <Link
+                            href={`/panel/bakim/${r.id}/duzenle`}
+                            className="block px-4 py-3 hover:bg-hover"
+                          >
+                            {body}
+                          </Link>
+                        ) : (
+                          <div className="px-4 py-3">{body}</div>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+                <div className={`${tc.wrapper} hidden sm:block`}>
+                  <table className={tc.table} style={{ minWidth: 520 }}>
+                    <thead className={tc.thead}>
+                      <tr>
+                        <th scope="col" className={tc.th}>
+                          {t("planTitle")}
+                        </th>
+                        <th scope="col" className={tc.th}>
+                          {t("colInterval")}
+                        </th>
+                        <th scope="col" className={tc.th}>
+                          {t("colNextDue")}
+                        </th>
+                        {canWrite ? (
+                          <th scope="col" className={`${tc.th} w-10`}>
+                            <span className="sr-only">
+                              {tCommon("action.edit")}
+                            </span>
+                          </th>
+                        ) : null}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {records.map((r) => {
+                        const days = r.daysUntilDue;
+                        return (
+                          <tr key={r.id} className={tc.tr}>
                             <td className={tc.td}>
-                              <Link
-                                href={`/panel/bakim/${r.id}/duzenle`}
-                                aria-label={tCommon("action.edit")}
-                                className="rounded p-1 text-fg-subtle hover:bg-hover hover:text-fg"
-                              >
-                                <Pencil aria-hidden className="h-3.5 w-3.5" />
-                              </Link>
+                              <div className="font-medium text-fg">
+                                {labelFor(r.templateCode, r.label)}
+                              </div>
+                              {r.location ? (
+                                <div className="text-xs text-fg-subtle">
+                                  {r.location}
+                                </div>
+                              ) : null}
+                              <div className="text-xs text-fg-subtle">
+                                {r.lastDoneAt
+                                  ? t("lastDoneShort", {
+                                      date: f.date(r.lastDoneAt),
+                                    })
+                                  : t("neverDoneShort")}
+                              </div>
                             </td>
-                          ) : null}
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                            <td className={tc.tdMuted}>
+                              {t("intervalLabel", { days: r.intervalDays })}
+                            </td>
+                            <td className={tc.td}>
+                              <div className="text-xs text-fg-muted">
+                                {f.date(r.nextDueAt)}
+                              </div>
+                              <Badge
+                                tone={
+                                  days < 0
+                                    ? "danger"
+                                    : days <= 30
+                                      ? "warning"
+                                      : "neutral"
+                                }
+                              >
+                                {days < 0
+                                  ? t("daysOverdue", { days: Math.abs(days) })
+                                  : t("daysRemaining", { days })}
+                              </Badge>
+                            </td>
+                            {canWrite ? (
+                              <td className={tc.td}>
+                                <Link
+                                  href={`/panel/bakim/${r.id}/duzenle`}
+                                  aria-label={tCommon("action.edit")}
+                                  className="rounded p-1 text-fg-subtle hover:bg-hover hover:text-fg"
+                                >
+                                  <Pencil aria-hidden className="h-3.5 w-3.5" />
+                                </Link>
+                              </td>
+                            ) : null}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
           </CardBody>
         </Card>
@@ -215,6 +289,16 @@ export default async function MaintenancePage() {
           </CardBody>
         </Card>
       </div>
+
+      <Card className="mt-4">
+        <CardHeader
+          title={t("recentTitle")}
+          description={t("recentDescription")}
+        />
+        <CardBody>
+          <MaintenanceHistory rows={recentLogs} showRecord />
+        </CardBody>
+      </Card>
     </>
   );
 }

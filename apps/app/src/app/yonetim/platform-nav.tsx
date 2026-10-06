@@ -15,7 +15,7 @@ export function PlatformNav({
   const pathname = usePathname();
 
   return (
-    <nav aria-label={label} className="order-last -mx-1 flex w-full gap-1 overflow-x-auto sm:order-none sm:w-auto">
+    <nav aria-label={label} className="relative order-last -mx-1 flex w-full gap-1 overflow-x-auto sm:order-none sm:w-auto">
       {items.map((item) => {
         const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
         return (

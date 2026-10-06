@@ -1,8 +1,9 @@
 import { Injectable } from "@nestjs/common";
-import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 
 import {
   blocks,
+  maintenanceLogs,
   maintenanceRecords,
   maintenanceTemplates,
   memberships,
@@ -138,6 +139,35 @@ export class OperationsRepository {
       ]);
       return { records, templates };
     });
+  }
+
+  /**
+   * Bakım geçmişi — `recordId` verilirse yalnız o kaydın, yoksa sitenin
+   * tamamının son satırları. Soft-delete edilmiş kayıtların geçmişi de
+   * dönüyor: kaydı takipten çıkarmak yapılmış bakımı yok saymaz.
+   */
+  async maintenanceLogs(opts: { recordId?: string; limit?: number } = {}) {
+    return this.db.tx((tx) =>
+      tx
+        .select({
+          id: maintenanceLogs.id,
+          recordId: maintenanceLogs.recordId,
+          recordLabel: maintenanceRecords.label,
+          templateCode: maintenanceTemplates.code,
+          doneAt: maintenanceLogs.doneAt,
+          costMinor: maintenanceLogs.costKurus,
+          documentUrl: maintenanceLogs.documentUrl,
+          note: maintenanceLogs.note,
+          createdByName: sql<string | null>`nullif(trim(concat_ws(' ', ${users.firstName}, ${users.lastName})), '')`,
+        })
+        .from(maintenanceLogs)
+        .innerJoin(maintenanceRecords, eq(maintenanceRecords.id, maintenanceLogs.recordId))
+        .leftJoin(maintenanceTemplates, eq(maintenanceTemplates.id, maintenanceRecords.templateId))
+        .leftJoin(users, eq(users.id, maintenanceLogs.createdByUserId))
+        .where(opts.recordId ? eq(maintenanceLogs.recordId, opts.recordId) : undefined)
+        .orderBy(desc(maintenanceLogs.doneAt), desc(maintenanceLogs.createdAt))
+        .limit(opts.limit ?? 20),
+    );
   }
 
   async reservations(limit = 100) {

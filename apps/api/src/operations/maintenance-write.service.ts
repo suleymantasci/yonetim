@@ -7,10 +7,11 @@ import type {
   MaintenanceSave,
   MaintenanceSaveResult,
 } from "@yonetim/contracts";
-import { maintenanceRecords } from "@yonetim/db";
+import { maintenanceLogs, maintenanceRecords } from "@yonetim/db";
 
 import { AuditService, diffOf } from "../governance/audit/audit.service";
 import { DbService } from "../infra/db/db.service";
+import { OperationsRepository } from "./operations.repository";
 
 const DAY_MS = 86_400_000;
 
@@ -32,6 +33,7 @@ export class MaintenanceWriteService {
   constructor(
     private readonly db: DbService,
     private readonly audit: AuditService,
+    private readonly repo: OperationsRepository,
   ) {}
 
   async detail(id: string): Promise<MaintenanceDetail> {
@@ -50,6 +52,8 @@ export class MaintenanceWriteService {
     });
     if (!row) throw new NotFoundException("not_found");
 
+    const history = await this.repo.maintenanceLogs({ recordId: id, limit: 100 });
+
     return {
       id: row.id,
       templateId: row.templateId,
@@ -65,6 +69,7 @@ export class MaintenanceWriteService {
       notes: row.notes,
       // Okuma ucuyla aynı formül; "kaç gün kaldı" hep sunucu saatinden.
       daysUntilDue: Math.round((row.nextDueAt.getTime() - Date.now()) / DAY_MS),
+      history,
     };
   }
 
@@ -158,12 +163,8 @@ export class MaintenanceWriteService {
         dto.doneAt.getTime() + before.intervalDays * DAY_MS,
       );
 
-      const entry = dto.note
-        ? `${dto.doneAt.toISOString().slice(0, 10)} — ${dto.note}`
-        : null;
-      const notes = entry
-        ? [entry, before.notes].filter(Boolean).join("\n")
-        : before.notes;
+      // Tamamlama notu artık geçmiş satırında; plan notlarına eklenmiyor
+      // (eskiden tek iz oydu ve plan açıklamasını tarihli satırlarla dolduruyordu).
 
       await tx
         .update(maintenanceRecords)
@@ -174,10 +175,21 @@ export class MaintenanceWriteService {
           // Belge verilmediyse **eskisi korunuyor**: yeni bakımın raporu
           // henüz elde olmayabilir ve önceki raporu silmek bilgi kaybı.
           documentUrl: dto.documentUrl ?? before.documentUrl,
-          notes,
           updatedAt: new Date(),
         })
         .where(eq(maintenanceRecords.id, id));
+
+      // Geçmiş satırı: yukarıdaki alanlar yalnız "son" bakımı tutuyor ve bir
+      // sonraki tamamlamada eziliyor; liste buradan okunuyor.
+      await tx.insert(maintenanceLogs).values({
+        tenantId: before.tenantId,
+        recordId: id,
+        doneAt: dto.doneAt,
+        costKurus: dto.costMinor,
+        documentUrl: dto.documentUrl ?? null,
+        note: dto.note ?? null,
+        createdByUserId: this.db.ctx().userId ?? null,
+      });
 
       return next;
     });

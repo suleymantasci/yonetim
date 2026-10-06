@@ -23,6 +23,7 @@ import { PageHeader } from "@/components/app-shell";
 import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
+import { safeUrl } from "@/lib/safe-url";
 import { DistributePanel } from "./distribute-panel";
 
 export const dynamic = "force-dynamic";
@@ -105,9 +106,9 @@ export default async function ExpenseDetailPage({
         }
         action={
           <>
-            {expense.attachmentUrl ? (
+            {safeUrl(expense.attachmentUrl) ? (
               <a
-                href={expense.attachmentUrl}
+                href={safeUrl(expense.attachmentUrl)!}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex h-10 items-center gap-2 rounded-lg border border-border-strong bg-surface px-3 text-sm font-semibold text-fg hover:bg-hover"

@@ -1571,7 +1571,18 @@
     "neverDone": "No service has been recorded yet.",
     "drawerCreatedTitle": "Maintenance record created",
     "drawerCreatedHint": "The schedule has been updated. You can define more services from the statutory list.",
-    "drawerAddAnother": "Define another service"
+    "drawerAddAnother": "Define another service",
+    "historyTitle": "Maintenance history",
+    "historyTab": "History",
+    "historyEmpty": "No completed maintenance yet. Every time you mark one as done it is listed here with its date, cost and report.",
+    "historyDocument": "Report",
+    "historyBy": "Entered by {name}",
+    "recentTitle": "Recently completed",
+    "recentDescription": "Every \"done\" mark stays here with its date, cost and report.",
+    "lastDoneShort": "Last done: {date}",
+    "neverDoneShort": "Not done yet",
+    "colInterval": "Interval",
+    "colNextDue": "Next due"
   },
   "meters": {
     "title": "Meters & consumption",
@@ -2352,6 +2363,11 @@
     "title": "Page not found",
     "description": "The record may have been deleted, or the address is incorrect.",
     "backToDashboard": "Back to dashboard"
+  },
+  "forbiddenPage": {
+    "title": "You don't have access to this page",
+    "description": "Your role doesn't allow this screen. Ask your site manager if you need access.",
+    "back": "Back to dashboard"
   },
   "inventory": {
     "title": "Asset Register",

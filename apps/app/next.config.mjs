@@ -27,6 +27,8 @@ const nextConfig = {
    */
   experimental: {
     serverActions: { bodySizeLimit: "6mb" },
+    // `forbidden()` — yetkisiz sayfa genel hata ekranına düşmesin.
+    authInterrupts: true,
   },
   /**
    * Workspace paketleri kaynak TypeScript olarak yayınlanıyor; Next bunları

@@ -1,5 +1,5 @@
 import { cookies, headers } from "next/headers";
-import { redirect } from "next/navigation";
+import { forbidden, redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
 import { hasPermission } from "@yonetim/auth/guard";
@@ -103,6 +103,11 @@ export async function requireContext(): Promise<AppContext> {
 export async function requirePermission(permission: Permission): Promise<AppContext> {
   const ctx = await requireContext();
   if (!hasPermission(ctx.roles, permission)) {
+    // Sayfa render'ında "Bir şeyler ters gitti + referans kodu" yerine
+    // erişim ekranı (`forbidden.tsx`). Server Action isteklerinde (`Next-Action`
+    // başlığı) eski davranış kalıyor: bazı aksiyonlar `AppError` yakalayıp
+    // mesajı formda gösteriyor.
+    if (!(await headers()).has("next-action")) forbidden();
     throw errors.forbidden(
       (await getTranslations("common.error"))("forbiddenPermission", { permission }),
     );

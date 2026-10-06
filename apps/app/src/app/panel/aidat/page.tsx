@@ -130,34 +130,36 @@ export default async function DuesPlansPage() {
           {data.runs.length === 0 ? (
             <p className="p-4 text-sm text-fg-subtle">{t("noRuns")}</p>
           ) : (
-            <table className={tc.table}>
-              <thead className={tc.thead}>
-                <tr>
-                  <th scope="col" className={tc.th}>
-                    {t("period")}
-                  </th>
-                  <th scope="col" className={`${tc.th} text-right`}>
-                    {t("generatedDebts")}
-                  </th>
-                  <th scope="col" className={`${tc.th} text-right`}>
-                    {t("total")}
-                  </th>
-                  <th scope="col" className={tc.th}>
-                    {t("runStatus")}
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.runs.map((r) => (
-                  <tr key={r.id} className={tc.tr}>
-                    <td className={tc.td}>{f.period(r.period)}</td>
-                    <td className={tc.tdNum}>{r.generatedCount}</td>
-                    <td className={tc.tdNum}>{f.money(r.totalMinor)}</td>
-                    <td className={tc.td}>{r.status}</td>
+            <div className={tc.wrapper}>
+              <table className={tc.table}>
+                <thead className={tc.thead}>
+                  <tr>
+                    <th scope="col" className={tc.th}>
+                      {t("period")}
+                    </th>
+                    <th scope="col" className={`${tc.th} text-right`}>
+                      {t("generatedDebts")}
+                    </th>
+                    <th scope="col" className={`${tc.th} text-right`}>
+                      {t("total")}
+                    </th>
+                    <th scope="col" className={tc.th}>
+                      {t("runStatus")}
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {data.runs.map((r) => (
+                    <tr key={r.id} className={tc.tr}>
+                      <td className={tc.td}>{f.period(r.period)}</td>
+                      <td className={tc.tdNum}>{r.generatedCount}</td>
+                      <td className={tc.tdNum}>{f.money(r.totalMinor)}</td>
+                      <td className={tc.td}>{r.status}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </CardBody>
       </Card>

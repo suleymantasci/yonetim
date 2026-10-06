@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { CompleteMaintenanceForm } from "../../../../bakim/complete-maintenance-form";
 import type { MaintenanceFormDefaults } from "../../../../bakim/maintenance-form";
@@ -12,7 +12,8 @@ import { useRouteDrawerClose } from "@/components/route-drawer";
 
 /**
  * Çekmecede iki iş var ve **aynı anda ikisi de görünmüyor**: planı düzenlemek
- * ve "yapıldı" işaretlemek. Tam sayfa sürümde yan yana iki kart olarak
+ * ve "yapıldı" işaretlemek. Üçüncü sekme salt okunur geçmiş: "yapıldı"
+ * kayıtları önceden hiçbir yerde listelenmiyordu. Tam sayfa sürümde yan yana iki kart olarak
  * duruyorlar; çekmecenin dar alanında üst üste yığmak, kullanıcının hangi
  * formu gönderdiğini belirsizleştirirdi.
  *
@@ -23,20 +24,24 @@ export function EditMaintenanceFlow({
   defaults,
   templates,
   intervalDays,
+  history,
   labels,
 }: {
   defaults: MaintenanceFormDefaults;
   templates: MaintenanceTemplateOption[];
   intervalDays: number;
+  /** Sunucuda çizilmiş geçmiş listesi (`MaintenanceHistory`). */
+  history: ReactNode;
   labels: {
     save: string;
     markDone: string;
     editTab: string;
     completeTab: string;
+    historyTab: string;
   };
 }) {
   const close = useRouteDrawerClose();
-  const [mode, setMode] = useState<"edit" | "complete">("edit");
+  const [mode, setMode] = useState<"edit" | "complete" | "history">("edit");
 
   return (
     <>
@@ -49,6 +54,7 @@ export function EditMaintenanceFlow({
           [
             ["edit", labels.editTab],
             ["complete", labels.completeTab],
+            ["history", labels.historyTab],
           ] as const
         ).map(([value, label]) => (
           <button
@@ -78,6 +84,8 @@ export function EditMaintenanceFlow({
           stayOnSuccess
           onSaved={close}
         />
+      ) : mode === "history" ? (
+        <div className="overflow-y-auto p-5 sm:p-6">{history}</div>
       ) : (
         <div className="p-5 sm:p-6">
           <CompleteMaintenanceForm

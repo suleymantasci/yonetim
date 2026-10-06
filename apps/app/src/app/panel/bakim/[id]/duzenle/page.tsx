@@ -12,6 +12,7 @@ import { formatters } from "@/lib/format";
 import { CompleteMaintenanceForm } from "../../complete-maintenance-form";
 import { toMaintenanceDefaults } from "../../maintenance-defaults";
 import { MaintenanceForm } from "../../maintenance-form";
+import { MaintenanceHistory } from "../../maintenance-history";
 
 export const dynamic = "force-dynamic";
 
@@ -74,6 +75,13 @@ export default async function EditMaintenancePage({
               intervalDays={detail.intervalDays}
               submitLabel={t("markDone")}
             />
+          </CardBody>
+        </Card>
+
+        <Card className="lg:col-span-2">
+          <CardHeader title={t("historyTitle")} />
+          <CardBody>
+            <MaintenanceHistory rows={detail.history} />
           </CardBody>
         </Card>
       </div>

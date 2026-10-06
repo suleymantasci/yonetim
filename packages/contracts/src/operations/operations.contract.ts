@@ -209,6 +209,22 @@ export const maintenanceRecordRow = z.object({
   daysUntilDue: z.number().int(),
 });
 
+/** Bakım geçmişinin bir satırı — her "yapıldı" olayı. */
+export const maintenanceLogRow = z.object({
+  id: uuid,
+  recordId: uuid,
+  /** Liste ekranı için: hangi bakım (şablon kodu varsa çeviriden okunur). */
+  recordLabel: z.string(),
+  templateCode: z.string().nullable(),
+  doneAt: dateTime,
+  costMinor: moneyMinor,
+  documentUrl: z.string().nullable(),
+  note: z.string().nullable(),
+  createdByName: z.string().nullable(),
+});
+
+export type MaintenanceLogRow = z.infer<typeof maintenanceLogRow>;
+
 export const maintenanceTemplateRow = z.object({
   /** Tohum listeden geliyorsa `null` — henüz veritabanında karşılığı yok. */
   id: uuid.nullable(),
@@ -230,6 +246,8 @@ export const maintenanceListResponse = z.object({
    */
   templates: z.array(maintenanceTemplateRow),
   templatesAreSeed: z.boolean(),
+  /** Son yapılan bakımlar (yeniden eskiye, en çok 20). */
+  recentLogs: z.array(maintenanceLogRow),
   totals: z.object({
     tracked: z.number().int(),
     overdue: z.number().int(),
@@ -304,6 +322,8 @@ export const maintenanceDetail = z.object({
   isActive: z.boolean(),
   notes: z.string().nullable(),
   daysUntilDue: z.number().int(),
+  /** Bu kaydın bakım geçmişi (yeniden eskiye). */
+  history: z.array(maintenanceLogRow),
 });
 
 export type MaintenanceDetail = z.infer<typeof maintenanceDetail>;

@@ -1571,7 +1571,18 @@
     "neverDone": "Henüz bakım kaydı girilmemiş.",
     "drawerCreatedTitle": "Bakım kaydı oluşturuldu",
     "drawerCreatedHint": "Takvim güncellendi. Yasal listeden başka bakımlar da tanımlayabilirsiniz.",
-    "drawerAddAnother": "Bir bakım daha tanımla"
+    "drawerAddAnother": "Bir bakım daha tanımla",
+    "historyTitle": "Bakım geçmişi",
+    "historyTab": "Geçmiş",
+    "historyEmpty": "Henüz yapılmış bakım yok. \"Yapıldı\" işaretlediğiniz her bakım burada tarihi, maliyeti ve raporuyla listelenir.",
+    "historyDocument": "Rapor",
+    "historyBy": "Giren: {name}",
+    "recentTitle": "Son yapılan bakımlar",
+    "recentDescription": "Her \"yapıldı\" işareti tarih, maliyet ve raporuyla burada kalır.",
+    "lastDoneShort": "Son bakım: {date}",
+    "neverDoneShort": "Henüz yapılmadı",
+    "colInterval": "Periyot",
+    "colNextDue": "Sıradaki vade"
   },
   "meters": {
     "title": "Sayaçlar & Tüketim",
@@ -2352,6 +2363,11 @@
     "title": "Sayfa bulunamadı",
     "description": "Aradığınız kayıt silinmiş ya da adres hatalı olabilir.",
     "backToDashboard": "Panele dön"
+  },
+  "forbiddenPage": {
+    "title": "Bu sayfaya erişiminiz yok",
+    "description": "Rolünüz bu ekranı görmeye yetmiyor. Erişim gerekiyorsa site yöneticinizle görüşün.",
+    "back": "Panele dön"
   },
   "inventory": {
     "title": "Demirbaş Defteri",

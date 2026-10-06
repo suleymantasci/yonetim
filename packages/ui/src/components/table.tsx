@@ -304,7 +304,10 @@ function LinkCell({
  * geçerli oluyor.
  */
 export const tableClasses = {
-  wrapper: "overflow-x-auto",
+  // `relative`: içerideki `sr-only` başlıklar (position: absolute) kaydırma
+  // kabını değil `body`yi referans alıyordu; kırpılmayıp telefonda sayfayı
+  // yatay kaydırıyordu (portföy, bloklar, bakım).
+  wrapper: "relative overflow-x-auto",
   table: "w-full border-collapse text-sm",
   thead: "border-b border-border text-left text-xs uppercase tracking-wide text-fg-subtle",
   th: "px-[var(--row-px)] py-[var(--head-py)] font-medium",

@@ -82,7 +82,10 @@ export class OperationsService {
   }
 
   async maintenance(): Promise<MaintenanceListResponse> {
-    const { records, templates } = await this.repo.maintenance();
+    const [{ records, templates }, recentLogs] = await Promise.all([
+      this.repo.maintenance(),
+      this.repo.maintenanceLogs({ limit: 20 }),
+    ]);
     const now = Date.now();
 
     const codeById = new Map(
@@ -131,6 +134,7 @@ export class OperationsService {
       records: mapped,
       templates: library,
       templatesAreSeed,
+      recentLogs,
       totals: {
         tracked: mapped.length,
         overdue: mapped.filter((r) => r.daysUntilDue < 0).length,

@@ -93,7 +93,7 @@ export function TabView({
         <div
           role="tablist"
           aria-label={label}
-          className="-mb-px overflow-x-auto border-b border-border"
+          className="relative -mb-px overflow-x-auto border-b border-border"
         >
           <div className="flex min-w-max gap-1">
             {items.map((item) => {

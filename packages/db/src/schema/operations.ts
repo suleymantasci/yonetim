@@ -110,6 +110,36 @@ export const maintenanceRecords = pgTable(
   ],
 );
 
+/**
+ * Bakım geçmişi — her "yapıldı" olayı bir satır.
+ *
+ * `maintenance_records` yalnız **son** bakımı (`last_done_at`,
+ * `last_cost_kurus`) taşıyordu; tamamlama bu alanların üstüne yazdığı için
+ * önceki bakımlar hiçbir yerde kalmıyordu. Yasal denetimde sorulan şey tam da
+ * bu liste ("asansör son üç yılda hangi tarihlerde kontrol edildi, raporu
+ * nerede"). Kayıt soft-delete edilse de geçmiş durur; satırlar düzenlenmez.
+ */
+export const maintenanceLogs = pgTable(
+  "maintenance_logs",
+  {
+    id: idCol(),
+    tenantId: tenantId().references(() => tenants.id, { onDelete: "cascade" }),
+    recordId: uuid("record_id")
+      .notNull()
+      .references(() => maintenanceRecords.id, { onDelete: "cascade" }),
+    doneAt: timestamp("done_at", { withTimezone: true }).notNull(),
+    costKurus: money("cost_kurus").notNull().default(0),
+    documentUrl: text("document_url"),
+    note: text("note"),
+    createdByUserId: uuid("created_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_maintenance_logs_record").on(t.recordId, t.doneAt),
+    index("idx_maintenance_logs_tenant_done").on(t.tenantId, t.doneAt),
+  ],
+);
+
 export const vendors = pgTable(
   "vendors",
   {

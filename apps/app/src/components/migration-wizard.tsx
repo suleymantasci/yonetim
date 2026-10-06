@@ -87,7 +87,7 @@ export function MigrationWizard() {
               ) : null}
 
               {preview.sample.length > 0 ? (
-                <div className="overflow-x-auto">
+                <div className="relative overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead className="text-left text-fg-subtle">
                       <tr>

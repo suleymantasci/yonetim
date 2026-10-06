@@ -8,6 +8,7 @@ import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { toTemplateOptions } from "../../../../bakim/template-options";
 import { toMaintenanceDefaults } from "../../../../bakim/maintenance-defaults";
+import { MaintenanceHistory } from "../../../../bakim/maintenance-history";
 import { EditMaintenanceFlow } from "./edit-maintenance-flow";
 
 export const dynamic = "force-dynamic";
@@ -48,11 +49,13 @@ export default async function EditMaintenanceModal({
         defaults={toMaintenanceDefaults(detail)}
         templates={await toTemplateOptions(options.templates)}
         intervalDays={detail.intervalDays}
+        history={<MaintenanceHistory rows={detail.history} />}
         labels={{
           save: tCommon("action.save"),
           markDone: t("markDone"),
           editTab: t("editSection"),
           completeTab: t("completeSection"),
+          historyTab: t("historyTab"),
         }}
       />
     </RouteDrawer>
