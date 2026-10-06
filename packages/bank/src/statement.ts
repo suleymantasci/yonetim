@@ -46,7 +46,7 @@ const HEADER_ALIASES = {
 type Field = keyof typeof HEADER_ALIASES;
 
 export function parseStatementCsv(text: string): ParsedStatement {
-  const lines = text.replace(/^﻿/, "").split(/\r?\n/).filter((l) => l.trim() !== "");
+  const lines = text.replace(/^\uFEFF/, "").split(/\r?\n/).filter((l) => l.trim() !== "");
   if (lines.length < 2) return { rows: [], errors: [{ line: 1, reason: "missing_columns" }] };
 
   const delimiter = detectDelimiter(lines[0]!);

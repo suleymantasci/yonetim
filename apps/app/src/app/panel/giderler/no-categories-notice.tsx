@@ -96,6 +96,7 @@ export function NoCategoriesNotice({
           <FormSection title={t("quickCategorySection")}>
             <div className="sm:col-span-2">
               <FormField name="name" label={t("categoryName")} required>
+                {/* eslint-disable-next-line jsx-a11y/no-autofocus -- modal açılışında odak beklenen davranış */}
                 <Input name="name" required minLength={2} maxLength={120} autoFocus />
               </FormField>
             </div>
