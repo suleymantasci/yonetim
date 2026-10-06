@@ -506,6 +506,40 @@ export async function cancelDebts(
       };
 }
 
+/**
+ * Borç silme/affetme — kurul kararıyla. Gerekçe ve karar referansı zorunlu;
+ * yetki `debt:forgive` (muhasebeciye ve operatöre kapalı).
+ */
+export async function forgiveDebts(
+  ids: string[],
+  reason: string,
+  decisionRef: string,
+): Promise<BulkResult> {
+  await requirePermission("debt:forgive");
+  const t = await getTranslations("app.debts");
+  const targets = asArray(ids);
+  if (targets.length === 0) return { ok: false, message: t("selectionEmpty") };
+  if (reason.trim().length < 10) return { ok: false, message: t("reasonTooShort") };
+  if (decisionRef.trim().length < 3) return { ok: false, message: t("decisionRequired") };
+
+  const result = await apiPost(
+    "/v1/panel/debts/forgive",
+    { ids: targets, reason, decisionRef },
+    debtBulkResultSimple,
+    { reason },
+  );
+
+  return result.affected === result.requested
+    ? { ok: true, message: t("forgiven", { count: result.affected }) }
+    : {
+        ok: true,
+        message: t("forgivenPartial", {
+          count: result.affected,
+          skipped: result.requested - result.affected,
+        }),
+      };
+}
+
 /** Gecikme tazminatı muafiyetini toplu aç/kapat — GAP 4.2.5. */
 export async function setLateFeeExempt(
   ids: string[],

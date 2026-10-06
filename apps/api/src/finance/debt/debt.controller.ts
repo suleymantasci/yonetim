@@ -16,6 +16,7 @@ import {
   debtAdjust,
   debtBulkCreate,
   debtCancel,
+  debtForgive,
   debtCreate,
   debtExemptPatch,
   debtListQuery,
@@ -148,6 +149,22 @@ export class DebtController {
     @Body(new ZodBodyPipe(debtCancel)) dto: { ids: string[]; reason: string },
   ) {
     return this.service.cancel(dto.ids, dto.reason);
+  }
+
+  @Post("forgive")
+  @RequirePermission("debt:forgive")
+  @ApiOperation({
+    summary: "Borç silme / affetme (kurul kararıyla)",
+    description:
+      "Gerekçe (en az 10 karakter) ve karar referansı zorunlu. Kalan tutar " +
+      "`written_off` olur, kayıt silinmez; icradaki/ödenmiş/iptal borç " +
+      "etkilenmez (`affected < requested`).",
+  })
+  forgive(
+    @Body(new ZodBodyPipe(debtForgive))
+    dto: { ids: string[]; reason: string; decisionRef: string },
+  ) {
+    return this.service.forgive(dto.ids, dto.reason, dto.decisionRef);
   }
 
   @Patch("late-fee-waiver")

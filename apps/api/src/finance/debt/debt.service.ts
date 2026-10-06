@@ -210,6 +210,16 @@ export class DebtService {
     return { affected, requested: ids.length };
   }
 
+  async forgive(ids: string[], reason: string, decisionRef: string) {
+    const affected = await this.write.forgive(ids, reason, decisionRef);
+    await this.audit.record({
+      action: "debt_forgiven",
+      resource: "debt",
+      reason: `${reason} · karar: ${decisionRef} (${affected}/${ids.length})`,
+    });
+    return { affected, requested: ids.length };
+  }
+
   async setLateFeeExempt(ids: string[], exempt: boolean) {
     const affected = await this.write.setLateFeeExempt(ids, exempt);
     await this.audit.record({

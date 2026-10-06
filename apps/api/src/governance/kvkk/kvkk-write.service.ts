@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { and, desc, eq, isNull, ne, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, ne, sql, notInArray } from "drizzle-orm";
 
 import type {
   DataBreachCreate,
@@ -252,7 +252,7 @@ export class KvkkWriteService {
         .select({ id: debts.id })
         .from(debts)
         .where(
-          and(eq(debts.debtorUserId, subjectId), isNull(debts.deletedAt), ne(debts.status, "paid")),
+          and(eq(debts.debtorUserId, subjectId), isNull(debts.deletedAt), notInArray(debts.status, ["paid", "written_off"])),
         )
         .limit(1);
       if (openDebt) throw new ConflictException("conflict:erasure_open_debts");

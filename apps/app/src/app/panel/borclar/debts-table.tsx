@@ -5,11 +5,11 @@ import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
-import { Badge, DataTable, Textarea, type DataColumn } from "@yonetim/ui";
+import { Badge, DataTable, Input, Textarea, type DataColumn } from "@yonetim/ui";
 
 import { BulkSelection } from "@/components/list/bulk-selection";
 import { buildListHref, type ListParams } from "@/lib/list-params";
-import { cancelDebts, setLateFeeExempt } from "./actions";
+import { cancelDebts, forgiveDebts, setLateFeeExempt } from "./actions";
 
 /**
  * Borç tablosu.
@@ -55,6 +55,7 @@ export function DebtsTable({
   direction,
   basePath,
   params,
+  canForgive,
   labels,
 }: {
   rows: DebtRowView[];
@@ -62,6 +63,8 @@ export function DebtsTable({
   direction: "asc" | "desc";
   basePath: string;
   params: ListParams;
+  /** `debt:forgive` yetkisi — silme eylemi yalnız bunda görünür. */
+  canForgive: boolean;
   labels: {
     unit: string;
     debtor: string;
@@ -80,10 +83,16 @@ export function DebtsTable({
     exemptOff: string;
     changedTooltip: string;
     exemptTooltip: string;
+    forgive: string;
+    forgiveTitle: string;
+    forgiveDescription: string;
+    decisionLabel: string;
+    decisionPlaceholder: string;
   };
 }) {
   const t = useTranslations("common");
   const [reason, setReason] = useState("");
+  const [decisionRef, setDecisionRef] = useState("");
 
   const hrefFor = (key: string, direction: "asc" | "desc") =>
     buildListHref(basePath, params, { sirala: key, yon: direction, sayfa: 1 });
@@ -99,6 +108,22 @@ export function DebtsTable({
       label: labels.exemptOff,
       run: (ids: string[]) => setLateFeeExempt(ids, false),
     },
+    ...(canForgive
+      ? [
+          {
+            key: "forgive",
+            label: labels.forgive,
+            tone: "danger" as const,
+            confirm: {
+              title: labels.forgiveTitle,
+              description: labels.forgiveDescription,
+              confirmLabel: t("action.confirm"),
+            },
+            // Gerekçe ve karar numarası seçimin altındaki alanlardan okunur.
+            run: (ids: string[]) => forgiveDebts(ids, reason, decisionRef),
+          },
+        ]
+      : []),
     {
       key: "cancel",
       label: t("action.delete"),
@@ -238,6 +263,24 @@ export function DebtsTable({
                   maxLength={500}
                   className="mt-1 min-h-0"
                 />
+                {canForgive ? (
+                  <>
+                    <label
+                      className="mt-3 block text-xs font-medium text-fg-muted"
+                      htmlFor="bulk-forgive-decision"
+                    >
+                      {labels.decisionLabel}
+                    </label>
+                    <Input
+                      id="bulk-forgive-decision"
+                      value={decisionRef}
+                      onChange={(event) => setDecisionRef(event.target.value)}
+                      placeholder={labels.decisionPlaceholder}
+                      maxLength={120}
+                      className="mt-1"
+                    />
+                  </>
+                ) : null}
               </div>
             ) : null}
           </>

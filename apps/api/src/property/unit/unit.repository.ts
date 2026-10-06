@@ -196,7 +196,7 @@ export class UnitRepository {
     if (q.status === "borclu") {
       conditions.push(
         sql`EXISTS (SELECT 1 FROM debts d WHERE d.unit_id = ${units.id}
-              AND d.deleted_at IS NULL AND d.status <> 'paid')`,
+              AND d.deleted_at IS NULL AND d.status NOT IN ('paid','written_off'))`,
       );
     }
     return and(...conditions);
@@ -222,7 +222,7 @@ export class UnitRepository {
       outstandingMinor: sql<number>`COALESCE((
         SELECT SUM(d.amount_kurus + d.late_fee_kurus - d.paid_kurus)
         FROM debts d
-        WHERE d.unit_id = ${units.id} AND d.deleted_at IS NULL AND d.status <> 'paid'
+        WHERE d.unit_id = ${units.id} AND d.deleted_at IS NULL AND d.status NOT IN ('paid','written_off')
       ), 0)`,
       occupantCount: sql<number>`(
         SELECT COUNT(*) FROM unit_occupancies o
@@ -276,11 +276,11 @@ export class UnitRepository {
 
         tx
           .select({
-            outstanding: sql<number>`COALESCE(SUM(CASE WHEN ${debts.status} <> 'paid'
+            outstanding: sql<number>`COALESCE(SUM(CASE WHEN ${debts.status} NOT IN ('paid','written_off')
                 THEN ${debts.amountKurus} + ${debts.lateFeeKurus} - ${debts.paidKurus} ELSE 0 END), 0)`,
-            overdue: sql<number>`COALESCE(SUM(CASE WHEN ${debts.status} <> 'paid' AND ${debts.dueDate} < now()
+            overdue: sql<number>`COALESCE(SUM(CASE WHEN ${debts.status} NOT IN ('paid','written_off') AND ${debts.dueDate} < now()
                 THEN ${debts.amountKurus} + ${debts.lateFeeKurus} - ${debts.paidKurus} ELSE 0 END), 0)`,
-            openCount: sql<number>`COUNT(*) FILTER (WHERE ${debts.status} <> 'paid')`,
+            openCount: sql<number>`COUNT(*) FILTER (WHERE ${debts.status} NOT IN ('paid','written_off'))`,
           })
           .from(debts)
           .where(and(eq(debts.unitId, unitId), isNull(debts.deletedAt))),

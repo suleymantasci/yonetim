@@ -1,5 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
-import { and, eq, isNull, ne, sql } from "drizzle-orm";
+import { and, eq, isNull, ne, sql, notInArray } from "drizzle-orm";
 
 import type {
   LegalAmountEntry,
@@ -83,7 +83,7 @@ export class LegalWriteService {
           and(
             eq(debts.unitId, dto.unitId),
             isNull(debts.deletedAt),
-            ne(debts.status, "paid"),
+            notInArray(debts.status, ["paid", "written_off"]),
           ),
         );
 

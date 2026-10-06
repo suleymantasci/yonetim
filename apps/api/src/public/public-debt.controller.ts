@@ -54,7 +54,7 @@ export class PublicDebtController {
       }
       if (unitId) conditions.push(eq(debts.unitId, unitId));
       if (period) conditions.push(eq(debts.period, period));
-      if (status === "open") conditions.push(sql`${debts.status} <> 'paid'`);
+      if (status === "open") conditions.push(sql`${debts.status} NOT IN ('paid','written_off')`);
       else if (status) conditions.push(sql`${debts.status}::text = ${status}`);
 
       const where = and(...conditions);

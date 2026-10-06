@@ -138,9 +138,9 @@ export class DebtRepository {
           // Özet toplamlar filtreden bağımsız.
           tx
             .select({
-              outstanding: sql<number>`COALESCE(SUM(CASE WHEN ${debts.status} <> 'paid'
+              outstanding: sql<number>`COALESCE(SUM(CASE WHEN ${debts.status} NOT IN ('paid','written_off')
               THEN ${debts.amountKurus} + ${debts.lateFeeKurus} - ${debts.paidKurus} ELSE 0 END), 0)`,
-              overdue: sql<number>`COALESCE(SUM(CASE WHEN ${debts.status} <> 'paid' AND ${debts.dueDate} < now()
+              overdue: sql<number>`COALESCE(SUM(CASE WHEN ${debts.status} NOT IN ('paid','written_off') AND ${debts.dueDate} < now()
               THEN ${debts.amountKurus} + ${debts.lateFeeKurus} - ${debts.paidKurus} ELSE 0 END), 0)`,
               lateFee: sql<number>`COALESCE(SUM(${debts.lateFeeKurus}), 0)`,
               collected: sql<number>`COALESCE(SUM(${debts.paidKurus}), 0)`,
@@ -201,10 +201,10 @@ export class DebtRepository {
     if (q.blockId) conditions.push(eq(units.blockId, q.blockId));
     if (q.period) conditions.push(eq(debts.period, q.period));
     if (q.kind) conditions.push(sql`${debts.kind}::text = ${q.kind}`);
-    if (q.status === "acik") conditions.push(sql`${debts.status} <> 'paid'`);
+    if (q.status === "acik") conditions.push(sql`${debts.status} NOT IN ('paid','written_off')`);
     if (q.status === "gecikmis") {
       conditions.push(
-        sql`${debts.status} <> 'paid' AND ${debts.dueDate} < now()`,
+        sql`${debts.status} NOT IN ('paid','written_off') AND ${debts.dueDate} < now()`,
       );
     }
     if (q.status === "odendi") conditions.push(eq(debts.status, "paid"));
@@ -426,12 +426,12 @@ export class DebtRepository {
                COALESCE(SUM(d.amount_kurus + d.late_fee_kurus - d.paid_kurus), 0)::bigint AS outstanding,
                COALESCE(SUM(CASE WHEN d.due_date < now()
                             THEN d.amount_kurus + d.late_fee_kurus - d.paid_kurus ELSE 0 END), 0)::bigint AS overdue,
-               MIN(d.due_date) FILTER (WHERE d.status <> 'paid') AS oldest_due,
-               COUNT(d.id) FILTER (WHERE d.status <> 'paid')::int AS debt_count,
+               MIN(d.due_date) FILTER (WHERE d.status NOT IN ('paid','written_off')) AS oldest_due,
+               COUNT(d.id) FILTER (WHERE d.status NOT IN ('paid','written_off'))::int AS debt_count,
                t.series AS trend
         FROM units u
         LEFT JOIN blocks b ON b.id = u.block_id
-        LEFT JOIN debts d ON d.unit_id = u.id AND d.deleted_at IS NULL AND d.status <> 'paid'
+        LEFT JOIN debts d ON d.unit_id = u.id AND d.deleted_at IS NULL AND d.status NOT IN ('paid','written_off')
         LEFT JOIN trend t ON t.unit_id = u.id
         WHERE u.deleted_at IS NULL
         GROUP BY u.id, u.number, b.name, b.sort_order, t.series
@@ -480,7 +480,7 @@ export class DebtRepository {
           and(
             eq(debts.unitId, unitId),
             isNull(debts.deletedAt),
-            sql`${debts.status} <> 'paid'`,
+            sql`${debts.status} NOT IN ('paid','written_off')`,
           ),
         )
         .orderBy(asc(debts.dueDate)),

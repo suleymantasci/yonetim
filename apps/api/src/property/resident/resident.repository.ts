@@ -90,7 +90,7 @@ export class ResidentRepository {
               THEN ${debts.amountKurus} + ${debts.lateFeeKurus} - ${debts.paidKurus} ELSE 0 END), 0)`,
             })
             .from(debts)
-            .where(and(isNull(debts.deletedAt), sql`${debts.status} <> 'paid'`))
+            .where(and(isNull(debts.deletedAt), sql`${debts.status} NOT IN ('paid','written_off')`))
             .groupBy(debts.debtorUserId),
 
           tx
@@ -315,9 +315,9 @@ export class ResidentRepository {
 
           tx
             .select({
-              outstanding: sql<number>`COALESCE(SUM(CASE WHEN ${debts.status} <> 'paid'
+              outstanding: sql<number>`COALESCE(SUM(CASE WHEN ${debts.status} NOT IN ('paid','written_off')
               THEN ${debts.amountKurus} + ${debts.lateFeeKurus} - ${debts.paidKurus} ELSE 0 END), 0)`,
-              overdue: sql<number>`COALESCE(SUM(CASE WHEN ${debts.status} <> 'paid' AND ${debts.dueDate} < now()
+              overdue: sql<number>`COALESCE(SUM(CASE WHEN ${debts.status} NOT IN ('paid','written_off') AND ${debts.dueDate} < now()
               THEN ${debts.amountKurus} + ${debts.lateFeeKurus} - ${debts.paidKurus} ELSE 0 END), 0)`,
             })
             .from(debts)

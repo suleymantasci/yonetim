@@ -61,7 +61,7 @@ export class DashboardRepository {
               THEN ${debts.amountKurus} + ${debts.lateFeeKurus} - ${debts.paidKurus} ELSE 0 END), 0)`,
           })
           .from(debts)
-          .where(and(isNull(debts.deletedAt), sql`${debts.status} <> 'paid'`)),
+          .where(and(isNull(debts.deletedAt), sql`${debts.status} NOT IN ('paid','written_off')`)),
 
         tx
           .select({
@@ -208,7 +208,7 @@ export class DashboardRepository {
           SUM(d.amount_kurus + d.late_fee_kurus - d.paid_kurus)::text AS total
         FROM debts d
         WHERE d.deleted_at IS NULL
-          AND d.status <> 'paid'
+          AND d.status NOT IN ('paid','written_off')
           AND d.due_date < now()
         GROUP BY bucket
       `)) as unknown as { bucket: string; total: string }[];
@@ -225,9 +225,9 @@ export class DashboardRepository {
       const splitRows = (await tx.execute(sql`
         SELECT
           COALESCE(SUM(d.paid_kurus), 0)::text AS paid,
-          COALESCE(SUM(CASE WHEN d.status <> 'paid' AND d.due_date >= now()
+          COALESCE(SUM(CASE WHEN d.status NOT IN ('paid','written_off') AND d.due_date >= now()
             THEN d.amount_kurus + d.late_fee_kurus - d.paid_kurus ELSE 0 END), 0)::text AS open,
-          COALESCE(SUM(CASE WHEN d.status <> 'paid' AND d.due_date < now()
+          COALESCE(SUM(CASE WHEN d.status NOT IN ('paid','written_off') AND d.due_date < now()
             THEN d.amount_kurus + d.late_fee_kurus - d.paid_kurus ELSE 0 END), 0)::text AS overdue
         FROM debts d
         WHERE d.deleted_at IS NULL
@@ -247,7 +247,7 @@ export class DashboardRepository {
           m.period,
           COALESCE((
             SELECT SUM(d.amount_kurus + d.late_fee_kurus - d.paid_kurus) FROM debts d
-            WHERE d.deleted_at IS NULL AND d.status <> 'paid'
+            WHERE d.deleted_at IS NULL AND d.status NOT IN ('paid','written_off')
               AND date_trunc('month', d.due_date) = m.month
           ), 0)::text AS due,
           COALESCE((

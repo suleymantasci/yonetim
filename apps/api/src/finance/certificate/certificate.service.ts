@@ -101,7 +101,7 @@ export class CertificateService {
           and(
             eq(debts.unitId, unit.id),
             isNull(debts.deletedAt),
-            sql`${debts.status} <> 'paid'`,
+            sql`${debts.status} NOT IN ('paid','written_off')`,
           ),
         );
 

@@ -463,6 +463,20 @@ export const debtCancel = z.object({
   reason: changeReason,
 });
 
+/**
+ * Borç silme/affetme — **kurul kararı** referansı zorunlu.
+ *
+ * Silme `debt:write` düzeltmesinden ayrı: kat malikleri kurulunun kararına
+ * dayanıyor (KMK) ve sonucu geri alınamaz bir alacak kaybı. Karar numarası/
+ * tarihi kayda geçiyor ki "bu borcu kim, hangi kararla sildi" sorusu
+ * aylar sonra cevaplanabilsin.
+ */
+export const debtForgive = z.object({
+  ids: z.array(uuid).min(1),
+  reason: changeReason,
+  decisionRef: z.string().trim().min(3).max(120),
+});
+
 export const debtExemptPatch = z.object({
   ids: z.array(uuid).min(1),
   exempt: z.coerce.boolean(),

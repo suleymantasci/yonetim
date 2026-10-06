@@ -285,7 +285,7 @@ export class DebtWriteRepository {
           and(
             eq(debts.unitId, dto.unitId),
             isNull(debts.deletedAt),
-            sql`${debts.status} <> 'paid'`,
+            sql`${debts.status} NOT IN ('paid','written_off')`,
           ),
         );
 
@@ -478,6 +478,42 @@ export class DebtWriteRepository {
             isNull(debts.deletedAt),
             // Ödeme yapılmışsa iptal, para iade akışı gerektirir.
             eq(debts.paidKurus, 0),
+          ),
+        )
+        .returning({ id: debts.id });
+      return rows.length;
+    });
+  }
+
+  /**
+   * Borç silme/affetme: kalan tutar `written_off` olur, kayıt **silinmez**.
+   *
+   * Kısmen ödenmiş borç da silinebilir (affedilen kalan kısım); ödenen kısım
+   * olduğu gibi kalıyor. İcradaki (`in_legal`), ödenmiş, iptal edilmiş veya
+   * zaten silinmiş borç etkilenmez — icradaki borç önce dosya kapatılarak
+   * çözülmeli. Affedilen tutar, karar referansı ve zaman `metadata.forgiven`'a
+   * yazılıyor; gecikme tazminatı da durduruluyor.
+   */
+  async forgive(ids: string[], reason: string, decisionRef: string): Promise<number> {
+    return this.db.txWithReason(reason, async (tx) => {
+      const rows = await tx
+        .update(debts)
+        .set({
+          status: "written_off",
+          lateFeeExempt: true,
+          metadata: sql`${debts.metadata} || jsonb_build_object('forgiven', jsonb_build_object(
+            'amountKurus', ${debts.amountKurus} + ${debts.lateFeeKurus} - ${debts.paidKurus},
+            'decisionRef', ${decisionRef}::text,
+            'reason', ${reason}::text,
+            'at', to_char(now() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
+          ))`,
+        })
+        .where(
+          and(
+            inArray(debts.id, ids),
+            isNull(debts.deletedAt),
+            inArray(debts.status, ["pending", "partial", "overdue"]),
+            sql`${debts.amountKurus} + ${debts.lateFeeKurus} - ${debts.paidKurus} > 0`,
           ),
         )
         .returning({ id: debts.id });

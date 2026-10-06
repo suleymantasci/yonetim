@@ -8,8 +8,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import {
-  and, count, desc, eq, gt, inArray, isNotNull, isNull, lte, ne, sql,
-} from "drizzle-orm";
+  and, count, desc, eq, gt, inArray, isNotNull, isNull, lte, ne, sql, notInArray } from "drizzle-orm";
 
 import {
   checkPasswordPolicy,
@@ -167,7 +166,7 @@ export class PortalService {
           and(
             eq(debts.unitId, unit.unitId),
             isNull(debts.deletedAt),
-            ne(debts.status, "paid"),
+            notInArray(debts.status, ["paid", "written_off"]),
           ),
         )
         .orderBy(debts.dueDate);

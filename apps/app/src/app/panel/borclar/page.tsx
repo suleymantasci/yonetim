@@ -26,7 +26,7 @@ import { NavTabs } from "@/components/nav-tabs";
 import { ListControls } from "@/components/list/list-controls";
 import { toListQuery } from "@/lib/api/list";
 import { apiGet, toQuery } from "@/lib/api/server";
-import { requirePermission } from "@/lib/context";
+import { can, requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
 import {
   buildListHref,
@@ -53,7 +53,7 @@ export default async function DebtsPage({
 }) {
   // Bağlayıcı yetki kararı API'de (`@RequirePermission`); buradaki erken
   // kontrol yetkisiz kullanıcıya doğru hata sayfasını göstermek için.
-  await requirePermission("debt:read");
+  const ctx = await requirePermission("debt:read");
   const t = await getTranslations("app.debts");
   const tUnits = await getTranslations("app.units");
   const tCommon = await getTranslations("common");
@@ -395,6 +395,7 @@ export default async function DebtsPage({
             direction={params.direction}
             basePath="/panel/borclar"
             params={params}
+            canForgive={can(ctx, "debt:forgive")}
             labels={{
               unit: tUnits("number"),
               debtor: t("debtor"),
@@ -413,6 +414,11 @@ export default async function DebtsPage({
               exemptOff: t("exemptOff"),
               changedTooltip: t("changedTooltip"),
               exemptTooltip: t("exemptTooltip"),
+              forgive: t("forgive"),
+              forgiveTitle: t("forgiveTitle"),
+              forgiveDescription: t("forgiveDescription"),
+              decisionLabel: t("decisionLabel"),
+              decisionPlaceholder: t("decisionPlaceholder"),
             }}
           />
           <Pagination

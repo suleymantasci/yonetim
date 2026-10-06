@@ -64,9 +64,9 @@ export class PortfolioController {
         LEFT JOIN LATERAL (
           SELECT
             SUM(amount_kurus + late_fee_kurus - paid_kurus)
-              FILTER (WHERE status <> 'paid')                       AS outstanding,
+              FILTER (WHERE status NOT IN ('paid','written_off'))                       AS outstanding,
             SUM(amount_kurus + late_fee_kurus - paid_kurus)
-              FILTER (WHERE status <> 'paid' AND due_date < NOW())  AS overdue,
+              FILTER (WHERE status NOT IN ('paid','written_off') AND due_date < NOW())  AS overdue,
             SUM(amount_kurus)
               FILTER (WHERE date_trunc('month', due_date)
                             = date_trunc('month', NOW()))           AS due_this_month,
