@@ -17,6 +17,7 @@ import {
 
 import { ActionForm, FormField } from "@/components/form/action-form";
 import { saveExpense } from "./actions";
+import { NoCategoriesNotice } from "./no-categories-notice";
 
 /**
  * Gider formu — GAP 4.1.4.
@@ -148,6 +149,12 @@ export function ExpenseForm({
             maxLength={160}
           />
         </FormField>
+
+        {categories.length === 0 ? (
+          <div className="sm:col-span-2">
+            <NoCategoriesNotice onCreated={setCategoryId} />
+          </div>
+        ) : null}
 
         {category ? (
           <div className="sm:col-span-2">

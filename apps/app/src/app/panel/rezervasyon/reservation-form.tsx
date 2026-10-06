@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Alert, FormSection, Input, Select, Textarea } from "@yonetim/ui";
 
 import { ActionForm, FormField } from "@/components/form/action-form";
+import Link from "@/components/link";
 import { createReservation } from "./actions";
 
 export interface ReservationResourceOption {
@@ -60,7 +61,21 @@ export function ReservationForm({
   const resource = resources.find((r) => r.id === resourceId);
 
   if (resources.length === 0) {
-    return <Alert tone="warning">{t("noResourcesYet")}</Alert>;
+    return (
+      <Alert
+        tone="warning"
+        action={
+          <Link
+            href="/panel/rezervasyon/tesis/yeni"
+            className="inline-flex h-9 items-center rounded-lg bg-primary px-3 text-sm font-semibold text-primary-fg hover:bg-primary-hover"
+          >
+            {t("noResourcesAction")}
+          </Link>
+        }
+      >
+        {t("noResourcesYet")}
+      </Alert>
+    );
   }
 
   return (

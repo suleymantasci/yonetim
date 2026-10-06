@@ -5,7 +5,6 @@ import { getTranslations } from "next-intl/server";
 import { hasPermission } from "@yonetim/auth/guard";
 import { EXPENSE_SORT_KEYS, expenseListResponse } from "@yonetim/contracts";
 import {
-  Alert,
   Card,
   CardBody,
   CardHeader,
@@ -27,6 +26,7 @@ import {
   type SearchParamsInput,
 } from "@/lib/list-params";
 import { CategoryBreakdown } from "./category-breakdown";
+import { NoCategoriesNotice } from "./no-categories-notice";
 import { ExpensesTable, type ExpenseRowView } from "./expenses-table";
 
 export const dynamic = "force-dynamic";
@@ -170,9 +170,7 @@ export default async function ExpensesPage({
 
       {data.facets.categories.length === 0 ? (
         <div className="mb-4">
-          <Alert tone="warning" title={t("noCategoriesTitle")}>
-            {t("noCategoriesBody")}
-          </Alert>
+          <NoCategoriesNotice />
         </div>
       ) : null}
 

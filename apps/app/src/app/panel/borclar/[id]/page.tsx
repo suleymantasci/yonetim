@@ -338,7 +338,19 @@ export default async function DebtDetailPage({
               </dl>
               {detail.debtorName === null ? (
                 <div className="mt-3">
-                  <Alert tone="warning">{t("debtorUnassignedNotice")}</Alert>
+                  <Alert
+                    tone="warning"
+                    action={
+                      <Link
+                        href={`/panel/birimler/${debt.unitId}`}
+                        className="inline-flex h-9 items-center rounded-lg border border-border-strong bg-surface px-3 text-sm font-medium text-fg hover:bg-hover"
+                      >
+                        {t("debtorUnassignedAction")}
+                      </Link>
+                    }
+                  >
+                    {t("debtorUnassignedNotice")}
+                  </Alert>
                 </div>
               ) : null}
             </CardBody>

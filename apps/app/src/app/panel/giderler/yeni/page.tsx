@@ -2,7 +2,7 @@ import { getTranslations } from "next-intl/server";
 
 import { hasPermission } from "@yonetim/auth/guard";
 import { categoryTree as categoryTreeSchema } from "@yonetim/contracts";
-import { Alert, Card, CardBody } from "@yonetim/ui";
+import { Card, CardBody } from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
 import { apiGet } from "@/lib/api/server";
@@ -50,14 +50,6 @@ export default async function NewExpensePage() {
           { label: t("newExpense") },
         ]}
       />
-
-      {categories.length === 0 ? (
-        <div className="mb-4 max-w-3xl">
-          <Alert tone="warning" title={t("noCategoriesTitle")}>
-            {t("noCategoriesBody")}
-          </Alert>
-        </div>
-      ) : null}
 
       <Card className="max-w-3xl">
         <CardBody>
