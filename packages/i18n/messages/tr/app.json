@@ -65,6 +65,9 @@
     "myPolls": "Oylamalarım"
   },
   "shell": {
+    "trialDaysLeft": "Deneme · {days} gün kaldı",
+    "trialLastDay": "Deneme · son gün",
+    "trialEnded": "Deneme süresi doldu",
     "impersonationWarning": "Bu oturum destek ekibi tarafından kullanıcı adına açılmıştır. Tüm işlemler ayrıca kayıt altına alınır.",
     "userRoleFallback": "Kullanıcı",
     "pinned": "Sık kullanılanlar",
@@ -2633,6 +2636,7 @@
       "propertyName": "Site / apartman adı",
       "propertyType": "Tür",
       "unitCount": "Daire sayısı",
+      "cityPlaceholder": "Şehir seçin",
       "city": "Şehir",
       "fullName": "Ad soyad",
       "identifier": "E-posta veya telefon",
@@ -2692,6 +2696,7 @@
       "propertyName": "Site / apartman adı",
       "propertyType": "Tür",
       "unitCount": "Daire sayısı",
+      "cityPlaceholder": "Şehir seçin",
       "city": "Şehir"
     },
     "generateUnits": "Daireleri otomatik oluştur",

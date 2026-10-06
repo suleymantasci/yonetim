@@ -47,6 +47,7 @@ export class AppContextService {
           slug: tenants.slug,
           name: tenants.name,
           status: tenants.status,
+          trialEndsAt: tenants.trialEndsAt,
         })
         .from(tenants)
         .where(and(inArray(tenants.id, ids), isNull(tenants.deletedAt)));
@@ -81,6 +82,7 @@ export class AppContextService {
         tenantSlug: PLATFORM_TENANT_SLUG,
         tenantName: "Platform",
         tenantStatus: "platform",
+        tenantTrialEndsAt: null,
         roles: ctx.roles,
         locale: ctx.locale,
         impersonatedBy: ctx.impersonatedBy ?? null,
@@ -98,6 +100,7 @@ export class AppContextService {
       tenantSlug: active.slug,
       tenantName: active.name,
       tenantStatus: active.status,
+      tenantTrialEndsAt: active.status === "trial" ? active.trialEndsAt : null,
       roles: ctx.roles,
       locale: ctx.locale,
       impersonatedBy: ctx.impersonatedBy ?? null,

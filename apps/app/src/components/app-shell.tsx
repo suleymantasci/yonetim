@@ -54,6 +54,7 @@ export async function AppShell({
   tenantId,
   tenantName,
   tenantStatus,
+  trialEndsAt,
   userName,
   roles,
   allowedHrefs,
@@ -69,6 +70,7 @@ export async function AppShell({
   tenantId: string;
   tenantName: string;
   tenantStatus: string;
+  trialEndsAt?: Date | null;
   userName: string;
   roles: Role[];
   allowedHrefs: string[];
@@ -137,6 +139,22 @@ export async function AppShell({
    */
   const multiTenant = memberships.length > 1;
 
+  // Deneme rozeti kalan günü de söylüyor; gün sayımı takvim gününe göre,
+  // son gün ("bugün bitiyor") ile süresi dolmuş durumu ayrı yazılıyor.
+  const trialDaysLeft =
+    tenantStatus === "trial" && trialEndsAt
+      ? Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / 86_400_000)
+      : null;
+  const statusText = tEnum(`tenantStatus.${tenantStatus as TenantStatus}`);
+  const trialLabel =
+    trialDaysLeft === null
+      ? statusText
+      : trialDaysLeft <= 0
+        ? t("shell.trialEnded")
+        : trialDaysLeft === 1
+          ? t("shell.trialLastDay")
+          : t("shell.trialDaysLeft", { days: trialDaysLeft });
+
   const brandHeader = (
     <div className="flex h-16 items-center gap-2.5 border-b border-border px-4">
       <Link
@@ -153,14 +171,14 @@ export async function AppShell({
           labels={{
             trigger: t("shell.switchTenant"),
             portfolio: t("nav.portfolio"),
-            status: tEnum(`tenantStatus.${tenantStatus as TenantStatus}`),
+            status: trialLabel,
           }}
         />
       ) : (
         <div className="min-w-0">
           <div className="truncate text-sm font-semibold leading-tight text-fg">{tenantName}</div>
           <div className="mt-0.5 text-[11px] leading-tight text-fg-subtle">
-            {tEnum(`tenantStatus.${tenantStatus as TenantStatus}`)}
+            {trialLabel}
           </div>
         </div>
       )}
@@ -220,7 +238,7 @@ export async function AppShell({
         <>
           {tenantStatus !== "active" ? (
             <Badge tone={tenantStatus === "trial" ? "info" : "warning"} className="hidden sm:inline-flex">
-              {tEnum(`tenantStatus.${tenantStatus as TenantStatus}`)}
+              {trialLabel}
             </Badge>
           ) : null}
 

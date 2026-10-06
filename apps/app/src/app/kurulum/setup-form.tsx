@@ -6,6 +6,8 @@ import { useFormStatus } from "react-dom";
 
 import { Alert, Checkbox, Field, Input, Select } from "@yonetim/ui";
 
+import { TR_CITIES } from "@/lib/tr-cities";
+
 import { createFirstTenant, type SetupState } from "./actions";
 
 const PROPERTY_TYPES = [
@@ -43,7 +45,14 @@ export function SetupForm() {
           <Input name="unitCount" type="number" min={1} max={10000} defaultValue={24} required />
         </Field>
         <Field label={t("field.city")}>
-          <Input name="city" maxLength={60} />
+          <Select name="city" defaultValue="">
+            <option value="">{t("field.cityPlaceholder")}</option>
+            {TR_CITIES.map((city) => (
+              <option key={city} value={city}>
+                {city}
+              </option>
+            ))}
+          </Select>
         </Field>
       </div>
 

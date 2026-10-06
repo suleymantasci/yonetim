@@ -65,6 +65,9 @@
     "myPolls": "My polls"
   },
   "shell": {
+    "trialDaysLeft": "Trial · {days} days left",
+    "trialLastDay": "Trial · last day",
+    "trialEnded": "Trial ended",
     "impersonationWarning": "This session was opened by the support team on behalf of a user. Every action is additionally recorded.",
     "userRoleFallback": "User",
     "pinned": "Pinned",
@@ -2633,6 +2636,7 @@
       "propertyName": "Property name",
       "propertyType": "Type",
       "unitCount": "Number of units",
+      "cityPlaceholder": "Select a city",
       "city": "City",
       "fullName": "Full name",
       "identifier": "Email or phone",
@@ -2692,6 +2696,7 @@
       "propertyName": "Property name",
       "propertyType": "Type",
       "unitCount": "Number of units",
+      "cityPlaceholder": "Select a city",
       "city": "City"
     },
     "generateUnits": "Create units automatically",

@@ -152,6 +152,8 @@ export const appContext = z.object({
   tenantSlug: z.string(),
   tenantName: z.string(),
   tenantStatus: z.string(),
+  /** Deneme bitiş anı; deneme dışı sitede ya da platform bağlamında `null`. */
+  tenantTrialEndsAt: dateTime.nullable(),
   roles: z.array(z.string()),
   locale: z.string(),
   impersonatedBy: uuid.nullable(),

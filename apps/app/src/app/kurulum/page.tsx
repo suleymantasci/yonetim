@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 
-import { sessionProbe } from "@yonetim/contracts";
+import { appContext, sessionProbe } from "@yonetim/contracts";
 import { AppError } from "@yonetim/core";
 import { BrandMark, Card, CardBody } from "@yonetim/ui";
 
@@ -50,6 +50,17 @@ export default async function SetupPage() {
       redirect("/giris?devam=/kurulum");
     }
     throw error;
+  }
+
+  // Sitesi olan kullanıcı buraya düşmemeli: kayıt akışı siteyi zaten açıyor,
+  // `/kurulum`'u ikinci kez doldurmak aynı kişiye ikinci bir site açıyordu.
+  // Bağlam çözülüyorsa üyelik var → panele. 401/404 üyeliksiz demek, form kalır.
+  try {
+    await apiGet("/v1/auth/context", appContext);
+    redirect("/panel");
+  } catch (error) {
+    if (!(error instanceof AppError)) throw error;
+    if (error.code !== "unauthorized" && error.code !== "not_found") throw error;
   }
 
   const t = await getTranslations("app.setup");

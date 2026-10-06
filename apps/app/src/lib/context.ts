@@ -26,6 +26,8 @@ export interface AppContext extends TenantContext {
   /** Kabukta gösterilen ad — sunucuda birleştirilmiş hâli. */
   userName: string;
   tenantStatus: string;
+  /** Deneme bitişi; yalnız `tenantStatus === "trial"` iken dolu. */
+  tenantTrialEndsAt: Date | null;
   /** Kullanıcının erişebildiği diğer siteler — site değiştirici için. */
   memberships: Array<{ id: string; slug: string; name: string }>;
 }
@@ -79,6 +81,7 @@ export async function requireContext(): Promise<AppContext> {
     tenantName: resolved.tenantName,
     userName: resolved.userName,
     tenantStatus: resolved.tenantStatus,
+    tenantTrialEndsAt: resolved.tenantTrialEndsAt,
     userId: resolved.userId,
     roles: resolved.roles as Role[],
     impersonatedBy: resolved.impersonatedBy ?? undefined,

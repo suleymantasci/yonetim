@@ -8,6 +8,8 @@ import { useFormStatus } from "react-dom";
 
 import { Alert, Card, CardBody, Field, Input, Select, cn } from "@yonetim/ui";
 
+import { TR_CITIES } from "@/lib/tr-cities";
+
 import { startSignup, type SignupState } from "./actions";
 
 const PROPERTY_TYPES = [
@@ -36,10 +38,11 @@ export function SignupForm({
 }) {
   const t = useTranslations("app.signup");
   const tEnum = useTranslations("enum");
-  const [accountType, setAccountType] = useState<"property" | "company">("property");
   const [state, formAction] = useActionState<SignupState, FormData>(startSignup, {
     status: "idle",
   });
+  const v = state.values ?? {};
+  const [accountType, setAccountType] = useState<"property" | "company">("property");
 
   if (state.status === "sent") {
     return (
@@ -51,7 +54,7 @@ export function SignupForm({
             <p className="mt-1 text-sm text-fg-muted">{state.message}</p>
           </div>
           <Link
-            href={`/giris?devam=${encodeURIComponent("/kurulum")}`}
+            href="/giris"
             className="inline-flex h-10 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-fg hover:bg-primary-hover"
           >
             {t("continueToLogin")}
@@ -64,7 +67,7 @@ export function SignupForm({
   return (
     <Card>
       <CardBody>
-        <form action={formAction} className="space-y-5">
+        <form key={state.attempt ?? 0} action={formAction} className="space-y-5">
           {state.status === "error" && state.message ? (
             <Alert tone="danger">{state.message}</Alert>
           ) : null}
@@ -99,17 +102,17 @@ export function SignupForm({
 
           {accountType === "company" ? (
             <Field label={t("field.companyName")} error={state.fieldErrors?.companyName?.[0]}>
-              <Input name="companyName" required maxLength={200} />
+              <Input name="companyName" required maxLength={200} defaultValue={v.companyName} />
             </Field>
           ) : null}
 
           <Field label={t("field.propertyName")} error={state.fieldErrors?.propertyName?.[0]}>
-            <Input name="propertyName" required maxLength={200} placeholder={t("propertyPlaceholder")} />
+            <Input name="propertyName" required maxLength={200} placeholder={t("propertyPlaceholder")} defaultValue={v.propertyName} />
           </Field>
 
           <div className="grid gap-4 sm:grid-cols-3">
             <Field label={t("field.propertyType")}>
-              <Select name="propertyType" defaultValue="apartment">
+              <Select name="propertyType" defaultValue={v.propertyType ?? "apartment"}>
                 {PROPERTY_TYPES.map((type) => (
                   <option key={type} value={type}>
                     {tEnum(`tenantType.${type}`)}
@@ -118,17 +121,24 @@ export function SignupForm({
               </Select>
             </Field>
             <Field label={t("field.unitCount")} error={state.fieldErrors?.unitCount?.[0]}>
-              <Input name="unitCount" type="number" min={1} max={10000} defaultValue={24} required />
+              <Input name="unitCount" type="number" min={1} max={10000} defaultValue={v.unitCount ?? 24} required />
             </Field>
             <Field label={t("field.city")}>
-              <Input name="city" maxLength={60} />
+              <Select name="city" defaultValue={v.city ?? ""}>
+                <option value="">{t("field.cityPlaceholder")}</option>
+                {TR_CITIES.map((city) => (
+                  <option key={city} value={city}>
+                    {city}
+                  </option>
+                ))}
+              </Select>
             </Field>
           </div>
 
           <hr className="border-border" />
 
           <Field label={t("field.fullName")} error={state.fieldErrors?.fullName?.[0]}>
-            <Input name="fullName" required maxLength={160} autoComplete="name" />
+            <Input name="fullName" required maxLength={160} autoComplete="name" defaultValue={v.fullName} />
           </Field>
 
           <Field
@@ -136,7 +146,7 @@ export function SignupForm({
             hint={t("identifierHint")}
             error={state.fieldErrors?.identifier?.[0]}
           >
-            <Input name="identifier" required maxLength={160} autoComplete="username" />
+            <Input name="identifier" required maxLength={160} autoComplete="username" defaultValue={v.identifier} />
           </Field>
 
           <Field
@@ -159,6 +169,7 @@ export function SignupForm({
               type="checkbox"
               name="acceptedTerms"
               required
+              defaultChecked={v.acceptedTerms === "on"}
               className="mt-0.5 h-4 w-4 rounded border-border-strong"
             />
             <span>

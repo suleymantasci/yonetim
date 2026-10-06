@@ -25,6 +25,15 @@ export interface SignupState {
   fieldErrors?: Record<string, string[]>;
   channel?: "email" | "sms";
   identifier?: string;
+  /**
+   * Gönderilen değerler (parola hariç). React 19 başarısız/başarılı her
+   * eylemden sonra uncontrolled formu sıfırlıyor; hata alan kullanıcı tüm
+   * alanları yeniden yazmak zorunda kalıyordu. Parola bilerek geri
+   * doldurulmuyor.
+   */
+  values?: Record<string, string>;
+  /** Form her hatada bu değerle yeniden bağlanıyor ki `defaultValue` güncel olsun. */
+  attempt?: number;
 }
 
 const schema = z.object({
@@ -47,10 +56,14 @@ const schema = z.object({
 });
 
 export async function startSignup(
-  _previous: SignupState,
+  previous: SignupState,
   formData: FormData,
 ): Promise<SignupState> {
   const t = await getTranslations("app.signup");
+  const echo = {
+    values: echoValues(formData),
+    attempt: (previous.attempt ?? 0) + 1,
+  };
 
   const parsed = schema.safeParse({
     propertyName: formData.get("propertyName"),
@@ -79,7 +92,7 @@ export async function startSignup(
         key === "acceptedTerms" ? t("termsRequired") : t("invalidField"),
       );
     }
-    return { status: "error", message: t("checkFields"), fieldErrors };
+    return { status: "error", message: t("checkFields"), fieldErrors, ...echo };
   }
 
   const { acceptedTerms: _terms, ...input } = parsed.data;
@@ -99,7 +112,7 @@ export async function startSignup(
   } catch (error) {
     if (error instanceof AppError) {
       if (error.code === "rate_limited") {
-        return { status: "error", message: t("tooManyAttempts") };
+        return { status: "error", message: t("tooManyAttempts"), ...echo };
       }
       if (error.code === "validation") {
         // Güç kuralı yalnız sunucuda: reddi alan alanın altında göstermek,
@@ -109,9 +122,10 @@ export async function startSignup(
             status: "error",
             message: t("checkFields"),
             fieldErrors: { password: [t("weakPassword")] },
+            ...echo,
           };
         }
-        return { status: "error", message: t("invalidIdentifier") };
+        return { status: "error", message: t("invalidIdentifier"), ...echo };
       }
     }
     throw error;
@@ -121,4 +135,18 @@ export async function startSignup(
 function emptyToUndefined(value: FormDataEntryValue | null): string | undefined {
   const text = typeof value === "string" ? value.trim() : "";
   return text === "" ? undefined : text;
+}
+
+const ECHO_FIELDS = [
+  "accountType", "companyName", "propertyName", "propertyType", "city",
+  "unitCount", "fullName", "identifier", "acceptedTerms",
+] as const;
+
+function echoValues(formData: FormData): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const key of ECHO_FIELDS) {
+    const value = formData.get(key);
+    if (typeof value === "string") out[key] = value;
+  }
+  return out;
 }
