@@ -25,9 +25,9 @@
 
 ## 3. Test ve doğrulama
 
-- [ ] **Mobil kart ve klavye testleri:** `/panel/demirbas`, `/panel/karar-defteri` ve yeni banka ekstre ekranı 375px'te ve klavye gezinmesinde doğrulanmadı.
+- [ ] **Klavye gezinmesi testi:** Tüm panel ve /yonetim sayfaları 320/390px'te yatay taşma için tarandı (2026-10-06, temiz). Klavye gezinmesi ve iOS Safari'de gerçek cihaz denemesi yapılmadı.
 - [ ] **Yeni ekranların tarayıcı denemesi:** Borçlar ekranındaki "Borcu sil (kurul kararı)" toplu eylemi API ve tip düzeyinde test edildi; tarayıcıda denenmedi.
-- [ ] **Canlı veritabanı migration'ları:** `0008`–`0015` migration'ları yerelde uygulanıyor; production'a uygulandığı doğrulanmalı (canlıya dokunulmadı).
+- [ ] **Gerçek production veritabanı:** `0000`–`0016` (17 migration) test ortamında (vekil) uygulandı, 2026-10-06 doğrulandı. Gerçek alan adına geçişte production DB'de aynı kontrol yapılmalı.
 
 ## 4. Bilinen kısıtlar (bilinçli)
 
