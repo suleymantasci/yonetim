@@ -18,6 +18,8 @@ import type {
   PollSaveResult,
 } from "@yonetim/contracts";
 import { dispatch, route } from "@yonetim/notifications";
+
+import { consumeMessageCredit } from "./message-credit";
 import {
   conversationStates,
   meetingDecisions,
@@ -501,6 +503,13 @@ export class CommunicationWriteService {
       },
     );
     const sent = outcomes.find((o) => o.ok);
+
+    // Yöneticinin elle yazdığı mesaj da kredi tüketiyor (aşım dahil: açık
+    // gönderim kararı yöneticide).
+    if (sent && (sent.channel === "sms" || sent.channel === "whatsapp")) {
+      const channel = sent.channel;
+      await this.db.tx((tx) => consumeMessageCredit(tx, this.db.ctx().tenantId, channel));
+    }
 
     return this.recordOutbound(
       dto,

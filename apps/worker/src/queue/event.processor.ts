@@ -16,6 +16,7 @@ import { memberships, notifications, tenants, unitOccupancies, users } from "@yo
 import { hasPermission } from "@yonetim/auth/guard";
 import type { Role } from "@yonetim/core";
 
+import { consumeMessageCredit, isSmsQuotaExhausted } from "@api/communication/message-credit";
 import { DbService } from "@api/infra/db/db.service";
 
 import { JobContext } from "./job-context";
@@ -92,6 +93,12 @@ export class EventProcessor extends WorkerHost {
         let sent = 0;
         let failed = 0;
 
+        // Plan kotası ve ek paket bitmişse SMS aşım ücreti doğurur; otomatik
+        // bildirimde bunu yönetici bilmeden üretmek yerine e-postaya düşülüyor.
+        const smsQuotaExhausted = await this.db.tx((tx) =>
+          isSmsQuotaExhausted(tx, payload.tenantId),
+        );
+
         for (const recipient of recipients) {
           const decision = route({
             kind: rule.kind,
@@ -99,6 +106,7 @@ export class EventProcessor extends WorkerHost {
             // Sessiz saat ve maliyet kararı sunucu saatiyle: kullanıcının
             // cihaz saati burada hiç devrede değil.
             now: new Date(),
+            smsQuotaExhausted,
           });
 
           if (rule.alwaysInApp) {
@@ -123,6 +131,12 @@ export class EventProcessor extends WorkerHost {
           for (const outcome of outcomes) {
             if (outcome.ok) sent += 1;
             else failed += 1;
+            // Giden SMS/WhatsApp kredisi gönderimle aynı akışta düşüyor.
+            if (outcome.ok && (outcome.channel === "sms" || outcome.channel === "whatsapp")) {
+              await this.db.tx((tx) =>
+                consumeMessageCredit(tx, payload.tenantId, outcome.channel as "sms" | "whatsapp"),
+              );
+            }
             await this.writeOutcome(payload, rule.resourceType, recipient, outcome, decision.templateName);
           }
         }
