@@ -5,13 +5,18 @@ import { tenants } from "@yonetim/db";
 import {
   applyLateFees,
   collectMaintenanceReminders,
+  documentExpiry,
+  duesLateWarning,
+  duesReminder,
   expireTrial,
   generateDuesForTenant,
   kvkkRequestSla,
   kvkkRetentionScan,
+  meetingReminders,
   purgeExpiredArchive,
   renewSubscription,
   runDunning,
+  slaBreachCheck,
 } from "@yonetim/jobs";
 
 import { DbService } from "@api/infra/db/db.service";
@@ -115,6 +120,16 @@ export class JobRegistry {
         return collectMaintenanceReminders({ tenantId });
       case "billing.trial-expiry":
         return expireTrial({ tenantId });
+      case "sla.breach-check":
+        return slaBreachCheck({ tenantId });
+      case "meetings.reminders":
+        return meetingReminders({ tenantId });
+      case "documents.expiry":
+        return documentExpiry({ tenantId });
+      case "dues.reminder":
+        return duesReminder({ tenantId });
+      case "dues.late-warning":
+        return duesLateWarning({ tenantId });
       case "billing.renewal":
         return renewSubscription({ tenantId });
       case "billing.dunning":
