@@ -1,89 +1,36 @@
 # YAPILACAKLAR (Backlog & Bekleyen Geliştirmeler)
 
-> Bu dosya projenin **tek ve güncel iş listesidir**. Tamamlanmış tüm geçmiş tarihsel dokümanlar temizlenmiş; yalnızca **henüz yapılmamış, açıkta kalan, ürün kararı bekleyen veya sıradaki sprintlere planlanan işler** burada toplanmıştır. Bir iş tamamlandığında listeden işaretlenmeli veya kaldırılmalıdır.
+> Bu dosya projenin **tek ve güncel iş listesidir**. Yalnızca **henüz yapılmamış, açıkta kalan, ürün kararı bekleyen veya dış bağımlılığı olan işler** burada durur. Bir iş tamamlandığında listeden kaldırılmalıdır.
+>
+> Son denetim: 2026-10-06 — her madde koda karşı doğrulandı. Önceki sürümdeki oylama ekranı, belge yükleme, hukuk yazma, iade, acil duyuru yetkisi, kampanya arayüzü, telefon değiştirme vb. maddeler kodda zaten vardı; listeden çıkarıldı.
 
 ---
 
-## 1. Sakin Portalı Açıkları (Resident Portal Incomplete)
+## 1. Dış bağımlılığı olan işler (kimlik bilgisi / sağlayıcı gerekiyor)
 
-Sakin portalı kabuğu ve temel ekranları kuruldu ancak aşağıdaki kritik kullanıcı akışları henüz tamamlanmadı:
+- [ ] **Sakin ödeme akışı — canlı tahsilat:** `/odeme` ve `/v1/panel/portal/payment` hazır; kartla ödeme yalnız platformda iyzico kimlik bilgisi ve komisyon oranı (`IYZICO_COMMISSION_PCT/FIXED_KURUS`) tanımlıysa açılıyor. **Açık soru:** iyzico'dan siteye hakediş aktarımı (alt üye işyeri / transfer) kodda yok; tahsilat tek platform hesabına düşüyor. Gerçek para almadan önce netleştirilmeli.
+- [ ] **Platform aboneliği online tahsilatı:** Paket şimdilik süper admin panelinden manuel atanıyor (havale/elden). `billing.renewal` yeni dönem faturasını **keser** ama kart çekmez; `billing.dunning` vade gecikmesine göre adım uygular. Kartla otomatik çekim (iyzico abonelik) yazılmadı.
+- [ ] **Harici kanallı hatırlatmalar:** `dues.reminder`, `dues.late-warning`, toplantı/belge/SLA hatırlatmaları şu an **uygulama içi** bildirim yazıyor. SMS/WhatsApp/e-posta ile gönderim olay kuyruğu + `route()` + kredi düşümü zincirine bağlanmalı (sağlayıcı anahtarları yok).
+- [ ] **Worker'da işleyicisi olmayan 6 iş:** `bank.sync` (open banking sağlayıcısı), `bank.reconcile` (ekstre/webhook karşılaştırması), `nps.monthly-survey`, `reports.monthly` (e-posta sağlayıcısı), `landing.revalidate` (Next revalidate uç noktası). Tanımlar duruyor, `skipped: no_handler` dönüyor.
+- [ ] **Banka toplu ödeme talimatı:** Ekstre içe aktarma ve onay akışı hazır (CSV). Onaylı giderler için banka talimat dosyası üretimi (havale toplu ödeme) yok; bankaya özgü format gerektiriyor.
 
-- [ ] **Sakin Oylama / Anket Ekranı:**
-  - Özet kartında "oy bekleyen anket" sayısı gösteriliyor ancak bağlantı ve oy kullanma ekranı yok.
-  - `poll:vote` izni RBAC'ta tanımlı, API ve UI akışı yazılacak.
-- [ ] **Sakin Ödeme Akışı (Borçlarım → Kredi Kartıyla Öde):**
-  - `/v1/panel/portal/payment` uçları hazır (`portal-payment.controller.ts`), ancak "Borçlarım" ekranında 3D Secure kredi kartı ödeme butonu ve formu UI'a bağlanmadı.
-- [ ] **Sakin Telefon Değiştirme Akışı:**
-  - Telefon numarası oturum kimliği olduğu için kontrolsüz düzenlenemez; SMS/OTP doğrulamalı telefon değiştirme sihirbazı kurulmalı.
-- [ ] **Sakin İçin Karar Defteri, Toplantılar ve Belgeler:**
-  - Kat Mülkiyeti Kanunu (KMK md.32) uyarınca kat malikleri kararları ve tutanakları görme hakkına sahiptir (`decision:read` sakine verildi).
-  - Ancak bu sayfalar şu an `audience: staff` olarak kilitli; sakinler için salt-okunur toplantı/karar görüntüleme ekranı açılmalı.
-- [ ] **Erişim Talebi Bildirimi:**
-  - `/kayit-talebi` üzerinden yeni sakin başvurduğunda yöneticiye bildirim (push/zil/SMS) gitmiyor, nav rozeti yok. Yöneticinin ekrana manuel girmesi gerekiyor.
+## 2. Ürün kararı / büyük modül gerektiren işler
 
----
+- [ ] **Muhasebe raporları (Mizan, Muavin, Yevmiye, BA-BS):** Sistem çift kayıtlı defter tutmuyor; bu raporlar ya bir hesap planı + çift kayıt altyapısı ya da türetilmiş (sentetik) rapor kararı gerektiriyor. BA-BS için tedarikçi vergi numaraları da eksik.
+- [ ] **Tedarikçi ve personel cari hesapları:** Giderlerde `vendor_name`/`vendor_id` var ama tedarikçi kartı ve cari ekstresi yok.
+- [ ] **Hazır evrak şablonları:** Genel kurul çağrı mektubu, hazirun cetveli, vekaletname — metin ve hukuki içerik onayı gerekiyor.
+- [ ] **AI yönetim & mevzuat asistanı** (KMK soru-cevap).
+- [ ] **Sesli arama (robocall) kanalı:** `voice` kanalı enum'da var, sağlayıcı yok.
+- [ ] **Borcu Yoktur belgesi:** Belge üretimi ve doğrulama sayfası var; barkodlu PDF ve KEP çıktısı doğrulanmadı.
 
-## 2. Yönetici Paneli Eksik Yazma Yolları (Operator Cockpit Gaps)
+## 3. Test ve doğrulama
 
-Aşağıdaki modüllerde liste/okuma ekranları mevcut ancak yazma (CRUD) akışları henüz bağlanmadı:
+- [ ] **Mobil kart ve klavye testleri:** `/panel/demirbas`, `/panel/karar-defteri` ve yeni banka ekstre ekranı 375px'te ve klavye gezinmesinde doğrulanmadı.
+- [ ] **Yeni ekranların tarayıcı denemesi:** Borçlar ekranındaki "Borcu sil (kurul kararı)" toplu eylemi API ve tip düzeyinde test edildi; tarayıcıda denenmedi.
+- [ ] **Canlı veritabanı migration'ları:** `0008`–`0015` migration'ları yerelde uygulanıyor; production'a uygulandığı doğrulanmalı (canlıya dokunulmadı).
 
-- [ ] **Hukuk Modülü (`/panel/hukuk`):**
-  - Liste ekranı var (`GET /v1/panel/legal`), ancak yeni icra takibi veya dava dosyası açma yazma akışı (`legal:write`) yok.
-- [ ] **Belge Yükleme (`/panel/belgeler`):**
-  - Dosya listesi var, ancak dosya yükleme yazma yolu (`document:write`) yok (S3/R2 depolama ve saklama politikasına bağlanacak).
-- [ ] **Banka Hareket Eşleştirme & Talimat (`bank:reconcile`):**
-  - Hesap tanımları ve kasa bakiye motoru çalışıyor; ancak banka ekstresi (OFX/Excel/API) ile aidat borçlarını eşleştirme ve toplu ödeme talimatı üretme ekranı eksik.
-- [ ] **Tahsilat İade Akışı (`payment:refund`):**
-  - Hatalı veya mükerrer tahsilatlarda iyzico/banka iade çağrısı ve muhasebe mahsup ters kaydı akışı eksik.
-- [ ] **Borç Silme / Affetme Prosedürü (`debt:forgive`):**
-  - Şu an sadece borç düzeltme (`debt:write` + gerekçe) var; kat malikleri kurulu kararıyla borç silme/af prosedürü ayrı bir izin ve akışa bağlanmadı.
-- [ ] **Acil Duyuru Yetkisi Ayrımı (`announcement:send_urgent`):**
-  - `announcement:write` yetkisine sahip herkes gece yarısı bile acil bildirim (SMS+WhatsApp) gönderebiliyor; acil gönderim izni ayrı bir yetkiye bağlanmalı.
+## 4. Bilinen kısıtlar (bilinçli)
 
----
-
-## 3. Arka Plan İşleri ve Faturalama (Worker Jobs & Billing)
-
-- [ ] **16 Boşta Kalan Worker Job'ı (`skipped: no_handler`):**
-  - `billing.trial-expiry`: 30 günlük deneme süresi biten siteleri otomatik olarak askıya alan worker işi (şu an sadece süper-admin manuel yapabiliyor).
-  - `billing.dunning`: Kart çekimi başarısız olan abonelikleri belirli aralıklarla yeniden deneyen ve e-posta uyarıları atan akış.
-  - `billing.renewal`: Yıllık/aylık SaaS lisans yenileme işi.
-  - `billing.archive-purge`: 90 günlük bekleme süresi dolan arşivlenmiş sitelerin veritabanı kayıtlarını temizleyen job.
-- [ ] **Kampanya ve Kupon Yönetimi:**
-  - Kampanya motoru ve çoklu site indirimleri kodlandı ancak yönetim panelinden yeni promosyon/kupon oluşturma arayüzü yazılmadı.
-- [ ] **Ek Paket Kredi Düşümü:**
-  - `tenant_addons` tablosunda SMS ve WhatsApp kredileri tutuluyor ancak bildirim gönderildiğinde bakiye otomatik olarak düşmüyor (`packages/notifications` entegrasyonu).
-
----
-
-## 4. Rakiplerden Gelen & Bekleyen Ürün Özellikleri (Backlog)
-
-- [ ] **Borcu Yoktur Belgesi (PDF + KEP Çıktısı):**
-  - Daire satışlarında noter ve tapu için gereken resmi "Borcu Yoktur" belgesinin dinamik barkodlu PDF olarak üretilmesi.
-- [ ] **Toplu Veri İçe Aktarma / Göç Sihirbazı (Excel Migration):**
-  - Başka yazılımlardan (Apsiyon, Dijiyon, Excel) gelen daire, malik, kiracı ve devir bakiyelerinin tek tıkla sisteme aktarılması.
-- [ ] **Muhasebe Raporları (Yönetim Şirketleri İçin):**
-  - Mizan, Muavin, Yevmiye Defteri ve BA-BS formatında resmi muhasebe raporlama modülü.
-- [ ] **Tedarikçi ve Personel Cari Hesapları:**
-  - Sadece sakinler için değil; asansör bakım firması, temizlik şirketi ve personel için de borç/alacak cari hesap takibi.
-- [ ] **AI Yönetim & Mevzuat Asistanı:**
-  - Kat Mülkiyeti Kanunu (KMK) ve yönetim planı sorularını yanıtlayan yapay zeka sohbet botu.
-- [ ] **Hazır Evrak Şablonları:**
-  - Genel kurul çağrı mektubu, hazirun cetveli, vekaletname örneği gibi sık kullanılan matbu evrakların sistemden otomatik üretimi.
-- [ ] **Sesli Arama (Robocall) Bildirim Kanalı:**
-  - Kritik genel kurul veya acil su/elektrik kesintileri için sesli arama entegrasyonu.
-
----
-
-## 5. Güvenlik, Test ve Teknik Borçlar
-
-- [ ] **Sakin Portalı & Erişim Talebi Entegrasyon Testleri:**
-  - `/v1/panel/portal/*` ve `/v1/auth/web/*` uçlarının veritabanına karşı çalışan duman testleri (`tests/integration`).
-- [ ] **Kasa Mutabakat Testleri:**
-  - `IntegrationService.bankOverview` (nakit kasa, banka hesapları, ödenmemiş giderler) için vitest birim testleri.
-- [ ] **Mobil Kart ve Klavye Testleri:**
-  - Yeni eklenen `/panel/demirbas` ve `/panel/karar-defteri` ekranlarının 375px mobil ekranlarda ve klavye gezinmesinde doğrulanması.
-- [ ] **Kıdem Tazminatı Resmi Değerleri:**
-  - `siteConfig.payroll` içindeki tavan ücret ve gelir vergisi yer tutucularının güncel resmi Hazine ve Maliye Bakanlığı katsayılarıyla güncellenmesi.
-- [ ] **Canlı Veritabanı Migration'ları:**
-  - Yerelde test edilen `0008_access_requests`, `0009` ve `0010` migration'larının production veritabanına uygulanması.
+- Kıdem tazminatı tavanı (`siteConfig.payroll`) **yılda iki kez** (Ocak/Temmuz) elle güncellenir. Mevcut değer 1 Temmuz–31 Aralık 2026: 73.729,84 TL.
+- Aidat hatırlatmaları gün penceresiyle çalışıyor (vade −5 gün, +7 gün); iş o gün çalışmazsa tekillik indeksi tekrarı engelliyor ama kaçan gün telafi edilmiyor.
+- Banka eşleştirme önerisi **tahsilat açmaz**; yönetici onayı şart (`suggested` → `auto`/`manual`).
