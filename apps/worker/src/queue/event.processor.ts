@@ -70,7 +70,8 @@ export class EventProcessor extends WorkerHost {
      * Site silinmişse bildirim de gitmiyor: kaydı olmayan bir siteye ait
      * bildirim, kimseye ulaşmayacak bir gönderim denemesidir.
      */
-    const status = await this.tenantStatus(payload.tenantId);
+    const tenant = await this.tenantStatus(payload.tenantId);
+    const status = tenant?.status ?? null;
     if (!status) {
       this.logger.warn({ event: "notification.tenant_missing", tenantId: payload.tenantId });
       return { skipped: "tenant_missing" };
@@ -116,7 +117,9 @@ export class EventProcessor extends WorkerHost {
 
           // Uygulama içi kanal `dispatch`'e gitmiyor: onun sağlayıcısı yok,
           // kaydın kendisi zaten bildirimdir.
-          const external = decision.channels.filter((c) => c !== "in_app");
+          // Demo site dışarıya hiç mesaj göndermez: demo yöneticisi gerçek bir
+          // numara/e-posta girse bile SMS/WhatsApp/e-posta gitmiyor.
+          const external = tenant?.isDemo ? [] : decision.channels.filter((c) => c !== "in_app");
           if (external.length === 0) continue;
 
           const outcomes = await dispatch(
@@ -163,17 +166,17 @@ export class EventProcessor extends WorkerHost {
    * tablosuna bağımlı hale getirirdi.
    */
   /** Sitenin yaşam döngüsü durumu; kaydı yoksa `null`. */
-  private async tenantStatus(tenantId: string): Promise<string | null> {
+  private async tenantStatus(tenantId: string): Promise<{ status: string; isDemo: boolean } | null> {
     // `bypass`: bağlam henüz kurulmadı, RLS'e tabi sorgu burada çalışamaz.
     // Okunan tek şey tenant'ın kendi durumu — kiracı verisi değil.
     const rows = await this.db.bypass("event:tenant-status", async (tx) =>
       tx
-        .select({ status: tenants.status })
+        .select({ status: tenants.status, isDemo: tenants.isDemo })
         .from(tenants)
         .where(and(eq(tenants.id, tenantId), isNull(tenants.deletedAt)))
         .limit(1),
     );
-    return rows[0]?.status ?? null;
+    return rows[0] ?? null;
   }
 
   private async resolveRecipients(

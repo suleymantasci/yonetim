@@ -28,6 +28,9 @@ export interface AppContext extends TenantContext {
   tenantStatus: string;
   /** Deneme bitişi; yalnız `tenantStatus === "trial"` iken dolu. */
   tenantTrialEndsAt: Date | null;
+  /** 24 saatlik demo site mi; öyleyse silineceği an (demo şeridi). */
+  tenantIsDemo: boolean;
+  tenantDemoExpiresAt: Date | null;
   /** Kullanıcının erişebildiği diğer siteler — site değiştirici için. */
   memberships: Array<{ id: string; slug: string; name: string }>;
 }
@@ -82,6 +85,8 @@ export async function requireContext(): Promise<AppContext> {
     userName: resolved.userName,
     tenantStatus: resolved.tenantStatus,
     tenantTrialEndsAt: resolved.tenantTrialEndsAt,
+    tenantIsDemo: resolved.tenantIsDemo ?? false,
+    tenantDemoExpiresAt: resolved.tenantDemoExpiresAt ?? null,
     userId: resolved.userId,
     roles: resolved.roles as Role[],
     impersonatedBy: resolved.impersonatedBy ?? undefined,

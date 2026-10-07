@@ -104,7 +104,7 @@ export class PlatformAccountsService {
                  ELSE 'tenant:'  || t.id::text
             END AS account_key
           FROM tenants t
-          WHERE t.deleted_at IS NULL
+          WHERE t.deleted_at IS NULL AND t.is_demo = false
         ),
         subs AS (
           SELECT
@@ -253,7 +253,7 @@ export class PlatformAccountsService {
             WHERE i.status IN ('issued', 'overdue')
           ), 0) AS outstanding_kurus
         FROM tenants t
-        WHERE t.deleted_at IS NULL
+        WHERE t.deleted_at IS NULL AND t.is_demo = false
       `)) as unknown as Array<{
         accounts: number;
         sites: number;
@@ -319,7 +319,7 @@ export class PlatformAccountsService {
           COUNT(*) OVER ()::int AS total_count
         FROM memberships m
         JOIN users u   ON u.id = m.user_id AND u.deleted_at IS NULL
-        JOIN tenants t ON t.id = m.tenant_id AND t.deleted_at IS NULL
+        JOIN tenants t ON t.id = m.tenant_id AND t.deleted_at IS NULL AND t.is_demo = false
         LEFT JOIN LATERAL (
           SELECT p.name AS plan_name, s.status::text AS status, s.trial_ends_at, s.current_period_end
           FROM subscriptions s
@@ -398,7 +398,7 @@ export class PlatformAccountsService {
         FROM tenants t
         LEFT JOIN subscriptions s ON s.tenant_id = t.id
         LEFT JOIN plans p ON p.id = s.plan_id
-        WHERE ${scope} AND t.deleted_at IS NULL
+        WHERE ${scope} AND t.deleted_at IS NULL AND t.is_demo = false
         ORDER BY t.created_at
       `)) as unknown as SiteQueryRow[];
 

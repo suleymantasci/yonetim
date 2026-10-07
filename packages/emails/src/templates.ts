@@ -332,3 +332,87 @@ export function monthlyReportEmail(
     }),
   };
 }
+
+/* ------------------------------------------------------------------ *
+ * Demo hesabı — talep onayı, giriş bilgileri, bitiş hatırlatması
+ * ------------------------------------------------------------------ */
+
+export function demoConfirmEmail(
+  t: Translator,
+  params: { name: string; url: string; expiresMinutes: number },
+): EmailContent {
+  return {
+    subject: t("email.demoConfirm.subject"),
+    html: layout({
+      t,
+      title: t("email.demoConfirm.title"),
+      bodyHtml:
+        `<p>${escapeHtml(t("email.demoConfirm.greeting", { name: params.name }))}</p>` +
+        `<p>${escapeHtml(t("email.demoConfirm.body1", { minutes: params.expiresMinutes }))}</p>` +
+        `<p>${escapeHtml(t("email.demoConfirm.body2"))}</p>`,
+      ctaLabel: t("email.demoConfirm.cta"),
+      ctaUrl: params.url,
+      footerNote: t("email.demoConfirm.body3"),
+    }),
+  };
+}
+
+/**
+ * Giriş bilgileri. Parola bu e-postada **düz metin** — bilinçli: demo hesabı
+ * örnek veriden ibaret, 24 saat yaşıyor ve kişinin kendi verisini taşımıyor.
+ * Gerçek hesapların parolası hiçbir e-postada yer almaz.
+ */
+export function demoReadyEmail(
+  t: Translator,
+  params: {
+    name: string;
+    loginUrl: string;
+    loginEmail: string;
+    password: string;
+    expiresAt: string;
+    sites: string[];
+  },
+): EmailContent {
+  const row = (label: string, value: string) =>
+    `<tr><td style="padding:6px 12px 6px 0;color:#64748b;white-space:nowrap">${escapeHtml(label)}</td>` +
+    `<td style="padding:6px 0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:15px;font-weight:600">${escapeHtml(value)}</td></tr>`;
+  return {
+    subject: t("email.demoReady.subject"),
+    html: layout({
+      t,
+      title: t("email.demoReady.title"),
+      bodyHtml:
+        `<p>${escapeHtml(t("email.demoReady.greeting", { name: params.name }))}</p>` +
+        `<p>${escapeHtml(t("email.demoReady.body1"))}</p>` +
+        `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 16px;border-collapse:collapse">` +
+        row(t("email.demoReady.loginLabel"), params.loginEmail) +
+        row(t("email.demoReady.passwordLabel"), params.password) +
+        `</table>` +
+        `<p style="margin:0 0 4px;color:#64748b">${escapeHtml(t("email.demoReady.sitesLabel"))}</p>` +
+        `<ul style="margin:0 0 12px;padding-left:18px">${params.sites.map((s) => `<li>${escapeHtml(s)}</li>`).join("")}</ul>` +
+        `<p>${escapeHtml(t("email.demoReady.expires", { date: params.expiresAt }))}</p>`,
+      ctaLabel: t("email.demoReady.cta"),
+      ctaUrl: params.loginUrl,
+      footerNote: t("email.demoReady.note"),
+    }),
+  };
+}
+
+export function demoReminderEmail(
+  t: Translator,
+  params: { name: string; hours: number; signupUrl: string },
+): EmailContent {
+  return {
+    subject: t("email.demoReminder.subject"),
+    html: layout({
+      t,
+      title: t("email.demoReminder.title"),
+      bodyHtml:
+        `<p>${escapeHtml(t("email.demoReminder.greeting", { name: params.name }))}</p>` +
+        `<p>${escapeHtml(t("email.demoReminder.body1", { hours: params.hours }))}</p>` +
+        `<p>${escapeHtml(t("email.demoReminder.body2"))}</p>`,
+      ctaLabel: t("email.demoReminder.cta"),
+      ctaUrl: params.signupUrl,
+    }),
+  };
+}

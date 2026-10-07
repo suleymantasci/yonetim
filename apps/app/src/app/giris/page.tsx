@@ -12,7 +12,7 @@ export async function generateMetadata() {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ devam?: string; site?: string }>;
+  searchParams: Promise<{ devam?: string; site?: string; e?: string }>;
 }) {
   const params = await searchParams;
   const t = await getTranslations("app.login");
@@ -34,7 +34,11 @@ export default async function LoginPage({
           </p>
         </div>
 
-        <LoginForm next={params.devam ?? "/panel"} />
+        <LoginForm
+          next={params.devam ?? "/panel"}
+          // Demo e-postasındaki "Panele giriş yap" bağlantısı giriş adresini taşıyor.
+          defaultIdentifier={params.e?.slice(0, 160)}
+        />
 
         <p className="mt-6 text-center text-xs text-fg-subtle">
           {t.rich("consentNote", {

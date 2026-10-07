@@ -59,6 +59,7 @@ export default async function PanelLayout({
       tenantName={ctx.tenantName}
       tenantStatus={ctx.tenantStatus}
       trialEndsAt={ctx.tenantTrialEndsAt}
+      demoExpiresAt={ctx.tenantIsDemo ? ctx.tenantDemoExpiresAt : null}
       memberships={ctx.memberships}
       userName={ctx.userName}
       roles={ctx.roles}

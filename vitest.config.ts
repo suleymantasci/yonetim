@@ -74,6 +74,10 @@ export default defineConfig({
         .pathname,
       "@yonetim/dues": new URL("./packages/dues/src/index.ts", import.meta.url)
         .pathname,
+      "@yonetim/demo-seed": new URL(
+        "./packages/demo-seed/src/index.ts",
+        import.meta.url,
+      ).pathname,
       "@yonetim/pricing": new URL(
         "./packages/pricing/src/index.ts",
         import.meta.url,

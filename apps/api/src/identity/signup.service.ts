@@ -2,7 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { and, count, eq, inArray, isNull, sql } from "drizzle-orm";
 
 import { checkPasswordPolicy, hashPassword } from "@yonetim/auth";
-import { siteConfig } from "@yonetim/config";
+import { serverEnv, siteConfig } from "@yonetim/config";
 import type {
   AccessRequestCreate,
   SetupTenant,
@@ -58,6 +58,12 @@ export class SignupService {
       ? dto.identifier.trim().toLowerCase()
       : normalizePhone(dto.identifier);
     if (!identifier) throw errors.validation("invalid_identifier");
+    // Demo alan adı gerçek kayıt için kullanılamaz: o adreslere e-posta
+    // gitmiyor ve demo kullanıcısına gerçek site bağlanırsa 24 saat sonra
+    // silinmeyen bir site kalırdı.
+    if (isEmail && identifier.endsWith(`@${serverEnv.demo().emailDomain}`)) {
+      throw errors.validation("invalid_identifier");
+    }
 
     // Güç kuralı sözleşmede değil burada: "büyük harf içermeli" gibi kurallar
     // şemaya yazılsaydı, parola değiştirme ucunda ikinci kez yazılmaları
@@ -72,10 +78,11 @@ export class SignupService {
       // Var olan kullanıcıyı yeniden yaratmıyoruz: bir yönetici ikinci sitesini
       // açıyor olabilir ve "tek cari" modelinde kişi platformda tekildir.
       const existing = await tx
-        .select({ id: users.id })
+        .select({ id: users.id, isDemo: users.isDemo })
         .from(users)
         .where(isEmail ? eq(users.email, identifier) : eq(users.phone, identifier))
         .limit(1);
+      if (existing[0]?.isDemo) throw errors.validation("invalid_identifier");
 
       const [firstName, ...rest] = dto.fullName.trim().split(/\s+/);
       const userId =
@@ -292,6 +299,11 @@ export class SignupService {
     locale?: string,
   ): Promise<SetupTenantResult> {
     return this.db.bypass("signup:setup-tenant", async (tx) => {
+      // Demo kullanıcısı yeni site açamaz: açtığı site demo olmayacağı için
+      // 24 saat sonra silinmez ve demo kişisini de silinmekten alıkoyardı.
+      const [person] = await tx.select({ isDemo: users.isDemo }).from(users).where(eq(users.id, userId)).limit(1);
+      if (person?.isDemo) throw errors.forbidden("demo_cannot_create_site");
+
       // Üyeliği olan biri yalnız site yönetici rolündeyse yeni site açabilir;
       // sakin/personel hesabı bu uçtan site üretemesin. Hiç üyeliği olmayan
       // kullanıcı (ilk kurulum) etkilenmiyor.

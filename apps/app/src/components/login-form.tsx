@@ -29,7 +29,13 @@ const RECOVERY_INITIAL: LoginState = { ok: false, step: "identify" };
  * kaldırılmadı: ilk parolayı belirlemenin ve unutulanı kurtarmanın başka yolu
  * yok.
  */
-export function LoginForm({ next }: { next: string }) {
+export function LoginForm({
+  next,
+  defaultIdentifier,
+}: {
+  next: string;
+  defaultIdentifier?: string;
+}) {
   const t = useTranslations("app.login");
   const tCommon = useTranslations("common");
   const [mode, setMode] = useState<"password" | "recovery">("password");
@@ -120,6 +126,7 @@ export function LoginForm({ next }: { next: string }) {
                 name="identifier"
                 autoComplete="username"
                 placeholder={t("identifierPlaceholder")}
+                defaultValue={defaultIdentifier}
                 required
               />
             </Field>

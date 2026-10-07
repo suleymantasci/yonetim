@@ -142,8 +142,10 @@ export default async function LegalPage() {
                 >
                   <div>
                     <div className="font-medium text-fg">
-                      {t("caseLabel", { no: c.caseNo ?? c.id.slice(0, 8) })} ·{" "}
-                      {tEnum(`legalStage.${c.stage}`)}
+                      {t("caseLabel", {
+                        no: c.caseNo ?? c.id.slice(0, 8),
+                        stage: tEnum(`legalStage.${c.stage}`),
+                      })}
                     </div>
                     <div className="text-xs text-fg-subtle">
                       {t("openedAt", { date: f.date(c.openedAt) })}

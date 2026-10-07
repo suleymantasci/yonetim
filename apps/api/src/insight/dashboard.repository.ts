@@ -291,9 +291,11 @@ export class DashboardRepository {
           periods: [...monthly.periods, ...upcoming.map((row) => row.period)],
           netMinor: [
             ...historicalNet,
-            ...upcoming.map(
-              (row) =>
-                Math.round(Number(row.due) * assumedRate) - Number(row.expense),
+            // Gider tahmini SQL `AVG` — küsuratlı dönüyor; tam kuruşa
+            // yuvarlanmazsa sözleşme (tam sayı) panelde bütün ana sayfayı
+            // düşürüyordu (giderleri olan her sitede).
+            ...upcoming.map((row) =>
+              Math.round(Number(row.due) * assumedRate - Number(row.expense)),
             ),
           ],
           forecastFrom: monthly.periods.length - 1,

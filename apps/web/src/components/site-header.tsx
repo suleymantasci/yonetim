@@ -51,6 +51,12 @@ export async function SiteHeader({ themePreference }: { themePreference: ThemePr
         }}
       />
       <a
+        href={`${siteConfig.env.appUrl}/demo`}
+        className="hidden whitespace-nowrap rounded px-2 py-2 text-[13px] font-medium text-fg-muted transition-colors hover:bg-hover hover:text-fg lg:block"
+      >
+        {t("demo")}
+      </a>
+      <a
         href={`${siteConfig.env.appUrl}/giris`}
         className="hidden whitespace-nowrap rounded px-2 py-2 text-[13px] font-medium text-fg-muted transition-colors hover:bg-hover hover:text-fg lg:block"
       >
@@ -85,6 +91,12 @@ export async function SiteHeader({ themePreference }: { themePreference: ThemePr
         >
           {t("startFree")}
           <ArrowRight aria-hidden className="h-4 w-4" />
+        </a>
+        <a
+          href={`${siteConfig.env.appUrl}/demo`}
+          className="inline-flex items-center justify-center rounded-lg border border-border-strong px-4 py-3 text-sm font-medium text-fg"
+        >
+          {t("demo")}
         </a>
         <a
           href={`${siteConfig.env.appUrl}/giris`}

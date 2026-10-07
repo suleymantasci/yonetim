@@ -154,6 +154,12 @@ export const appContext = z.object({
   tenantStatus: z.string(),
   /** Deneme bitiş anı; deneme dışı sitede ya da platform bağlamında `null`. */
   tenantTrialEndsAt: dateTime.nullable(),
+  /**
+   * 24 saatlik demo site mi; öyleyse silineceği an. Kabuk demo şeridini
+   * bundan çiziyor. Opsiyonel: eski API sürümüyle konuşan panel kırılmasın.
+   */
+  tenantIsDemo: z.boolean().optional(),
+  tenantDemoExpiresAt: dateTime.nullable().optional(),
   roles: z.array(z.string()),
   locale: z.string(),
   impersonatedBy: uuid.nullable(),

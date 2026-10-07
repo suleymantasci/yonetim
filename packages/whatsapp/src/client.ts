@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
 import { serverEnv } from "@yonetim/config";
-import { Err, Ok, errors, withRetry, type Result } from "@yonetim/core";
+import { Err, Ok, errors, isDemoPhone, withRetry, type Result } from "@yonetim/core";
 
 /**
  * WhatsApp Business Platform (Meta Cloud API) istemcisi — SPEC Bölüm 7.5.
@@ -37,6 +37,11 @@ export function isWhatsAppConfigured(): boolean {
 }
 
 async function call(path: string, body: unknown): Promise<Result<Record<string, unknown>>> {
+  // Demo kişilerine (+90 500 …) hiçbir yoldan mesaj gitmez — bkz. `isDemoPhone`.
+  const to = (body as { to?: unknown } | null)?.to;
+  if (path === "messages" && typeof to === "string" && isDemoPhone(to)) {
+    return Ok({ messages: [{ id: "suppressed-demo-recipient" }] });
+  }
   const wa = config();
   if (!wa) return Err(errors.integrationUnavailable("WhatsApp"));
 

@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query, Req } from "@nestjs/common";
 import { ApiExcludeController } from "@nestjs/swagger";
-import { desc, sql } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import type { Request } from "express";
 
 import { SESSION_COOKIE } from "@yonetim/auth/cookie";
@@ -87,7 +87,7 @@ export class PlatformController {
                COUNT(*) FILTER (WHERE status = 'active')::int AS active,
                COUNT(*) FILTER (WHERE status = 'past_due')::int AS past_due,
                COUNT(*) FILTER (WHERE status = 'suspended')::int AS suspended
-        FROM tenants WHERE deleted_at IS NULL
+        FROM tenants WHERE deleted_at IS NULL AND is_demo = false
       `)) as unknown as Array<{
         total: number;
         trial: number;
@@ -143,6 +143,7 @@ export class PlatformController {
           createdAt: tenants.createdAt,
         })
         .from(tenants)
+        .where(eq(tenants.isDemo, false))
         .orderBy(desc(tenants.createdAt))
         .limit(20);
 

@@ -15,6 +15,7 @@ import { NotificationBell } from "@/components/shell/notification-bell";
 import {
   NAV_GROUP_ORDER, NAV_ITEMS, QUICK_ACTIONS, type NavBadgeKey, type NavGroup,
 } from "@/components/shell/nav";
+import { DemoBanner } from "@/components/shell/demo-banner";
 import { ShellFrame } from "@/components/shell/shell-frame";
 import { TenantSwitcher } from "@/components/shell/tenant-switcher";
 import type { SidebarItem } from "@/components/shell/sidebar";
@@ -55,6 +56,7 @@ export async function AppShell({
   tenantName,
   tenantStatus,
   trialEndsAt,
+  demoExpiresAt,
   userName,
   roles,
   allowedHrefs,
@@ -71,6 +73,8 @@ export async function AppShell({
   tenantName: string;
   tenantStatus: string;
   trialEndsAt?: Date | null;
+  /** Demo sitede silinme anı — doluysa demo şeridi çizilir. */
+  demoExpiresAt?: Date | null;
   userName: string;
   roles: Role[];
   allowedHrefs: string[];
@@ -146,8 +150,9 @@ export async function AppShell({
       ? Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / 86_400_000)
       : null;
   const statusText = tEnum(`tenantStatus.${tenantStatus as TenantStatus}`);
-  const trialLabel =
-    trialDaysLeft === null
+  const trialLabel = demoExpiresAt
+    ? t("shell.demoBadge")
+    : trialDaysLeft === null
       ? statusText
       : trialDaysLeft <= 0
         ? t("shell.trialEnded")
@@ -335,6 +340,21 @@ export async function AppShell({
               </button>
             </form>
           </div>
+        ) : demoExpiresAt ? (
+          <DemoBanner
+            expiresAt={new Date(demoExpiresAt).toISOString()}
+            ctaHref="/kayit"
+            labels={{
+              // `{time}` istemcide dolduruluyor (kalan süre canlı); burada
+              // yer tutucu kendisiyle dolduruluyor ki biçimlendirme hata vermesin.
+              template: t("shell.demoBanner", { time: "{time}" }),
+              ended: t("shell.demoEnded"),
+              noSend: t("shell.demoNoSend"),
+              cta: t("shell.demoCta"),
+              hours: t("shell.demoHours"),
+              minutes: t("shell.demoMinutes"),
+            }}
+          />
         ) : null
       }
     >

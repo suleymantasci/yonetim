@@ -27,6 +27,8 @@ const PUBLIC_PATHS = [
   "/kayit",
   "/kayit-talebi",
   "/sifre-sifirla",
+  // Demo hesap talebi ve onay bağlantısı — oturumu olmayan ziyaretçi için.
+  "/demo",
   // `/kurulum` oturum İSTER ama tenant bağlamı istemez. Buraya yazılmasa da
   // çerez kontrolünden geçerdi; yazılmasının sebebi sayfanın kendi kontrolünü
   // yapıyor olması (`hasSessionCookie` → `/giris`) ve `devam` parametresinin

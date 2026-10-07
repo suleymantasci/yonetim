@@ -7,7 +7,8 @@
     "blog": "Blog",
     "faq": "FAQ",
     "signIn": "Sign in",
-    "startFree": "Start 30-day free trial"
+    "startFree": "Start 30-day free trial",
+    "demo": "Demo account"
   },
   "footer": {
     "product": "Product",
@@ -243,7 +244,11 @@
       }
     },
     "portfolioUnits": "units",
-    "heroDiscover": "Explore the product"
+    "heroDiscover": "Explore the product",
+    "ctaDemo": "Request a demo account",
+    "ctaDemoNote": "24 hours · every module filled with sample data",
+    "demoBandManager": "Request a 1-property demo",
+    "demoBandCompany": "Request a 3-property company demo"
   },
   "features": {
     "metaTitle": "Features — dues, collection, maintenance, compliance, enforcement",

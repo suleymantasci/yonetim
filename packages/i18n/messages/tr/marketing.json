@@ -7,7 +7,8 @@
     "blog": "Blog",
     "faq": "S.S.S.",
     "signIn": "Giriş yap",
-    "startFree": "30 gün ücretsiz dene"
+    "startFree": "30 gün ücretsiz dene",
+    "demo": "Demo hesap"
   },
   "footer": {
     "product": "Ürün",
@@ -243,7 +244,11 @@
       }
     },
     "portfolioUnits": "daire",
-    "heroDiscover": "Ürünü keşfet"
+    "heroDiscover": "Ürünü keşfet",
+    "ctaDemo": "Demo hesap iste",
+    "ctaDemoNote": "24 saat · her modül örnek verilerle dolu",
+    "demoBandManager": "1 sitelik demo hesabı iste",
+    "demoBandCompany": "3 siteli firma demosu iste"
   },
   "features": {
     "metaTitle": "Özellikler — aidat, tahsilat, bakım, KVKK, icra",

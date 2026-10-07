@@ -27,6 +27,25 @@ x-api-env: &api-env
   INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:?zorunlu}
   AUTH_OTP_ENABLED: ${AUTH_OTP_ENABLED:-false}
   SESSION_CACHE_TTL: "60"
+  # E-postalardaki bağlantılar (giriş, demo onayı) bu adreslerden kuruluyor;
+  # tanımsızken kod varsayılan (gerçek olmayan) alan adına bağlantı yazıyordu.
+  NEXT_PUBLIC_APP_URL: https://${APP_DOMAIN}
+  NEXT_PUBLIC_BASE_URL: https://${SITE_DOMAIN}
+  # E-posta: sunucudaki docker-mailserver (traefik-public ağında `mailserver`).
+  # Sertifika mail.finanscozum.net adına; iç ağdan bağlanırken o ad doğrulanıyor.
+  SMTP_HOST: ${SMTP_HOST:-mailserver}
+  SMTP_PORT: ${SMTP_PORT:-587}
+  SMTP_USER: ${SMTP_USER:-}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+  SMTP_FROM: ${SMTP_FROM:-}
+  SMTP_TLS_SERVERNAME: ${SMTP_TLS_SERVERNAME:-mail.finanscozum.net}
+  # 24 saatlik demo hesapları (landing → /demo). Demo kişilerinin e-posta alan
+  # adına hiçbir e-posta gönderilmez.
+  DEMO_ENABLED: ${DEMO_ENABLED:-true}
+  DEMO_EMAIL_DOMAIN: ${DEMO_EMAIL_DOMAIN:-demo.tasci.cloud}
+  DEMO_MAX_LIVE: ${DEMO_MAX_LIVE:-50}
+  DEMO_PER_IP_PER_DAY: ${DEMO_PER_IP_PER_DAY:-3}
+  DEMO_TTL_HOURS: ${DEMO_TTL_HOURS:-24}
   # Belge deposu (S3/R2) bu ortamda YOK: MinIO resmi imajları Docker Hub'dan
   # kaldırıldı. Depo tanımsızken yükleme uçları anlaşılır bir hata döner;
   # açmak için R2_* (veya S3_*) değişkenlerini .env'e ekleyip buraya geçirin.
@@ -98,6 +117,8 @@ services:
       API_INTERNAL_URL: http://api:3000
     depends_on:
       api: { condition: service_healthy }
+    # traefik-public: demo e-postaları worker'dan `mailserver`'a gidiyor.
+    networks: [default, traefik-public]
 
   app:
     image: ghcr.io/suleymantasci/yonetim:app-latest

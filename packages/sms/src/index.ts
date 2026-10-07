@@ -1,6 +1,6 @@
 import { serverEnv } from "@yonetim/config";
 import {
-  CircuitBreaker, Err, Ok, errors, failover, normalizePhone, withRetry, type Result,
+  CircuitBreaker, Err, Ok, errors, failover, isDemoPhone, normalizePhone, withRetry, type Result,
 } from "@yonetim/core";
 
 /**
@@ -182,6 +182,10 @@ export function activeProviders(): SmsProvider[] {
 
 /** Failover ile SMS gönderir. */
 export async function sendSms(message: SmsMessage): Promise<Result<SmsSendResult>> {
+  // Demo kişilerine (+90 500 …) SMS gönderilmez; ücretli ve tahsis edilmemiş aralık.
+  if (isDemoPhone(message.to)) {
+    return Ok({ provider: "console", providerRef: "suppressed-demo-recipient", parts: 0, unicode: false });
+  }
   try {
     const { result } = await failover(
       activeProviders(),

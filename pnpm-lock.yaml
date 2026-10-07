@@ -140,9 +140,15 @@ importers:
       '@yonetim/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@yonetim/demo-seed':
+        specifier: workspace:*
+        version: link:../../packages/demo-seed
       '@yonetim/dues':
         specifier: workspace:*
         version: link:../../packages/dues
+      '@yonetim/emails':
+        specifier: workspace:*
+        version: link:../../packages/emails
       '@yonetim/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
@@ -197,6 +203,9 @@ importers:
       nestjs-zod:
         specifier: ^5.5.0
         version: 5.5.0(@nestjs/common@11.1.28(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/swagger@11.4.6(@nestjs/common@11.1.28(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.28)(reflect-metadata@0.2.2))(rxjs@7.8.2)(zod@3.25.76)
+      nodemailer:
+        specifier: ^10.0.16
+        version: 10.0.16
       pino:
         specifier: ^10.3.1
         version: 10.3.1
@@ -440,6 +449,9 @@ importers:
       '@yonetim/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@yonetim/demo-seed':
+        specifier: workspace:*
+        version: link:../../packages/demo-seed
       '@yonetim/dues':
         specifier: workspace:*
         version: link:../../packages/dues
@@ -485,6 +497,9 @@ importers:
       nestjs-pino:
         specifier: ^4.6.1
         version: 4.6.1(@nestjs/common@11.1.28(reflect-metadata@0.2.2)(rxjs@7.8.2))(pino-http@11.0.0)(pino@10.3.1)(rxjs@7.8.2)
+      nodemailer:
+        specifier: ^10.0.16
+        version: 10.0.16
       pino:
         specifier: ^10.3.1
         version: 10.3.1
@@ -622,6 +637,28 @@ importers:
         specifier: ^5.7.2
         version: 5.9.3
 
+  packages/demo-seed:
+    dependencies:
+      '@yonetim/core':
+        specifier: workspace:*
+        version: link:../core
+      '@yonetim/db':
+        specifier: workspace:*
+        version: link:../db
+      '@yonetim/dues':
+        specifier: workspace:*
+        version: link:../dues
+      '@yonetim/pricing':
+        specifier: workspace:*
+        version: link:../pricing
+      drizzle-orm:
+        specifier: ^0.45.3
+        version: 0.45.3(@opentelemetry/api@1.9.1)(gel@2.2.0)(postgres@3.4.9)
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
   packages/dues:
     dependencies:
       '@yonetim/config':
@@ -643,7 +680,13 @@ importers:
       '@yonetim/core':
         specifier: workspace:*
         version: link:../core
+      nodemailer:
+        specifier: ^10.0.16
+        version: 10.0.16
     devDependencies:
+      '@types/nodemailer':
+        specifier: ^8.0.2
+        version: 8.0.2
       typescript:
         specifier: ^5.7.2
         version: 5.9.3
@@ -2827,6 +2870,9 @@ packages:
   '@types/node@22.20.1':
     resolution: {integrity: sha512-EANqOCF9QFyra+4pfxUcX9STKJpCLjMbObVzljIJomAWSnuSIEAvyzEU53GaajbXJEgdh0iEcPL+DGvpUd4k1Q==}
 
+  '@types/nodemailer@8.0.2':
+    resolution: {integrity: sha512-c7M5ox8p0nEOfbJ2E9Qcmt8/QCu/VzsiAhzBiZbvky2PhKZDHpKB3sQHBM5MEZNkCfBOaS6S9//AGPRTNB7IaA==}
+
   '@types/qs@6.15.1':
     resolution: {integrity: sha512-GZHUBZR9hckSUhrxmp1nG6NwdpM9fCunJwyThLW1X3AyHgd9IlHb6VANpQQqDr2o/qQp6McZ3y/IA2rVzKzSbw==}
 
@@ -4746,6 +4792,10 @@ packages:
   node-releases@2.0.51:
     resolution: {integrity: sha512-wRNIrw4DmVLKQlbgOMdkMx27Wrpzes2hh5Jtbi2bjPd+4wJstWIqP5A+lscnqbm0xxmT5Bpg8Lec5ItEBwx6BQ==}
     engines: {node: '>=18'}
+
+  nodemailer@10.0.16:
+    resolution: {integrity: sha512-VL9xKErxN+el77o8eBOuYKUPMyEx7F9hfnDCuiUKJRp9v3wnWMOudYgP/SWbwSHy8rUL4cylobuXtki1LpQS7A==}
+    engines: {node: '>=20.0.0'}
 
   nodemon@3.1.14:
     resolution: {integrity: sha512-jakjZi93UtB3jHMWsXL68FXSAosbLfY0In5gtKq3niLSkrWznrVBzXFNOEMJUfc9+Ke7SHWoAZsiMkNP3vq6Jw==}
@@ -7437,6 +7487,10 @@ snapshots:
     dependencies:
       undici-types: 6.21.0
 
+  '@types/nodemailer@8.0.2':
+    dependencies:
+      '@types/node': 22.20.1
+
   '@types/qs@6.15.1': {}
 
   '@types/range-parser@1.2.7': {}
@@ -9443,6 +9497,8 @@ snapshots:
     optional: true
 
   node-releases@2.0.51: {}
+
+  nodemailer@10.0.16: {}
 
   nodemon@3.1.14:
     dependencies:

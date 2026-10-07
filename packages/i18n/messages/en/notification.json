@@ -84,6 +84,35 @@
       "title": "Sign-in verification code",
       "body1": "The code is valid for {minutes} minutes and can be used only once.",
       "body2": "If you didn't request this, someone may know your password — change it as soon as you can."
+    },
+    "demoConfirm": {
+      "subject": "Confirm your demo account",
+      "title": "Your demo account is ready to be created",
+      "greeting": "Hi {name},",
+      "body1": "We received your demo request. Click the button below to create your account; the link is valid for {minutes} minutes.",
+      "body2": "Once created, the demo account can be used for 24 hours and is then deleted together with all of its data.",
+      "body3": "If you did not request this, you can ignore this email; no account is created unless the link is clicked.",
+      "cta": "Create my demo account"
+    },
+    "demoReady": {
+      "subject": "Your demo account is ready",
+      "title": "Your demo account is ready",
+      "greeting": "Hi {name},",
+      "body1": "Your demo account, with every module filled with sample data, is open. You can sign in with:",
+      "loginLabel": "Sign-in email",
+      "passwordLabel": "Password",
+      "sitesLabel": "Properties in the account",
+      "expires": "Your demo account is available until {date}; it is then deleted together with all of its data.",
+      "note": "The demo account never sends SMS, WhatsApp or email to real people.",
+      "cta": "Sign in to the panel"
+    },
+    "demoReminder": {
+      "subject": "Your demo account is expiring",
+      "title": "Your demo is about to end",
+      "greeting": "Hi {name},",
+      "body1": "Your demo account expires in about {hours} hours and will then be deleted together with all of its data.",
+      "body2": "If you liked it, you can open your own property in a few minutes; demo data is not carried over.",
+      "cta": "Open my real account"
     }
   },
   "bot": {

@@ -21,6 +21,7 @@ import {
 } from "@yonetim/jobs";
 
 import { DbService } from "@api/infra/db/db.service";
+import { DemoLifecycleService } from "@api/tenancy/demo/demo-lifecycle.service";
 import { captureException } from "@api/infra/observability/capture";
 
 import { JobContext } from "./job-context";
@@ -66,9 +67,23 @@ export class JobRegistry {
   constructor(
     private readonly db: DbService,
     private readonly context: JobContext,
+    private readonly demo: DemoLifecycleService,
   ) {}
 
   async run(jobId: string, only?: string): Promise<JobRunSummary> {
+    // Platform işleri site site dolaşmıyor: tek koşu, tek sonuç.
+    if (jobId === "demo.maintenance") {
+      const detail = await this.demo.maintenance();
+      return {
+        jobId,
+        tenants: 0,
+        ok: detail.failures === 0 ? 1 : 0,
+        skipped: 0,
+        failed: detail.failures > 0 ? 1 : 0,
+        outcomes: [{ tenantId: "platform", status: detail.failures > 0 ? "failed" : "ok", detail }],
+      };
+    }
+
     const targets = await this.writableTenants(only, JOB_TENANT_STATUSES[jobId]);
     const outcomes: JobOutcome[] = [];
 
@@ -177,6 +192,10 @@ export class JobRegistry {
           and(
             inArray(tenants.status, [...statuses] as never),
             isNull(tenants.deletedAt),
+            // Demo siteler zamanlanmış işlere girmez: aidat üretimi, gecikme
+            // faizi, hatırlatmalar ve faturalama verisini değiştirirdi; demo
+            // içeriği herkeste aynı kalmalı ve 24 saat sonra zaten siliniyor.
+            eq(tenants.isDemo, false),
             ...(only ? [eq(tenants.id, only)] : []),
           ),
         ),

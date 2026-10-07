@@ -76,6 +76,12 @@ export const users = pgTable(
     lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
     /** KVKK: anonimleştirildiyse (Bölüm 14.1). */
     anonymizedAt: timestamp("anonymized_at", { withTimezone: true }),
+    /**
+     * Demo hesabının ürettiği kişi (demo yöneticisi ve örnek sakinler).
+     * Gerçek kullanıcı bu bayrağı hiçbir yoldan almaz; demo silinirken
+     * yalnız bayraklı ve başka (gerçek) siteye bağı olmayan kişi silinir.
+     */
+    isDemo: boolean("is_demo").notNull().default(false),
     ...timestamps,
     ...softDelete,
   },

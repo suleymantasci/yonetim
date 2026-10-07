@@ -13,9 +13,11 @@
   },
   "dependencies": {
     "@yonetim/config": "workspace:*",
-    "@yonetim/core": "workspace:*"
+    "@yonetim/core": "workspace:*",
+    "nodemailer": "^10.0.16"
   },
   "devDependencies": {
+    "@types/nodemailer": "^8.0.2",
     "typescript": "^5.7.2"
   }
 }

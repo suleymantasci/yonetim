@@ -63,6 +63,15 @@ export const tenants = pgTable(
     migratedFrom: varchar("migrated_from", { length: 40 }),
     /** Public landing page yayında mı (Bölüm 6.14). */
     landingPublished: boolean("landing_published").notNull().default(false),
+    /**
+     * 24 saatlik demo hesabı (`demo_requests`). Demo site faturalamaya,
+     * zamanlanmış işlere ve platform sayılarına girmez; süresi dolunca
+     * `app_purge_demo_tenant()` ile **fiziksel olarak** silinir. Fiziksel
+     * silme fonksiyonu bu bayrağı kendisi doğruluyor: bayrağı olmayan bir
+     * site o yoldan hiçbir koşulda silinemez.
+     */
+    isDemo: boolean("is_demo").notNull().default(false),
+    demoExpiresAt: timestamp("demo_expires_at", { withTimezone: true }),
     ...timestamps,
     ...softDelete,
   },
@@ -74,6 +83,7 @@ export const tenants = pgTable(
     index("idx_tenants_city_district").on(t.city, t.district),
     /** Tasfiye job'ı "süresi dolmuş arşiv" sorgusunu bu index'le tarıyor. */
     index("idx_tenants_purge_after").on(t.purgeAfterAt),
+    index("idx_tenants_demo_expires").on(t.demoExpiresAt),
   ],
 );
 
@@ -89,6 +99,8 @@ export const companies = pgTable(
     email: varchar("email", { length: 200 }),
     phone: varchar("phone", { length: 20 }),
     address: text("address"),
+    /** Demo hesabının firması — demo siteleriyle birlikte silinir. */
+    isDemo: boolean("is_demo").notNull().default(false),
     ...timestamps,
     ...softDelete,
   },

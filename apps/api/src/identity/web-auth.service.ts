@@ -333,6 +333,7 @@ export class WebAuthService {
           id: users.id,
           passwordHash: users.passwordHash,
           twoFactorEnabled: users.twoFactorEnabled,
+          isDemo: users.isDemo,
         })
         .from(users)
         .where(
@@ -358,7 +359,10 @@ export class WebAuthService {
       throw errors.unauthorized("invalid_credentials");
     }
 
-    if (!env().AUTH_OTP_ENABLED) {
+    // Demo kullanıcısının ikinci adımı yok: giriş kodu demo adresine
+    // gidemez (o alan adına e-posta gönderilmiyor) ve hesap zaten 24 saatlik
+    // örnek veriden ibaret. Parolayı bilen, bilgileri e-postasında alan kişi.
+    if (!env().AUTH_OTP_ENABLED || user.isDemo) {
       // H-14: Kullanıcının 2FA'sı açıksa paroladan sonra TOTP doğrulaması
       // iste. Tek faktörlü oturum açılmadan önce mola. Login `webPasswordLogin`
       // sözleşmesinde `status` alanı kullanılır; yeni değer: "totp_required".

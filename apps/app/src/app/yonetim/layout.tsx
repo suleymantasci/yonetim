@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 
 import { siteConfig } from "@yonetim/config";
 import { isPlatformRole, type Role } from "@yonetim/core";
-import { BrandMark } from "@yonetim/ui";
+import { BrandMark, ToastProvider } from "@yonetim/ui";
 
 import { requireContext } from "@/lib/context";
 
@@ -47,6 +47,8 @@ export default async function PlatformLayout({ children }: { children: React.Rea
               { href: "/yonetim/hesaplar", label: t("nav.accounts") },
               { href: "/yonetim/yoneticiler", label: t("nav.managers") },
               { href: "/yonetim/kampanyalar", label: t("nav.campaigns") },
+              // Demo ekranının tek yazma işlemi fiziksel silme: yalnız süper yönetici.
+              ...(ctx.roles.includes("super_admin") ? [{ href: "/yonetim/demo-talepleri", label: t("nav.demos") }] : []),
             ]}
           />
 
@@ -58,7 +60,11 @@ export default async function PlatformLayout({ children }: { children: React.Rea
         </div>
       </header>
 
-      <main id="main">{children}</main>
+      {/* Platform ekranlarının bildirimleri (kod/kampanya/demo işlemleri).
+          Sağlayıcı yokken `useToast()` sessizce hiçbir şey göstermiyordu. */}
+      <ToastProvider closeLabel={tCommon("action.close")}>
+        <main id="main">{children}</main>
+      </ToastProvider>
     </div>
   );
 }

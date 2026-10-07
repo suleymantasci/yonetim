@@ -189,6 +189,16 @@ export const JOBS: JobDefinition[] = [
     specRef: "Bölüm 6.10",
   },
   {
+    id: "demo.maintenance",
+    name: "Demo hesap bakımı",
+    cron: "*/10 * * * *",
+    description:
+      "Süresi dolan demo siteleri bütün verisiyle siler, bitişe 3 saat kala hatırlatma gönderir, takılan kurulumları ve bekleyen eski talepleri kapatır.",
+    timeoutSeconds: 300,
+    singleton: true,
+    specRef: "Demo hesap tasarımı (2026-10-07)",
+  },
+  {
     id: "landing.revalidate",
     name: "Site landing sayfası yenileme",
     cron: "0 4 * * *",

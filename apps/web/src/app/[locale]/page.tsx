@@ -91,16 +91,21 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
                   {t("ctaPrimary")}
                   <ArrowRight aria-hidden className="h-4 w-4" />
                 </a>
-                <Link
-                  href="/ozellikler"
+                {/* Demo: kayıt olmadan, her modülü dolu 24 saatlik hesap. */}
+                <a
+                  href={`${siteConfig.env.appUrl}/demo`}
                   className="inline-flex items-center rounded-xl border border-border-strong bg-surface px-6 py-3.5 font-semibold text-fg shadow-sm transition-all duration-150 hover:border-fg/50 hover:bg-hover active:scale-[0.98]"
                 >
-                  {t("heroDiscover")}
-                </Link>
+                  {t("ctaDemo")}
+                </a>
               </div>
 
               {/* Deneme koşulu artık kararın yanında: buton, sonra koşul. */}
               <p className="mt-4 max-w-md text-sm text-fg-subtle">{t("ctaNote")}</p>
+              <p className="mt-1 max-w-md text-sm text-fg-subtle">
+                {t("ctaDemo")}: {t("ctaDemoNote")} ·{" "}
+                <Link href="/ozellikler" className="underline underline-offset-2 hover:text-fg">{t("heroDiscover")}</Link>
+              </p>
 
 
             </div>
@@ -129,10 +134,10 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       </section>
 
       <section className="marketing-container home-audiences">
-        {[{icon: Building2, title: "managerTitle", body: "managerBody", label: "managerLabel"}, {icon: Buildings, title: "companyTitle", body: "companyBody", label: "companyLabel"}].map(({icon: Icon, title, body, label}) => (
+        {[{icon: Building2, title: "managerTitle", body: "managerBody", label: "managerLabel", demo: "yonetici", demoLabel: "demoBandManager"}, {icon: Buildings, title: "companyTitle", body: "companyBody", label: "companyLabel", demo: "firma", demoLabel: "demoBandCompany"}].map(({icon: Icon, title, body, label, demo, demoLabel}) => (
           <article key={title}>
             <Icon aria-hidden className="h-10 w-10 text-primary" strokeWidth={1.2} />
-            <div><p className="text-xs text-fg-muted">{t(label)}</p><h2>{t(title)}</h2><p className="mt-2 text-sm leading-relaxed text-fg-muted">{t(body)}</p><Link href="/ozellikler" className="home-text-link">{t("featureDetail")}<ArrowRight aria-hidden className="h-4 w-4" /></Link></div>
+            <div><p className="text-xs text-fg-muted">{t(label)}</p><h2>{t(title)}</h2><p className="mt-2 text-sm leading-relaxed text-fg-muted">{t(body)}</p><Link href="/ozellikler" className="home-text-link">{t("featureDetail")}<ArrowRight aria-hidden className="h-4 w-4" /></Link><a href={`${siteConfig.env.appUrl}/demo?tur=${demo}`} className="home-text-link">{t(demoLabel)}<ArrowRight aria-hidden className="h-4 w-4" /></a></div>
           </article>
         ))}
       </section>
@@ -176,7 +181,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
         <div><h3 className="mb-3 text-sm font-semibold">{t("faqTitle")}</h3><Accordion>{content.faqs.slice(0,3).map(faq => <AccordionItem key={faq.question} title={faq.question} name="home-faq">{faq.answer}</AccordionItem>)}</Accordion><Link href="/sss" className="home-text-link">{t("faqAll")}<ArrowRight aria-hidden className="h-4 w-4" /></Link></div>
       </section>
 
-      <section className="bg-ink text-ink-fg"><div className="marketing-container home-section home-closing"><div><h2>{t("compactCtaTitle")}</h2><p className="mt-2 text-sm text-ink-muted-fg">{t("ctaNote")}</p></div><a href={`${siteConfig.env.appUrl}/kayit`} className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-fg hover:bg-primary-hover">{t("ctaPrimary")}<ArrowRight aria-hidden className="h-4 w-4" /></a></div></section>
+      <section className="bg-ink text-ink-fg"><div className="marketing-container home-section home-closing"><div><h2>{t("compactCtaTitle")}</h2><p className="mt-2 text-sm text-ink-muted-fg">{t("ctaNote")}</p></div><div className="flex flex-wrap gap-3"><a href={`${siteConfig.env.appUrl}/kayit`} className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-fg hover:bg-primary-hover">{t("ctaPrimary")}<ArrowRight aria-hidden className="h-4 w-4" /></a><a href={`${siteConfig.env.appUrl}/demo`} className="inline-flex items-center justify-center rounded-lg border border-ink-fg/40 px-6 py-3 text-sm font-semibold text-ink-fg hover:bg-ink-fg/10">{t("ctaDemo")}</a></div></div></section>
     </>
   );
 }

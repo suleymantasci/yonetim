@@ -101,7 +101,14 @@
     },
     "userMenu": "Account menu",
     "switchTenant": "Switch property",
-    "impersonationExit": "Exit session"
+    "impersonationExit": "Exit session",
+    "demoBanner": "Demo account · deleted with all data in {time}",
+    "demoEnded": "Demo expired; the account will be deleted shortly",
+    "demoNoSend": "No SMS/email is sent to real people.",
+    "demoCta": "Open a real account",
+    "demoBadge": "Demo",
+    "demoHours": "h",
+    "demoMinutes": "min"
   },
   "login": {
     "title": "Sign in",
@@ -1474,7 +1481,8 @@
       "no_phone": "Could not send: this resident has no phone number on record. The record was still created.",
       "opted_out": "Could not send: the resident has opted out of notifications. The record was still created.",
       "window_closed": "Could not send: the WhatsApp 24-hour service window is closed. You can send free text after the resident writes to you; use SMS if it is urgent.",
-      "send_failed": "Could not send. The record was created; check the channel settings."
+      "send_failed": "Could not send. The record was created; check the channel settings.",
+      "demo_tenant": "SMS, WhatsApp and email are disabled in the demo account; the message was recorded in-app only."
     },
     "composeSection": "Message",
     "composeSectionHint": "Recipient, channel and text.",
@@ -3135,7 +3143,8 @@
       "overview": "Overview",
       "accounts": "Accounts",
       "managers": "Managers",
-      "campaigns": "Campaigns"
+      "campaigns": "Campaigns",
+      "demos": "Demo requests"
     },
     "navLabel": "Platform menu"
   },
@@ -3407,5 +3416,127 @@
     "openingEquityHint": "Assets − liabilities.",
     "openingSaved": "Opening entry saved ({created} new, {updated} updated).",
     "openingSavedLocked": "Saved; {locked} collected balances were not changed."
+  },
+  "demo": {
+    "title": "Request a demo account",
+    "subtitle": "A 24-hour account with every module filled with sample data. No setup, no credit card.",
+    "kindLabel": "Who are you?",
+    "kindManager": "Property manager",
+    "kindManagerHint": "1 property · 3 blocks · 42 units",
+    "kindCompany": "Management company",
+    "kindCompanyHint": "3 properties (estate, apartment, residence) · 120 units",
+    "field": {
+      "fullName": "Full name",
+      "phone": "Mobile phone",
+      "email": "Email"
+    },
+    "phoneHint": "So we can reach you; not used in the demo account.",
+    "emailHint": "The confirmation link and sign-in details are sent here.",
+    "consent": "I have read the privacy notice and agree to the processing of my name, phone and email for my demo request and to being contacted.",
+    "consentRequired": "Please confirm to continue.",
+    "submit": "Request my demo account",
+    "sentTitle": "Check your email",
+    "sentBody": "We sent a confirmation link to {email}. The link is valid for 60 minutes; once you click it, your demo account is ready in a few seconds.",
+    "sentSpam": "If the email doesn't arrive within a few minutes, check your spam folder.",
+    "includesTitle": "What's in the demo?",
+    "includes": {
+      "people": "Blocks, units, owners and tenants",
+      "dues": "12 months of dues, payments and overdue debts",
+      "operations": "Fault reports, planned maintenance and maintenance history",
+      "finance": "Cash, bank, expenses, supplier and staff ledgers",
+      "governance": "Meetings, decision book, polls, announcements and bookings"
+    },
+    "note24h": "The demo account is deleted with all of its data after 24 hours. It never sends SMS, email or WhatsApp to real people.",
+    "checkFields": "Please check the highlighted fields.",
+    "invalidField": "Please check this field.",
+    "invalidPhone": "Enter a valid mobile number.",
+    "invalidEmail": "Enter a valid email address.",
+    "disposableEmail": "Temporary email addresses are not accepted; please use a permanent one.",
+    "ipLimit": "Too many demo requests from this connection today. Please try again tomorrow.",
+    "capacity": "Many demo accounts are open right now. Please try again shortly.",
+    "disabled": "Demo requests are temporarily closed.",
+    "mailFailed": "The confirmation email could not be sent. Please try again in a few minutes.",
+    "generic": "Something went wrong, please try again.",
+    "haveAccount": "Already have an account?",
+    "login": "Sign in",
+    "signupInstead": "Want to open your own property directly?",
+    "signup": "start a free trial"
+  },
+  "demoConfirm": {
+    "title": "Your demo account",
+    "preparing": "Preparing your demo account…",
+    "preparingHint": "Creating properties, residents, 12 months of dues and payments, fault reports and maintenance. This takes a few seconds; keep this page open.",
+    "steps": {
+      "sites": "Properties and blocks",
+      "people": "Residents and units",
+      "money": "Dues, payments and cash movements",
+      "modules": "Faults, maintenance and other modules"
+    },
+    "readyTitle": "Your demo account is ready",
+    "readyHint": "We also sent these details to your email.",
+    "loginEmail": "Sign-in email",
+    "password": "Password",
+    "copy": "Copy",
+    "copied": "Copied",
+    "expires": "Available until {date}; then deleted with all of its data.",
+    "sites": "Properties in the account",
+    "goPanel": "Sign in to the panel",
+    "failedTitle": "The demo account could not be created",
+    "failedHint": "A temporary problem occurred. You can retry with the same link.",
+    "retry": "Retry",
+    "exhausted": "The demo account could not be created after several attempts. Please submit a new request.",
+    "invalidTitle": "Invalid link",
+    "invalidHint": "This confirmation link is invalid. Make sure you opened the full link from the email.",
+    "expiredTitle": "The link has expired",
+    "expiredHint": "Confirmation links are valid for 60 minutes. You can submit a new demo request.",
+    "purgedTitle": "The demo account has expired",
+    "purgedHint": "This demo account was deleted with all of its data when it expired.",
+    "capacityTitle": "Many demos are open right now",
+    "capacityHint": "Please refresh this page in a few minutes; your link is valid for 60 minutes.",
+    "newRequest": "New demo request",
+    "signup": "Open my real account"
+  },
+  "platformDemo": {
+    "title": "Demo requests",
+    "subtitle": "24-hour demo accounts requested from the landing page. Expired demos are deleted automatically with all data; contact details stay here.",
+    "totals": {
+      "live": "Open now",
+      "pending": "Awaiting confirmation",
+      "last7": "Last 7 days",
+      "converted": "Converted to real account"
+    },
+    "limits": "Limits: at most {maxLive} demos at once · {perIp} requests per IP per day · {ttl}-hour lifetime",
+    "col": {
+      "person": "Person",
+      "contact": "Contact",
+      "kind": "Type",
+      "status": "Status",
+      "created": "Requested",
+      "expires": "Ends",
+      "actions": "Action"
+    },
+    "kind": {
+      "manager": "Manager",
+      "company": "Management company"
+    },
+    "status": {
+      "pending": "Awaiting confirmation",
+      "provisioning": "Preparing",
+      "ready": "Open",
+      "failed": "Failed",
+      "purged": "Deleted",
+      "cancelled": "Cancelled"
+    },
+    "sites": "{count} properties",
+    "login": "Sign-in: {email}",
+    "purge": "Delete now",
+    "purgeHint": "This demo and all of its data will be permanently deleted. Type the demo code to confirm: {code}",
+    "purgeCode": "Demo code",
+    "purgeSubmit": "Delete permanently",
+    "purged": "Demo deleted.",
+    "codeMismatch": "The code did not match; nothing was deleted.",
+    "provisioningBusy": "The demo is being prepared; try again in a few seconds.",
+    "empty": "No demo requests yet.",
+    "remaining": "{time} left"
   }
 }

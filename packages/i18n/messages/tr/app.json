@@ -101,7 +101,14 @@
     },
     "userMenu": "Hesap menüsü",
     "switchTenant": "Site değiştir",
-    "impersonationExit": "Geçişten çık"
+    "impersonationExit": "Geçişten çık",
+    "demoBanner": "Demo hesap · {time} sonra tüm verisiyle silinecek",
+    "demoEnded": "Demo süresi doldu; hesap birazdan silinecek",
+    "demoNoSend": "Gerçek kişilere SMS/e-posta gönderilmez.",
+    "demoCta": "Gerçek hesap aç",
+    "demoBadge": "Demo",
+    "demoHours": "sa",
+    "demoMinutes": "dk"
   },
   "login": {
     "title": "Giriş",
@@ -1474,7 +1481,8 @@
       "no_phone": "Mesaj gönderilemedi: bu sakinin kayıtlı telefon numarası yok. Kayıt yine de açıldı.",
       "opted_out": "Mesaj gönderilemedi: sakin bildirimlerden çıkmış. Kayıt yine de açıldı.",
       "window_closed": "Mesaj gönderilemedi: WhatsApp 24 saatlik servis penceresi kapalı. Sakin size yazdıktan sonra serbest metin gönderebilirsiniz; acilse SMS kanalını kullanın.",
-      "send_failed": "Mesaj gönderilemedi. Kayıt açıldı; kanal ayarlarını kontrol edin."
+      "send_failed": "Mesaj gönderilemedi. Kayıt açıldı; kanal ayarlarını kontrol edin.",
+      "demo_tenant": "Demo hesabında SMS, WhatsApp ve e-posta gönderimi kapalıdır; mesaj yalnız uygulama içinde kaydedildi."
     },
     "composeSection": "Mesaj",
     "composeSectionHint": "Alıcı, kanal ve metin.",
@@ -3135,7 +3143,8 @@
       "overview": "Özet",
       "accounts": "Hesaplar",
       "managers": "Yöneticiler",
-      "campaigns": "Kampanyalar"
+      "campaigns": "Kampanyalar",
+      "demos": "Demo talepleri"
     },
     "navLabel": "Platform menüsü"
   },
@@ -3407,5 +3416,127 @@
     "openingEquityHint": "Varlıklar − borçlar; fişi denkleştiren tutar.",
     "openingSaved": "Açılış fişi kaydedildi ({created} yeni, {updated} güncellenen devir borcu).",
     "openingSavedLocked": "Açılış fişi kaydedildi; tahsilat almış {locked} devir borcu değiştirilmedi."
+  },
+  "demo": {
+    "title": "Demo hesabı isteyin",
+    "subtitle": "Her modülü örnek verilerle dolu, 24 saatlik bir hesap. Kurulum yok, kredi kartı yok.",
+    "kindLabel": "Siz kimsiniz?",
+    "kindManager": "Site / apartman yöneticisi",
+    "kindManagerHint": "1 site · 3 blok · 42 bağımsız bölüm",
+    "kindCompany": "Yönetim firması",
+    "kindCompanyHint": "3 site (site, apartman, rezidans) · 120 bağımsız bölüm",
+    "field": {
+      "fullName": "Ad soyad",
+      "phone": "Cep telefonu",
+      "email": "E-posta"
+    },
+    "phoneHint": "Size ulaşabilmemiz için; demo hesabında kullanılmaz.",
+    "emailHint": "Onay bağlantısı ve giriş bilgileri bu adrese gelir.",
+    "consent": "Aydınlatma metnini okudum; demo talebim kapsamında ad, telefon ve e-posta bilgilerimin işlenmesini ve benimle iletişime geçilmesini kabul ediyorum.",
+    "consentRequired": "Devam etmek için onaylamanız gerekiyor.",
+    "submit": "Demo hesabımı iste",
+    "sentTitle": "E-postanızı kontrol edin",
+    "sentBody": "{email} adresine bir onay bağlantısı gönderdik. Bağlantı 60 dakika geçerli; tıkladığınızda demo hesabınız birkaç saniyede hazırlanır.",
+    "sentSpam": "E-posta birkaç dakika içinde gelmezse istenmeyen (spam) klasörüne bakın.",
+    "includesTitle": "Demoda neler var?",
+    "includes": {
+      "people": "Bloklar, bağımsız bölümler, malik ve kiracı sakinler",
+      "dues": "12 aylık aidat borçlandırması, tahsilatlar, gecikmiş borçlar",
+      "operations": "Arıza kayıtları, planlı bakımlar ve bakım geçmişi",
+      "finance": "Kasa, banka, giderler, tedarikçi ve personel carisi",
+      "governance": "Toplantı, karar defteri, anket, duyuru ve rezervasyon"
+    },
+    "note24h": "Demo hesabı 24 saat sonra tüm verisiyle birlikte silinir. Demo hesabından gerçek kişilere SMS, e-posta ya da WhatsApp gönderilmez.",
+    "checkFields": "Lütfen işaretli alanları kontrol edin.",
+    "invalidField": "Bu alanı kontrol edin.",
+    "invalidPhone": "Geçerli bir cep telefonu yazın.",
+    "invalidEmail": "Geçerli bir e-posta adresi yazın.",
+    "disposableEmail": "Geçici e-posta adresleri kabul edilmiyor; lütfen kalıcı bir adres yazın.",
+    "ipLimit": "Bu bağlantıdan bugün çok sayıda demo talebi geldi. Lütfen yarın tekrar deneyin.",
+    "capacity": "Şu anda çok sayıda demo hesabı açık. Lütfen biraz sonra tekrar deneyin.",
+    "disabled": "Demo talepleri geçici olarak kapalı.",
+    "mailFailed": "Onay e-postası gönderilemedi. Lütfen birkaç dakika sonra tekrar deneyin.",
+    "generic": "Bir sorun oluştu, lütfen tekrar deneyin.",
+    "haveAccount": "Zaten hesabınız var mı?",
+    "login": "Giriş yapın",
+    "signupInstead": "Doğrudan kendi sitenizi açmak isterseniz",
+    "signup": "ücretsiz deneyin"
+  },
+  "demoConfirm": {
+    "title": "Demo hesabınız",
+    "preparing": "Demo hesabınız hazırlanıyor…",
+    "preparingHint": "Siteler, sakinler, 12 aylık aidat ve tahsilatlar, arıza kayıtları ve bakımlar oluşturuluyor. Bu birkaç saniye sürer; sayfayı kapatmayın.",
+    "steps": {
+      "sites": "Siteler ve bloklar",
+      "people": "Sakinler ve bağımsız bölümler",
+      "money": "Aidat, tahsilat ve kasa hareketleri",
+      "modules": "Arıza, bakım ve diğer modüller"
+    },
+    "readyTitle": "Demo hesabınız hazır",
+    "readyHint": "Bu bilgileri e-posta adresinize de gönderdik.",
+    "loginEmail": "Giriş e-postası",
+    "password": "Parola",
+    "copy": "Kopyala",
+    "copied": "Kopyalandı",
+    "expires": "{date} tarihine kadar kullanılabilir; sonra tüm verisiyle silinir.",
+    "sites": "Hesaptaki siteler",
+    "goPanel": "Panele giriş yap",
+    "failedTitle": "Demo hesabı oluşturulamadı",
+    "failedHint": "Geçici bir sorun oluştu. Aynı bağlantıyla yeniden deneyebilirsiniz.",
+    "retry": "Yeniden dene",
+    "exhausted": "Birkaç denemeye rağmen demo hesabı oluşturulamadı. Lütfen yeni bir talep oluşturun.",
+    "invalidTitle": "Bağlantı geçersiz",
+    "invalidHint": "Bu onay bağlantısı geçersiz. E-postadaki bağlantıyı eksiksiz açtığınızdan emin olun.",
+    "expiredTitle": "Bağlantının süresi doldu",
+    "expiredHint": "Onay bağlantıları 60 dakika geçerlidir. Yeni bir demo talebi oluşturabilirsiniz.",
+    "purgedTitle": "Demo hesabının süresi doldu",
+    "purgedHint": "Bu demo hesabı süresi dolduğu için tüm verisiyle birlikte silindi.",
+    "capacityTitle": "Şu anda çok sayıda demo açık",
+    "capacityHint": "Lütfen birkaç dakika sonra bu sayfayı yenileyin; bağlantınız 60 dakika geçerli.",
+    "newRequest": "Yeni demo talebi",
+    "signup": "Gerçek hesabımı aç"
+  },
+  "platformDemo": {
+    "title": "Demo talepleri",
+    "subtitle": "Landing'den gelen 24 saatlik demo hesapları. Süresi dolan demo bütün verisiyle otomatik silinir; iletişim bilgisi burada kalır.",
+    "totals": {
+      "live": "Şu an açık",
+      "pending": "Onay bekleyen",
+      "last7": "Son 7 gün",
+      "converted": "Gerçek hesaba geçen"
+    },
+    "limits": "Sınırlar: aynı anda en çok {maxLive} demo · IP başına günde {perIp} talep · {ttl} saat ömür",
+    "col": {
+      "person": "Kişi",
+      "contact": "İletişim",
+      "kind": "Tür",
+      "status": "Durum",
+      "created": "Talep",
+      "expires": "Bitiş",
+      "actions": "İşlem"
+    },
+    "kind": {
+      "manager": "Yönetici",
+      "company": "Yönetim firması"
+    },
+    "status": {
+      "pending": "Onay bekliyor",
+      "provisioning": "Hazırlanıyor",
+      "ready": "Açık",
+      "failed": "Başarısız",
+      "purged": "Silindi",
+      "cancelled": "İptal"
+    },
+    "sites": "{count} site",
+    "login": "Giriş: {email}",
+    "purge": "Şimdi sil",
+    "purgeHint": "Bu demo ve bütün verisi kalıcı olarak silinir. Onaylamak için demo kodunu yazın: {code}",
+    "purgeCode": "Demo kodu",
+    "purgeSubmit": "Kalıcı olarak sil",
+    "purged": "Demo silindi.",
+    "codeMismatch": "Kod eşleşmedi; demo silinmedi.",
+    "provisioningBusy": "Demo şu an hazırlanıyor; birkaç saniye sonra tekrar deneyin.",
+    "empty": "Henüz demo talebi yok.",
+    "remaining": "{time} kaldı"
   }
 }

@@ -1,6 +1,12 @@
+import { BullModule } from "@nestjs/bullmq";
 import { Module } from "@nestjs/common";
 
+import { QUEUE_DEMO } from "@yonetim/jobs";
+
 import { PropertyModule } from "../property/property.module";
+import { DemoController, DemoPlatformController } from "./demo/demo.controller";
+import { DemoLifecycleService } from "./demo/demo-lifecycle.service";
+import { DemoService } from "./demo/demo.service";
 import { ImpersonationService } from "./impersonation.service";
 import { LifecycleController } from "./lifecycle.controller";
 import { LifecycleService } from "./lifecycle.service";
@@ -23,12 +29,14 @@ import { TenancyService } from "./tenancy.service";
  * güncellenmesini gerektirirdi. Ters yönde bağımlılık yok, döngü oluşmuyor.
  */
 @Module({
-  imports: [PropertyModule],
+  imports: [PropertyModule, BullModule.registerQueue({ name: QUEUE_DEMO })],
   controllers: [
     TenancyController,
     LifecycleController,
     PlatformController,
     PortfolioController,
+    DemoController,
+    DemoPlatformController,
   ],
   providers: [
     TenancyService,
@@ -39,6 +47,8 @@ import { TenancyService } from "./tenancy.service";
     PlatformAccountsService,
     PlatformBillingService,
     ImpersonationService,
+    DemoService,
+    DemoLifecycleService,
   ],
   exports: [TenancyService, LifecycleService],
 })

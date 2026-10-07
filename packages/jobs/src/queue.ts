@@ -67,3 +67,16 @@ export function scheduleEntries(): ScheduleEntry[] {
  * bir ödeme makbuzunun 15 dakika beklemesi demekti.
  */
 export const QUEUE_EVENTS = "events";
+
+/**
+ * Demo hesabı kuyruğu — onay bağlantısı tıklanınca demo siteyi üreten iş.
+ *
+ * Zamanlanmış kuyruktan AYRI: orada eşzamanlılık 1 ve aylık borç üretimi
+ * dakikalarca sürebiliyor; "hesabınız hazırlanıyor" ekranındaki kişinin o
+ * işi beklemesi kabul edilemez.
+ */
+export const QUEUE_DEMO = "demo";
+
+export interface DemoJobData {
+  requestId: string;
+}

@@ -122,6 +122,31 @@ export const serverEnv = {
     apiKey: optional("RESEND_API_KEY"),
     from: optional("RESEND_FROM"),
   }),
+  /**
+   * SMTP — tanımlıysa e-posta Resend yerine buradan gider (sunucudaki
+   * docker-mailserver). `SMTP_TLS_SERVERNAME`: iç ağdan `mailserver` adıyla
+   * bağlanırken sertifikadaki adın doğrulanması için.
+   */
+  smtp: () => ({
+    host: optional("SMTP_HOST"),
+    port: optionalNumber("SMTP_PORT") ?? 587,
+    secure: optional("SMTP_SECURE") === "true",
+    user: optional("SMTP_USER"),
+    password: optional("SMTP_PASSWORD"),
+    from: optional("SMTP_FROM"),
+    tlsServername: optional("SMTP_TLS_SERVERNAME"),
+  }),
+  /**
+   * Demo hesapları — demo kişilerinin e-posta alan adı ve sınırlar.
+   * Bu alan adına HİÇBİR e-posta gönderilmez (`sendEmail` reddeder).
+   */
+  demo: () => ({
+    emailDomain: optional("DEMO_EMAIL_DOMAIN") ?? "demo.tasci.cloud",
+    maxLive: optionalNumber("DEMO_MAX_LIVE") ?? 50,
+    perIpPerDay: optionalNumber("DEMO_PER_IP_PER_DAY") ?? 3,
+    ttlHours: optionalNumber("DEMO_TTL_HOURS") ?? 24,
+    enabled: optional("DEMO_ENABLED") !== "false",
+  }),
   paramBanking: () => ({
     clientId: optional("PARAM_CLIENT_ID"),
     clientSecret: optional("PARAM_CLIENT_SECRET"),

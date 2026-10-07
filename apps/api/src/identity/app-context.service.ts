@@ -48,6 +48,8 @@ export class AppContextService {
           name: tenants.name,
           status: tenants.status,
           trialEndsAt: tenants.trialEndsAt,
+          isDemo: tenants.isDemo,
+          demoExpiresAt: tenants.demoExpiresAt,
         })
         .from(tenants)
         .where(and(inArray(tenants.id, ids), isNull(tenants.deletedAt)));
@@ -101,6 +103,8 @@ export class AppContextService {
       tenantName: active.name,
       tenantStatus: active.status,
       tenantTrialEndsAt: active.status === "trial" ? active.trialEndsAt : null,
+      tenantIsDemo: active.isDemo,
+      tenantDemoExpiresAt: active.isDemo ? active.demoExpiresAt : null,
       roles: ctx.roles,
       locale: ctx.locale,
       impersonatedBy: ctx.impersonatedBy ?? null,

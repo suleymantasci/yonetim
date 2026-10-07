@@ -51,7 +51,7 @@ export default async function PortfolioPage() {
         title={t("title")}
         description={t("description", { count: totals.tenantCount })}
         action={
-          ctx.roles.some((r) => r === "manager" || r === "company_admin") ? (
+          !ctx.tenantIsDemo && ctx.roles.some((r) => r === "manager" || r === "company_admin") ? (
             <Link
               href="/panel/portfoy/yeni"
               className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-fg hover:bg-primary-hover"

@@ -7,3 +7,4 @@ export * from "./operations";
 export * from "./communication";
 export * from "./compliance";
 export * from "./saas";
+export * from "./demo";

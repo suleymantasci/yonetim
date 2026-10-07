@@ -66,6 +66,15 @@ export function normalizePhone(input: string): string | null {
   return `+90${d}`;
 }
 
+/**
+ * Demo kişilerinin telefon aralığı: +90 500 … (500 hiçbir operatöre tahsis
+ * edilmemiş). SMS/WhatsApp katmanı bu numaralara gönderim yapmaz.
+ */
+export function isDemoPhone(phone: string): boolean {
+  const digits = phone.replace(/[^\d]/g, "");
+  return /^(90)?0?500\d{7}$/.test(digits);
+}
+
 export function isMobilePhone(e164: string): boolean {
   return /^\+905[0-9]{9}$/.test(e164);
 }

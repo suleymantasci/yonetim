@@ -27,6 +27,7 @@ import {
   messages,
   pollVotes,
   polls,
+  tenants,
   units,
   users,
 } from "@yonetim/db";
@@ -465,6 +466,14 @@ export class CommunicationWriteService {
 
     if (dto.channel === "in_app") {
       return this.recordOutbound(dto, "in_app", true, null);
+    }
+
+    // Demo site dışarıya mesaj göndermez (gerçek numara girilmiş olsa bile).
+    const [site] = await this.db.tx((tx) =>
+      tx.select({ isDemo: tenants.isDemo }).from(tenants).where(eq(tenants.id, this.db.ctx().tenantId)).limit(1),
+    );
+    if (site?.isDemo) {
+      return this.recordOutbound(dto, "in_app", false, "demo_tenant");
     }
 
     const decision = route({
