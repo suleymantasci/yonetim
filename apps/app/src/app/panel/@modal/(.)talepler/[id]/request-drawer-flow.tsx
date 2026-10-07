@@ -34,14 +34,14 @@ export function RequestDrawerFlow({
 
   if (!canWrite) {
     return (
-      <div className="p-5 sm:p-6">
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-5 sm:p-6">
         <Alert tone="info">{t("readOnlyNotice")}</Alert>
       </div>
     );
   }
 
   return (
-    <div className="p-5 sm:p-6">
+    <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-5 sm:p-6">
       <RequestDetailPanel
         detail={detail}
         assignees={assignees}

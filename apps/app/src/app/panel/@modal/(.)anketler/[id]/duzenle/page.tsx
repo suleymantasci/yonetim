@@ -38,7 +38,7 @@ export default async function EditPollModal({
       size="xl"
     >
       {row.closedAt ? (
-        <div className="p-5 sm:p-6">
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-5 sm:p-6">
           <Alert tone="warning">{t("closedCannotEdit")}</Alert>
         </div>
       ) : (

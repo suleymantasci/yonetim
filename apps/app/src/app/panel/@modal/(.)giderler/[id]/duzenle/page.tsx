@@ -68,7 +68,7 @@ export default async function EditExpenseModal({
         kural, aynı gerekçe.
       */}
       {expense.distributedAt ? (
-        <div className="p-5 sm:p-6">
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-5 sm:p-6">
           <Alert tone="danger" title={t("alreadyDistributedEdit")}>
             {t("alreadyDistributedEditHint")}
           </Alert>

@@ -1,7 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
 import { Drawer } from "@yonetim/ui";
 
@@ -33,6 +41,30 @@ import { getLastPageScrollY } from "./scroll-memory";
 const RouteDrawerCloseContext = createContext<(() => void) | null>(null);
 
 /**
+ * Çekmecede bir kayıt yapıldığını kabuğa bildirmek için (`ActionForm`).
+ *
+ * SORUN: form başarıda önce `onSuccess` (çekmeceyi kapatan `router.back()`)
+ * sonra `router.refresh()` çağırıyor. `back()` geçmiş olayıyla (popstate)
+ * **eşzamansız** tamamlanıyor; tazeleme hâlâ çekmece adresinde çalışıyor,
+ * ardından geri gezinme listenin geçmişte saklı **eski** ağacını geri
+ * yüklüyor. Kullanıcı "yapıldı" işaretledikten sonra listede eski durumu
+ * görüyor, sayfayı elle yenilemek zorunda kalıyordu (bakım, rezervasyon
+ * kararı…).
+ *
+ * ÇÖZÜM: kayıt olduysa çekmece **söküldüğünde** — yani geri gezinme
+ * işlendikten sonra, adres artık liste iken — bir kez daha tazelenir.
+ * Kapanış yolu fark etmez (Vazgeç, ESC, tarayıcının geri tuşu). Kayıt
+ * olmadan kapatılan çekmece gereksiz sunucu turu üretmez.
+ */
+const RouteDrawerDirtyContext = createContext<(() => void) | null>(null);
+
+/** Çekmece dışında çağrılırsa hiçbir şey yapmaz. */
+export function useRouteDrawerMarkDirty(): () => void {
+  const mark = useContext(RouteDrawerDirtyContext);
+  return useCallback(() => mark?.(), [mark]);
+}
+
+/**
  * Kaydırma konumunu koruma.
  *
  * SORUN: Next, her gezinmede değişen segmentin ilk DOM düğümünü görünür
@@ -58,7 +90,8 @@ function restoreScrollSoon(target: number) {
     cancelled = true;
   };
   const events = ["wheel", "touchstart", "keydown", "mousedown"] as const;
-  for (const name of events) window.addEventListener(name, cancel, { once: true, passive: true });
+  for (const name of events)
+    window.addEventListener(name, cancel, { once: true, passive: true });
 
   const tick = () => {
     if (cancelled || performance.now() - start > GUARD_MS) {
@@ -113,6 +146,22 @@ export function RouteDrawer({
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(true);
+  const dirty = useRef(false);
+  const markDirty = useCallback(() => {
+    dirty.current = true;
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (!dirty.current) return;
+      dirty.current = false;
+      // Söküm, yeni ağacın commit'i sırasında oluyor; tazelemeyi bir sonraki
+      // görev sırasına bırakmak router durumunun liste adresine geçmiş
+      // olmasını garanti ediyor.
+      setTimeout(() => router.refresh(), 0);
+    },
+    [router],
+  );
 
   // Açılışta Next'in kaydırmasını geri al: konum, hiçbir diyalog açık değilken
   // izlenen son değer (aşağıdaki izleyici).
@@ -130,17 +179,19 @@ export function RouteDrawer({
 
   return (
     <RouteDrawerCloseContext.Provider value={close}>
-      <Drawer
-        open={open}
-        onClose={close}
-        title={title}
-        description={description}
-        size={size}
-        closeLabel={closeLabel}
-        padded={padded}
-      >
-        {children}
-      </Drawer>
+      <RouteDrawerDirtyContext.Provider value={markDirty}>
+        <Drawer
+          open={open}
+          onClose={close}
+          title={title}
+          description={description}
+          size={size}
+          closeLabel={closeLabel}
+          padded={padded}
+        >
+          {children}
+        </Drawer>
+      </RouteDrawerDirtyContext.Provider>
     </RouteDrawerCloseContext.Provider>
   );
 }

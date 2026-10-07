@@ -4,16 +4,28 @@ import Link from "@/components/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
-  createContext, useActionState, useContext, useEffect, useId, useRef,
+  createContext,
+  useActionState,
+  useContext,
+  useEffect,
+  useId,
+  useRef,
   type ReactNode,
 } from "react";
 import { useFormStatus } from "react-dom";
 
 import {
-  Alert, Field, ModalFormBar, Spinner, StickyFormBar, cn, useToast,
+  Alert,
+  Field,
+  ModalFormBar,
+  Spinner,
+  StickyFormBar,
+  cn,
+  useToast,
 } from "@yonetim/ui";
 
 import type { ActionState } from "@/lib/form";
+import { useRouteDrawerMarkDirty } from "@/components/route-drawer";
 
 /**
  * Server Action'a bağlı form kabuğu — GAP TD-01.
@@ -36,7 +48,10 @@ interface FormContextValue {
   pending: boolean;
 }
 
-const FormContext = createContext<FormContextValue>({ fieldErrors: {}, pending: false });
+const FormContext = createContext<FormContextValue>({
+  fieldErrors: {},
+  pending: false,
+});
 
 export type ServerAction<T = undefined> = (
   previous: ActionState<T>,
@@ -91,9 +106,12 @@ export function ActionForm<T = undefined>({
   layout?: "page" | "modal";
   onCancel?: () => void;
 }) {
-  const [state, formAction] = useActionState(action, { status: "idle" } as ActionState<T>);
+  const [state, formAction] = useActionState(action, {
+    status: "idle",
+  } as ActionState<T>);
   const router = useRouter();
   const toast = useToast();
+  const markDrawerDirty = useRouteDrawerMarkDirty();
   const t = useTranslations("common");
   const formRef = useRef<HTMLFormElement>(null);
   const summaryRef = useRef<HTMLDivElement>(null);
@@ -125,6 +143,7 @@ export function ActionForm<T = undefined>({
     handled.current = state;
 
     if (state.status === "ok") {
+      markDrawerDirty();
       if (!inlineSuccess && state.message) toast.success(state.message);
       if (resetOnSuccess) formRef.current?.reset();
       onSuccess?.(state);
@@ -136,7 +155,16 @@ export function ActionForm<T = undefined>({
     // Hata: özet kutusuna odak taşı; alan hataları zaten alanların altında.
     if (state.message && !state.fieldErrors) toast.error(state.message);
     summaryRef.current?.focus();
-  }, [state, inlineSuccess, onSuccess, resetOnSuccess, stayOnSuccess, router, toast]);
+  }, [
+    state,
+    inlineSuccess,
+    onSuccess,
+    resetOnSuccess,
+    stayOnSuccess,
+    router,
+    toast,
+    markDrawerDirty,
+  ]);
 
   const fieldErrors = state.fieldErrors ?? {};
   const formLevelErrors = fieldErrors._form ?? [];
@@ -193,7 +221,8 @@ export function ActionForm<T = undefined>({
 
   const body = (
     <>
-      {state.status === "error" && (state.message || formLevelErrors.length > 0) ? (
+      {state.status === "error" &&
+      (state.message || formLevelErrors.length > 0) ? (
         <div ref={summaryRef} tabIndex={-1} className="mb-4 outline-none">
           <Alert tone="danger" title={state.message ?? t("state.error")}>
             {formLevelErrors.length > 0 ? (
@@ -302,7 +331,11 @@ export function FormField({
     <div
       data-field={name}
       aria-describedby={errors ? errorId : undefined}
-      className={errors ? "[&_input]:border-danger [&_select]:border-danger [&_textarea]:border-danger" : undefined}
+      className={
+        errors
+          ? "[&_input]:border-danger [&_select]:border-danger [&_textarea]:border-danger"
+          : undefined
+      }
     >
       <Field label={label} hint={hint} required={required} error={errors?.[0]}>
         {children}

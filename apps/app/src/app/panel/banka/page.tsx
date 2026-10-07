@@ -317,7 +317,7 @@ export default async function BankPage() {
                           <Link
                             href={`/panel/banka/hesap/${a.id}/duzenle`}
                             aria-label={tCommon("action.edit")}
-                            className="rounded p-1 text-fg-subtle hover:bg-hover hover:text-fg"
+                            className="-my-1 inline-flex h-8 w-8 items-center justify-center rounded-md text-fg-subtle hover:bg-hover hover:text-fg [&_svg]:pointer-events-none"
                           >
                             <Pencil aria-hidden className="h-3.5 w-3.5" />
                           </Link>

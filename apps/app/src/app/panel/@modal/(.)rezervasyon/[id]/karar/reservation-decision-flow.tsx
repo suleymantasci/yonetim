@@ -21,7 +21,7 @@ export function ReservationDecisionFlow({
   const close = useRouteDrawerClose();
 
   return (
-    <div className="p-5 sm:p-6">
+    <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-5 sm:p-6">
       <ReservationDecisionForm
         reservationId={reservationId}
         currentStatus={currentStatus}

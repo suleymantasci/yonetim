@@ -79,7 +79,7 @@ export default async function DuesPlansPage() {
                   <Link
                     href={`/panel/aidat/${p.id}/duzenle`}
                     aria-label={tCommon("action.edit")}
-                    className="rounded p-1 text-fg-subtle hover:bg-hover hover:text-fg"
+                    className="-my-1 inline-flex h-8 w-8 items-center justify-center rounded-md text-fg-subtle hover:bg-hover hover:text-fg [&_svg]:pointer-events-none"
                   >
                     <Pencil aria-hidden className="h-3.5 w-3.5" />
                   </Link>
@@ -154,7 +154,12 @@ export default async function DuesPlansPage() {
                       <td className={tc.td}>{f.period(r.period)}</td>
                       <td className={tc.tdNum}>{r.generatedCount}</td>
                       <td className={tc.tdNum}>{f.money(r.totalMinor)}</td>
-                      <td className={tc.td}>{r.status}</td>
+                      <td className={tc.td}>
+                        {/* Ham kod ("completed") kullanıcıya gösterilmez. */}
+                        {tEnum.has(`jobStatus.${r.status}`)
+                          ? tEnum(`jobStatus.${r.status}` as "jobStatus.completed")
+                          : r.status}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

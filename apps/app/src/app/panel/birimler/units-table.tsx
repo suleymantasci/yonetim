@@ -170,7 +170,7 @@ export function UnitsTable({
             <Link
               href={`/panel/birimler/${row.id}/duzenle`}
               aria-label={t("action.edit")}
-              className="inline-flex rounded p-1.5 text-fg-subtle hover:bg-hover hover:text-fg"
+              className="-my-1 inline-flex h-8 w-8 items-center justify-center rounded-md text-fg-subtle hover:bg-hover hover:text-fg [&_svg]:pointer-events-none"
             >
               <Pencil aria-hidden className="h-3.5 w-3.5" />
             </Link>

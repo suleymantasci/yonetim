@@ -85,9 +85,9 @@ export function EditMaintenanceFlow({
           onSaved={close}
         />
       ) : mode === "history" ? (
-        <div className="overflow-y-auto p-5 sm:p-6">{history}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-5 sm:p-6">{history}</div>
       ) : (
-        <div className="p-5 sm:p-6">
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-5 sm:p-6">
           <CompleteMaintenanceForm
             recordId={defaults.id}
             intervalDays={intervalDays}
