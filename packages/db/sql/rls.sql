@@ -393,3 +393,19 @@ CREATE INDEX IF NOT EXISTS idx_units_number_trgm
 
 CREATE INDEX IF NOT EXISTS idx_users_name_trgm
   ON public.users USING gin ((coalesce(first_name, '') || ' ' || coalesce(last_name, '')) gin_trgm_ops);
+
+-- -----------------------------------------------------------------------------
+-- Demo hesabı silme fonksiyonu (0019): yalnız yonetim_admin çalıştırabilir.
+-- Yetki burada veriliyor, migration'da değil: sıfırdan kurulumda roller bu
+-- dosyada (migration'lardan SONRA) oluşuyor; migration içindeki GRANT o anda
+-- rol olmadığı için atlanıyor ve silme işi "permission denied" ile kalıyordu.
+-- -----------------------------------------------------------------------------
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_proc WHERE proname = 'app_purge_demo_tenant') THEN
+    REVOKE ALL ON FUNCTION app_purge_demo_tenant(uuid) FROM PUBLIC;
+    REVOKE ALL ON FUNCTION app_purge_demo_tenant(uuid) FROM yonetim_app;
+    GRANT EXECUTE ON FUNCTION app_purge_demo_tenant(uuid) TO yonetim_admin;
+  END IF;
+END
+$$;
