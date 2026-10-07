@@ -28,6 +28,7 @@
       "@yonetim/auth/cookie": ["./packages/auth/src/cookie.ts"],
       "@yonetim/auth/rate-limit": ["./packages/auth/src/rate-limit.ts"],
       "@yonetim/dues": ["./packages/dues/src/index.ts"],
+      "@yonetim/demo-seed": ["./packages/demo-seed/src/index.ts"],
       "@yonetim/pricing": ["./packages/pricing/src/index.ts"],
       "@yonetim/campaigns": ["./packages/campaigns/src/index.ts"],
       "@yonetim/kvkk": ["./packages/kvkk/src/index.ts"],
