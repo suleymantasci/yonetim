@@ -52,16 +52,16 @@
   --motion-ease-spring: cubic-bezier(0.34, 1.28, 0.64, 1);
 
   /* Yüzeyler */
-  --t-canvas: #f4eee5;
-  --t-surface: #fffaf4;
-  --t-surface-raised: #fffaf4;
-  --t-surface-sunken: #f4eee5;
+  --t-canvas: #f1f2f2;
+  --t-surface: #fafaf9;
+  --t-surface-raised: #fdfdfc;
+  --t-surface-sunken: #e9ebeb;
   --t-overlay: rgb(15 23 42 / 0.45);
 
   /* Metin */
-  --t-fg: #302932;
-  --t-fg-muted: #60565e;
-  --t-fg-subtle: #70666c;
+  --t-fg: #292d30;
+  --t-fg-muted: #5c6468;
+  --t-fg-subtle: #687176;
   --t-fg-inverted: #f4eee5;
 
   /* Kenarlık ve odak
@@ -70,19 +70,19 @@
      karşı ≥ 3:1 olmak zorunda (eski #cbd5e1 yalnız 1.48:1 idi).
      Odak halkası da aynı eşiğe tabi: turkuaz beyaz üstünde 2.43:1 kalıyordu,
      eylem mavisine alındı. Dekoratif ayraçlar `--t-border` ile çizilir. */
-  --t-border: #ded3c8;
-  --t-border-strong: #918079;
+  --t-border: #dde0df;
+  --t-border-strong: #828987;
   --t-ring: var(--brand-primary);
 
   /* Etkileşim durumları */
-  --t-hover: #f4eee5;
-  --t-selected: color-mix(in oklab, var(--brand-primary) 10%, #fffaf4);
+  --t-hover: #e5e8e7;
+  --t-selected: color-mix(in oklab, var(--brand-primary) 7%, #fafaf9);
 
   /* Marka yüzeyleri */
   --t-primary: var(--brand-primary);
   --t-primary-hover: color-mix(in oklab, var(--brand-primary) 85%, #000000);
   --t-primary-fg: #fffaf4;
-  --t-primary-soft: color-mix(in oklab, var(--brand-primary) 10%, #fffaf4);
+  --t-primary-soft: color-mix(in oklab, var(--brand-primary) 7%, #fafaf9);
   --t-primary-soft-fg: color-mix(in oklab, var(--brand-primary) 80%, #000000);
 
   /* Kimlik yüzeyi: koyu bantlar, footer, logo işareti, hero zemini.
