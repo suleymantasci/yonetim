@@ -68,7 +68,7 @@ export default async function FrontdeskPage() {
                 <ActionDrawerButton
                   action={receiveParcel}
                   hidden={{}}
-                  icon={PackagePlus}
+                  icon={<PackagePlus />}
                   label={t("receiveParcel")}
                   title={t("receiveParcel")}
                   description={t("receiveParcelHint")}
@@ -118,7 +118,7 @@ export default async function FrontdeskPage() {
                       <ActionDrawerButton
                         action={deliverParcel}
                         hidden={{ id: p.id }}
-                        icon={PackageCheck}
+                        icon={<PackageCheck />}
                         label={t("deliver")}
                         title={t("deliver")}
                         description={`${p.recipientName}${p.unitLabel ? ` · ${p.unitLabel}` : ""}`}
@@ -147,7 +147,7 @@ export default async function FrontdeskPage() {
                 <ActionDrawerButton
                   action={registerVisitor}
                   hidden={{}}
-                  icon={UserPlus}
+                  icon={<UserPlus />}
                   label={t("registerVisitor")}
                   title={t("registerVisitor")}
                   description={t("registerVisitorHint")}
@@ -200,7 +200,7 @@ export default async function FrontdeskPage() {
                       <ActionDrawerButton
                         action={checkoutVisitor}
                         hidden={{ id: v.id }}
-                        icon={LogOut}
+                        icon={<LogOut />}
                         label={t("checkout")}
                         title={t("checkout")}
                         description={v.visitorName}

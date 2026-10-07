@@ -51,7 +51,7 @@ export default async function VendorDetailPage({
                 <ActionDrawerButton
                   action={saveVendor}
                   hidden={{ id: v.id }}
-                  icon={Pencil}
+                  icon={<Pencil />}
                   label={tCommon("action.edit")}
                   title={t("editVendor")}
                   submitLabel={tCommon("action.save")}
@@ -61,7 +61,7 @@ export default async function VendorDetailPage({
                 <ActionDrawerButton
                   action={linkVendorExpenses}
                   hidden={{ id: v.id }}
-                  icon={Link2}
+                  icon={<Link2 />}
                   label={t("linkExpenses")}
                   title={t("linkExpenses")}
                   description={t("linkExpensesHint", { name: v.name })}
@@ -70,7 +70,7 @@ export default async function VendorDetailPage({
                 <ActionDrawerButton
                   action={removeVendor}
                   hidden={{ id: v.id }}
-                  icon={Trash2}
+                  icon={<Trash2 />}
                   tone="danger"
                   label={tCommon("action.delete")}
                   title={t("deleteTitle")}

@@ -106,7 +106,7 @@ export default async function MeetingDetailPage({
           <ActionDrawerButton
             action={changeMeetingStatus}
             hidden={{ id: m.id, status: "held" }}
-            icon={CheckCircle2}
+            icon={<CheckCircle2 />}
             label={t("markHeld")}
             title={t("markHeld")}
             description={t("markHeldHint")}
@@ -119,7 +119,7 @@ export default async function MeetingDetailPage({
           <ActionDrawerButton
             action={changeMeetingStatus}
             hidden={{ id: m.id, status: "postponed" }}
-            icon={CalendarClock}
+            icon={<CalendarClock />}
             label={t("postpone")}
             title={t("postpone")}
             description={t("postponeHint")}
@@ -136,7 +136,7 @@ export default async function MeetingDetailPage({
           <ActionDrawerButton
             action={changeMeetingStatus}
             hidden={{ id: m.id, status: "cancelled" }}
-            icon={XCircle}
+            icon={<XCircle />}
             tone="danger"
             label={t("cancelMeeting")}
             title={t("cancelMeeting")}
@@ -160,7 +160,7 @@ export default async function MeetingDetailPage({
               <ActionDrawerButton
                 action={recordMeetingNotice}
                 hidden={{ id: m.id }}
-                icon={Megaphone}
+                icon={<Megaphone />}
                 label={m.noticeSentAt ? t("noticeUpdate") : t("noticeRecord")}
                 title={t("noticeRecord")}
                 description={t("noticeHint", { days: MEETING_NOTICE_MIN_DAYS })}
@@ -239,7 +239,7 @@ export default async function MeetingDetailPage({
                 <ActionDrawerButton
                   action={addMeetingAttendance}
                   hidden={{ id: m.id }}
-                  icon={UserPlus}
+                  icon={<UserPlus />}
                   label={t("attendanceAdd")}
                   title={t("attendanceAdd")}
                   description={t("attendanceAddHint")}
@@ -320,7 +320,7 @@ export default async function MeetingDetailPage({
                           <ActionDrawerButton
                             action={removeMeetingAttendance}
                             hidden={{ id: m.id, attendanceId: a.id }}
-                            icon={Trash2}
+                            icon={<Trash2 />}
                             tone="danger"
                             label={tCommon("action.delete")}
                             title={t("attendanceRemove")}

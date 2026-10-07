@@ -186,7 +186,7 @@ export default async function MetersPage() {
               <ActionDrawerButton
                 action={billMeterPeriod}
                 hidden={{}}
-                icon={ReceiptText}
+                icon={<ReceiptText />}
                 label={t("billAction")}
                 title={t("billTitle")}
                 description={t("billDescription")}
@@ -291,7 +291,7 @@ export default async function MetersPage() {
                               <ActionDrawerButton
                                 action={correctMeterReading}
                                 hidden={{ id: r.id }}
-                                icon={Pencil}
+                                icon={<Pencil />}
                                 label={t("correctAction")}
                                 title={t("correctTitle")}
                                 description={`${f.period(r.period)} · ${r.unitNumber ?? t("commonAreaShort")} · ${t("previous")}: ${r.previousValue}`}
@@ -313,7 +313,7 @@ export default async function MetersPage() {
                               <ActionDrawerButton
                                 action={removeMeterReading}
                                 hidden={{ id: r.id }}
-                                icon={Trash2}
+                                icon={<Trash2 />}
                                 tone="danger"
                                 label={tCommon("action.delete")}
                                 title={t("deleteTitle")}

@@ -40,8 +40,8 @@ export default async function AccountingPage({
       : `${prev.getFullYear()}-${String(prev.getMonth() + 1).padStart(2, "0")}`;
 
   const [mizan, baBs] = await Promise.all([
-    apiGet(`/v1/panel/reports/accounting/mizan${toQuery({ from, to })}`, mizanResponse),
-    apiGet(`/v1/panel/reports/accounting/ba-bs${toQuery({ period })}`, baBsResponse),
+    apiGet(`/v1/panel/reports/accounting/mizan?${toQuery({ from, to })}`, mizanResponse),
+    apiGet(`/v1/panel/reports/accounting/ba-bs?${toQuery({ period })}`, baBsResponse),
   ]);
   const balanced = mizan.totals.debitMinor === mizan.totals.creditMinor;
 

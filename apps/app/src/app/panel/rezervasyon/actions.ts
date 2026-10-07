@@ -189,7 +189,9 @@ export async function createReservation(
         result.status === "pending"
           ? t("createdPending")
           : t("createdApproved"),
-        { data: { id: result.id } },
+        // Tam sayfa formda listeye dön (çekmece `stayOnSuccess` ile kalıyor):
+        // önceden form dolu kalıyor, ikinci tıklama "kayıt çakışması" veriyordu.
+        { data: { id: result.id }, redirectTo: "/panel/rezervasyon" },
       );
     },
   );

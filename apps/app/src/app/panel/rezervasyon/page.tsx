@@ -194,7 +194,7 @@ export default async function ReservationsPage() {
                       <ActionDrawerButton
                         action={cancelOwnReservation}
                         hidden={{ id: r.id }}
-                        icon={Ban}
+                        icon={<Ban />}
                         tone="danger"
                         label={t("cancelOwn")}
                         title={t("cancelOwnTitle")}

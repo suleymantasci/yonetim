@@ -100,7 +100,7 @@ export default async function DebtCertificatePage() {
                         <ActionDrawerButton
                           action={voidCertificate}
                           hidden={{ id: c.id }}
-                          icon={Ban}
+                          icon={<Ban />}
                           tone="danger"
                           label={t("voidAction")}
                           title={t("voidTitle")}

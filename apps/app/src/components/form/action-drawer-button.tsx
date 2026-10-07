@@ -1,6 +1,5 @@
 "use client";
 
-import type { LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState, type ReactNode } from "react";
 
@@ -19,7 +18,7 @@ import { ActionForm, type ServerAction } from "@/components/form/action-form";
 export function ActionDrawerButton<T = undefined>({
   action,
   hidden,
-  icon: Icon,
+  icon,
   label,
   title,
   description,
@@ -31,7 +30,12 @@ export function ActionDrawerButton<T = undefined>({
   action: ServerAction<T>;
   /** Gizli alanlar (ör. `{ id }`). */
   hidden: Record<string, string>;
-  icon?: LucideIcon;
+  /**
+   * Render edilmiş ikon (`<Plus aria-hidden />`), bileşenin kendisi değil:
+   * sunucu bileşeninden istemci bileşenine fonksiyon geçirilemiyor ve sayfa
+   * "Functions cannot be passed directly to Client Components" ile çöküyordu.
+   */
+  icon?: ReactNode;
   label: string;
   title: string;
   description?: string;
@@ -56,7 +60,11 @@ export function ActionDrawerButton<T = undefined>({
               : "inline-flex h-8 items-center gap-1 rounded-lg border border-border-strong px-2.5 text-xs font-semibold text-fg hover:bg-hover"
         }
       >
-        {Icon ? <Icon aria-hidden className="h-3.5 w-3.5" /> : null}
+        {icon ? (
+          <span aria-hidden className="inline-flex [&>svg]:h-3.5 [&>svg]:w-3.5">
+            {icon}
+          </span>
+        ) : null}
         {label}
       </button>
 

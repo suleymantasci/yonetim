@@ -32,7 +32,7 @@ export default async function VendorsPage() {
     <ActionDrawerButton
       action={saveVendor}
       hidden={{}}
-      icon={Plus}
+      icon={<Plus />}
       tone="primary"
       label={t("newVendor")}
       title={t("newVendor")}
