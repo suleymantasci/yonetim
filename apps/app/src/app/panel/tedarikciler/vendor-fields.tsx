@@ -16,7 +16,7 @@ export async function VendorFields({ defaults }: { defaults?: VendorRow }) {
       <FormField name="category" label={t("category")} hint={t("categoryHint")} required>
         <Input name="category" defaultValue={defaults?.category} maxLength={60} required />
       </FormField>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <FormField name="taxNumber" label={t("taxNumber")} hint={t("taxNumberHint")}>
           <Input name="taxNumber" inputMode="numeric" defaultValue={defaults?.taxNumber ?? ""} maxLength={11} />
         </FormField>

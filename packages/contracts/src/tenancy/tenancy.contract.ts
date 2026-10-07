@@ -168,7 +168,10 @@ export const staffRow = z.object({
   endedAt: dateTime.nullable(),
   annualLeaveDays: z.number().int(),
   usedLeaveDays: z.number().int(),
+  /** Cariden hesaplanır: mahsup edilmemiş avans. */
   advanceBalanceMinor: moneyMinor,
+  /** Cariden hesaplanır: ödenmemiş maaş. */
+  payableMinor: moneyMinor,
   isActive: z.boolean(),
   /** Kimlik/IBAN kayıtlı mı — değerin kendisi değil, varlığı. */
   hasTckn: z.boolean(),
@@ -289,7 +292,8 @@ export const staffSave = z
     /** 4857 md.53: 1–5 yıl 14 gün, 5–15 yıl 20, 15+ yıl 26 (asgari). */
     annualLeaveDays: z.coerce.number().int().min(0).max(365).default(14),
     usedLeaveDays: z.coerce.number().int().min(0).max(365).default(0),
-    advanceBalanceMinor: z.coerce.number().int().min(0).default(0),
+    /** Artık kullanılmıyor: avans bakiyesi personel carisinden hesaplanır. */
+    advanceBalanceMinor: z.coerce.number().int().min(0).optional(),
   })
   .refine((d) => !d.endedAt || d.endedAt >= d.startedAt, {
     message: "Ayrılış tarihi işe giriş tarihinden önce olamaz.",
@@ -942,3 +946,77 @@ export const platformPlanList = z.object({
 
 export type PlatformPlanList = z.infer<typeof platformPlanList>;
 
+
+/* ------------------------------------------------------------------ *
+ * Personel carisi — `/v1/panel/staff/:id/ledger`
+ * ------------------------------------------------------------------ */
+
+/**
+ * Cari kalemleri. Ödeme ve avans **gider** olarak kaydediliyor (kasa/banka
+ * dökümü ve dağıtım çalışsın); tahakkuk, mahsup ve açılış personel defterinde.
+ */
+export const STAFF_LEDGER_KINDS = ["accrual", "advance_deduction"] as const;
+
+export const staffLedgerAdd = z.object({
+  kind: z.enum(STAFF_LEDGER_KINDS),
+  entryDate: dateTime,
+  amountMinor: z.coerce.number().int().positive(),
+  /** Tahakkukta dönem ("2026-10"); aynı döneme ikinci tahakkuk uyarı değil hata. */
+  period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).nullish(),
+  description: z.string().trim().max(500).nullish(),
+});
+export type StaffLedgerAdd = z.infer<typeof staffLedgerAdd>;
+
+export const staffLedgerVoid = z.object({
+  reason: z.string().trim().min(10).max(500),
+});
+
+/** Maaş ödemesi ya da avans — gider olarak yazılır, kasa/bankadan çıkar. */
+export const staffPayment = z.object({
+  kind: z.enum(["salary", "advance"]),
+  amountMinor: z.coerce.number().int().positive(),
+  paidAt: dateTime,
+  /** Boşsa nakit kasa. */
+  bankAccountId: uuid.nullish(),
+  description: z.string().trim().max(240).nullish(),
+});
+export type StaffPayment = z.infer<typeof staffPayment>;
+
+/** Aktif personel için dönem maaş tahakkuku (net ücret üzerinden). */
+export const staffPayrollAccrue = z.object({
+  period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+  entryDate: dateTime,
+});
+
+export const staffLedgerLine = z.object({
+  date: dateTime,
+  kind: z.enum(["opening_payable", "opening_advance", "accrual", "advance_deduction", "salary", "advance"]),
+  description: z.string(),
+  /** Defter satırı (iptal edilebilir) ya da gider (giderden silinir). */
+  entryId: uuid.nullable(),
+  expenseId: uuid.nullable(),
+  /** Maaş borcuna etkisi (+ artırır, − azaltır). */
+  payableDeltaMinor: moneyMinor,
+  /** Avans bakiyesine etkisi. */
+  advanceDeltaMinor: moneyMinor,
+  payableMinor: moneyMinor,
+  advanceMinor: moneyMinor,
+  voided: z.boolean(),
+  voidReason: z.string().nullable(),
+});
+
+export const staffLedgerResponse = z.object({
+  staff: z.object({
+    id: uuid,
+    fullName: z.string(),
+    role: z.string(),
+    netSalaryMinor: moneyMinor,
+    isActive: z.boolean(),
+  }),
+  /** Siteye göre: personele ödenmemiş maaş. */
+  payableMinor: moneyMinor,
+  /** Personelin siteye borcu (mahsup edilmemiş avans). */
+  advanceMinor: moneyMinor,
+  lines: z.array(staffLedgerLine),
+});
+export type StaffLedgerResponse = z.infer<typeof staffLedgerResponse>;

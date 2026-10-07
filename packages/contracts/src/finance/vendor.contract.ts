@@ -73,8 +73,9 @@ export type VendorListResponse = z.infer<typeof vendorListResponse>;
 
 export const vendorLedgerLine = z.object({
   date: dateTime,
-  expenseId: uuid,
-  kind: z.enum(["invoice", "payment"]),
+  /** Açılış satırında `null`. */
+  expenseId: uuid.nullable(),
+  kind: z.enum(["opening", "invoice", "payment"]),
   description: z.string(),
   invoiceNo: z.string().nullable(),
   /** Tahakkuk (tedarikçi alacağı). */

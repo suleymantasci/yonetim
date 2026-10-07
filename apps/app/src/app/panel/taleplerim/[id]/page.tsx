@@ -56,7 +56,7 @@ export default async function MyRequestDetailPage({
         }
       />
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <Card>
             <CardHeader title={t("conversation")} description={t("conversationHint")} />

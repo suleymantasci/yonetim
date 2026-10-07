@@ -112,11 +112,15 @@ export default async function VendorDetailPage({
                       <tr key={`${line.expenseId}-${line.kind}-${index}`} className={tc.tr}>
                         <td className={tc.tdMuted}>{f.date(line.date)}</td>
                         <td className={tc.td}>
-                          <Link href={`/panel/giderler/${line.expenseId}`} className="hover:underline">
-                            {line.description}
-                          </Link>
+                          {line.expenseId ? (
+                            <Link href={`/panel/giderler/${line.expenseId}`} className="hover:underline">
+                              {line.description}
+                            </Link>
+                          ) : (
+                            line.description
+                          )}
                           <div className="text-xs text-fg-subtle">
-                            <Badge tone={line.kind === "invoice" ? "neutral" : "success"}>
+                            <Badge tone={line.kind === "payment" ? "success" : "neutral"}>
                               {t(`kind_${line.kind}`)}
                             </Badge>
                             {line.invoiceNo ? ` ${t("invoiceNoShort")} ${line.invoiceNo}` : ""}

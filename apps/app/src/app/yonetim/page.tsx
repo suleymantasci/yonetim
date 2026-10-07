@@ -77,7 +77,7 @@ export default async function AdminPage() {
         </Alert>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader title={t("recentTenants")} description={t("recentTenantsDescription")} />
           <CardBody className="p-0">

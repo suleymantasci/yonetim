@@ -16,6 +16,7 @@ import { PortalPaymentController } from "./portal-payment/portal-payment.control
 import { PropertyModule } from "../property/property.module";
 import { AccountingController } from "./accounting/accounting.controller";
 import { AccountingService } from "./accounting/accounting.service";
+import { OpeningService } from "./accounting/opening.service";
 import { VendorController } from "./vendor/vendor.controller";
 import { VendorService } from "./vendor/vendor.service";
 
@@ -52,6 +53,7 @@ import { VendorService } from "./vendor/vendor.service";
     CertificateService,
     VendorService,
     AccountingService,
+    OpeningService,
   ],
   exports: [DebtService, DebtRepository, ExpenseService, DuesPlanService, VendorService],
 })

@@ -167,7 +167,7 @@ export default async function MeetingDetailPage({
                 submitLabel={tCommon("action.save")}
               >
                 <FormField name="noticeSentAt" label={t("noticeSentAt")} required>
-                  <DateInput name="noticeSentAt" required />
+                  <DateInput name="noticeSentAt" defaultValue={new Date().toISOString().slice(0, 10)} required />
                 </FormField>
                 <FormField name="method" label={t("noticeMethodLabel")} required>
                   <Select name="method" defaultValue="hand" required>

@@ -153,7 +153,7 @@ export default async function ResidentsPage({
         <Alert tone="info">{t("privacyNotice")}</Alert>
       </div>
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Stat label={t("statPeople")} value={String(data.totals.activeCount)} />
         <Stat label={t("statOwners")} value={String(data.totals.ownerCount)} />
         <Stat

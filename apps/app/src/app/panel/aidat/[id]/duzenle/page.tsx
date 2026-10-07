@@ -55,7 +55,7 @@ export default async function EditDuesPlanPage({
           { label: tCommon("action.edit") },
         ]}
       />
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
         <CardBody>
           <DuesPlanForm

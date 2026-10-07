@@ -203,7 +203,7 @@ export default async function UnitsPage({
         </div>
       ) : null}
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Stat label={t("statUnits")} value={String(data.totals.unitTotal)} />
         <Stat
           label={t("statBlocks")}

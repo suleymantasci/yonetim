@@ -68,6 +68,8 @@ export default async function BankPage() {
     return row.accountName;
   };
 
+  const hasOpening = cashbox.rows.some((row) => row.openingMinor !== 0);
+
   return (
     <>
       <PageHeader
@@ -107,7 +109,7 @@ export default async function BankPage() {
         />
       </div>
 
-      <div className="mt-4 grid gap-4 sm:grid-cols-3">
+      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Stat label={t("accounts")} value={String(accounts.length)} />
         <Stat
           label={t("unmatched")}
@@ -146,6 +148,7 @@ export default async function BankPage() {
         anlamda bakiye göstermek, tam da şikâyet edilen karışıklığı üretiyordu.
         Paranın hareketi burada, hesabın tanımı aşağıdaki kartta.
       */}
+      {/* Açılış fişi girildiyse "Açılış" sütunu çıkıyor; yoksa tablo eski hâlinde. */}
       <Card className="mt-4">
         <CardHeader title={t("cashboxTitle")} description={t("cashboxHint")} />
         <CardBody className="p-0">
@@ -156,6 +159,11 @@ export default async function BankPage() {
                   <th scope="col" className={tc.th}>
                     {t("cashboxSource")}
                   </th>
+                  {hasOpening ? (
+                    <th scope="col" className={`${tc.th} text-right`}>
+                      {t("cashboxOpening")}
+                    </th>
+                  ) : null}
                   <th scope="col" className={`${tc.th} text-right`}>
                     {t("cashboxIncoming")}
                   </th>
@@ -192,6 +200,9 @@ export default async function BankPage() {
                         </div>
                       ) : null}
                     </td>
+                    {hasOpening ? (
+                      <td className={tc.tdNum}>{f.money(row.openingMinor)}</td>
+                    ) : null}
                     <td className={`${tc.tdNum} text-success-fg`}>
                       {f.money(row.incomingMinor)}
                     </td>
@@ -216,6 +227,11 @@ export default async function BankPage() {
                   <th scope="row" className={`${tc.td} text-left font-semibold`}>
                     {t("cashboxTotal")}
                   </th>
+                  {hasOpening ? (
+                    <td className={`${tc.tdNum} font-semibold`}>
+                      {f.money(cashbox.totals.openingMinor)}
+                    </td>
+                  ) : null}
                   <td className={`${tc.tdNum} font-semibold text-success-fg`}>
                     {f.money(cashbox.totals.incomingMinor)}
                   </td>

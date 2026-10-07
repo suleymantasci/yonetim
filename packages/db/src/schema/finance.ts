@@ -280,6 +280,13 @@ export const expenses = pgTable(
     categoryId: uuid("category_id").references(() => expenseCategories.id, { onDelete: "set null" }),
     vendorId: uuid("vendor_id"),
     vendorName: varchar("vendor_name", { length: 160 }),
+    /**
+     * Personel ödemesi: maaş (`salary`) ya da avans (`advance`). Ödeme gider
+     * olarak kalıyor (kasa dökümü ve dairelere dağıtım aynen çalışsın);
+     * personel carisi bu bağdan okunuyor. FK SQL'de (staff → operations).
+     */
+    staffId: uuid("staff_id"),
+    staffKind: varchar("staff_kind", { length: 20 }),
     description: varchar("description", { length: 240 }).notNull(),
     amountKurus: money("amount_kurus").notNull(),
     vatRate: numeric("vat_rate", { precision: 4, scale: 2 }).notNull().default("0.20"),
@@ -401,4 +408,31 @@ export const reconciliationIssues = pgTable(
   (t) => [
     index("idx_recon_tenant_open").on(t.tenantId, t.resolvedAt),
   ],
+);
+
+/**
+ * Açılış fişi — sisteme geçişten önceki kasa, banka ve tedarikçi bakiyeleri.
+ *
+ * Sakin devir borçları gerçek borç olarak (`debts.metadata.opening`), personel
+ * açılışı personel defterinde tutuluyor: ikisi de tahsil/ödeme akışına giren
+ * kalemler. Buradaki satırlar yalnız muhasebe açılışı; hepsi aynı
+ * `as_of_date`'i taşıyor (servis zorunlu kılıyor).
+ *
+ * `account`: `cash` (kasa, tek satır) · `bank` (`bank_account_id`) ·
+ * `vendor` (`vendor_id`, tedarikçiye borç).
+ */
+export const openingEntries = pgTable(
+  "opening_entries",
+  {
+    id: idCol(),
+    tenantId: tenantId().references(() => tenants.id, { onDelete: "cascade" }),
+    asOfDate: timestamp("as_of_date", { withTimezone: true }).notNull(),
+    account: varchar("account", { length: 20 }).notNull(),
+    bankAccountId: uuid("bank_account_id").references(() => bankAccounts.id, { onDelete: "cascade" }),
+    vendorId: uuid("vendor_id"),
+    amountKurus: money("amount_kurus").notNull().default(0),
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+    ...timestamps,
+  },
+  (t) => [index("idx_opening_entries_tenant").on(t.tenantId)],
 );

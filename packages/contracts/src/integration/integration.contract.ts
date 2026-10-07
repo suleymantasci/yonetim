@@ -85,6 +85,8 @@ export const cashboxRow = z.object({
   accountName: z.string().nullable(),
   ibanMasked: z.string().nullable(),
   isActive: z.boolean(),
+  /** Açılış fişindeki bakiye (sisteme geçiş öncesi). */
+  openingMinor: moneyMinor.default(0),
   incomingMinor: moneyMinor,
   outgoingMinor: moneyMinor,
   balanceMinor: moneyMinor,
@@ -102,6 +104,7 @@ export const bankOverviewResponse = z.object({
   cashbox: z.object({
     rows: z.array(cashboxRow),
     totals: z.object({
+      openingMinor: moneyMinor.default(0),
       incomingMinor: moneyMinor,
       outgoingMinor: moneyMinor,
       balanceMinor: moneyMinor,

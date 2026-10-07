@@ -9,6 +9,7 @@ import { PlatformBillingService } from "./platform-billing.service";
 import { PlatformController } from "./platform.controller";
 import { PortfolioController } from "./portfolio.controller";
 import { SettingsWriteService } from "./settings-write.service";
+import { StaffLedgerService } from "./staff-ledger.service";
 import { StaffWriteService } from "./staff-write.service";
 import { TenancyController } from "./tenancy.controller";
 import { TenancyService } from "./tenancy.service";
@@ -32,6 +33,7 @@ import { TenancyService } from "./tenancy.service";
   providers: [
     TenancyService,
     StaffWriteService,
+    StaffLedgerService,
     SettingsWriteService,
     LifecycleService,
     PlatformAccountsService,

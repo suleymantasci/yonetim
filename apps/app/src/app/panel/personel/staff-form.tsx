@@ -283,16 +283,8 @@ export function StaffForm({
           />
         </FormField>
 
-        <FormField
-          name="advanceBalanceKurus"
-          label={t("advanceBalance")}
-          hint={t("advanceBalanceHint")}
-        >
-          <MoneyInput
-            name="advanceBalanceKurus"
-            defaultKurus={defaults?.advanceBalanceKurus ?? 0}
-          />
-        </FormField>
+        {/* Avans bakiyesi artık elle yazılmıyor: personel carisinden
+            (avans ödemeleri − mahsuplar) hesaplanıyor. */}
 
         {employerCost > 0 ? (
           <div className="sm:col-span-2 rounded-lg bg-surface-sunken p-3">

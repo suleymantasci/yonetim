@@ -174,7 +174,7 @@ export default async function ExpenseDetailPage({
         }
       />
 
-      <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Stat label={t("amountGross")} value={fmt.money(expense.amountMinor)} />
         <Stat label={t("amountNet")} value={fmt.money(netKurus)} />
         <Stat label={t("vatAmount")} value={fmt.money(expense.vatMinor)} />
@@ -191,7 +191,7 @@ export default async function ExpenseDetailPage({
         </div>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader title={t("detailsTitle")} />
           <CardBody>

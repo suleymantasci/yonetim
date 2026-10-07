@@ -68,7 +68,7 @@ export function DashboardSkeleton() {
 
       <SkeletonStats />
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-3">
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
         {Array.from({ length: 3 }, (_, index) => (
           <div key={index} className="rounded-xl border border-border bg-surface p-4 shadow-sm">
             <Skeleton className="h-4 w-32" />
@@ -79,7 +79,7 @@ export function DashboardSkeleton() {
         ))}
       </div>
 
-      <div className="mt-5 grid gap-4 xl:grid-cols-2">
+      <div className="mt-5 grid grid-cols-1 gap-4 xl:grid-cols-2">
         {[260, 220, 220, 220].map((height, index) => (
           <div
             key={index}

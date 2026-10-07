@@ -68,7 +68,7 @@ export default async function InventoryPage() {
     <>
       <PageHeader title={t("title")} description={t("description")} />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Stat
           label={t("statItems")}
           value={String(data.totals.items)}

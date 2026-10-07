@@ -82,7 +82,7 @@ export function AssignPackageForm({
 
   return (
     <ActionForm action={assignSubscription} submitLabel={t("assignSubmit")} resetOnSuccess={false}>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {sites.length > 1 ? (
           <FormField name="tenantId" label={t("field.site")} required>
             <Select name="tenantId" value={tenantId} onChange={(e) => setTenantId(e.target.value)} required>

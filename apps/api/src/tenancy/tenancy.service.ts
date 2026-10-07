@@ -12,6 +12,7 @@ import { calculateSeverance, maskPhone } from "@yonetim/core";
 import { staff, staffAttendance, tenants } from "@yonetim/db";
 
 import { DbService } from "../infra/db/db.service";
+import { StaffLedgerService } from "./staff-ledger.service";
 
 /**
  * `tenancy` bağlamı — site ayarları ve personel (MIMARI-PLAN §6.3, §8.5).
@@ -25,7 +26,10 @@ import { DbService } from "../infra/db/db.service";
  */
 @Injectable()
 export class TenancyService {
-  constructor(private readonly db: DbService) {}
+  constructor(
+    private readonly db: DbService,
+    private readonly staffLedger: StaffLedgerService,
+  ) {}
 
   async settings(): Promise<TenantSettingsResponse> {
     const tenantId = this.db.ctx().tenantId;
@@ -122,7 +126,7 @@ export class TenancyService {
   }
 
   async staff(): Promise<StaffListResponse> {
-    const { rows, attendance } = await this.db.tx(async (tx) => {
+    const { rows, attendance, balances } = await this.db.tx(async (tx) => {
       const [rows, attendance] = await Promise.all([
         tx.select().from(staff).where(isNull(staff.deletedAt)),
         tx
@@ -140,7 +144,9 @@ export class TenancyService {
           .orderBy(desc(staffAttendance.checkInAt))
           .limit(100),
       ]);
-      return { rows, attendance };
+      // Avans ve maaş borcu personel carisinden (kart alanı artık kullanılmıyor).
+      const balances = await this.staffLedger.balances(tx, rows.map((r) => r.id));
+      return { rows, attendance, balances };
     });
 
     const mapped = rows.map((s) => ({
@@ -155,7 +161,8 @@ export class TenancyService {
       endedAt: s.endedAt,
       annualLeaveDays: s.annualLeaveDays,
       usedLeaveDays: s.usedLeaveDays,
-      advanceBalanceMinor: s.advanceBalanceKurus,
+      advanceBalanceMinor: balances.get(s.id)?.advance ?? 0,
+      payableMinor: balances.get(s.id)?.payable ?? 0,
       isActive: s.isActive,
       hasTckn: s.tcknEncrypted !== null,
       hasIban: s.ibanEncrypted !== null,

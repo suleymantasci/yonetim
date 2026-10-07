@@ -84,7 +84,7 @@ export function ExtendForm({
   return (
     <form action={action} className="space-y-3">
       <StateAlert state={state} />
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Field label={t("field.site")} error={state.fieldErrors?.tenantId?.[0]} required>
           <Select name="tenantId" required>
             {sites.map((site) => (
@@ -149,7 +149,7 @@ export function TenantActionForm({
   return (
     <form action={action} className="space-y-3">
       <StateAlert state={state} />
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Field label={t("field.site")} error={state.fieldErrors?.tenantId?.[0]} required>
           <Select name="tenantId" required>
             {sites.map((site) => (
@@ -193,7 +193,7 @@ export function AddonForm({
   return (
     <form action={action} className="space-y-3">
       <StateAlert state={state} />
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Field label={t("field.site")} error={state.fieldErrors?.tenantId?.[0]} required>
           <Select name="tenantId" required>
             {sites.map((site) => (
@@ -254,7 +254,7 @@ export function ImpersonateForm({
   return (
     <form action={action} className="space-y-3">
       <StateAlert state={state} />
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Field label={t("field.targetUser")} error={state.fieldErrors?.userId?.[0]} required>
           <Select name="userId" required>
             {users.map((user) => (

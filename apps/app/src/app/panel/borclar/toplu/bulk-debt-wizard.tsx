@@ -117,7 +117,7 @@ export function BulkDebtWizard({
     0;
 
   return (
-    <div className="grid gap-4 lg:grid-cols-5">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
       <div className="lg:col-span-3">
         {preset ? (
           <div className="mb-4">

@@ -84,7 +84,7 @@ export default async function SimulatorPage({
     <>
       <PageHeader title={t("title")} description={t("description")} />
 
-      <form className="mb-6 grid gap-4 rounded-lg border border-border bg-surface p-4 sm:grid-cols-3 lg:grid-cols-4">
+      <form className="mb-6 grid grid-cols-1 gap-4 rounded-lg border border-border bg-surface p-4 sm:grid-cols-3 lg:grid-cols-4">
         <Field label={t("monthlyDues")}>
           <Input
             name="aidat"

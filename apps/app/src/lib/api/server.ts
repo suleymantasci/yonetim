@@ -233,6 +233,15 @@ export function apiPatch(
   return request("PATCH", path, schema, body, options);
 }
 
+export function apiPut<T extends z.ZodTypeAny>(
+  path: string,
+  body: unknown,
+  schema: T,
+  options?: ApiRequestOptions,
+): Promise<z.infer<T>> {
+  return request("PUT", path, schema, body, options);
+}
+
 /** `body`: gerekçe isteyen silmeler (ör. sayaç okuması) için. */
 export function apiDelete(
   path: string,

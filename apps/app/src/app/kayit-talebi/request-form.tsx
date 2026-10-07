@@ -77,7 +77,7 @@ export function AccessRequestForm({
             <Input name="fullName" required maxLength={160} autoComplete="name" />
           </Field>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label={t("field.phone")} hint={t("phoneHint")} error={state.fieldErrors?.phone?.[0]} required>
               <PhoneInput name="phone" required />
             </Field>
@@ -86,7 +86,7 @@ export function AccessRequestForm({
             </Field>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <Field label={t("field.block")}>
               <Input name="blockLabel" maxLength={60} placeholder={t("blockPlaceholder")} />
             </Field>

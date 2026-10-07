@@ -172,7 +172,10 @@
       "unit_already_attending": "This unit is already on the sheet.",
       "meeting_cancelled": "The meeting is cancelled and cannot be changed.",
       "parcel_already_delivered": "This parcel has already been handed over.",
-      "visitor_already_left": "This visitor has already checked out."
+      "visitor_already_left": "This visitor has already checked out.",
+      "accrual_exists": "This period is already accrued.",
+      "deduction_exceeds_advance": "Deduction exceeds the open advance.",
+      "entry_already_void": "Already voided."
     }
   },
   "errorPage": {

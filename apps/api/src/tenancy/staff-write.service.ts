@@ -100,7 +100,7 @@ export class StaffWriteService {
       endedAt: dto.endedAt ?? null,
       annualLeaveDays: dto.annualLeaveDays,
       usedLeaveDays: dto.usedLeaveDays,
-      advanceBalanceKurus: dto.advanceBalanceMinor,
+      // advanceBalanceKurus artık yazılmıyor: avans personel carisinden.
       isActive,
     };
 

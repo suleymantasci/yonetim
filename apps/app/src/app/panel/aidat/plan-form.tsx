@@ -211,7 +211,7 @@ export function DuesPlanForm({
           ]}
         />
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {/* İki tutar alanı da forma gönderilir; sunucu formüle göre olanı kullanır.
               Gizlemek yerine pasifleştirmek, yöneticinin ne değiştiğini görmesini sağlıyor. */}
           <FormField

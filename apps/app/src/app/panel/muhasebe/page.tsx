@@ -8,6 +8,7 @@ import { PrintButton } from "@/components/print-button";
 import { apiGet, toQuery } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
+import { AccountingSubnav } from "./subnav";
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +44,11 @@ export default async function AccountingPage({
     apiGet(`/v1/panel/reports/accounting/mizan?${toQuery({ from, to })}`, mizanResponse),
     apiGet(`/v1/panel/reports/accounting/ba-bs?${toQuery({ period })}`, baBsResponse),
   ]);
-  const balanced = mizan.totals.debitMinor === mizan.totals.creditMinor;
+  const balanced =
+    mizan.totals.debitMinor === mizan.totals.creditMinor &&
+    mizan.totals.openingDebitMinor === mizan.totals.openingCreditMinor;
+  const balanceText = (v: number) =>
+    v === 0 ? "—" : `${f.money(Math.abs(v))} ${v > 0 ? t("debitShort") : t("creditShort")}`;
 
   return (
     <>
@@ -52,6 +57,8 @@ export default async function AccountingPage({
         description={t("description")}
         action={<PrintButton label={t("print")} />}
       />
+
+      <AccountingSubnav active="mizan" />
 
       <div className="mb-4 print:hidden">
         <Alert tone="info">{t("syntheticNote")}</Alert>
@@ -83,11 +90,12 @@ export default async function AccountingPage({
             <p className="p-4 text-sm text-fg-muted">{t("mizanEmpty")}</p>
           ) : (
             <div className={tc.wrapper}>
-              <table className={tc.table} style={{ minWidth: 560 }}>
+              <table className={tc.table} style={{ minWidth: 680 }}>
                 <thead className={tc.thead}>
                   <tr>
                     <th scope="col" className={tc.th}>{t("code")}</th>
                     <th scope="col" className={tc.th}>{t("account")}</th>
+                    <th scope="col" className={`${tc.th} text-right`}>{t("opening")}</th>
                     <th scope="col" className={`${tc.th} text-right`}>{t("debit")}</th>
                     <th scope="col" className={`${tc.th} text-right`}>{t("credit")}</th>
                     <th scope="col" className={`${tc.th} text-right`}>{t("balance")}</th>
@@ -98,17 +106,18 @@ export default async function AccountingPage({
                     <tr key={r.code} className={`${tc.tr} ${r.sub ? "text-fg-muted" : ""}`}>
                       <td className={`${tc.td} tabular-nums ${r.sub ? "pl-8" : "font-medium"}`}>{r.code}</td>
                       <td className={tc.td}>{r.name}</td>
+                      <td className={tc.tdNum}>{balanceText(r.openingMinor)}</td>
                       <td className={tc.tdNum}>{r.debitMinor ? f.money(r.debitMinor) : ""}</td>
                       <td className={tc.tdNum}>{r.creditMinor ? f.money(r.creditMinor) : ""}</td>
-                      <td className={tc.tdNum}>
-                        {r.balanceMinor === 0
-                          ? "—"
-                          : `${f.money(Math.abs(r.balanceMinor))} ${r.balanceMinor > 0 ? t("debitShort") : t("creditShort")}`}
-                      </td>
+                      <td className={tc.tdNum}>{balanceText(r.balanceMinor)}</td>
                     </tr>
                   ))}
                   <tr className="border-t-2 border-border-strong font-semibold">
                     <td className={tc.td} colSpan={2}>{t("total")}</td>
+                    <td className={tc.tdNum}>
+                      <div>{f.money(mizan.totals.openingDebitMinor)} {t("debitShort")}</div>
+                      <div>{f.money(mizan.totals.openingCreditMinor)} {t("creditShort")}</div>
+                    </td>
                     <td className={tc.tdNum}>{f.money(mizan.totals.debitMinor)}</td>
                     <td className={tc.tdNum}>{f.money(mizan.totals.creditMinor)}</td>
                     <td className={tc.tdNum}>{balanced ? t("balanced") : t("unbalanced")}</td>

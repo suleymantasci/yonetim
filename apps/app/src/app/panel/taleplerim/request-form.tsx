@@ -39,7 +39,7 @@ export function MyRequestForm({ cancelHref }: { cancelHref: string }) {
         <Input name="title" required maxLength={200} placeholder={t("titlePlaceholder")} />
       </FormField>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <FormField name="category" label={t("field.category")} required>
           <Select name="category" required defaultValue="diger">
             {CATEGORIES.map((c) => (

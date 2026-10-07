@@ -166,7 +166,7 @@ export function DashboardCharts({
     .slice(-3);
 
   return (
-    <div className="grid gap-4 xl:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
       {/* Gelir-gider: aynı birim (kuruş) olduğu için tek eksende çizilebilir. */}
       <ChartFrame
         className="xl:col-span-2"

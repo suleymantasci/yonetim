@@ -145,7 +145,7 @@ export default async function ExpensesPage({
         action={actions}
       />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Stat
           label={t("statMonth")}
           value={fmt.money(data.totals.monthMinor)}
@@ -174,7 +174,7 @@ export default async function ExpensesPage({
         </div>
       ) : null}
 
-      <div className="mb-4 grid gap-4 lg:grid-cols-3">
+      <div className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
           <ListControls
             searchPlaceholder={t("searchPlaceholder")}

@@ -88,7 +88,7 @@ export default async function MaintenancePage() {
         </div>
       ) : null}
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-5">
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-5">
         <Card className="lg:col-span-3">
           <CardHeader title={t("planTitle")} />
           <CardBody className="p-0">

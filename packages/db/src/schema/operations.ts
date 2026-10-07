@@ -363,6 +363,35 @@ export const staff = pgTable(
 );
 
 /**
+ * Personel defteri — nakit hareketi olmayan cari kalemleri.
+ *
+ * Maaş **ödemesi** ve **avans** gider olarak (`expenses.staff_id`) duruyor;
+ * burada tahakkuk, avanstan mahsup ve açılış bakiyeleri var. Satır
+ * silinmiyor, gerekçeyle iptal ediliyor: cari geçmişi değiştirilemez olmalı.
+ *
+ * `kind`: `accrual` (maaş tahakkuku, siteye borç) · `advance_deduction`
+ * (avansın maaştan mahsubu) · `opening_payable` · `opening_advance`.
+ */
+export const staffLedgerEntries = pgTable(
+  "staff_ledger_entries",
+  {
+    id: idCol(),
+    tenantId: tenantId().references(() => tenants.id, { onDelete: "cascade" }),
+    staffId: uuid("staff_id").notNull().references(() => staff.id, { onDelete: "cascade" }),
+    kind: varchar("kind", { length: 30 }).notNull(),
+    entryDate: timestamp("entry_date", { withTimezone: true }).notNull(),
+    period: varchar("period", { length: 7 }),
+    amountKurus: money("amount_kurus").notNull(),
+    description: text("description"),
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    voidedAt: timestamp("voided_at", { withTimezone: true }),
+    voidReason: text("void_reason"),
+  },
+  (t) => [index("idx_staff_ledger_staff").on(t.staffId, t.entryDate)],
+);
+
+/**
  * Demirbaş / envanter defteri — KMK md.34/9 ve rakip incelemesi §4.1.
  *
  * NEDEN AYRI TABLO, `documents` YA DA `maintenance_records` DEĞİL:

@@ -123,7 +123,7 @@ export function SeveranceCalculator({
             />
           </FormField>
 
-          <div className="sm:col-span-2 grid gap-3 sm:grid-cols-2">
+          <div className="sm:col-span-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Switch
               name="severanceApplies"
               label={t("severanceAppliesLabel")}

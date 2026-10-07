@@ -240,7 +240,7 @@ export default async function DebtDetailPage({
         }
       />
 
-      <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Stat label={tUnits("amount")} value={fmt.money(debt.amountMinor)} />
         <Stat
           label={tUnits("lateFee")}
@@ -296,7 +296,7 @@ export default async function DebtDetailPage({
         </Card>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* VURUCU: tarihçe kartı — ekranın en geniş sütunu. */}
         <div className="lg:col-span-2">
           <Card>

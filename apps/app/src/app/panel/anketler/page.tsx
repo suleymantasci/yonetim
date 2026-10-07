@@ -49,7 +49,7 @@ export default async function PollsPage() {
 
       <Card className="mb-4">
         <CardHeader title={t("quorumReference")} />
-        <CardBody className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
+        <CardBody className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
           {Object.values(QUORUM_RULES).map((r) => (
             <div key={r.rule} className="rounded border border-border p-3">
               <div className="font-medium text-fg">

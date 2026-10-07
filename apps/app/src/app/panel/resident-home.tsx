@@ -94,7 +94,7 @@ export async function ResidentHome() {
         />
       </div>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader
             title={t("nextDueTitle")}
@@ -131,7 +131,7 @@ export async function ResidentHome() {
 
         <Card>
           <CardHeader title={t("myActivity")} />
-          <CardBody className="grid gap-2 sm:grid-cols-3">
+          <CardBody className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             <ActivityTile
               href="/panel/taleplerim"
               icon={<Wrench aria-hidden className="h-4 w-4" />}

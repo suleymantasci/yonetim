@@ -1,4 +1,4 @@
-import { Pencil, Plus } from "lucide-react";
+import { CalendarCheck, Pencil, Plus } from "lucide-react";
 import Link from "@/components/link";
 import { getTranslations } from "next-intl/server";
 
@@ -6,6 +6,8 @@ import { hasPermission } from "@yonetim/auth/guard";
 import { staffListResponse } from "@yonetim/contracts";
 import {
   Badge,
+  DateInput,
+  Input,
   Card,
   CardBody,
   CardHeader,
@@ -15,6 +17,9 @@ import {
 } from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
+import { ActionDrawerButton } from "@/components/form/action-drawer-button";
+import { FormField } from "@/components/form/action-form";
+import { accruePayroll } from "./actions";
 import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
@@ -39,6 +44,9 @@ export default async function StaffPage() {
   // Yetkisiz kullanıcıya düğme hiç render edilmiyor; bağlayıcı kontrol
   // uçta (`staff:write`), buradaki yalnız gereksiz tıklamayı önlüyor.
   const canWrite = hasPermission(ctx.roles, "staff:write");
+  // Cari (maaş borcu, avans) ücret bilgisi: `staff:payroll`.
+  const canPayroll = hasPermission(ctx.roles, "staff:payroll");
+  const thisMonth = new Date().toISOString().slice(0, 7);
   const newStaffButton = canWrite ? (
     <Link
       href="/panel/personel/yeni"
@@ -54,7 +62,29 @@ export default async function StaffPage() {
       <PageHeader
         title={t("title")}
         description={t("description")}
-        action={newStaffButton}
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            {canPayroll && rows.some((s) => s.isActive) ? (
+              <ActionDrawerButton
+                action={accruePayroll}
+                hidden={{}}
+                icon={<CalendarCheck />}
+                label={t("accrueAction")}
+                title={t("accrueTitle")}
+                description={t("accrueHint")}
+                submitLabel={t("accrueConfirm")}
+              >
+                <FormField name="period" label={t("accruePeriod")} required>
+                  <Input name="period" type="month" defaultValue={thisMonth} required />
+                </FormField>
+                <FormField name="entryDate" label={t("accrueDate")} required>
+                  <DateInput name="entryDate" defaultValue={new Date().toISOString().slice(0, 10)} required />
+                </FormField>
+              </ActionDrawerButton>
+            ) : null}
+            {newStaffButton}
+          </div>
+        }
       />
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3">
@@ -84,7 +114,7 @@ export default async function StaffPage() {
             </div>
           ) : (
             <div className={tc.wrapper}>
-              <table className={tc.table} style={{ minWidth: 640 }}>
+              <table className={tc.table} style={{ minWidth: canPayroll ? 820 : 640 }}>
                 <thead className={tc.thead}>
                   <tr>
                     <th scope="col" className={tc.th}>
@@ -105,6 +135,12 @@ export default async function StaffPage() {
                     <th scope="col" className={`${tc.th} text-right`}>
                       {t("remainingLeave")}
                     </th>
+                    {canPayroll ? (
+                      <>
+                        <th scope="col" className={`${tc.th} text-right`}>{t("payable")}</th>
+                        <th scope="col" className={`${tc.th} text-right`}>{t("advanceBalance")}</th>
+                      </>
+                    ) : null}
                     {canWrite ? (
                       <th scope="col" className={`${tc.th} w-10`}>
                         <span className="sr-only">{tCommon("action.edit")}</span>
@@ -116,7 +152,13 @@ export default async function StaffPage() {
                   {rows.map((s) => (
                     <tr key={s.id} className={tc.tr}>
                       <td className={`${tc.td} font-medium`}>
-                        {s.fullName}{" "}
+                        {canPayroll ? (
+                          <Link href={`/panel/personel/${s.id}`} className="hover:underline">
+                            {s.fullName}
+                          </Link>
+                        ) : (
+                          s.fullName
+                        )}{" "}
                         {!s.isActive ? (
                           <Badge tone="neutral">{t("left")}</Badge>
                         ) : null}
@@ -135,6 +177,14 @@ export default async function StaffPage() {
                           days: s.annualLeaveDays - s.usedLeaveDays,
                         })}
                       </td>
+                      {canPayroll ? (
+                        <>
+                          <td className={`${tc.tdNum} ${s.payableMinor > 0 ? "text-warning-fg" : ""}`}>
+                            {f.money(s.payableMinor)}
+                          </td>
+                          <td className={tc.tdNum}>{f.money(s.advanceBalanceMinor)}</td>
+                        </>
+                      ) : null}
                       {canWrite ? (
                         <td className={tc.td}>
                           <Link

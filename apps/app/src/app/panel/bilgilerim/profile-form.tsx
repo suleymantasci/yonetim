@@ -20,7 +20,7 @@ export function ProfileForm({ defaults }: { defaults: ProfileDefaults }) {
 
   return (
     <ActionForm action={updateMyProfile} submitLabel={t("save")} inlineSuccess>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <FormField name="firstName" label={t("field.firstName")} required>
           <Input name="firstName" required defaultValue={defaults.firstName} maxLength={80} />
         </FormField>
@@ -33,7 +33,7 @@ export function ProfileForm({ defaults }: { defaults: ProfileDefaults }) {
         <Input name="email" type="email" defaultValue={defaults.email} maxLength={255} />
       </FormField>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <FormField name="emergencyContactName" label={t("field.emergencyName")}>
           <Input
             name="emergencyContactName"

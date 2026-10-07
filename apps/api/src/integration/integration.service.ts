@@ -11,6 +11,7 @@ import type {
 } from "@yonetim/contracts";
 import { mapImport } from "@yonetim/core";
 import {
+  openingEntries,
   bankAccounts,
   bankTransactions,
   blocks,
@@ -78,7 +79,7 @@ export class IntegrationService {
         String,
       );
 
-    const { accounts, transactions, issues, incoming, outgoing, unpaid } =
+    const { accounts, transactions, issues, incoming, outgoing, openings, unpaid } =
       await this.db.tx(async (tx) => {
         const [
           accounts,
@@ -176,12 +177,18 @@ export class IntegrationService {
               ),
             ),
         ]);
+        // Açılış fişindeki kasa/banka bakiyeleri (sisteme geçiş öncesi para).
+        const openings = await tx
+          .select({ account: openingEntries.account, bankAccountId: openingEntries.bankAccountId, amount: openingEntries.amountKurus })
+          .from(openingEntries)
+          .where(inArray(openingEntries.account, ["cash", "bank"]));
         return {
           accounts,
           transactions,
           issues,
           incoming,
           outgoing,
+          openings,
           unpaid: unpaidRow?.totalKurus ?? 0,
         };
       });
@@ -198,9 +205,14 @@ export class IntegrationService {
       outgoing.map((row) => [row.bucket, row.totalKurus]),
     );
 
+    const openingOf = (bankAccountId: string | null) =>
+      openings
+        .filter((o) => (bankAccountId ? o.account === "bank" && o.bankAccountId === bankAccountId : o.account === "cash"))
+        .reduce((s, o) => s + o.amount, 0);
     const cashboxRows: CashboxRow[] = accounts.map((a) => {
       const incomingMinor = incomingByBucket.get(a.id) ?? 0;
       const outgoingMinor = outgoingByBucket.get(a.id) ?? 0;
+      const openingMinor = openingOf(a.id);
       return {
         source: "bank",
         accountId: a.id,
@@ -208,9 +220,10 @@ export class IntegrationService {
         accountName: a.accountName,
         ibanMasked: a.ibanMasked,
         isActive: a.isActive,
+        openingMinor,
         incomingMinor,
         outgoingMinor,
-        balanceMinor: incomingMinor - outgoingMinor,
+        balanceMinor: openingMinor + incomingMinor - outgoingMinor,
         /*
          * Sağlayıcı bağlı değilse senkron bakiyesi sabit sıfır; onu ekranda
          * "bakiye" diye göstermek tam olarak şikâyet edilen yanılgı.
@@ -249,9 +262,10 @@ export class IntegrationService {
       accountName: null,
       ibanMasked: null,
       isActive: true,
+      openingMinor: openingOf(null),
       incomingMinor: cashIn,
       outgoingMinor: cashOut,
-      balanceMinor: cashIn - cashOut,
+      balanceMinor: openingOf(null) + cashIn - cashOut,
       syncedBalanceMinor: null,
     });
 
@@ -267,6 +281,7 @@ export class IntegrationService {
         accountName: null,
         ibanMasked: null,
         isActive: true,
+        openingMinor: 0,
         incomingMinor: unassignedIn,
         outgoingMinor: unassignedOut,
         balanceMinor: unassignedIn - unassignedOut,
@@ -275,10 +290,11 @@ export class IntegrationService {
 
     const cashboxTotals = cashboxRows.reduce(
       (acc, row) => ({
+        openingMinor: acc.openingMinor + row.openingMinor,
         incomingMinor: acc.incomingMinor + row.incomingMinor,
         outgoingMinor: acc.outgoingMinor + row.outgoingMinor,
       }),
-      { incomingMinor: 0, outgoingMinor: 0 },
+      { openingMinor: 0, incomingMinor: 0, outgoingMinor: 0 },
     );
 
     return {
@@ -326,7 +342,7 @@ export class IntegrationService {
         totals: {
           ...cashboxTotals,
           balanceMinor:
-            cashboxTotals.incomingMinor - cashboxTotals.outgoingMinor,
+            cashboxTotals.openingMinor + cashboxTotals.incomingMinor - cashboxTotals.outgoingMinor,
           unpaidExpenseMinor: unpaid,
         },
       },

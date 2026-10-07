@@ -84,7 +84,7 @@ export default async function KvkkPage() {
         </div>
       ) : null}
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+      <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader title={t("findingsTitle")} />
           <CardBody className="space-y-3">
@@ -175,7 +175,7 @@ export default async function KvkkPage() {
           title={t("erasureTitle")}
           description={t("erasureDescription")}
         />
-        <CardBody className="grid gap-4 text-sm sm:grid-cols-3">
+        <CardBody className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-3">
           <div>
             <h3 className="font-semibold text-fg">{t("deletable")}</h3>
             <ul className="mt-2 space-y-1 text-fg-muted">

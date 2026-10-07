@@ -16,8 +16,8 @@
 
 ## 2. Ürün kararı / büyük modül gerektiren işler
 
-- [ ] **Yevmiye defteri ve açılış bakiyeleri:** Mizan ve BA/BS sentetik olarak var (`/panel/muhasebe`, 2026-10-07; mizan dönem hareketleri, açılış bakiyesi yok). Tam çift kayıtlı defter (yevmiye, kapanış/açılış fişi) ürün kararı bekliyor.
-- [ ] **Personel cari hesabı:** Tedarikçi kartı ve cari ekstresi var (`/panel/tedarikciler`); personel için avans/maaş carisi yok.
+- [ ] **Resmî defter çıktısı:** Yevmiye, devirli mizan ve açılış fişi var (`/panel/muhasebe`, 2026-10-07; kayıtlardan türetilen çift taraflı fişler). Noter tasdikli defter formatı, yıl sonu kapanış fişi ve mali müşavir programına (ör. Luca/Mikro) dışa aktarım yok.
+- [ ] **Bordro:** Personel carisi var (tahakkuk, avans, mahsup, ödeme; 2026-10-07). SGK/vergi kesintileri ve muhtasar beyanname hesaplanmıyor; net ücret elle giriliyor.
 - [ ] **Hazır evrak şablonları:** Genel kurul çağrı mektubu, hazirun cetveli, vekaletname — metin ve hukuki içerik onayı gerekiyor.
 - [ ] **AI yönetim & mevzuat asistanı** (KMK soru-cevap).
 - [ ] **Sesli arama (robocall) kanalı:** `voice` kanalı enum'da var, sağlayıcı yok.

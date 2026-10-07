@@ -51,7 +51,7 @@ export function CreatePromoCodeButton({
           layout="modal"
           onCancel={() => setOpen(false)}
         >
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <FormField name="code" label={t("field.code")} hint={t("field.codeHint")} required>
               <Input name="code" minLength={3} maxLength={30} pattern="[A-Za-z0-9_-]+" className="uppercase" required />
             </FormField>

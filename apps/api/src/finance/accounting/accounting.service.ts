@@ -4,113 +4,66 @@ import { sql } from "drizzle-orm";
 import {
   BA_BS_THRESHOLD_MINOR,
   type BaBsResponse,
+  type JournalResponse,
   type MizanResponse,
 } from "@yonetim/contracts";
 
 import { DbService } from "../../infra/db/db.service";
+import { loadJournal, parentOf } from "./journal";
 
 /**
- * Sentetik mizan ve BA/BS — bkz. `accounting.contract.ts`.
+ * Muhasebe raporları — mizan, yevmiye, BA/BS.
  *
- * Hesap eşlemesi (Tek Düzen Hesap Planı):
- *  - Borç tahakkuku: 120 Alıcılar (B) / 600 Aidat · 649 Gecikme · 602 Diğer (A)
- *  - Tahsilat:       100 Kasa | 102 Bankalar (B) / 120 (A)
- *  - Gider:          770.xx Genel yönetim gideri (B) / 320 Satıcılar (A)
- *  - Gider ödemesi:  320 (B) / 100 | 102 (A)
- *  - Silinen alacak: 659 Diğer olağan gider (B) / 120 (A)
- * Mahsup/kredi bakiyesiyle kapatılan tahsilatlar (`offset`, `credit_balance`)
- * nakit hareketi değil, dışarıda bırakılıyor. Tutarlar KDV dahil: site
- * yönetimi KDV mükellefi değil, KDV gider maliyetinin parçası.
+ * Mizan ve yevmiye `journal.ts`'teki **tek** fiş üreticisinden türüyor (hesap
+ * eşlemesi orada). BA/BS doğrudan giderlerden ve tahakkuklardan; personel
+ * ödemeleri BA'ya girmiyor (mal/hizmet alımı değil).
  */
 @Injectable()
 export class AccountingService {
   constructor(private readonly db: DbService) {}
 
+  /**
+   * Mizan: devir (dönem başından önceki her şey) + dönem hareketleri +
+   * bakiye. Yevmiyeyle aynı fiş listesinden türüyor; alt hesaplar (102.xx,
+   * 770.xx) üst hesapta toplanıyor.
+   */
   async mizan(from: string, to: string): Promise<MizanResponse> {
-    const start = `${from}T00:00:00+03:00`;
-    const end = `${to}T23:59:59.999+03:00`;
+    const start = istanbulStart(from);
+    const end = istanbulEnd(to);
     return this.db.tx(async (tx) => {
-      const debtRows = (await tx.execute(sql`
-        SELECT kind::text AS kind, coalesce(sum(amount_kurus), 0)::bigint AS total
-        FROM debts
-        WHERE deleted_at IS NULL AND status <> 'cancelled'
-          AND created_at BETWEEN ${start}::timestamptz AND ${end}::timestamptz
-        GROUP BY 1
-      `)) as unknown as Array<{ kind: string; total: string }>;
+      const { entries, accounts } = await loadJournal(tx, end);
+      const acc = new Map<string, { opening: number; debit: number; credit: number }>();
+      const bucket = (code: string) => {
+        let row = acc.get(code);
+        if (!row) acc.set(code, (row = { opening: 0, debit: 0, credit: 0 }));
+        return row;
+      };
+      for (const entry of entries) {
+        const before = entry.date.getTime() < start.getTime();
+        for (const line of entry.lines) {
+          for (const code of [line.code, parentOf(line.code)].filter(Boolean) as string[]) {
+            const row = bucket(code);
+            if (before) row.opening += line.debit - line.credit;
+            else {
+              row.debit += line.debit;
+              row.credit += line.credit;
+            }
+          }
+        }
+      }
 
-      const writtenOff = (await tx.execute(sql`
-        SELECT coalesce(sum(amount_kurus - paid_kurus), 0)::bigint AS total
-        FROM debts
-        WHERE deleted_at IS NULL AND status = 'written_off'
-          AND updated_at BETWEEN ${start}::timestamptz AND ${end}::timestamptz
-      `)) as unknown as Array<{ total: string }>;
-
-      const paymentRows = (await tx.execute(sql`
-        SELECT CASE WHEN method = 'cash' THEN 'cash' ELSE 'bank' END AS account,
-               coalesce(sum(amount_kurus), 0)::bigint AS total
-        FROM payments
-        WHERE status = 'completed' AND method NOT IN ('offset', 'credit_balance')
-          AND coalesce(paid_at, created_at) BETWEEN ${start}::timestamptz AND ${end}::timestamptz
-        GROUP BY 1
-      `)) as unknown as Array<{ account: string; total: string }>;
-
-      const expenseRows = (await tx.execute(sql`
-        SELECT coalesce(c.name, 'Kategorisiz') AS category, coalesce(sum(e.amount_kurus), 0)::bigint AS total
-        FROM expenses e
-        LEFT JOIN expense_categories c ON c.id = e.category_id
-        WHERE e.deleted_at IS NULL AND e.status IN ('approved', 'paid')
-          AND e.expense_date BETWEEN ${start}::timestamptz AND ${end}::timestamptz
-        GROUP BY 1
-        ORDER BY 1
-      `)) as unknown as Array<{ category: string; total: string }>;
-
-      const expensePaid = (await tx.execute(sql`
-        SELECT CASE WHEN bank_account_id IS NULL THEN 'cash' ELSE 'bank' END AS account,
-               coalesce(sum(amount_kurus), 0)::bigint AS total
-        FROM expenses
-        WHERE deleted_at IS NULL AND status IN ('approved', 'paid') AND paid_at IS NOT NULL
-          AND paid_at BETWEEN ${start}::timestamptz AND ${end}::timestamptz
-        GROUP BY 1
-      `)) as unknown as Array<{ account: string; total: string }>;
-
-      const n = (v: string | number | undefined) => Number(v ?? 0);
-      const accrued = (kinds: string[]) =>
-        debtRows.filter((r) => kinds.includes(r.kind)).reduce((s, r) => s + n(r.total), 0);
-      const dues = accrued(["dues"]);
-      const lateFee = accrued(["late_fee"]);
-      const accruedTotal = debtRows.reduce((s, r) => s + n(r.total), 0);
-      const other = accruedTotal - dues - lateFee;
-      const off = n(writtenOff[0]?.total);
-      const cashIn = n(paymentRows.find((r) => r.account === "cash")?.total);
-      const bankIn = n(paymentRows.find((r) => r.account === "bank")?.total);
-      const cashOut = n(expensePaid.find((r) => r.account === "cash")?.total);
-      const bankOut = n(expensePaid.find((r) => r.account === "bank")?.total);
-      const expenseTotal = expenseRows.reduce((s, r) => s + n(r.total), 0);
-
-      type Row = MizanResponse["rows"][number];
-      const row = (code: string, name: string, debit: number, credit: number, sub = false): Row => ({
-        code,
-        name,
-        sub,
-        debitMinor: debit,
-        creditMinor: credit,
-        balanceMinor: debit - credit,
-      });
-
-      const rows: Row[] = [
-        row("100", "Kasa", cashIn, cashOut),
-        row("102", "Bankalar", bankIn, bankOut),
-        row("120", "Alıcılar (kat malikleri / sakinler)", accruedTotal, cashIn + bankIn + off),
-        row("320", "Satıcılar (tedarikçiler / ödenecek giderler)", cashOut + bankOut, expenseTotal),
-        row("600", "Aidat gelirleri", 0, dues),
-        row("602", "Diğer gelirler", 0, other),
-        row("649", "Gecikme tazminatı gelirleri", 0, lateFee),
-        row("659", "Silinen alacaklar", off, 0),
-        row("770", "Genel yönetim giderleri", expenseTotal, 0),
-        ...expenseRows.map((r, i) =>
-          row(`770.${String(i + 1).padStart(2, "0")}`, r.category, n(r.total), 0, true),
-        ),
-      ].filter((r) => r.debitMinor !== 0 || r.creditMinor !== 0);
+      const rows = [...acc.entries()]
+        .filter(([, v]) => v.opening !== 0 || v.debit !== 0 || v.credit !== 0)
+        .sort(([a], [b]) => a.localeCompare(b, "tr", { numeric: true }))
+        .map(([code, v]) => ({
+          code,
+          name: accounts.get(code) ?? code,
+          sub: parentOf(code) !== null,
+          openingMinor: v.opening,
+          debitMinor: v.debit,
+          creditMinor: v.credit,
+          balanceMinor: v.opening + v.debit - v.credit,
+        }));
 
       const main = rows.filter((r) => !r.sub);
       return {
@@ -120,7 +73,46 @@ export class AccountingService {
         totals: {
           debitMinor: main.reduce((s, r) => s + r.debitMinor, 0),
           creditMinor: main.reduce((s, r) => s + r.creditMinor, 0),
+          openingDebitMinor: main.reduce((s, r) => s + Math.max(r.openingMinor, 0), 0),
+          openingCreditMinor: main.reduce((s, r) => s + Math.max(-r.openingMinor, 0), 0),
         },
+      };
+    });
+  }
+
+  /** Yevmiye defteri — aralıktaki fişler, tarih sırasıyla numaralı. */
+  async journal(from: string, to: string, limit = 1500): Promise<JournalResponse> {
+    const start = istanbulStart(from);
+    const end = istanbulEnd(to);
+    return this.db.tx(async (tx) => {
+      const { entries, accounts } = await loadJournal(tx, end);
+      const inRange = entries.filter((e) => e.date.getTime() >= start.getTime());
+      let debit = 0;
+      let credit = 0;
+      for (const e of inRange)
+        for (const l of e.lines) {
+          debit += l.debit;
+          credit += l.credit;
+        }
+      return {
+        from,
+        to,
+        total: inRange.length,
+        limit,
+        totals: { debitMinor: debit, creditMinor: credit },
+        entries: inRange.slice(0, limit).map((e, i) => ({
+          no: i + 1,
+          date: istanbulDate(e.date),
+          source: e.source,
+          sourceId: e.sourceId,
+          description: e.description,
+          lines: e.lines.map((l) => ({
+            code: l.code,
+            name: accounts.get(l.code) ?? l.code,
+            debitMinor: l.debit,
+            creditMinor: l.credit,
+          })),
+        })),
       };
     });
   }
@@ -143,7 +135,7 @@ export class AccountingService {
                coalesce(sum(e.amount_kurus - e.vat_kurus), 0)::bigint AS net
         FROM expenses e
         LEFT JOIN vendors v ON v.id = e.vendor_id
-        WHERE e.deleted_at IS NULL AND e.status IN ('approved', 'paid') AND e.period = ${period}
+        WHERE e.deleted_at IS NULL AND e.staff_id IS NULL AND e.status IN ('approved', 'paid') AND e.period = ${period}
         GROUP BY 1, 2, 3
         HAVING coalesce(sum(e.amount_kurus - e.vat_kurus), 0) >= ${threshold}
         ORDER BY 5 DESC
@@ -184,4 +176,15 @@ export class AccountingService {
       };
     });
   }
+}
+
+/** "2026-03-01" → o günün İstanbul saatiyle başı / sonu. */
+export function istanbulStart(day: string): Date {
+  return new Date(`${day}T00:00:00+03:00`);
+}
+export function istanbulEnd(day: string): Date {
+  return new Date(`${day}T23:59:59.999+03:00`);
+}
+export function istanbulDate(at: Date): string {
+  return new Date(at.getTime() + 3 * 3_600_000).toISOString().slice(0, 10);
 }

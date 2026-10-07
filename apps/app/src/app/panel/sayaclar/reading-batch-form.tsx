@@ -54,7 +54,7 @@ export function ReadingBatchForm({ meters }: { meters: MeterEntryRow[] }) {
 
   return (
     <form action={formAction} className="space-y-4">
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <label className="block text-sm">
           <span className="mb-1 block font-medium text-fg">{t("period")}</span>
           <PeriodInput name="period" defaultValue={currentPeriod()} required />

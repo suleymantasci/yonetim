@@ -6,7 +6,7 @@ import type {
   VendorListResponse,
   VendorSave,
 } from "@yonetim/contracts";
-import { expenses, vendors } from "@yonetim/db";
+import { expenses, openingEntries, vendors } from "@yonetim/db";
 
 import { AuditService, diffOf } from "../../governance/audit/audit.service";
 import { DbService } from "../../infra/db/db.service";
@@ -54,6 +54,13 @@ export class VendorService {
         )
         .groupBy(expenses.vendorId);
       const byVendor = new Map(sums.map((s) => [s.vendorId!, s] as const));
+      // Açılış fişindeki tedarikçi borçları bakiyeye ekleniyor.
+      const openings = await tx
+        .select({ vendorId: openingEntries.vendorId, amount: openingEntries.amountKurus })
+        .from(openingEntries)
+        .where(eq(openingEntries.account, "vendor"));
+      const openingBy = new Map<string, number>();
+      for (const o of openings) if (o.vendorId) openingBy.set(o.vendorId, (openingBy.get(o.vendorId) ?? 0) + o.amount);
 
       const [unlinked] = await tx
         .select({ count: sql<number>`count(*)::int` })
@@ -68,7 +75,7 @@ export class VendorService {
 
       const mapped = rows.map((v) => {
         const s = byVendor.get(v.id);
-        const total = Number(s?.total ?? 0);
+        const total = Number(s?.total ?? 0) + (openingBy.get(v.id) ?? 0);
         const paid = Number(s?.paid ?? 0);
         return {
           ...card(v),
@@ -121,6 +128,21 @@ export class VendorService {
 
       type Line = VendorDetail["ledger"][number];
       const events: Omit<Line, "balanceMinor">[] = [];
+      const openingRows = await tx
+        .select({ amount: openingEntries.amountKurus, asOf: openingEntries.asOfDate })
+        .from(openingEntries)
+        .where(and(eq(openingEntries.account, "vendor"), eq(openingEntries.vendorId, id)));
+      const openingTotal = openingRows.reduce((s, o) => s + o.amount, 0);
+      if (openingTotal > 0)
+        events.push({
+          date: openingRows[0]!.asOf,
+          expenseId: null,
+          kind: "opening",
+          description: "Açılış bakiyesi",
+          invoiceNo: null,
+          creditMinor: openingTotal,
+          debitMinor: 0,
+        });
       for (const e of rows) {
         events.push({
           date: e.expenseDate,
@@ -143,19 +165,16 @@ export class VendorService {
           });
         }
       }
-      // Aynı gün: önce tahakkuk sonra ödeme (bakiye eksiye düşmesin).
-      events.sort(
-        (a, b) =>
-          a.date.getTime() - b.date.getTime() ||
-          (a.kind === b.kind ? 0 : a.kind === "invoice" ? -1 : 1),
-      );
+      // Aynı gün: açılış, tahakkuk, ödeme sırası (bakiye eksiye düşmesin).
+      const rank = { opening: 0, invoice: 1, payment: 2 } as const;
+      events.sort((a, b) => a.date.getTime() - b.date.getTime() || rank[a.kind] - rank[b.kind]);
       let balance = 0;
       const ledger = events.map((line) => {
         balance += line.creditMinor - line.debitMinor;
         return { ...line, balanceMinor: balance };
       });
 
-      const total = rows.reduce((sum, e) => sum + e.amountKurus, 0);
+      const total = rows.reduce((sum, e) => sum + e.amountKurus, 0) + openingTotal;
       const paid = rows.filter((e) => e.paidAt).reduce((sum, e) => sum + e.amountKurus, 0);
       return {
         vendor: {

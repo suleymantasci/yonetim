@@ -12,9 +12,15 @@ import { ApiOperation, ApiTags } from "@nestjs/swagger";
 
 import {
   severanceQuote,
+  staffLedgerAdd,
+  staffLedgerVoid,
+  staffPayment,
+  staffPayrollAccrue,
   staffSave,
   tenantSettingsSave,
   type SeveranceQuote,
+  type StaffLedgerAdd,
+  type StaffPayment,
   type StaffSave,
   type TenantSettingsSave,
 } from "@yonetim/contracts";
@@ -22,6 +28,7 @@ import {
 import { RequirePermission } from "../identity/decorators";
 import { ZodBodyPipe } from "../infra/zod/zod-dto";
 import { SettingsWriteService } from "./settings-write.service";
+import { StaffLedgerService } from "./staff-ledger.service";
 import { StaffWriteService } from "./staff-write.service";
 import { TenancyService } from "./tenancy.service";
 
@@ -33,6 +40,7 @@ export class TenancyController {
     private readonly service: TenancyService,
     private readonly staffWrite: StaffWriteService,
     private readonly settingsWrite: SettingsWriteService,
+    private readonly staffLedger: StaffLedgerService,
   ) {}
 
   @Get("settings")
@@ -169,6 +177,48 @@ export class TenancyController {
    * doğmadığı) bir sorgu dizesine sığmıyor ve senaryo denemesi bir kaynak
    * okuması değil. Hiçbir şey yazmıyor.
    */
+  /**
+   * Personel carisi — `staff:payroll` (ücret bilgisi). Ödeme ve avans gider
+   * olarak yazılıyor; tahakkuk/mahsup personel defterinde.
+   */
+  @Post("staff/payroll/accrue")
+  @RequirePermission("staff:payroll")
+  @ApiOperation({ summary: "Dönem maaş tahakkuku (aktif personel, net ücret)", description: "Dönemde tahakkuku olan atlanır." })
+  accruePayroll(@Body(new ZodBodyPipe(staffPayrollAccrue)) dto: { period: string; entryDate: Date }) {
+    return this.staffLedger.accruePayroll(dto.period, dto.entryDate);
+  }
+
+  @Get("staff/:id/ledger")
+  @RequirePermission("staff:payroll")
+  @ApiOperation({ summary: "Personel cari ekstresi — maaş borcu ve avans bakiyesi" })
+  staffLedgerView(@Param("id", ParseUUIDPipe) id: string) {
+    return this.staffLedger.ledger(id);
+  }
+
+  @Post("staff/:id/ledger")
+  @RequirePermission("staff:payroll")
+  @ApiOperation({ summary: "Tahakkuk ya da avanstan mahsup", description: "Aynı döneme ikinci tahakkuk ve avansı aşan mahsup 409." })
+  staffLedgerAddEntry(@Param("id", ParseUUIDPipe) id: string, @Body(new ZodBodyPipe(staffLedgerAdd)) dto: StaffLedgerAdd) {
+    return this.staffLedger.add(id, dto);
+  }
+
+  @Post("staff/:id/ledger/:entryId/void")
+  @RequirePermission("staff:payroll")
+  staffLedgerVoidEntry(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Param("entryId", ParseUUIDPipe) entryId: string,
+    @Body(new ZodBodyPipe(staffLedgerVoid)) dto: { reason: string },
+  ) {
+    return this.staffLedger.voidEntry(id, entryId, dto.reason);
+  }
+
+  @Post("staff/:id/payments")
+  @RequirePermission("staff:payroll")
+  @ApiOperation({ summary: "Maaş ödemesi ya da avans (ödenmiş gider olarak yazılır)" })
+  staffPay(@Param("id", ParseUUIDPipe) id: string, @Body(new ZodBodyPipe(staffPayment)) dto: StaffPayment) {
+    return this.staffLedger.pay(id, dto);
+  }
+
   @Post("staff/severance")
   @RequirePermission("staff:payroll")
   @ApiOperation({

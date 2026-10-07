@@ -240,7 +240,7 @@ export default async function ResidentDetailPage({
         }
       />
 
-      <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Stat
           label={t("outstanding")}
           value={fmt.money(detail.balance.outstandingMinor)}
@@ -267,7 +267,7 @@ export default async function ResidentDetailPage({
             key: "ozet",
             label: t("tabSummary"),
             panel: (
-              <div className="grid gap-4 lg:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <Card>
                   <CardHeader title={t("tabSummary")} />
                   <CardBody>

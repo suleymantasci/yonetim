@@ -172,7 +172,10 @@
       "unit_already_attending": "Bu daire cetvelde zaten var.",
       "meeting_cancelled": "Toplantı iptal edilmiş; değiştirilemez.",
       "parcel_already_delivered": "Bu kargo zaten teslim edilmiş.",
-      "visitor_already_left": "Bu ziyaretçinin çıkışı zaten kaydedilmiş."
+      "visitor_already_left": "Bu ziyaretçinin çıkışı zaten kaydedilmiş.",
+      "accrual_exists": "Bu dönem için tahakkuk zaten var. Önce mevcut kaydı iptal edin.",
+      "deduction_exceeds_advance": "Mahsup tutarı açık avansı aşıyor.",
+      "entry_already_void": "Bu kayıt zaten iptal edilmiş."
     }
   },
   "errorPage": {

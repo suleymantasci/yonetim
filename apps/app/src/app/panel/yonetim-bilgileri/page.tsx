@@ -34,7 +34,7 @@ export default async function ManagementInfoPage() {
     <>
       <PageHeader title={t("title")} description={t("description")} />
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader title={t("propertyTitle")} />
           <CardBody className="space-y-3 text-sm">

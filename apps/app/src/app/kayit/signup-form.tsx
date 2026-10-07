@@ -82,7 +82,7 @@ export function SignupForm({
             <legend className="mb-2 text-sm font-medium text-fg">
               {t("accountType")}
             </legend>
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <AccountTypeOption
                 selected={accountType === "property"}
                 onSelect={() => setAccountType("property")}
@@ -110,7 +110,7 @@ export function SignupForm({
             <Input name="propertyName" required maxLength={200} placeholder={t("propertyPlaceholder")} defaultValue={v.propertyName} />
           </Field>
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <Field label={t("field.propertyType")}>
               <Select name="propertyType" defaultValue={v.propertyType ?? "apartment"}>
                 {PROPERTY_TYPES.map((type) => (

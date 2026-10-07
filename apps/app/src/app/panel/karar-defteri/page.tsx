@@ -83,7 +83,7 @@ export default async function DecisionBookPage({
         <Alert tone="info">{t("legalNotice")}</Alert>
       </div>
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Stat label={t("statEntries")} value={String(data.totals.entries)} />
         <Stat label={t("statPassed")} value={String(data.totals.passed)} />
         <Stat label={t("statRejected")} value={String(data.totals.rejected)} />

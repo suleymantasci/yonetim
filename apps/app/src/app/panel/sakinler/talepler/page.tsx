@@ -82,7 +82,7 @@ export default async function AccessRequestsPage() {
                 }
               />
               <CardBody>
-                <dl className="grid gap-2 text-sm sm:grid-cols-2">
+                <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
                   <Row label={t("phone")} value={row.phoneMasked} />
                   {row.email ? <Row label={t("email")} value={row.email} /> : null}
                 </dl>

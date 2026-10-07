@@ -14,6 +14,9 @@ import {
   intField,
   kurusField,
   okState,
+  optionalText,
+  optionalUuidField,
+  periodField,
   optionalDateField,
   phoneField,
   requiredText,
@@ -63,7 +66,6 @@ const staffSchema = z.object({
   endedAt: optionalDateField,
   annualLeaveDays: intField({ min: 0, max: 365 }),
   usedLeaveDays: intField({ min: 0, max: 365 }),
-  advanceBalanceKurus: kurusField({ min: 0 }),
 });
 
 /**
@@ -105,7 +107,6 @@ export async function saveStaff(
         endedAt: input.endedAt ?? null,
         annualLeaveDays: input.annualLeaveDays,
         usedLeaveDays: input.usedLeaveDays,
-        advanceBalanceMinor: input.advanceBalanceKurus,
       };
 
       const result = input.id
@@ -237,4 +238,91 @@ export async function quoteSeverance(params: {
   } catch {
     return { ok: false, message: t("severanceFailed") };
   }
+}
+
+/* ------------------------------------------------------------------ *
+ * Personel carisi — tahakkuk, mahsup, ödeme, iptal (`staff:payroll`)
+ * ------------------------------------------------------------------ */
+
+const accrueSchema = z.object({ period: periodField, entryDate: dateField });
+
+/** Aktif personel için dönem maaş tahakkuku (net ücret). */
+export async function accruePayroll(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  return runAction(
+    { permission: "staff:payroll", schema: accrueSchema, meta: { action: "staff_payroll_accrued", resource: "staff" } },
+    formData,
+    async ({ input }) => {
+      const t = await getTranslations("app.staff");
+      const result = (await apiPost("/v1/panel/staff/payroll/accrue", input)) as { created: number; skipped: number };
+      return okState(t("accrued", { created: result.created, skipped: result.skipped }));
+    },
+  );
+}
+
+const ledgerSchema = z.object({
+  staffId: uuidField,
+  kind: z.enum(["accrual", "advance_deduction"]),
+  entryDate: dateField,
+  amountKurus: kurusField({ min: 1 }),
+  period: z.preprocess((v) => (v === "" ? undefined : v), periodField.optional()),
+  description: optionalText(500),
+});
+
+export async function addStaffLedgerEntry(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  return runAction(
+    { permission: "staff:payroll", schema: ledgerSchema, meta: { action: "staff_ledger_added", resource: "staff" } },
+    formData,
+    async ({ input }) => {
+      const t = await getTranslations("app.staff");
+      await apiPost(`/v1/panel/staff/${input.staffId}/ledger`, {
+        kind: input.kind,
+        entryDate: input.entryDate,
+        amountMinor: input.amountKurus,
+        period: input.period ?? null,
+        description: input.description ?? null,
+      });
+      return okState(t(input.kind === "accrual" ? "ledgerAccrued" : "ledgerDeducted"));
+    },
+  );
+}
+
+const paySchema = z.object({
+  staffId: uuidField,
+  kind: z.enum(["salary", "advance"]),
+  amountKurus: kurusField({ min: 1 }),
+  paidAt: dateField,
+  bankAccountId: optionalUuidField,
+  description: optionalText(240),
+});
+
+export async function payStaff(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  return runAction(
+    { permission: "staff:payroll", schema: paySchema, meta: { action: "staff_paid", resource: "staff" } },
+    formData,
+    async ({ input }) => {
+      const t = await getTranslations("app.staff");
+      await apiPost(`/v1/panel/staff/${input.staffId}/payments`, {
+        kind: input.kind,
+        amountMinor: input.amountKurus,
+        paidAt: input.paidAt,
+        bankAccountId: input.bankAccountId ?? null,
+        description: input.description ?? null,
+      });
+      return okState(t(input.kind === "advance" ? "advancePaid" : "salaryPaid"));
+    },
+  );
+}
+
+const voidSchema = z.object({ staffId: uuidField, entryId: uuidField, reason: requiredText(10, 500) });
+
+export async function voidStaffLedgerEntry(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  return runAction(
+    { permission: "staff:payroll", schema: voidSchema, meta: { action: "staff_ledger_voided", resource: "staff" } },
+    formData,
+    async ({ input }) => {
+      const t = await getTranslations("app.staff");
+      await apiPost(`/v1/panel/staff/${input.staffId}/ledger/${input.entryId}/void`, { reason: input.reason });
+      return okState(t("ledgerVoided"));
+    },
+  );
 }
