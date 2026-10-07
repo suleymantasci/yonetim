@@ -175,7 +175,17 @@
       "visitor_already_left": "Bu ziyaretçinin çıkışı zaten kaydedilmiş.",
       "accrual_exists": "Bu dönem için tahakkuk zaten var. Önce mevcut kaydı iptal edin.",
       "deduction_exceeds_advance": "Mahsup tutarı açık avansı aşıyor.",
-      "entry_already_void": "Bu kayıt zaten iptal edilmiş."
+      "entry_already_void": "Bu kayıt zaten iptal edilmiş.",
+      "already_voided": "Bu hareket zaten iptal edilmiş.",
+      "budget_approved": "Onaylı işletme projesi değiştirilemez; kopyalayıp yeni proje hazırlayın.",
+      "budget_not_approved": "Aidat planı yalnız onaylı projeden oluşturulabilir.",
+      "dues_plan_exists": "Bu projeden zaten bir aidat planı oluşturulmuş.",
+      "budget_empty": "Projenin toplamı sıfır; önce kalem tutarlarını girin.",
+      "bank_account_not_found": "Seçilen banka hesabı bulunamadı.",
+      "handover_in_future": "Devir tarihi ileri bir tarih olamaz.",
+      "date_in_future": "İleri tarihli kayıt girilemez.",
+      "range_order": "Başlangıç tarihi bitişten sonra olamaz.",
+      "range_too_long": "Tarih aralığı en çok 3 yıl olabilir."
     }
   },
   "errorPage": {

@@ -69,7 +69,7 @@ describe("demo seed — site planı", () => {
     const plan = build("yesilvadi");
     const required: (keyof SitePlan)[] = [
       "blocks", "units", "users", "memberships", "occupancies", "vendors", "bankAccounts",
-      "openingEntries", "expenseCategories", "budgets", "staff", "duesPlans", "duesRuns", "debts",
+      "openingEntries", "expenseCategories", "budgets", "operatingBudgets", "operatingBudgetLines", "cashMovements", "staff", "duesPlans", "duesRuns", "debts",
       "payments", "allocations", "bankTransactions", "expenses", "staffLedger", "meters",
       "meterReadings", "requests", "requestComments", "maintenanceRecords", "maintenanceLogs",
       "announcements", "announcementReads", "polls", "pollVotes", "meetings", "meetingAttendances",

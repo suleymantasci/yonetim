@@ -9,6 +9,9 @@ import type {
   bankTransactions,
   blocks,
   budgets,
+  cashMovements,
+  operatingBudgetLines,
+  operatingBudgets,
   debtCertificates,
   debts,
   decisionBookEntries,
@@ -94,6 +97,9 @@ export interface SitePlan {
   openingEntries: Insert<typeof openingEntries>[];
   expenseCategories: Insert<typeof expenseCategories>[];
   budgets: Insert<typeof budgets>[];
+  operatingBudgets: Insert<typeof operatingBudgets>[];
+  operatingBudgetLines: Insert<typeof operatingBudgetLines>[];
+  cashMovements: Insert<typeof cashMovements>[];
   staff: Insert<typeof staff>[];
   duesPlans: Insert<typeof duesPlans>[];
   duesRuns: Insert<typeof duesRuns>[];
@@ -224,6 +230,9 @@ export function buildSitePlan(bp: SiteBlueprint, ctx: PlanContext, rng: Rng): Si
     openingEntries: [],
     expenseCategories: [],
     budgets: [],
+    operatingBudgets: [],
+    operatingBudgetLines: [],
+    cashMovements: [],
     staff: [],
     duesPlans: [],
     duesRuns: [],
@@ -545,6 +554,60 @@ export function buildSitePlan(bp: SiteBlueprint, ctx: PlanContext, rng: Rng): Si
     });
     return { ...s, id: staffId };
   });
+
+  /* ------------------------------------------------ işletme projesi, kasa hareketleri */
+  // Yılın onaylı işletme projesi: gider kategorisi bütçeleri + personel.
+  // Aidat planına bağlı değil — demo sitenin aidatı kendi planlarından yürüyor.
+  const budgetId = id();
+  plan.operatingBudgets.push({
+    id: budgetId,
+    tenantId,
+    name: `${current.year} işletme projesi`,
+    startPeriod: `${current.year}-01`,
+    endPeriod: `${current.year}-12`,
+    formula: "land_share",
+    reservePct: "5.00",
+    status: "approved",
+    approvedAt: istanbul(current.year, 1, 15),
+    approvalNote: `${current.year} olağan genel kurulu, karar 2`,
+    createdBy: managerId,
+    createdAt: tenantCreatedAt,
+  });
+  const staffYearly = staffRows.reduce((sum, s) => sum + (s.grossTl + s.sgkTl) * 12, 0);
+  if (staffYearly > 0)
+    plan.operatingBudgetLines.push({
+      tenantId, budgetId, isStaff: true, label: "Personel giderleri (maaş, SGK)",
+      plannedKurus: tl(Math.round(staffYearly / 100) * 100), sortOrder: 0, createdAt: tenantCreatedAt,
+    });
+  plan.budgets.forEach((b, i) => {
+    const category = plan.expenseCategories.find((c) => c.id === b.categoryId);
+    plan.operatingBudgetLines.push({
+      tenantId, budgetId, categoryId: b.categoryId ?? null, label: category?.name ?? "Gider",
+      plannedKurus: b.plannedKurus ?? 0, sortOrder: i + 1, createdAt: tenantCreatedAt,
+    });
+  });
+
+  // Aidat dışı gelir (baz istasyonu kirası, mevduat faizi) ve kasadan bankaya virman.
+  const rentTl = Math.round((3_000 + rng.int(0, 4) * 500) * bp.expenseScale / 100) * 100 || 3_000;
+  for (const daysAgo of [75, 45, 15]) {
+    const at = addDays(now, -daysAgo);
+    plan.cashMovements.push({
+      tenantId, kind: "income", movementDate: at, amountKurus: tl(rentTl), toAccount: "bank", toBankAccountId: bankId,
+      incomeCategory: "rent", payerName: "Baz istasyonu kiracısı", description: "Çatı kirası", createdBy: managerId, createdAt: at,
+    });
+  }
+  plan.cashMovements.push(
+    {
+      tenantId, kind: "income", movementDate: addDays(now, -20), amountKurus: tl(380 + rng.int(0, 200)), toAccount: "bank",
+      toBankAccountId: bankId, incomeCategory: "interest", payerName: bp.bankName, description: "Vadeli hesap faizi",
+      createdBy: managerId, createdAt: addDays(now, -20),
+    },
+    {
+      tenantId, kind: "transfer", movementDate: addDays(now, -30), amountKurus: tl(5_000), fromAccount: "cash",
+      toAccount: "bank", toBankAccountId: bankId, description: "Kasadaki nakit bankaya yatırıldı", createdBy: managerId,
+      createdAt: addDays(now, -30),
+    },
+  );
 
   /* ------------------------------------------------ aidat planları ve borçlar */
   const raiseAt = 6; // 7. aydan itibaren yeni plan (kurul kararıyla %25 artış)

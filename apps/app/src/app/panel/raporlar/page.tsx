@@ -15,6 +15,7 @@ import { PageHeader } from "@/components/app-shell";
 import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
+import { ReportsSubnav } from "./report-tools";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +40,8 @@ export default async function ReportsPage() {
           period: f.period(periodKey(currentPeriod())),
         })}
       />
+
+      <ReportsSubnav active="summary" />
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Stat

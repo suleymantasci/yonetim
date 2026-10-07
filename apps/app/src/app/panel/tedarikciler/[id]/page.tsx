@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
-import { Link2, Pencil, Trash2 } from "lucide-react";
+import { FileCheck2, Link2, Pencil, Trash2 } from "lucide-react";
 
 import { hasPermission } from "@yonetim/auth/guard";
 import { vendorDetail } from "@yonetim/contracts";
@@ -46,6 +46,13 @@ export default async function VendorDetailPage({
         action={
           <div className="flex flex-wrap items-center gap-2 print:hidden">
             <PrintButton label={t("printLedger")} />
+            <Link
+              href={`/panel/tedarikciler/${v.id}/mutabakat`}
+              className="inline-flex h-10 items-center gap-2 rounded-lg border border-border-strong px-3 text-sm font-semibold text-fg hover:bg-hover"
+            >
+              <FileCheck2 aria-hidden className="h-4 w-4" />
+              {t("confirmationButton")}
+            </Link>
             {canWrite ? (
               <>
                 <ActionDrawerButton

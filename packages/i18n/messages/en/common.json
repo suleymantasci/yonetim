@@ -175,7 +175,17 @@
       "visitor_already_left": "This visitor has already checked out.",
       "accrual_exists": "This period is already accrued.",
       "deduction_exceeds_advance": "Deduction exceeds the open advance.",
-      "entry_already_void": "Already voided."
+      "entry_already_void": "Already voided.",
+      "already_voided": "This movement is already voided.",
+      "budget_approved": "An approved budget cannot be changed; copy it instead.",
+      "budget_not_approved": "A dues plan can only be created from an approved budget.",
+      "dues_plan_exists": "A dues plan was already created from this budget.",
+      "budget_empty": "The budget total is zero; enter item amounts first.",
+      "bank_account_not_found": "The selected bank account was not found.",
+      "handover_in_future": "Handover date cannot be in the future.",
+      "date_in_future": "Future-dated entries are not allowed.",
+      "range_order": "Start date cannot be after end date.",
+      "range_too_long": "The date range can be at most 3 years."
     }
   },
   "errorPage": {

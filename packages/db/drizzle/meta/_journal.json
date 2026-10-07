@@ -141,6 +141,13 @@
       "when": 1785688800000,
       "tag": "0019_demo_accounts",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1785775200000,
+      "tag": "0020_cash_budget",
+      "breakpoints": true
     }
   ]
 }

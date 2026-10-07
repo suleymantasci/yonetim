@@ -2,12 +2,13 @@ import { getTranslations } from "next-intl/server";
 
 import Link from "@/components/link";
 
-/** Muhasebe raporları arası gezinme — mizan, yevmiye, açılış fişi. */
-export async function AccountingSubnav({ active }: { active: "mizan" | "journal" | "opening" }) {
+/** Muhasebe raporları arası gezinme — mizan, yevmiye, kebir, açılış fişi. */
+export async function AccountingSubnav({ active }: { active: "mizan" | "journal" | "ledger" | "opening" }) {
   const t = await getTranslations("app.accounting");
   const items = [
     { key: "mizan", href: "/panel/muhasebe", label: t("tabMizan") },
     { key: "journal", href: "/panel/muhasebe/yevmiye", label: t("tabJournal") },
+    { key: "ledger", href: "/panel/muhasebe/kebir", label: t("tabLedger") },
     { key: "opening", href: "/panel/muhasebe/acilis", label: t("tabOpening") },
   ] as const;
   return (

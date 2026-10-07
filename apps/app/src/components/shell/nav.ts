@@ -166,6 +166,8 @@ export const NAV_ITEMS: NavItem[] = [
     group: "finance",
     badge: "unmatchedBankTx",
   },
+  { href: "/panel/kasa", key: "cash", permission: "bank:read", group: "finance" },
+  { href: "/panel/butce", key: "budget", permission: "report:read", group: "finance" },
   { href: "/panel/simulator", key: "simulator", permission: "dues:simulate", group: "finance" },
   // Duyuru site geneline yayın: içerik iki taraf için de aynı, değişen yalnız
   // yazma yetkisi. Ayrı bir sakin rotası açmak aynı listeyi ikinci kez

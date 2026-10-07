@@ -17,6 +17,11 @@ import { PropertyModule } from "../property/property.module";
 import { AccountingController } from "./accounting/accounting.controller";
 import { AccountingService } from "./accounting/accounting.service";
 import { OpeningService } from "./accounting/opening.service";
+import { StatementService } from "./accounting/statement.service";
+import { BudgetController } from "./budget/budget.controller";
+import { BudgetService } from "./budget/budget.service";
+import { CashController } from "./cash/cash.controller";
+import { CashService } from "./cash/cash.service";
 import { VendorController } from "./vendor/vendor.controller";
 import { VendorService } from "./vendor/vendor.service";
 
@@ -41,6 +46,8 @@ import { VendorService } from "./vendor/vendor.service";
     PortalPaymentController,
     VendorController,
     AccountingController,
+    CashController,
+    BudgetController,
   ],
   providers: [
     DebtService,
@@ -54,6 +61,9 @@ import { VendorService } from "./vendor/vendor.service";
     VendorService,
     AccountingService,
     OpeningService,
+    StatementService,
+    CashService,
+    BudgetService,
   ],
   exports: [DebtService, DebtRepository, ExpenseService, DuesPlanService, VendorService],
 })

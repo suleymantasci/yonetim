@@ -93,7 +93,9 @@ describe.skipIf(!apiReachable)("muhasebe raporları", () => {
     expect(debt.status).toBe(201);
     expect((await site.call("POST", "/v1/panel/debts/collect", { unitId: site.unitIds[1], amountMinor: 150_000, method: "cash", paidAt: new Date().toISOString() })).status).toBe(201);
 
-    const today = new Date().toISOString().slice(0, 10);
+    // İstanbul günü: raporlar gün sınırını İstanbul saatine göre çiziyor; UTC
+    // günü 21:00–24:00 arasında bir gün geride kalıp bugünkü kaydı dışlıyordu.
+    const today = new Date(Date.now() + 3 * 3_600_000).toISOString().slice(0, 10);
     const mizan = await site.call("GET", `/v1/panel/reports/accounting/mizan?from=2026-01-01&to=${today}`);
     expect(mizan.status).toBe(200);
     const totals = mizan.body.totals as { debitMinor: number; creditMinor: number };

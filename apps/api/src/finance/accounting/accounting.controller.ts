@@ -1,12 +1,23 @@
 import { Body, Controller, Get, Put, Query } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 
-import { baBsQuery, journalQuery, mizanQuery, openingSave, type OpeningSave } from "@yonetim/contracts";
+import {
+  baBsQuery,
+  balanceSheetQuery,
+  journalQuery,
+  ledgerQuery,
+  mizanQuery,
+  openingSave,
+  rangeQuery,
+  unitStatementQuery,
+  type OpeningSave,
+} from "@yonetim/contracts";
 
 import { RequirePermission } from "../../identity/decorators";
 import { ZodBodyPipe } from "../../infra/zod/zod-dto";
 import { AccountingService } from "./accounting.service";
 import { OpeningService } from "./opening.service";
+import { StatementService } from "./statement.service";
 
 /** Muhasebe raporları — sentetik mizan ve BA/BS. */
 @ApiTags("panel/reports")
@@ -15,7 +26,61 @@ export class AccountingController {
   constructor(
     private readonly service: AccountingService,
     private readonly opening: OpeningService,
+    private readonly statements: StatementService,
   ) {}
+
+  @Get("income-statement")
+  @RequirePermission("report:read")
+  @ApiOperation({ summary: "Dönemsel gelir-gider tablosu (aylık sütunlar)" })
+  incomeStatement(@Query() query: Record<string, string>) {
+    const input = rangeQuery.parse(query);
+    return this.statements.incomeStatement(input.from, input.to);
+  }
+
+  @Get("balance-sheet")
+  @RequirePermission("report:read")
+  @ApiOperation({ summary: "Bilanço — aktif / pasif / özkaynak (dönem sonucu dahil)" })
+  balanceSheet(@Query() query: Record<string, string>) {
+    return this.statements.balanceSheet(balanceSheetQuery.parse(query).at);
+  }
+
+  @Get("ledger")
+  @RequirePermission("report:read")
+  @ApiOperation({ summary: "Kebir — tek hesabın devirli hareket dökümü" })
+  ledger(@Query() query: Record<string, string>) {
+    const input = ledgerQuery.parse(query);
+    return this.statements.ledger(input.code, input.from, input.to);
+  }
+
+  @Get("operating-book")
+  @RequirePermission("report:read")
+  @ApiOperation({ summary: "İşletme defteri (KMK 35) — kasa/banka giriş-çıkışları, kümülatif" })
+  operatingBook(@Query() query: Record<string, string>) {
+    const input = rangeQuery.parse(query);
+    return this.statements.operatingBook(input.from, input.to);
+  }
+
+  @Get("unit-statements")
+  @RequirePermission("report:read")
+  @ApiOperation({ summary: "Toplu hesap özeti — bağımsız bölüm başına devir/borç/tahsilat/bakiye" })
+  unitStatements(@Query() query: Record<string, string>) {
+    const input = unitStatementQuery.parse(query);
+    return this.statements.unitStatements({
+      from: input.from,
+      to: input.to,
+      unitId: input.unitId,
+      detail: input.detail === "1",
+      onlyOpen: input.onlyOpen === "1",
+    });
+  }
+
+  @Get("activity")
+  @RequirePermission("report:read")
+  @ApiOperation({ summary: "Faaliyet / denetim raporu gövdesi — dönemin mali ve operasyon özeti" })
+  activity(@Query() query: Record<string, string>) {
+    const input = rangeQuery.parse(query);
+    return this.statements.activitySummary(input.from, input.to);
+  }
 
   @Get("mizan")
   @RequirePermission("report:read")

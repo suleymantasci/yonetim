@@ -436,3 +436,108 @@ export const openingEntries = pgTable(
   },
   (t) => [index("idx_opening_entries_tenant").on(t.tenantId)],
 );
+
+/**
+ * Kasa hareketleri — tahakkuksuz para hareketleri.
+ *
+ *  - `transfer` (virman): kasa ↔ banka ya da banka ↔ banka. Gelir/gider değil.
+ *  - `income` (harici tahsilat): aidat dışı gelir — kira, reklam, faiz, bağış.
+ *    Sakin borcuna bağlı değil; borcu olmayan bir gelir için sahte borç
+ *    açmak alacak hesabını şişirirdi.
+ *
+ * Silinmiyor, iptal ediliyor (`voided_at`): defterden iz kaybolmasın.
+ * Hesap tarafı: `*_account` = "cash" | "bank"; banka ise `*_bank_account_id`.
+ */
+export const cashMovements = pgTable(
+  "cash_movements",
+  {
+    id: idCol(),
+    tenantId: tenantId().references(() => tenants.id, { onDelete: "cascade" }),
+    kind: varchar("kind", { length: 20 }).notNull(),
+    movementDate: timestamp("movement_date", { withTimezone: true }).notNull(),
+    amountKurus: money("amount_kurus").notNull(),
+    fromAccount: varchar("from_account", { length: 10 }),
+    fromBankAccountId: uuid("from_bank_account_id").references(() => bankAccounts.id, { onDelete: "restrict" }),
+    toAccount: varchar("to_account", { length: 10 }).notNull(),
+    toBankAccountId: uuid("to_bank_account_id").references(() => bankAccounts.id, { onDelete: "restrict" }),
+    incomeCategory: varchar("income_category", { length: 30 }),
+    payerName: varchar("payer_name", { length: 160 }),
+    description: text("description"),
+    documentNo: varchar("document_no", { length: 60 }),
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+    voidedAt: timestamp("voided_at", { withTimezone: true }),
+    voidReason: text("void_reason"),
+    ...timestamps,
+  },
+  (t) => [index("idx_cash_movements_tenant_date").on(t.tenantId, t.movementDate)],
+);
+
+/**
+ * Kasa devir tutanağı — yönetim değişiminde kasa/banka/alacak/borç
+ * bakiyelerinin o anki fotoğrafı. Muhasebe kaydı doğurmaz; `snapshot`
+ * tutanak imzalandığı andaki rakamları saklar (sonradan girilen geriye dönük
+ * kayıtlar imzalı tutanağı değiştirmesin).
+ */
+export const cashHandovers = pgTable(
+  "cash_handovers",
+  {
+    id: idCol(),
+    tenantId: tenantId().references(() => tenants.id, { onDelete: "cascade" }),
+    handoverDate: timestamp("handover_date", { withTimezone: true }).notNull(),
+    fromName: varchar("from_name", { length: 160 }).notNull(),
+    toName: varchar("to_name", { length: 160 }).notNull(),
+    note: text("note"),
+    snapshot: jsonb("snapshot").notNull(),
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+    ...timestamps,
+  },
+  (t) => [index("idx_cash_handovers_tenant").on(t.tenantId, t.handoverDate)],
+);
+
+/**
+ * İşletme projesi (KMK 37) — dönem bütçesi ve kat maliklerine dağıtımı.
+ *
+ * Dönem ay cinsinden (`YYYY-MM`..`YYYY-MM`). `reserve_pct`: öngörülemeyen
+ * giderler için yedek pay; toplam = kalemler × (1 + yedek). Onaylanan proje
+ * değiştirilemez (genel kurul kararı); yenisi yazılır.
+ */
+export const operatingBudgets = pgTable(
+  "operating_budgets",
+  {
+    id: idCol(),
+    tenantId: tenantId().references(() => tenants.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 160 }).notNull(),
+    startPeriod: varchar("start_period", { length: 7 }).notNull(),
+    endPeriod: varchar("end_period", { length: 7 }).notNull(),
+    formula: varchar("formula", { length: 20 }).notNull().default("land_share"),
+    mixEqualPct: integer("mix_equal_pct").notNull().default(50),
+    reservePct: numeric("reserve_pct", { precision: 5, scale: 2 }).notNull().default("0"),
+    status: varchar("status", { length: 20 }).notNull().default("draft"),
+    approvedAt: timestamp("approved_at", { withTimezone: true }),
+    approvalNote: text("approval_note"),
+    duesPlanId: uuid("dues_plan_id").references(() => duesPlans.id, { onDelete: "set null" }),
+    notes: text("notes"),
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+    ...timestamps,
+    ...softDelete,
+  },
+  (t) => [index("idx_operating_budgets_tenant").on(t.tenantId, t.startPeriod)],
+);
+
+export const operatingBudgetLines = pgTable(
+  "operating_budget_lines",
+  {
+    id: idCol(),
+    tenantId: tenantId().references(() => tenants.id, { onDelete: "cascade" }),
+    budgetId: uuid("budget_id").notNull().references(() => operatingBudgets.id, { onDelete: "cascade" }),
+    /** Gerçekleşen karşılaştırması bu kategoriden; boşsa kalem yalnız plan. */
+    categoryId: uuid("category_id").references(() => expenseCategories.id, { onDelete: "set null" }),
+    /** Personel giderleri: gerçekleşen personel defterindeki tahakkuklardan. */
+    isStaff: boolean("is_staff").notNull().default(false),
+    label: varchar("label", { length: 160 }).notNull(),
+    plannedKurus: money("planned_kurus").notNull(),
+    sortOrder: integer("sort_order").notNull().default(0),
+    ...timestamps,
+  },
+  (t) => [index("idx_operating_budget_lines_budget").on(t.budgetId)],
+);

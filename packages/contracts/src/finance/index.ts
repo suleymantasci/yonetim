@@ -3,3 +3,6 @@ export * from "./dues-plan.contract";
 export * from "./expense.contract";
 export * from "./vendor.contract";
 export * from "./accounting.contract";
+export * from "./cash.contract";
+export * from "./budget.contract";
+export * from "./statement.contract";

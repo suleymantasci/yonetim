@@ -21,6 +21,8 @@ import type { Database } from "../../property/unit/types";
  *  - Avans                    196 Personel avansları (B) / 100 | 102.xx (A)
  *  - Avanstan mahsup          335 (B) / 196 (A)
  *  - Açılış fişi              100 · 102.xx · 196 (B) / 320 · 335 (A), fark 549
+ *  - Virman                   hedef 100 | 102.xx (B) / kaynak 100 | 102.xx (A)
+ *  - Harici tahsilat          100 | 102.xx (B) / 602.xx (A) — faiz 642
  *
  * Mahsup/kredi bakiyesiyle kapatılan tahsilatlar (`offset`, `credit_balance`)
  * nakit hareketi değil, dışarıda. Tutarlar KDV dahil: site yönetimi KDV
@@ -37,7 +39,16 @@ export interface JournalEntry {
   date: Date;
   /** Sıralama için: aynı gün içinde kaynak sırası (açılış önce). */
   order: number;
-  source: "opening" | "debt" | "writeoff" | "payment" | "expense" | "expense_payment" | "staff";
+  source:
+    | "opening"
+    | "debt"
+    | "writeoff"
+    | "payment"
+    | "expense"
+    | "expense_payment"
+    | "staff"
+    | "transfer"
+    | "income";
   sourceId: string | null;
   description: string;
   lines: JournalLine[];
@@ -53,6 +64,7 @@ export const BASE_ACCOUNTS: Record<string, string> = {
   "549": "Özel fonlar (devreden işletme fonu)",
   "600": "Aidat gelirleri",
   "602": "Diğer gelirler",
+  "642": "Faiz gelirleri",
   "649": "Gecikme tazminatı gelirleri",
   "659": "Silinen alacaklar",
   "770": "Genel yönetim giderleri",
@@ -62,10 +74,28 @@ export const STAFF_EXPENSE_CODE = "770.99";
 const UNCATEGORIZED_CODE = "770.00";
 const UNASSIGNED_BANK_CODE = "102.00";
 
+/** Harici tahsilat grubu → gelir alt hesabı. */
+export const INCOME_ACCOUNTS: Record<string, [string, string]> = {
+  rent: ["602.01", "Kira gelirleri"],
+  advertising: ["602.02", "Reklam gelirleri"],
+  donation: ["602.03", "Bağış ve yardımlar"],
+  compensation: ["602.04", "Tazminat ve sigorta gelirleri"],
+  sale: ["602.05", "Hurda / demirbaş satış gelirleri"],
+  other: ["602.09", "Diğer harici gelirler"],
+  interest: ["642", "Faiz gelirleri"],
+};
+
+/** Kasa ve banka hesapları (işletme defteri, kasa bakiyeleri). */
+export function isCashCode(code: string): boolean {
+  return code === "100" || code === "102" || code.startsWith("102.");
+}
+
 export interface Journal {
   entries: JournalEntry[];
   /** Kod → ad (alt hesaplar dahil). */
   accounts: Map<string, string>;
+  /** Banka hesabı id → 102.xx (oluşturulma sırası). */
+  bankCodes: Map<string, string>;
 }
 
 type Row = Record<string, unknown>;
@@ -80,7 +110,7 @@ export async function loadJournal(tx: Database, until: Date): Promise<Journal> {
   const end = until.toISOString();
   const q = async (query: ReturnType<typeof sql>) => (await tx.execute(query)) as unknown as Row[];
 
-  const [banks, categories, debtRows, paymentRows, expenseRows, staffRows, openingRows] = await Promise.all([
+  const [banks, categories, debtRows, paymentRows, expenseRows, staffRows, openingRows, movementRows] = await Promise.all([
     q(sql`SELECT id, bank_name, account_name FROM bank_accounts ORDER BY created_at, id`),
     q(sql`SELECT id, name FROM expense_categories ORDER BY name, id`),
     q(sql`
@@ -115,6 +145,12 @@ export async function loadJournal(tx: Database, until: Date): Promise<Journal> {
       SELECT o.account, o.bank_account_id, o.vendor_id, o.amount_kurus, o.as_of_date, v.name AS vendor_name
       FROM opening_entries o LEFT JOIN vendors v ON v.id = o.vendor_id
       WHERE o.as_of_date <= ${end}::timestamptz
+    `),
+    q(sql`
+      SELECT m.id, m.kind, m.movement_date, m.amount_kurus, m.from_account, m.from_bank_account_id,
+             m.to_account, m.to_bank_account_id, m.income_category, m.payer_name, m.description
+      FROM cash_movements m
+      WHERE m.voided_at IS NULL AND m.movement_date <= ${end}::timestamptz
     `),
   ]);
 
@@ -249,8 +285,30 @@ export async function loadJournal(tx: Database, until: Date): Promise<Journal> {
     });
   }
 
+  for (const [code, name] of Object.values(INCOME_ACCOUNTS)) if (!accounts.has(code)) accounts.set(code, name);
+  const sideCode = (account: unknown, bankAccountId: unknown) =>
+    account === "bank" ? cashAccount(bankAccountId) : "100";
+  for (const r of movementRows) {
+    const amount = n(r.amount_kurus);
+    if (amount <= 0) continue;
+    const to = sideCode(r.to_account, r.to_bank_account_id);
+    const note = r.description ? ` — ${r.description}` : "";
+    if (r.kind === "transfer") {
+      entries.push({
+        date: d(r.movement_date), order: 3, source: "transfer", sourceId: String(r.id),
+        description: `Virman${note}`, lines: pair(to, sideCode(r.from_account, r.from_bank_account_id), amount),
+      });
+    } else if (r.kind === "income") {
+      const [incomeCode] = INCOME_ACCOUNTS[String(r.income_category)] ?? INCOME_ACCOUNTS.other!;
+      entries.push({
+        date: d(r.movement_date), order: 3, source: "income", sourceId: String(r.id),
+        description: `Harici tahsilat: ${r.payer_name ?? ""}${note}`.trim(), lines: pair(to, incomeCode, amount),
+      });
+    }
+  }
+
   entries.sort((a, b) => a.date.getTime() - b.date.getTime() || a.order - b.order);
-  return { entries: entries.filter((e) => e.date.getTime() <= until.getTime()), accounts };
+  return { entries: entries.filter((e) => e.date.getTime() <= until.getTime()), accounts, bankCodes: bankCode };
 }
 
 /** Alt hesabın üst hesabı (102.03 → 102). */
