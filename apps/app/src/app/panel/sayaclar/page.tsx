@@ -1,4 +1,4 @@
-import { ClipboardList, Pencil, Plus } from "lucide-react";
+import { ClipboardList, Pencil, Plus, ReceiptText, Trash2 } from "lucide-react";
 import Link from "@/components/link";
 import { getTranslations } from "next-intl/server";
 
@@ -6,6 +6,9 @@ import { hasPermission } from "@yonetim/auth/guard";
 import { meterListResponse } from "@yonetim/contracts";
 import {
   Badge,
+  DateInput,
+  Input,
+  Textarea,
   Card,
   CardBody,
   CardHeader,
@@ -15,6 +18,13 @@ import {
 } from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
+import { ActionDrawerButton } from "@/components/form/action-drawer-button";
+import { FormField } from "@/components/form/action-form";
+import {
+  billMeterPeriod,
+  correctMeterReading,
+  removeMeterReading,
+} from "./actions";
 import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
@@ -168,7 +178,35 @@ export default async function MetersPage() {
       </Card>
 
       <Card className="mt-4">
-        <CardHeader title={t("recentReadings")} />
+        <CardHeader
+          title={t("recentReadings")}
+          description={t("recentReadingsHint")}
+          action={
+            canWrite && readings.length > 0 ? (
+              <ActionDrawerButton
+                action={billMeterPeriod}
+                hidden={{}}
+                icon={ReceiptText}
+                label={t("billAction")}
+                title={t("billTitle")}
+                description={t("billDescription")}
+                submitLabel={t("billConfirm")}
+              >
+                <FormField name="period" label={t("period")} required>
+                  <Input
+                    name="period"
+                    type="month"
+                    defaultValue={readings[0]?.period}
+                    required
+                  />
+                </FormField>
+                <FormField name="dueDate" label={t("billDueDate")} required>
+                  <DateInput name="dueDate" required />
+                </FormField>
+              </ActionDrawerButton>
+            ) : undefined
+          }
+        />
         <CardBody className="p-0">
           {readings.length === 0 ? (
             <div className="p-4">
@@ -191,11 +229,14 @@ export default async function MetersPage() {
             </div>
           ) : (
             <div className={tc.wrapper}>
-              <table className={tc.table} style={{ minWidth: 640 }}>
+              <table className={tc.table} style={{ minWidth: 760 }}>
                 <thead className={tc.thead}>
                   <tr>
                     <th scope="col" className={tc.th}>
                       {t("period")}
+                    </th>
+                    <th scope="col" className={tc.th}>
+                      {t("unit")}
                     </th>
                     <th scope="col" className={tc.th}>
                       {t("type")}
@@ -215,6 +256,9 @@ export default async function MetersPage() {
                     <th scope="col" className={tc.th}>
                       {t("date")}
                     </th>
+                    <th scope="col" className={tc.th}>
+                      <span className="sr-only">{t("actionsColumn")}</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -222,6 +266,7 @@ export default async function MetersPage() {
                     return (
                       <tr key={r.id} className={tc.tr}>
                         <td className={tc.td}>{f.period(r.period)}</td>
+                        <td className={tc.tdMuted}>{r.unitNumber ?? t("commonAreaShort")}</td>
                         <td className={tc.td}>
                           {/* Sayaç türü sunucuda join'lendi. */}
                           {r.meterType
@@ -238,6 +283,51 @@ export default async function MetersPage() {
                         </td>
                         <td className={tc.tdNum}>{f.money(r.amountMinor)}</td>
                         <td className={tc.tdMuted}>{f.date(r.readingDate)}</td>
+                        <td className={tc.td}>
+                          {r.billed ? (
+                            <Badge tone="success">{t("billedBadge")}</Badge>
+                          ) : canWrite ? (
+                            <div className="flex justify-end gap-1.5">
+                              <ActionDrawerButton
+                                action={correctMeterReading}
+                                hidden={{ id: r.id }}
+                                icon={Pencil}
+                                label={t("correctAction")}
+                                title={t("correctTitle")}
+                                description={`${f.period(r.period)} · ${r.unitNumber ?? t("commonAreaShort")} · ${t("previous")}: ${r.previousValue}`}
+                                warning={t("correctWarning")}
+                                submitLabel={tCommon("action.save")}
+                              >
+                                <FormField name="currentValue" label={t("current")} required>
+                                  <Input
+                                    name="currentValue"
+                                    inputMode="decimal"
+                                    defaultValue={r.currentValue.replace(".", ",")}
+                                    required
+                                  />
+                                </FormField>
+                                <FormField name="reason" label={t("reason")} hint={t("reasonHint")} required>
+                                  <Textarea name="reason" rows={3} minLength={10} maxLength={500} required />
+                                </FormField>
+                              </ActionDrawerButton>
+                              <ActionDrawerButton
+                                action={removeMeterReading}
+                                hidden={{ id: r.id }}
+                                icon={Trash2}
+                                tone="danger"
+                                label={tCommon("action.delete")}
+                                title={t("deleteTitle")}
+                                description={`${f.period(r.period)} · ${r.unitNumber ?? t("commonAreaShort")} · ${r.currentValue}`}
+                                warning={t("deleteWarning")}
+                                submitLabel={tCommon("action.delete")}
+                              >
+                                <FormField name="reason" label={t("reason")} hint={t("reasonHint")} required>
+                                  <Textarea name="reason" rows={3} minLength={10} maxLength={500} required />
+                                </FormField>
+                              </ActionDrawerButton>
+                            </div>
+                          ) : null}
+                        </td>
                       </tr>
                     );
                   })}

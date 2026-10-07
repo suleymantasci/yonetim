@@ -51,7 +51,19 @@ export default async function VerifyCertificatePage({
             </button>
           </form>
 
-          {record === null ? null : record.valid ? (
+          {record === null ? null : record.valid && record.voidedAt ? (
+            <Alert tone="danger" title={t("voidedTitle")}>
+              <dl className="mt-1 space-y-1 text-sm">
+                <Row label={t("issuer")} value={record.tenantName} />
+                <Row label={t("issuedAt")} value={f.date(record.asOfDate)} />
+                <Row label={t("voidedAt")} value={f.date(record.voidedAt)} />
+                {record.voidReason ? (
+                  <Row label={t("voidReason")} value={record.voidReason} />
+                ) : null}
+              </dl>
+              <p className="mt-2 text-xs">{t("voidedNote")}</p>
+            </Alert>
+          ) : record.valid ? (
             <Alert tone="success" title={t("validTitle")}>
               <dl className="mt-1 space-y-1 text-sm">
                 <Row label={t("issuer")} value={record.tenantName} />

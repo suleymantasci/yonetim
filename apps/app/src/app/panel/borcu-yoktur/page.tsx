@@ -1,10 +1,14 @@
+import { Ban } from "lucide-react";
 import { getTranslations } from "next-intl/server";
+
+import { hasPermission } from "@yonetim/auth/guard";
 
 import { siteConfig } from "@yonetim/config";
 import { debtCertificateListResponse } from "@yonetim/contracts";
 import {
   Alert,
   Badge,
+  Textarea,
   Card,
   CardBody,
   CardHeader,
@@ -12,10 +16,13 @@ import {
 } from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
+import { ActionDrawerButton } from "@/components/form/action-drawer-button";
+import { FormField } from "@/components/form/action-form";
 import { CertificateRequestForm } from "@/components/certificate-form";
 import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
+import { voidCertificate } from "./actions";
 
 /**
  * "Borcu Yoktur" belge motoru — SPEC Bölüm 3.6 (VURUCU ÖZELLİK).
@@ -25,7 +32,8 @@ import { formatters } from "@/lib/format";
 export const dynamic = "force-dynamic";
 
 export default async function DebtCertificatePage() {
-  await requirePermission("debt:read");
+  const ctx = await requirePermission("debt:read");
+  const canWrite = hasPermission(ctx.roles, "certificate:write");
   const t = await getTranslations("app.certificate");
   const tCommon = await getTranslations("common");
   const f = await formatters();
@@ -74,7 +82,10 @@ export default async function DebtCertificatePage() {
                         })}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {c.voidedAt ? (
+                        <Badge tone="danger">{t("voidedBadge")}</Badge>
+                      ) : null}
                       <Badge
                         tone={c.result === "clear" ? "success" : "warning"}
                       >
@@ -84,6 +95,23 @@ export default async function DebtCertificatePage() {
                       </Badge>
                       {c.kepSentAt ? (
                         <Badge tone="info">{t("kepSent")}</Badge>
+                      ) : null}
+                      {canWrite && !c.voidedAt ? (
+                        <ActionDrawerButton
+                          action={voidCertificate}
+                          hidden={{ id: c.id }}
+                          icon={Ban}
+                          tone="danger"
+                          label={t("voidAction")}
+                          title={t("voidTitle")}
+                          description={`${c.serialNo} · ${c.unitNumber ?? ""}`}
+                          warning={t("voidWarning")}
+                          submitLabel={t("voidConfirm")}
+                        >
+                          <FormField name="reason" label={t("voidReason")} hint={t("voidReasonHint")} required>
+                            <Textarea name="reason" rows={3} minLength={10} maxLength={500} required />
+                          </FormField>
+                        </ActionDrawerButton>
                       ) : null}
                     </div>
                   </li>

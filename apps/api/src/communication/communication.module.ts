@@ -7,6 +7,7 @@ import { CommunicationService } from "./communication.service";
 import { NotificationController } from "./notification.controller";
 import { WhatsappBotService } from "./whatsapp/whatsapp-bot.service";
 import { WhatsappWebhookController } from "./whatsapp/whatsapp-webhook.controller";
+import { MeetingGovernanceService } from "./meeting-governance.service";
 
 /**
  * `communication` bağlamı — duyuru, anket, mesaj, toplantı (MIMARI-PLAN §6.3).
@@ -23,6 +24,7 @@ import { WhatsappWebhookController } from "./whatsapp/whatsapp-webhook.controlle
     CommunicationService,
     CommunicationWriteService,
     CommunicationRepository,
+    MeetingGovernanceService,
     WhatsappBotService,
   ],
   exports: [CommunicationService],

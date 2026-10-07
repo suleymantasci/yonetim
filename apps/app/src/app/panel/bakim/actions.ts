@@ -97,6 +97,8 @@ const completeSchema = z.object({
   doneAt: dateField,
   costKurus: kurusField({ min: 0 }),
   documentUrl: optionalText(500),
+  /** Yüklenen rapor (`document:<id>`) — bağlantıdan önceliklidir. */
+  documentFile: optionalText(60),
   note: optionalText(2000),
 });
 
@@ -129,7 +131,12 @@ export async function completeMaintenance(
         {
           doneAt: input.doneAt,
           costMinor: input.costKurus,
-          documentUrl: input.documentUrl ?? null,
+          documentUrl:
+            (input.documentFile && /^document:[0-9a-f-]{36}$/i.test(input.documentFile)
+              ? input.documentFile
+              : undefined) ??
+            input.documentUrl ??
+            null,
           note: input.note ?? null,
         },
         z.object({ id: z.string().uuid(), nextDueAt: z.coerce.date() }),

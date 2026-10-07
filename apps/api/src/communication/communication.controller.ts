@@ -15,14 +15,20 @@ import {
   announcementUpdate,
   announcementWithdraw,
   meetingDecisionSave,
+  meetingAttendanceAdd,
+  meetingNotice,
   meetingSave,
+  meetingStatusChange,
   messageSend,
   pollClose,
   pollSave,
   type AnnouncementCreate,
   type AnnouncementUpdate,
   type MeetingDecisionSave,
+  type MeetingAttendanceAdd,
+  type MeetingNotice,
   type MeetingSave,
+  type MeetingStatusChange,
   type MessageSend,
   type PollClose,
   type PollSave,
@@ -32,6 +38,7 @@ import { RequirePermission } from "../identity/decorators";
 import { ZodBodyPipe } from "../infra/zod/zod-dto";
 import { CommunicationWriteService } from "./communication-write.service";
 import { CommunicationService } from "./communication.service";
+import { MeetingGovernanceService } from "./meeting-governance.service";
 
 /** Panel iç BFF yüzeyi — `/v1/panel/communication/*`. */
 @ApiTags("panel/communication")
@@ -40,6 +47,7 @@ export class CommunicationController {
   constructor(
     private readonly service: CommunicationService,
     private readonly write: CommunicationWriteService,
+    private readonly governance: MeetingGovernanceService,
   ) {}
 
   @Get("announcements")
@@ -189,6 +197,63 @@ export class CommunicationController {
   })
   createMeeting(@Body(new ZodBodyPipe(meetingSave)) dto: MeetingSave) {
     return this.write.saveMeeting(dto);
+  }
+
+  @Get("meetings/:id")
+  @RequirePermission("meeting:read")
+  @ApiOperation({
+    summary: "Toplantı ayrıntısı — tebliğ uyarısı, hazirun, yeter sayı",
+    description:
+      "Yeter sayı KMK md.30'a göre hesaplanır: ilk toplantı sayı ve arsa payı " +
+      "çoğunluğu, ikinci toplantı sayının üçte biri.",
+  })
+  meetingDetail(@Param("id", ParseUUIDPipe) id: string) {
+    return this.governance.detail(id);
+  }
+
+  @Post("meetings/:id/notice")
+  @RequirePermission("meeting:write")
+  @ApiOperation({ summary: "Çağrı tebliğini kaydet (KMK md.29: en az 15 gün önce)" })
+  recordMeetingNotice(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body(new ZodBodyPipe(meetingNotice)) dto: MeetingNotice,
+  ) {
+    return this.governance.recordNotice(id, dto);
+  }
+
+  @Post("meetings/:id/status")
+  @RequirePermission("meeting:write")
+  @ApiOperation({
+    summary: "İptal / erteleme / yapıldı",
+    description: "Ertelemede yeni tarih zorunlu; tebliğ sıfırlanır. İptal edilen toplantı değiştirilemez (409).",
+  })
+  changeMeetingStatus(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body(new ZodBodyPipe(meetingStatusChange)) dto: MeetingStatusChange,
+  ) {
+    return this.governance.changeStatus(id, dto);
+  }
+
+  @Post("meetings/:id/attendance")
+  @RequirePermission("meeting:write")
+  @ApiOperation({
+    summary: "Hazirun cetveline daire ekle (bizzat ya da vekâleten)",
+    description: "Vekâlet sınırı KMK md.31: malik sayısı 20'den çoksa %5, değilse 1 (409 `conflict:proxy_limit`).",
+  })
+  addMeetingAttendance(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body(new ZodBodyPipe(meetingAttendanceAdd)) dto: MeetingAttendanceAdd,
+  ) {
+    return this.governance.addAttendance(id, dto);
+  }
+
+  @Delete("meetings/:id/attendance/:attendanceId")
+  @RequirePermission("meeting:write")
+  removeMeetingAttendance(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Param("attendanceId", ParseUUIDPipe) attendanceId: string,
+  ) {
+    return this.governance.removeAttendance(id, attendanceId);
   }
 
   @Patch("meetings/:id")

@@ -14,6 +14,10 @@ import { DebtRepository } from "./debt/debt.repository";
 import { DebtService } from "./debt/debt.service";
 import { PortalPaymentController } from "./portal-payment/portal-payment.controller";
 import { PropertyModule } from "../property/property.module";
+import { AccountingController } from "./accounting/accounting.controller";
+import { AccountingService } from "./accounting/accounting.service";
+import { VendorController } from "./vendor/vendor.controller";
+import { VendorService } from "./vendor/vendor.service";
 
 /**
  * `finance` bağlamı — MIMARI-PLAN §6.4: aidat planı, borç, tahsilat, gider,
@@ -34,6 +38,8 @@ import { PropertyModule } from "../property/property.module";
     DuesPlanController,
     CertificateController,
     PortalPaymentController,
+    VendorController,
+    AccountingController,
   ],
   providers: [
     DebtService,
@@ -44,7 +50,9 @@ import { PropertyModule } from "../property/property.module";
     ExpenseWriteRepository,
     DuesPlanService,
     CertificateService,
+    VendorService,
+    AccountingService,
   ],
-  exports: [DebtService, DebtRepository, ExpenseService, DuesPlanService],
+  exports: [DebtService, DebtRepository, ExpenseService, DuesPlanService, VendorService],
 })
 export class FinanceModule {}

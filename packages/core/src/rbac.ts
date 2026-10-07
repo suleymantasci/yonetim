@@ -53,6 +53,12 @@ export const PERMISSIONS = [
   "decision:read", "decision:write",
   "staff:read", "staff:write", "staff:payroll",
   "legal:read", "legal:write",
+  // Tedarikçi kartı ve cari ekstresi — gider girişinden ayrı: muhasebeci
+  // tedarikçi açabilmeli, denetçi yalnız okuyabilmeli.
+  "vendor:read", "vendor:write",
+  // Kargo ve ziyaretçi defteri: kapıcı/güvenliğin günlük işi; finans ya da
+  // sakin verisi yetkisi gerektirmemeli.
+  "frontdesk:read", "frontdesk:write",
   "message:read", "message:read_own", "message:write",
   "report:read", "report:export",
   "nps:read",
@@ -124,6 +130,8 @@ const MANAGER_PERMS: Permission[] = [
   "decision:read", "decision:write",
   "staff:read", "staff:write", "staff:payroll",
   "legal:read", "legal:write",
+  "vendor:read", "vendor:write",
+  "frontdesk:read", "frontdesk:write",
   "message:read", "message:write",
   "report:read", "report:export",
   "nps:read",
@@ -137,7 +145,7 @@ const READ_ONLY_FINANCE: Permission[] = [
   "tenant:read", "unit:read", "resident:read",
   "dues:read", "debt:read", "payment:read",
   "expense:read", "bank:read", "report:read", "report:export",
-  "document:read", "audit:read",
+  "document:read", "audit:read", "vendor:read",
 ];
 
 export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
@@ -165,12 +173,14 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   accountant: [
     ...READ_ONLY_FINANCE,
     "expense:write", "payment:create", "bank:reconcile", "meter:read", "meter:write",
+    "vendor:write",
     // Demirbaş alış bedeli gider raporlarına giriyor; okuma yeterli.
     "inventory:read",
   ],
   staff: [
     "tenant:read", "unit:read", "request:read", "request:write",
     "maintenance:read", "maintenance:write", "document:read", "message:read", "message:write",
+    "frontdesk:read", "frontdesk:write",
     // Kapıcı/teknisyen zimmetindeki ekipmanı görebilmeli; deftere yazmak
     // yönetimin işi (arıza bildirimi zaten `request:write` üzerinden).
     "inventory:read",

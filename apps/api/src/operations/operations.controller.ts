@@ -13,23 +13,31 @@ import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import {
   maintenanceComplete,
   maintenanceSave,
+  meterBill,
   meterReadingBatch,
+  meterReadingCorrect,
+  meterReadingRemove,
   meterSave,
   requestAssignPatch,
   requestCommentCreate,
   requestSave,
   requestStatusPatch,
+  reservationCancel,
   reservationCreate,
   reservationDecide,
   resourceSave,
   type MaintenanceComplete,
   type MaintenanceSave,
+  type MeterBill,
   type MeterReadingBatch,
+  type MeterReadingCorrect,
+  type MeterReadingRemove,
   type MeterSave,
   type RequestAssignPatch,
   type RequestCommentCreate,
   type RequestSave,
   type RequestStatusPatch,
+  type ReservationCancel,
   type ReservationCreate,
   type ReservationDecide,
   type ResourceSave,
@@ -308,6 +316,21 @@ export class OperationsController {
    * `reservation:write`'tan ayrı: sakin (portal rolü) kendi adına rezervasyon
    * **talebi** açabiliyor ama onaylayan yönetim.
    */
+  @Post("reservations/:id/cancel")
+  @RequirePermission("reservation:write")
+  @ApiOperation({
+    summary: "Rezervasyonu iptal et (sahibi ya da yönetim)",
+    description:
+      "Sakin yalnız kendi, başlamamış, beklemede/onaylı rezervasyonunu iptal " +
+      "eder; başkasınınki 404, başlamış olan 409.",
+  })
+  cancelReservation(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body(new ZodBodyPipe(reservationCancel)) dto: ReservationCancel,
+  ) {
+    return this.reservationWrite.cancel(id, dto.reason);
+  }
+
   @Patch("reservations/:id/decision")
   @RequirePermission("reservation:approve")
   @ApiOperation({
@@ -373,6 +396,44 @@ export class OperationsController {
    * Gerçek iş ayda bir kez binayı dolaşıp bütün sayaçları okumak; sayaç
    * başına ayrı istek 60 daireli bir binada yarım kalmış bir tur demekti.
    */
+  @Post("meters/readings/bill")
+  @RequirePermission("meter:write")
+  @ApiOperation({
+    summary: "Dönem tüketimini borçlandır",
+    description:
+      "Daireye bağlı, tutarı sıfırdan büyük ve borçlandırılmamış okumalar " +
+      "için 'utility' borcu açar; okuma borca bağlanır ve kilitlenir.",
+  })
+  billMeterReadings(@Body(new ZodBodyPipe(meterBill)) dto: MeterBill) {
+    return this.meterWrite.bill(dto);
+  }
+
+  @Patch("meters/readings/:id")
+  @RequirePermission("meter:write")
+  @ApiOperation({
+    summary: "Okumayı düzelt (gerekçeli)",
+    description: "Borçlandırılmış okuma düzeltilemez (409).",
+  })
+  correctMeterReading(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body(new ZodBodyPipe(meterReadingCorrect)) dto: MeterReadingCorrect,
+  ) {
+    return this.meterWrite.correctReading(id, dto);
+  }
+
+  @Delete("meters/readings/:id")
+  @RequirePermission("meter:write")
+  @ApiOperation({
+    summary: "Okumayı sil (gerekçeli)",
+    description: "Borçlandırılmış okuma silinemez (409).",
+  })
+  removeMeterReading(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body(new ZodBodyPipe(meterReadingRemove)) dto: MeterReadingRemove,
+  ) {
+    return this.meterWrite.removeReading(id, dto.reason);
+  }
+
   @Post("meters/readings")
   @RequirePermission("meter:write")
   @ApiOperation({

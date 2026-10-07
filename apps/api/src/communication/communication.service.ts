@@ -414,6 +414,8 @@ export class CommunicationService {
       quorumMet: m.quorumMet,
       minutesUrl: m.minutesUrl,
       status: m.status,
+      statusReason: m.statusReason,
+      noticeSentAt: m.noticeSentAt,
       decisions: (byMeeting.get(m.id) ?? []).map((d) => ({
         id: d.id,
         meetingId: d.meetingId,
@@ -433,7 +435,7 @@ export class CommunicationService {
       rows: mapped,
       totals: {
         planned: mapped.filter((m) => m.status === "planned").length,
-        completed: mapped.filter((m) => m.status === "completed").length,
+        completed: mapped.filter((m) => m.status === "held").length,
         decisions: mapped.reduce((sum, m) => sum + m.decisions.length, 0),
       },
     };

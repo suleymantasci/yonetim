@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { Alert, DateInput, Input, MoneyInput, Textarea } from "@yonetim/ui";
 
 import { ActionForm, FormField } from "@/components/form/action-form";
+import { AttachmentField } from "@/components/form/attachment-field";
 import { completeMaintenance } from "./actions";
 
 /**
@@ -68,6 +69,14 @@ export function CompleteMaintenanceForm({
             placeholder="https://…"
           />
         </FormField>
+      </div>
+
+      <div className="sm:col-span-2">
+        <AttachmentField
+          name="documentFile"
+          category="maintenance_report"
+          title={t("reportTitle")}
+        />
       </div>
 
       <div className="sm:col-span-2">

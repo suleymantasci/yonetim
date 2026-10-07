@@ -158,6 +158,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/panel/borclar", key: "debts", permission: "debt:read", group: "finance" },
   { href: "/panel/borcu-yoktur", key: "certificate", permission: "debt:read", group: "finance" },
   { href: "/panel/giderler", key: "expenses", permission: "expense:read", group: "finance" },
+  { href: "/panel/tedarikciler", key: "vendors", permission: "vendor:read", group: "finance" },
   {
     href: "/panel/banka",
     key: "bank",
@@ -203,6 +204,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   { href: "/panel/sayaclar", key: "meters", permission: "meter:read", group: "operations" },
   { href: "/panel/rezervasyon", key: "reservations", permission: "reservation:read", group: "operations" },
+  { href: "/panel/kargo-ziyaretci", key: "frontdesk", permission: "frontdesk:read", group: "operations" },
   { href: "/panel/personel", key: "staff", permission: "staff:read", group: "operations" },
   { href: "/panel/demirbas", key: "inventory", permission: "inventory:read", group: "operations" },
   { href: "/panel/belgeler", key: "documents", permission: "document:read", group: "operations" },
@@ -222,6 +224,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
   { href: "/panel/denetim", key: "audit", permission: "audit:read", group: "compliance" },
   { href: "/panel/raporlar", key: "reports", permission: "report:read", group: "compliance" },
+  { href: "/panel/muhasebe", key: "accounting", permission: "report:read", group: "finance" },
   { href: "/panel/ayarlar", key: "settings", permission: "settings:read", group: "general" },
 ];
 

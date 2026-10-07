@@ -18,7 +18,7 @@ import {
   toIstanbul,
 } from "@yonetim/core";
 import {
-  blocks, debts, expenseCategories, expenses, unitOrder, units,
+  blocks, debts, expenseCategories, expenses, unitOrder, units, vendors,
 } from "@yonetim/db";
 import { distributeDues, type DuesFormula } from "@yonetim/dues";
 
@@ -148,6 +148,17 @@ export class ExpenseWriteRepository {
   ): Promise<{ id: string; before: Record<string, unknown> | null }> {
     return this.db.tx(async (tx) => {
       const ctx = this.db.ctx();
+      // Kart seçildiyse ad karttan: serbest metinle kart adı ayrışmasın.
+      let vendorName: string | null = null;
+      if (dto.vendorId) {
+        const [vendor] = await tx
+          .select({ name: vendors.name })
+          .from(vendors)
+          .where(and(eq(vendors.id, dto.vendorId), isNull(vendors.deletedAt)))
+          .limit(1);
+        if (!vendor) throw new NotFoundException("not_found:vendor");
+        vendorName = vendor.name;
+      }
       const vatRate = dto.vatRate ?? 0.2;
       const vatKurus = Math.round((dto.amountMinor * vatRate) / (1 + vatRate));
       const istanbul = toIstanbul(dto.expenseDate);
@@ -159,7 +170,8 @@ export class ExpenseWriteRepository {
       const values = {
         tenantId: ctx.tenantId,
         categoryId: dto.categoryId ?? null,
-        vendorName: dto.vendorName ?? null,
+        vendorId: dto.vendorId ?? null,
+        vendorName: vendorName ?? dto.vendorName ?? null,
         description: dto.description,
         amountKurus: dto.amountMinor,
         vatRate: vatRate.toFixed(2),

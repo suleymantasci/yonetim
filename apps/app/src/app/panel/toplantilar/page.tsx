@@ -65,7 +65,15 @@ export default async function MeetingsPage() {
                   title={m.title}
                   description={`${f.dateTime(m.scheduledAt)}${m.location ? ` · ${m.location}` : ""}`}
                   action={
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      {m.status !== "planned" ? (
+                        <Badge tone={m.status === "held" ? "success" : m.status === "cancelled" ? "danger" : "warning"}>
+                          {tEnum(`meetingStatus.${m.status}` as never)}
+                        </Badge>
+                      ) : null}
+                      {m.status !== "cancelled" && !m.noticeSentAt ? (
+                        <Badge tone="warning">{t("noticeMissingBadge")}</Badge>
+                      ) : null}
                       {m.quorumMet === null ? (
                         <Badge tone="neutral">{t("planned")}</Badge>
                       ) : m.quorumMet ? (
@@ -73,6 +81,12 @@ export default async function MeetingsPage() {
                       ) : (
                         <Badge tone="danger">{t("quorumFailed")}</Badge>
                       )}
+                      <Link
+                        href={`/panel/toplantilar/${m.id}`}
+                        className="inline-flex h-8 items-center rounded-lg border border-border-strong px-2.5 text-xs font-semibold text-fg hover:bg-hover"
+                      >
+                        {t("detail")}
+                      </Link>
                       {canWrite ? (
                         <Link
                           href={`/panel/toplantilar/${m.id}/duzenle`}

@@ -11,6 +11,8 @@ import { OperationsRepository } from "./operations.repository";
 import { OperationsService } from "./operations.service";
 import { RequestWriteService } from "./request-write.service";
 import { ReservationWriteService } from "./reservation-write.service";
+import { FrontdeskController } from "./frontdesk.controller";
+import { FrontdeskService } from "./frontdesk.service";
 
 /**
  * `operations` bağlamı — talep, bakım, rezervasyon, sayaç (MIMARI-PLAN §6.3).
@@ -21,7 +23,7 @@ import { ReservationWriteService } from "./reservation-write.service";
  * takibi, bakım ve talep akışlarıyla aynı operasyonel alan.
  */
 @Module({
-  controllers: [OperationsController, JobRunController, InventoryController],
+  controllers: [OperationsController, JobRunController, InventoryController, FrontdeskController],
   providers: [
     OperationsService,
     OperationsRepository,
@@ -31,6 +33,7 @@ import { ReservationWriteService } from "./reservation-write.service";
     ReservationWriteService,
     JobRunService,
     InventoryService,
+    FrontdeskService,
   ],
   // `JobRunService` dışa açık: uzun süren işi başlatan her modül (göç,
   // toplu borç, rapor) koşu kaydını buradan açıyor ve worker aynı servisle

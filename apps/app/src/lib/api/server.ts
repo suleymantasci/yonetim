@@ -233,11 +233,13 @@ export function apiPatch(
   return request("PATCH", path, schema, body, options);
 }
 
+/** `body`: gerekçe isteyen silmeler (ör. sayaç okuması) için. */
 export function apiDelete(
   path: string,
   options?: ApiRequestOptions,
+  body?: unknown,
 ): Promise<unknown> {
-  return request("DELETE", path, null, undefined, options);
+  return request("DELETE", path, null, body, options);
 }
 
 /** Nesneyi querystring'e çevirir; boş/undefined alanlar yazılmaz. */

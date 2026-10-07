@@ -140,6 +140,59 @@ export const maintenanceLogs = pgTable(
   ],
 );
 
+/**
+ * Kargo/paket kaydı — güvenlik/kapıcı teslim alır, sakine teslim eder.
+ * Teslim edilmemiş paket sayısı ekranın ana sorusu.
+ */
+export const parcels = pgTable(
+  "parcels",
+  {
+    id: idCol(),
+    tenantId: tenantId().references(() => tenants.id, { onDelete: "cascade" }),
+    unitId: uuid("unit_id").references(() => units.id, { onDelete: "set null" }),
+    recipientName: varchar("recipient_name", { length: 160 }).notNull(),
+    carrier: varchar("carrier", { length: 60 }),
+    trackingNo: varchar("tracking_no", { length: 80 }),
+    note: text("note"),
+    receivedAt: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(),
+    receivedBy: uuid("received_by").references(() => users.id, { onDelete: "set null" }),
+    deliveredAt: timestamp("delivered_at", { withTimezone: true }),
+    deliveredTo: varchar("delivered_to", { length: 160 }),
+    deliveredBy: uuid("delivered_by").references(() => users.id, { onDelete: "set null" }),
+    ...timestamps,
+  },
+  (t) => [
+    index("idx_parcels_tenant_open").on(t.tenantId, t.deliveredAt),
+    index("idx_parcels_unit").on(t.unitId),
+  ],
+);
+
+/**
+ * Ziyaretçi defteri. Kişisel veri (ad, telefon, plaka): KVKK saklama süresi
+ * dolunca `kvkk.retention` anonimleştirir.
+ */
+export const visitors = pgTable(
+  "visitors",
+  {
+    id: idCol(),
+    tenantId: tenantId().references(() => tenants.id, { onDelete: "cascade" }),
+    unitId: uuid("unit_id").references(() => units.id, { onDelete: "set null" }),
+    visitorName: varchar("visitor_name", { length: 160 }).notNull(),
+    phone: varchar("phone", { length: 20 }),
+    plate: varchar("plate", { length: 20 }),
+    purpose: varchar("purpose", { length: 120 }),
+    note: text("note"),
+    arrivedAt: timestamp("arrived_at", { withTimezone: true }).notNull().defaultNow(),
+    leftAt: timestamp("left_at", { withTimezone: true }),
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+    ...timestamps,
+  },
+  (t) => [
+    index("idx_visitors_tenant_arrived").on(t.tenantId, t.arrivedAt),
+    index("idx_visitors_unit").on(t.unitId),
+  ],
+);
+
 export const vendors = pgTable(
   "vendors",
   {
@@ -151,6 +204,10 @@ export const vendors = pgTable(
     phone: varchar("phone", { length: 20 }),
     email: varchar("email", { length: 200 }),
     taxNumber: varchar("tax_number", { length: 11 }),
+    taxOffice: varchar("tax_office", { length: 80 }),
+    iban: varchar("iban", { length: 34 }),
+    address: text("address"),
+    notes: text("notes"),
     contractUrl: text("contract_url"),
     contractEndsAt: timestamp("contract_ends_at", { withTimezone: true }),
     /** Tedarikçi puanlaması (Bölüm 6.3 Gelişmiş) — 0..5. */
@@ -203,6 +260,12 @@ export const meterReadings = pgTable(
     /** Anomali uyarısı (Bölüm 6.9 Gelişmiş). */
     anomalyFlag: boolean("anomaly_flag").notNull().default(false),
     readBy: uuid("read_by").references(() => users.id, { onDelete: "set null" }),
+    /**
+     * Tüketim borçlandırıldıysa oluşan borç. Dolu okuma **kilitli**:
+     * düzeltilmesi borcun iptal edilip yeniden kesilmesini gerektirir, yoksa
+     * sakine yansıyan tutar ile endeks birbirinden kopar.
+     */
+    debtId: uuid("debt_id"),
     ...timestamps,
   },
   (t) => [

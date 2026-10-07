@@ -1,21 +1,26 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { and, desc, eq, inArray, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNull, lt } from "drizzle-orm";
 
 import type {
+  MeterBill,
+  MeterBillResult,
   MeterDetail,
+  MeterReadingCorrect,
   MeterReadingBatch,
   MeterReadingBatchResult,
   MeterSave,
   MeterSaveResult,
 } from "@yonetim/contracts";
-import { meterReadings, meters, units } from "@yonetim/db";
+import { debts, meterReadings, meters, unitOccupancies, units } from "@yonetim/db";
 
 import { AuditService, diffOf } from "../governance/audit/audit.service";
 import { DbService } from "../infra/db/db.service";
+import type { Database } from "../property/unit/types";
 
 /**
  * Anomali eşiği — son okumaların ortalamasının kaç katı "sıçrama" sayılır.
@@ -306,6 +311,219 @@ export class MeterWriteService {
   }
 
   /**
+   * Tek okumayı düzelt — gerekçeli.
+   *
+   * BORÇLANDIRILMIŞ OKUMA DÜZELTİLMEZ (409): sakine yansıyan tutar bu endekse
+   * dayanıyor; önce borç iptal edilmeli. Sonraki dönemin okuması da bu
+   * endeksi "önceki" olarak kullandığı için birlikte yeniden hesaplanıyor —
+   * o da borçlandırıldıysa düzeltme reddediliyor.
+   */
+  async correctReading(id: string, dto: MeterReadingCorrect): Promise<{ id: string }> {
+    const before = await this.db.txWithReason(dto.reason, async (tx) => {
+      const reading = await this.lockedReading(tx, id);
+      const meter = await this.meterOf(tx, reading.meterId);
+      const next = await this.nextReading(tx, reading.meterId, reading.period);
+      if (next?.debtId) throw new ConflictException("conflict:next_reading_billed");
+
+      const previous = Number(reading.previousValue);
+      await tx
+        .update(meterReadings)
+        .set({
+          ...derive(previous, dto.currentValue, meter.unitPriceKurus),
+          updatedAt: new Date(),
+        })
+        .where(eq(meterReadings.id, id));
+
+      if (next) {
+        await tx
+          .update(meterReadings)
+          .set({
+            ...derive(dto.currentValue, Number(next.currentValue), meter.unitPriceKurus),
+            updatedAt: new Date(),
+          })
+          .where(eq(meterReadings.id, next.id));
+      }
+      return reading;
+    });
+
+    await this.audit.record({
+      action: "meter_reading_corrected",
+      resource: "meter_reading",
+      resourceId: id,
+      diff: {
+        currentValue: { from: before.currentValue, to: dto.currentValue.toFixed(3) },
+        reason: { from: null, to: dto.reason },
+      },
+    });
+    return { id };
+  }
+
+  /**
+   * Okumayı sil — gerekçeli. Sonraki dönemin okuması, silinenden önceki
+   * endekse (yoksa takılış endeksine) göre yeniden hesaplanıyor.
+   */
+  async removeReading(id: string, reason: string): Promise<{ id: string }> {
+    const before = await this.db.txWithReason(reason, async (tx) => {
+      const reading = await this.lockedReading(tx, id);
+      const meter = await this.meterOf(tx, reading.meterId);
+      const next = await this.nextReading(tx, reading.meterId, reading.period);
+      if (next?.debtId) throw new ConflictException("conflict:next_reading_billed");
+
+      await tx.delete(meterReadings).where(eq(meterReadings.id, id));
+
+      if (next) {
+        const [prior] = await tx
+          .select({ currentValue: meterReadings.currentValue })
+          .from(meterReadings)
+          .where(
+            and(
+              eq(meterReadings.meterId, reading.meterId),
+              lt(meterReadings.period, reading.period),
+            ),
+          )
+          .orderBy(desc(meterReadings.period))
+          .limit(1);
+        const base = Number(prior?.currentValue ?? meter.initialValue);
+        await tx
+          .update(meterReadings)
+          .set({
+            ...derive(base, Number(next.currentValue), meter.unitPriceKurus),
+            updatedAt: new Date(),
+          })
+          .where(eq(meterReadings.id, next.id));
+      }
+      return reading;
+    });
+
+    await this.audit.record({
+      action: "meter_reading_deleted",
+      resource: "meter_reading",
+      resourceId: id,
+      diff: {
+        period: { from: before.period, to: null },
+        currentValue: { from: before.currentValue, to: null },
+        reason: { from: null, to: reason },
+      },
+    });
+    return { id };
+  }
+
+  /**
+   * Dönem tüketimini borçlandır.
+   *
+   * KİM ÖDER: tüketen — dairede aktif kiracı varsa kiracı, yoksa malik
+   * (hisseli mülkiyette ilk malik; tutar küçük ve bölmek kuruş artığı
+   * üretiyor). Ortak alan sayacı borçlandırılmaz: o tüketim gider olarak
+   * dağıtılır. Tek işlem: yarım kalmış bir dönem olmasın.
+   */
+  async bill(dto: MeterBill): Promise<MeterBillResult> {
+    const tenantId = this.db.ctx().tenantId;
+    const outcome = await this.db.tx(async (tx) => {
+      const rows = await tx
+        .select({
+          id: meterReadings.id,
+          amountKurus: meterReadings.amountKurus,
+          consumption: meterReadings.consumption,
+          debtId: meterReadings.debtId,
+          unitId: meters.unitId,
+          type: meters.type,
+        })
+        .from(meterReadings)
+        .innerJoin(meters, eq(meters.id, meterReadings.meterId))
+        .where(and(eq(meterReadings.period, dto.period), isNull(meters.deletedAt)))
+        .for("update", { of: meterReadings });
+
+      let billed = 0;
+      let skipped = 0;
+      let totalMinor = 0;
+      for (const row of rows) {
+        if (row.debtId || !row.unitId || row.amountKurus <= 0) {
+          skipped += 1;
+          continue;
+        }
+        const occupants = await tx
+          .select({ userId: unitOccupancies.userId, relation: unitOccupancies.relation })
+          .from(unitOccupancies)
+          .where(and(eq(unitOccupancies.unitId, row.unitId), isNull(unitOccupancies.endDate)))
+          .orderBy(asc(unitOccupancies.startDate));
+        const debtor =
+          occupants.find((o) => o.relation === "tenant") ??
+          occupants.find((o) => o.relation === "owner") ??
+          null;
+
+        const [debt] = await tx
+          .insert(debts)
+          .values({
+            tenantId,
+            unitId: row.unitId,
+            debtorUserId: debtor?.userId ?? null,
+            kind: "utility",
+            period: dto.period,
+            description: `${METER_LABEL[row.type] ?? "Sayaç"} tüketimi ${dto.period} (${Number(row.consumption).toLocaleString("tr-TR")})`,
+            amountKurus: row.amountKurus,
+            dueDate: dto.dueDate,
+            metadata: { meterReadingId: row.id },
+          })
+          .returning({ id: debts.id });
+        await tx
+          .update(meterReadings)
+          .set({ debtId: debt!.id, updatedAt: new Date() })
+          .where(eq(meterReadings.id, row.id));
+        billed += 1;
+        totalMinor += row.amountKurus;
+      }
+      return { billed, skipped, totalMinor };
+    });
+
+    await this.audit.record({
+      action: "meter_readings_billed",
+      resource: "meter_reading",
+      diff: {
+        period: { from: null, to: dto.period },
+        billed: { from: null, to: outcome.billed },
+        totalMinor: { from: null, to: outcome.totalMinor },
+      },
+    });
+    return outcome;
+  }
+
+  private async lockedReading(tx: Database, id: string) {
+    const [reading] = await tx
+      .select()
+      .from(meterReadings)
+      .where(eq(meterReadings.id, id))
+      .limit(1)
+      .for("update");
+    if (!reading) throw new NotFoundException("not_found");
+    if (reading.debtId) throw new ConflictException("conflict:reading_billed");
+    return reading;
+  }
+
+  private async meterOf(tx: Database, meterId: string) {
+    const [meter] = await tx
+      .select({ initialValue: meters.initialValue, unitPriceKurus: meters.unitPriceKurus })
+      .from(meters)
+      .where(eq(meters.id, meterId))
+      .limit(1);
+    if (!meter) throw new NotFoundException("not_found");
+    return meter;
+  }
+
+  private async nextReading(tx: Database, meterId: string, period: string) {
+    const [next] = await tx
+      .select({
+        id: meterReadings.id,
+        currentValue: meterReadings.currentValue,
+        debtId: meterReadings.debtId,
+      })
+      .from(meterReadings)
+      .where(and(eq(meterReadings.meterId, meterId), gt(meterReadings.period, period)))
+      .orderBy(asc(meterReadings.period))
+      .limit(1);
+    return next ?? null;
+  }
+
+  /**
    * Sayacı kaldır — **soft delete**.
    *
    * Okumalar `on delete cascade` ile bağlı; sert silme geçmiş dönemlerin
@@ -357,4 +575,23 @@ function anomalyReason(
 
   const average = values.reduce((sum, v) => sum + v, 0) / values.length;
   return consumption > average * SPIKE_MULTIPLIER ? "spike" : null;
+}
+
+const METER_LABEL: Record<string, string> = {
+  water: "Su",
+  hot_water: "Sıcak su",
+  gas: "Doğalgaz",
+  electric: "Elektrik",
+  heat_calorimeter: "Isınma (kalorimetre)",
+};
+
+/** Okumanın türetilmiş alanları — toplu girişle aynı kural (negatif tüketim 0 ₺). */
+function derive(previous: number, current: number, unitPriceKurus: number) {
+  const consumption = current - previous;
+  return {
+    previousValue: previous.toFixed(3),
+    currentValue: current.toFixed(3),
+    consumption: consumption.toFixed(3),
+    amountKurus: consumption > 0 ? Math.round(consumption * unitPriceKurus) : 0,
+  };
 }

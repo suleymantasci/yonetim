@@ -14,6 +14,7 @@ import { ExpenseForm } from "../../../giderler/expense-form";
 export function NewExpenseFlow({
   categories,
   bankAccounts,
+  vendors = [],
   canApprove,
   labels,
 }: {
@@ -25,6 +26,7 @@ export function NewExpenseFlow({
     defaultVatRate: string | null;
   }[];
   bankAccounts: { id: string; label: string }[];
+  vendors?: { id: string; name: string }[];
   canApprove: boolean;
   labels: {
     submit: string;
@@ -69,6 +71,7 @@ export function NewExpenseFlow({
       key={formKey}
       categories={categories}
       bankAccounts={bankAccounts}
+      vendors={vendors}
       canApprove={canApprove}
       submitLabel={labels.submit}
       layout="modal"

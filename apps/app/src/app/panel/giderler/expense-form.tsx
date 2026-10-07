@@ -15,6 +15,7 @@ import {
 } from "@yonetim/ui";
 
 import { ActionForm, FormField } from "@/components/form/action-form";
+import { AttachmentField } from "@/components/form/attachment-field";
 import { saveExpense } from "./actions";
 import { NoCategoriesNotice } from "./no-categories-notice";
 
@@ -32,6 +33,7 @@ import { NoCategoriesNotice } from "./no-categories-notice";
 export function ExpenseForm({
   categories,
   bankAccounts = [],
+  vendors = [],
   defaults,
   cancelHref,
   submitLabel,
@@ -50,9 +52,12 @@ export function ExpenseForm({
   }[];
   /** Paranın çıkabileceği hesaplar; boşsa yalnız nakit kasa sorulur. */
   bankAccounts?: { id: string; label: string }[];
+  /** Tedarikçi kartları; boşsa yalnız serbest metin ad sorulur. */
+  vendors?: { id: string; name: string }[];
   defaults?: {
     id: string;
     categoryId: string | null;
+    vendorId?: string | null;
     vendorName: string | null;
     description: string;
     amountKurus: number;
@@ -139,6 +144,19 @@ export function ExpenseForm({
             ))}
           </Select>
         </FormField>
+
+        {vendors.length > 0 ? (
+          <FormField name="vendorId" label={t("vendorCard")} hint={t("vendorCardHint")}>
+            <Select name="vendorId" defaultValue={defaults?.vendorId ?? ""}>
+              <option value="">{t("vendorCardNone")}</option>
+              {vendors.map((vendor) => (
+                <option key={vendor.id} value={vendor.id}>
+                  {vendor.name}
+                </option>
+              ))}
+            </Select>
+          </FormField>
+        ) : null}
 
         <FormField name="vendorName" label={t("vendor")} hint={t("vendorHint")}>
           <Input
@@ -337,17 +355,22 @@ export function ExpenseForm({
           <Input
             name="attachmentUrl"
             type="url"
-            defaultValue={defaults?.attachmentUrl ?? ""}
+            defaultValue={
+              defaults?.attachmentUrl?.startsWith("document:") ? "" : (defaults?.attachmentUrl ?? "")
+            }
             maxLength={500}
             placeholder="https://…"
           />
         </FormField>
 
-        {/* Dosya yükleme alanı vardı ama seçilen dosya hiçbir yere
-            kaydedilmiyordu; üstelik Server Action gövdesine binip 1 MB'ı aşan
-            faturada isteği 500'e düşürüyor, doğrulama hiç çalışmıyordu.
-            Yükleme, Belgeler modülünün imzalı-URL akışına bağlanınca
-            (`packages/ui` `FileInput`) geri gelecek; o güne kadar bağlantı. */}
+        {/* Yüklenmiş fatura (`document:<id>`) düzenlemede korunur; yeni dosya
+            seçilirse onun yerine geçer. Dosya Server Action'dan geçmiyor:
+            imzalı adresle doğrudan depoya yükleniyor (depo yoksa alan boş
+            kalır, kayıt engellenmez). */}
+        {defaults?.attachmentUrl?.startsWith("document:") ? (
+          <input type="hidden" name="attachmentExisting" value={defaults.attachmentUrl} />
+        ) : null}
+        <AttachmentField name="attachmentDocument" category="invoice" title={t("attachmentTitle")} />
       </FormSection>
     </ActionForm>
   );

@@ -135,7 +135,17 @@ export interface KvkkRetentionResult {
   tenantId: string;
   candidates: number;
   notified: number;
+  /** Saklama süresi dolup anonimleştirilen ziyaretçi kaydı. */
+  visitorsAnonymized: number;
 }
+
+/**
+ * Ziyaretçi defteri saklama süresi (gün). Ziyaretçinin adı, telefonu ve
+ * plakası güvenlik amacıyla tutuluyor; bir yıldan eski kaydın o amaca hizmeti
+ * yok (KVKK md.4 — amaçla sınırlı, gerektiği kadar saklama). Sakinden farklı
+ * olarak burada yönetici kararı gerekmiyor: kayıt bir kişinin hesabı değil.
+ */
+export const VISITOR_RETENTION_DAYS = 365;
 
 /**
  * `kvkk.retention` — saklama süresi dolan eski sakinleri BULUR, silmez.
@@ -154,6 +164,16 @@ export async function kvkkRetentionScan(params: { tenantId: string; now?: Date }
   const monthKey = now.toISOString().slice(0, 7);
 
   return withTenant(params.tenantId, async (tx) => {
+    const visitorCutoff = new Date(now.getTime() - VISITOR_RETENTION_DAYS * 86_400_000);
+    const anonymized = (await tx.execute(sql`
+      UPDATE visitors
+      SET visitor_name = 'Anonim ziyaretçi', phone = NULL, plate = NULL, note = NULL, updated_at = now()
+      WHERE arrived_at < ${visitorCutoff.toISOString()}::timestamptz
+        AND (phone IS NOT NULL OR plate IS NOT NULL OR note IS NOT NULL OR visitor_name <> 'Anonim ziyaretçi')
+      RETURNING id
+    `)) as unknown as Array<{ id: string }>;
+    const visitorsAnonymized = anonymized.length;
+
     const rows = (await tx.execute(sql`
       SELECT m.user_id
       FROM memberships m
@@ -175,7 +195,7 @@ export async function kvkkRetentionScan(params: { tenantId: string; now?: Date }
       GROUP BY m.user_id
     `)) as unknown as Array<{ user_id: string }>;
 
-    if (rows.length === 0) return { tenantId: params.tenantId, candidates: 0, notified: 0 };
+    if (rows.length === 0) return { tenantId: params.tenantId, candidates: 0, notified: 0, visitorsAnonymized };
 
     let notified = 0;
     for (const recipient of await managers(tx)) {
@@ -202,7 +222,7 @@ export async function kvkkRetentionScan(params: { tenantId: string; now?: Date }
         .returning({ id: notifications.id });
       notified += inserted.length;
     }
-    return { tenantId: params.tenantId, candidates: rows.length, notified };
+    return { tenantId: params.tenantId, candidates: rows.length, notified, visitorsAnonymized };
   });
 }
 

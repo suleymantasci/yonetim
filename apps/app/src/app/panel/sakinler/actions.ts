@@ -17,6 +17,7 @@ import {
   asArray,
   checkboxField,
   dateField,
+  decimalField,
   emailField,
   errorState,
   okState,
@@ -343,6 +344,41 @@ export async function addOccupancy(
       );
 
       return okState(t("occupancyAdded"));
+    },
+  );
+}
+
+const updateOccupancySchema = z.object({
+  occupancyId: uuidField,
+  ownershipPct: decimalField({ min: 0.001, max: 100 }),
+  startDate: dateField,
+  debtTransferPolicy: z.enum(TRANSFER_POLICIES, {
+    errorMap: () => ({ message: V.invalidSelection }),
+  }),
+  reason: requiredText(10, 500),
+});
+
+/** İlişki düzeltme — hisse, başlangıç, devir politikası (gerekçeli). */
+export async function updateOccupancy(
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  return runAction(
+    {
+      permission: "resident:write",
+      schema: updateOccupancySchema,
+      meta: { action: "occupancy_updated", resource: "unit_occupancy" },
+    },
+    formData,
+    async ({ input }) => {
+      const t = await getTranslations("app.residents");
+      await apiPatch(`/v1/panel/residents/occupancy/${input.occupancyId}`, {
+        ownershipPct: input.ownershipPct,
+        startDate: input.startDate,
+        debtTransferPolicy: input.debtTransferPolicy,
+        reason: input.reason,
+      });
+      return okState(t("occupancyUpdated"));
     },
   );
 }

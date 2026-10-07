@@ -1,9 +1,11 @@
-import { Body, Controller, Get, Post } from "@nestjs/common";
+import { Body, Controller, Get, Param, ParseUUIDPipe, Post } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 
 import {
   debtCertificateIssue,
+  debtCertificateVoid,
   type DebtCertificateIssue,
+  type DebtCertificateVoid,
 } from "@yonetim/contracts";
 
 import { RequirePermission } from "../../identity/decorators";
@@ -38,5 +40,20 @@ export class CertificateController {
     @Body(new ZodBodyPipe(debtCertificateIssue)) dto: DebtCertificateIssue,
   ) {
     return this.service.issue(dto);
+  }
+
+  @Post(":id/void")
+  @RequirePermission("certificate:write")
+  @ApiOperation({
+    summary: "Belgeyi iptal et (gerekçeli)",
+    description:
+      "Belge silinmez; doğrulama ucu iptal tarihini ve gerekçesini döndürür. " +
+      "İkinci iptal 409.",
+  })
+  voidCertificate(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body(new ZodBodyPipe(debtCertificateVoid)) dto: DebtCertificateVoid,
+  ) {
+    return this.service.voidCertificate(id, dto.reason);
   }
 }

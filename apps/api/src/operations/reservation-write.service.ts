@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
@@ -14,6 +15,7 @@ import type {
   ResourceSave,
   ResourceSaveResult,
 } from "@yonetim/contracts";
+import { canAny } from "@yonetim/core";
 import { reservations, resources } from "@yonetim/db";
 
 import { AuditService, diffOf } from "../governance/audit/audit.service";
@@ -139,6 +141,16 @@ export class ReservationWriteService {
   async create(dto: ReservationCreate): Promise<ReservationSaveResult> {
     if (dto.endAt <= dto.startAt) {
       throw new BadRequestException("invalid:end_before_start");
+    }
+
+    /*
+     * SAKİN YALNIZ KENDİ ADINA AÇAR. `userId` istemciden geliyor; onay yetkisi
+     * olmayan biri (sakin) başkası adına kayıt açıp ücretini ona
+     * yazdıramasın diye kimlik oturumdan zorlanıyor.
+     */
+    const ctx = this.db.ctx();
+    if (!canAny(ctx.roles, "reservation:approve") && ctx.userId && dto.userId !== ctx.userId) {
+      throw new ForbiddenException("forbidden:not_own_reservation");
     }
 
     const outcome = await this.db.tx(async (tx) => {
@@ -294,6 +306,57 @@ export class ReservationWriteService {
       reason: dto.reason ?? undefined,
     });
     return { id, status: dto.decision };
+  }
+
+  /**
+   * İptal — rezervasyonun sahibi (sakin) ya da yönetim.
+   *
+   * Başlamış rezervasyon iptal edilmez (409): kullanım gerçekleşmiş ya da
+   * gerçekleşiyor; o noktada doğru işlem yönetimin "gelmedi/tamamlandı"
+   * kararı. Yalnız beklemede ve onaylı kayıt iptal edilebilir.
+   */
+  async cancel(id: string, reason: string): Promise<{ id: string; status: string }> {
+    const ctx = this.db.ctx();
+    const isManagement = canAny(ctx.roles, "reservation:approve");
+    await this.db.tx(async (tx) => {
+      const [row] = await tx
+        .select({
+          id: reservations.id,
+          status: reservations.status,
+          userId: reservations.userId,
+          startAt: reservations.startAt,
+        })
+        .from(reservations)
+        .where(eq(reservations.id, id))
+        .limit(1)
+        .for("update");
+      // Başkasının kaydı sakine "yok" görünür: var olduğunu sızdırmasın.
+      if (!row || (!isManagement && row.userId !== ctx.userId))
+        throw new NotFoundException("not_found");
+      if (row.status !== "pending" && row.status !== "approved")
+        throw new ConflictException("conflict:reservation_not_cancellable");
+      if (row.startAt.getTime() <= Date.now())
+        throw new ConflictException("conflict:reservation_started");
+
+      await tx
+        .update(reservations)
+        .set({
+          status: "cancelled",
+          cancelledAt: new Date(),
+          cancelReason: reason,
+          updatedAt: new Date(),
+        })
+        .where(eq(reservations.id, id));
+    });
+
+    await this.audit.record({
+      action: "reservation_cancelled",
+      resource: "reservation",
+      resourceId: id,
+      diff: { status: { from: null, to: "cancelled" } },
+      reason,
+    });
+    return { id, status: "cancelled" };
   }
 
   /** Tesisi kaldır — soft delete; geçmiş rezervasyonlar kaydı referans alıyor. */

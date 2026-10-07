@@ -186,6 +186,8 @@ export const meetingRow = z.object({
   quorumMet: z.boolean().nullable(),
   minutesUrl: z.string().nullable(),
   status: z.string(),
+  statusReason: z.string().nullable(),
+  noticeSentAt: dateTime.nullable(),
   decisions: z.array(meetingDecisionRow),
 });
 
@@ -409,6 +411,113 @@ export const meetingSave = z
   });
 
 export type MeetingSave = z.infer<typeof meetingSave>;
+
+/* ------------------------------------------------------------------ *
+ * Toplantı — tebliğ, hazirun, yeter sayı (KMK md.29–31)
+ * ------------------------------------------------------------------ */
+
+export const MEETING_NOTICE_METHODS = [
+  "hand", // elden imza karşılığı
+  "registered_mail", // iadeli taahhütlü
+  "notice_board", // ilan panosu (yönetim planı izin veriyorsa)
+  "electronic", // e-posta/SMS/uygulama (yönetim planı izin veriyorsa)
+] as const;
+export const meetingNoticeMethod = z.enum(MEETING_NOTICE_METHODS);
+
+/** KMK md.29: çağrı toplantıdan en az 15 gün önce tebliğ edilir. */
+export const MEETING_NOTICE_MIN_DAYS = 15;
+
+/** `POST /v1/panel/communication/meetings/:id/notice` — tebliğ kaydı. */
+export const meetingNotice = z.object({
+  noticeSentAt: dateTime,
+  method: meetingNoticeMethod,
+});
+export type MeetingNotice = z.infer<typeof meetingNotice>;
+
+/**
+ * `POST /v1/panel/communication/meetings/:id/status` — iptal / erteleme /
+ * yapıldı. Ertelemede yeni tarih zorunlu ve tebliğ sıfırlanır: yeni tarih
+ * için çağrı yeniden yapılmalı.
+ */
+export const meetingStatusChange = z
+  .object({
+    status: z.enum(["cancelled", "postponed", "held"]),
+    reason: z.string().trim().min(3).max(1000).nullish(),
+    newScheduledAt: dateTime.nullish(),
+  })
+  .refine((d) => d.status !== "postponed" || !!d.newScheduledAt, {
+    message: "Erteleme için yeni tarih gerekli.",
+    path: ["newScheduledAt"],
+  })
+  .refine((d) => d.status === "held" || (d.reason ?? "").length >= 3, {
+    message: "Gerekçe gerekli.",
+    path: ["reason"],
+  });
+export type MeetingStatusChange = z.infer<typeof meetingStatusChange>;
+
+/** `POST /v1/panel/communication/meetings/:id/attendance` — hazirun satırı. */
+export const meetingAttendanceAdd = z.object({
+  unitId: uuid,
+  /** Vekâleten katılımda vekilin adı; boşsa malik bizzat katıldı. */
+  proxyName: z.string().trim().min(2).max(160).nullish(),
+  proxyDocumentUrl: z.string().trim().max(500).nullish(),
+});
+export type MeetingAttendanceAdd = z.infer<typeof meetingAttendanceAdd>;
+
+export const meetingAttendanceRow = z.object({
+  id: uuid,
+  unitId: uuid,
+  unitLabel: z.string(),
+  ownerName: z.string(),
+  proxyName: z.string().nullable(),
+  proxyDocumentUrl: z.string().nullable(),
+  landShare: z.string(),
+});
+
+export const meetingUnitOption = z.object({
+  unitId: uuid,
+  unitLabel: z.string(),
+  ownerName: z.string().nullable(),
+  landShare: z.string(),
+  attending: z.boolean(),
+});
+
+export const meetingQuorum = z.object({
+  totalUnits: z.number().int(),
+  attendingUnits: z.number().int(),
+  totalShare: z.number(),
+  attendingShare: z.number(),
+  /** İlk toplantı: sayı ve arsa payı çoğunluğu (KMK md.30/1). */
+  firstCallMet: z.boolean(),
+  /** İkinci toplantı: sayının en az üçte biri (KMK md.30/2). */
+  secondCallMet: z.boolean(),
+  /** Bir vekilin temsil edebileceği en çok malik (KMK md.31). */
+  proxyLimit: z.number().int(),
+});
+
+export const meetingDetail = z.object({
+  id: uuid,
+  title: z.string(),
+  kind: z.string(),
+  scheduledAt: dateTime,
+  secondCallAt: dateTime.nullable(),
+  location: z.string().nullable(),
+  onlineUrl: z.string().nullable(),
+  agenda: z.array(z.unknown()),
+  status: z.string(),
+  statusReason: z.string().nullable(),
+  minutesUrl: z.string().nullable(),
+  noticeSentAt: dateTime.nullable(),
+  noticeMethod: z.string().nullable(),
+  /** `missing`: tebliğ kaydı yok; `late`: 15 günden az önce yapılmış. */
+  noticeWarning: z.enum(["missing", "late"]).nullable(),
+  noticeDays: z.number().int().nullable(),
+  attendances: z.array(meetingAttendanceRow),
+  units: z.array(meetingUnitOption),
+  quorum: meetingQuorum,
+  decisions: z.array(meetingDecisionRow),
+});
+export type MeetingDetail = z.infer<typeof meetingDetail>;
 
 export const meetingSaveResult = z.object({ id: uuid, title: z.string() });
 

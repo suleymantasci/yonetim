@@ -264,6 +264,14 @@ export const debtCertificates = pgTable(
     kepSentAt: timestamp("kep_sent_at", { withTimezone: true }),
     kepFeeKurus: money("kep_fee_kurus").notNull().default(0),
     verificationCode: varchar("verification_code", { length: 20 }).notNull(),
+    /**
+     * İptal — belge silinmez: doğrulama sayfası "iptal edildi" der. Yanlış
+     * düzenlenmiş bir "borcu yoktur" belgesi elden ele dolaşmaya devam
+     * edebilir; silmek doğrulayan kişiye "böyle bir belge yok" dedirtirdi.
+     */
+    voidedAt: timestamp("voided_at", { withTimezone: true }),
+    voidReason: text("void_reason"),
+    voidedBy: uuid("voided_by").references(() => users.id, { onDelete: "set null" }),
     ...timestamps,
   },
   (t) => [

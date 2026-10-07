@@ -372,6 +372,22 @@ export const occupancyEnd = z.object({
 
 export type OccupancyEnd = z.infer<typeof occupancyEnd>;
 
+/**
+ * `PATCH /v1/panel/residents/occupancy/:id` — ilişki düzeltme.
+ *
+ * Hisse oranı ve başlangıç tarihi tapu/sözleşmeden sonradan doğrulanıyor;
+ * önceden bunun tek yolu ilişkiyi kapatıp yeniden açmaktı ve bu borç devrini
+ * yanlışlıkla tetikliyordu. Gerekçe zorunlu (denetim kütüğü).
+ */
+export const occupancyUpdate = z.object({
+  ownershipPct: z.coerce.number().min(0.001).max(100),
+  startDate: dateTime,
+  debtTransferPolicy: transferPolicy,
+  reason: z.string().trim().min(10).max(500),
+});
+
+export type OccupancyUpdate = z.infer<typeof occupancyUpdate>;
+
 export const occupancyEndResult = z.object({
   transferredDebtCount: z.number().int(),
   transferredMinor: moneyMinor,

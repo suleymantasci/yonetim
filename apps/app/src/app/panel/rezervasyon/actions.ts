@@ -245,3 +245,30 @@ export async function deleteResource(
 
   return { ok: true, message: t("resourceDeleted") };
 }
+
+const cancelOwnSchema = z.object({
+  id: uuidField,
+  reason: requiredText(3, 500),
+});
+
+/** Sakinin kendi rezervasyonunu iptali (yönetim de kullanabilir). */
+export async function cancelOwnReservation(
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  return runAction(
+    {
+      permission: "reservation:write",
+      schema: cancelOwnSchema,
+      meta: { action: "reservation_cancelled", resource: "reservation" },
+    },
+    formData,
+    async ({ input }) => {
+      const t = await getTranslations("app.reservations");
+      await apiPost(`/v1/panel/operations/reservations/${input.id}/cancel`, {
+        reason: input.reason,
+      });
+      return okState(t("cancelledOwn"));
+    },
+  );
+}

@@ -2,8 +2,8 @@
 
 import {
   Activity, BadgeCheck, Banknote, Building2, CalendarClock, ChevronDown, ClipboardList, Cog, FileText,
-  Gauge, Gavel, Handshake, LayoutDashboard, LineChart, Megaphone, MessageSquare, Pin, PinOff,
-  Receipt, ScrollText, ShieldCheck, Sparkles, Truck, Users, Vote, Wallet, Wrench, X,
+  Gauge, Gavel, Handshake, LayoutDashboard, LineChart, Megaphone, MessageSquare, Package, Pin, PinOff,
+  Receipt, Scale, ScrollText, ShieldCheck, Sparkles, Store, Truck, Users, Vote, Wallet, Wrench, X,
 } from "lucide-react";
 import Link from "@/components/link";
 import { usePathname } from "next/navigation";
@@ -57,6 +57,9 @@ const ICONS: Record<string, ComponentType<{ className?: string; "aria-hidden"?: 
   audit: ScrollText,
   reports: Activity,
   settings: Cog,
+  vendors: Store,
+  frontdesk: Package,
+  accounting: Scale,
 };
 
 export interface SidebarItem {

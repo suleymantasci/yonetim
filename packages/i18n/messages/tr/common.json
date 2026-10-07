@@ -160,7 +160,19 @@
       "start_out_of_range": "Başlangıç tarihi bugünden en fazla bir yıl uzakta olabilir.",
       "announcement_already_published": "Yayımlanmış duyuru düzenlenemez veya silinemez; yayından kaldırabilirsiniz.",
       "announcement_not_published": "Bu duyuru henüz yayımlanmadı.",
-      "announcement_already_withdrawn": "Duyuru zaten yayından kaldırılmış."
+      "announcement_already_withdrawn": "Duyuru zaten yayından kaldırılmış.",
+      "reading_billed": "Bu okuma borçlandırılmış; düzeltmek için önce ilgili borcu iptal edin.",
+      "next_reading_billed": "Sonraki dönemin okuması borçlandırılmış; bu okuma değiştirilirse o borç tutarsız kalır.",
+      "ownership_over_100": "Bu dairedeki malik hisselerinin toplamı %100'ü geçiyor. Önce diğer malikin hissesini düzeltin.",
+      "certificate_already_void": "Bu belge zaten iptal edilmiş.",
+      "reservation_not_cancellable": "Bu rezervasyon artık iptal edilemez (reddedilmiş, iptal edilmiş ya da tamamlanmış).",
+      "reservation_started": "Başlamış ya da geçmiş rezervasyon iptal edilemez.",
+      "not_own_reservation": "Rezervasyonu yalnız kendi adınıza açabilirsiniz.",
+      "proxy_limit": "Bu vekil kanuni sınıra ulaştı (KMK md.31). Başka bir vekil yazın.",
+      "unit_already_attending": "Bu daire cetvelde zaten var.",
+      "meeting_cancelled": "Toplantı iptal edilmiş; değiştirilemez.",
+      "parcel_already_delivered": "Bu kargo zaten teslim edilmiş.",
+      "visitor_already_left": "Bu ziyaretçinin çıkışı zaten kaydedilmiş."
     }
   },
   "errorPage": {
@@ -169,5 +181,14 @@
     "retry": "Tekrar dene",
     "home": "Ana sayfaya dön",
     "reference": "Hata referansı"
+  },
+  "attachment": {
+    "prompt": "Dosya seç",
+    "hint": "PNG, JPG veya PDF · en fazla {size} MB. Sürükleyip bırakabilirsiniz.",
+    "tooLarge": "Dosya {size} MB'tan büyük.",
+    "uploading": "Yükleniyor…",
+    "done": "Dosya yüklendi; kaydedince kayda eklenecek.",
+    "skipped": "Dosya deposu henüz açık değil; kayıt dosyasız oluşturulacak.",
+    "failed": "Dosya yüklenemedi; kayıt dosyasız oluşturulacak."
   }
 }

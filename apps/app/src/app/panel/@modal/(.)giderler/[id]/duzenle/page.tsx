@@ -12,6 +12,7 @@ import { Alert } from "@yonetim/ui";
 import { RouteDrawer } from "@/components/route-drawer";
 import { apiGet } from "@/lib/api/server";
 import { getBankAccountOptions } from "@/lib/bank-accounts";
+import { getVendorOptions } from "@/lib/vendor-options";
 import { requirePermission } from "@/lib/context";
 import { EditExpenseFlow } from "./edit-expense-flow";
 
@@ -52,6 +53,7 @@ export default async function EditExpenseModal({
    * aksi hâlde form sessizce "nakit"e düşer ve dokunulmamış bir alan bozulur.
    */
   const bankAccounts = await getBankAccountOptions(expense.bankAccountId);
+  const vendors = await getVendorOptions();
 
   return (
     <RouteDrawer
@@ -90,11 +92,13 @@ export default async function EditExpenseModal({
             })),
           ])}
           bankAccounts={bankAccounts}
+            vendors={vendors}
           canApprove={hasPermission(ctx.roles, "expense:approve")}
           submitLabel={tCommon("action.save")}
           defaults={{
             id: expense.id,
             categoryId: expense.categoryId,
+            vendorId: expense.vendorId,
             vendorName: expense.vendorName,
             description: expense.description,
             amountKurus: expense.amountMinor,

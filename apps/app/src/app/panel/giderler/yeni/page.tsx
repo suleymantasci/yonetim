@@ -7,6 +7,7 @@ import { Card, CardBody } from "@yonetim/ui";
 import { PageHeader } from "@/components/app-shell";
 import { apiGet } from "@/lib/api/server";
 import { getBankAccountOptions } from "@/lib/bank-accounts";
+import { getVendorOptions } from "@/lib/vendor-options";
 import { requirePermission } from "@/lib/context";
 import { ExpenseForm } from "../expense-form";
 
@@ -18,9 +19,10 @@ export default async function NewExpensePage() {
   const tCommon = await getTranslations("common");
 
   /* Hesap listesi "para hangi hesaptan çıktı" seçimi için; boşsa sorulmaz. */
-  const [{ roots: tree }, bankAccounts] = await Promise.all([
+  const [{ roots: tree }, bankAccounts, vendors] = await Promise.all([
     apiGet("/v1/panel/expenses/categories", categoryTreeSchema),
     getBankAccountOptions(),
+    getVendorOptions(),
   ]);
   // Ağacı düzleştir: form tek seviyeli `<select>` kullanıyor, girinti ile hiyerarşi verilir.
   const categories = tree.flatMap((root) => [
@@ -56,6 +58,7 @@ export default async function NewExpensePage() {
           <ExpenseForm
             categories={categories}
             bankAccounts={bankAccounts}
+            vendors={vendors}
             cancelHref="/panel/giderler"
             submitLabel={tCommon("action.create")}
             canApprove={hasPermission(ctx.roles, "expense:approve")}

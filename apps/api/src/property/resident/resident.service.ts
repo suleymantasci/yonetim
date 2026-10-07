@@ -8,6 +8,7 @@ import type {
   EmergencyReport,
   OccupancyCreate,
   OccupancyEnd,
+  OccupancyUpdate,
   OccupancyEndResult,
   ResidentCreate,
   ResidentDetail,
@@ -334,6 +335,22 @@ export class ResidentService {
       action: "occupancy_created",
       resource: "unit_occupancy",
       resourceId: id,
+    });
+    return { id };
+  }
+
+  async updateOccupancy(id: string, dto: OccupancyUpdate): Promise<{ id: string }> {
+    const { before } = await this.write.updateOccupancy(id, dto);
+    await this.audit.record({
+      action: "occupancy_updated",
+      resource: "unit_occupancy",
+      resourceId: id,
+      diff: {
+        ownershipPct: { from: before.ownershipPct, to: dto.ownershipPct },
+        startDate: { from: before.startDate, to: dto.startDate },
+        debtTransferPolicy: { from: before.debtTransferPolicy, to: dto.debtTransferPolicy },
+        reason: { from: null, to: dto.reason },
+      },
     });
     return { id };
   }

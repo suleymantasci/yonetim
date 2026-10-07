@@ -8,6 +8,13 @@ import { AppError } from "@yonetim/core";
 
 import { apiPost } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
+import {
+  okState,
+  requiredText,
+  runAction,
+  uuidField,
+  type ActionState,
+} from "@/lib/form";
 
 /** SPEC Bölüm 3.6 — belge üretimi. */
 export interface CertificateState {
@@ -83,4 +90,29 @@ export async function issueDebtCertificate(
       asOfDate: issued.asOfDate.toISOString(),
     },
   };
+}
+
+const voidSchema = z.object({
+  id: uuidField,
+  reason: requiredText(10, 500),
+});
+
+/** Belge iptali — silinmez; doğrulama sayfası "iptal edildi" der. */
+export async function voidCertificate(
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  return runAction(
+    {
+      permission: "certificate:write",
+      schema: voidSchema,
+      meta: { action: "certificate_voided", resource: "debt_certificate" },
+    },
+    formData,
+    async ({ input }) => {
+      const t = await getTranslations("app.certificate");
+      await apiPost(`/v1/panel/certificates/${input.id}/void`, { reason: input.reason });
+      return okState(t("voided"));
+    },
+  );
 }

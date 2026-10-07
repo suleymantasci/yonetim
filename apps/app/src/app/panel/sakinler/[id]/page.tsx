@@ -107,6 +107,9 @@ export default async function ResidentDetailPage({
         startDate: fmt.date(occupancy.startDate),
         endDate: occupancy.endDate ? fmt.date(occupancy.endDate) : null,
         policyLabel: tUnits(`transferPolicy.${occupancy.debtTransferPolicy}`),
+        ownershipPctValue: String(Number(occupancy.ownershipPct)).replace(".", ","),
+        startDateIso: new Date(occupancy.startDate).toISOString().slice(0, 10),
+        policy: occupancy.debtTransferPolicy,
         contractUrl: occupancy.contractUrl,
         outstanding: outstanding > 0 ? fmt.money(outstanding) : "—",
         hasOutstanding: outstanding > 0,
@@ -424,6 +427,11 @@ export default async function ResidentDetailPage({
                   noUnitFound: t("noUnitFound"),
                   outstanding: t("outstanding"),
                   contract: t("contract"),
+                  editAction: t("editOccupancyAction"),
+                  editTitle: t("editOccupancyTitle"),
+                  editHint: t("editOccupancyHint"),
+                  editReason: t("editOccupancyReason"),
+                  editReasonHint: t("editOccupancyReasonHint"),
                 }}
               />
             ),

@@ -186,6 +186,7 @@ export class OperationsRepository {
             status: reservations.status,
             feeKurus: reservations.feeKurus,
             note: reservations.note,
+            userId: reservations.userId,
           })
           .from(reservations)
           .leftJoin(resources, eq(resources.id, reservations.resourceId))
@@ -231,6 +232,7 @@ export class OperationsRepository {
             amountKurus: meterReadings.amountKurus,
             readingDate: meterReadings.readingDate,
             anomalyFlag: meterReadings.anomalyFlag,
+            debtId: meterReadings.debtId,
           })
           .from(meterReadings)
           .leftJoin(meters, eq(meters.id, meterReadings.meterId))

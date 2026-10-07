@@ -5,7 +5,7 @@ import { getTranslations } from "next-intl/server";
 import type { MaintenanceLogRow } from "@yonetim/contracts";
 
 import { formatters } from "@/lib/format";
-import { safeUrl } from "@/lib/safe-url";
+import { attachmentHref } from "@/lib/attachment-href";
 
 /**
  * Bakım geçmişi listesi — her "yapıldı" olayı bir satır.
@@ -69,11 +69,11 @@ export async function MaintenanceHistory({
               {row.note}
             </p>
           ) : null}
-          {safeUrl(row.documentUrl) || row.createdByName ? (
+          {attachmentHref(row.documentUrl) || row.createdByName ? (
             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-fg-subtle">
-              {safeUrl(row.documentUrl) ? (
+              {attachmentHref(row.documentUrl) ? (
                 <a
-                  href={safeUrl(row.documentUrl)!}
+                  href={attachmentHref(row.documentUrl)!}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-primary hover:underline"

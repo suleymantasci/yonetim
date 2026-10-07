@@ -14,6 +14,7 @@ import {
   accessRequestDecision,
   occupancyCreate,
   occupancyEnd,
+  occupancyUpdate,
   residentCreate,
   residentIds,
   residentListQuery,
@@ -23,6 +24,7 @@ import {
   type AccessRequestDecision,
   type OccupancyCreate,
   type OccupancyEnd,
+  type OccupancyUpdate,
   type ResidentCreate,
   type ResidentListQuery,
   type ResidentUpdate,
@@ -177,6 +179,21 @@ export class ResidentController {
   @RequirePermission("resident:write")
   addOccupancy(@Body(new ZodBodyPipe(occupancyCreate)) dto: OccupancyCreate) {
     return this.service.addOccupancy(dto);
+  }
+
+  @Patch("occupancy/:id")
+  @RequirePermission("resident:write")
+  @ApiOperation({
+    summary: "İlişkiyi düzelt (hisse, başlangıç, devir politikası)",
+    description:
+      "Gerekçe zorunlu. Malik hisseleri dairede %100'ü geçerse 409 " +
+      "(`conflict:ownership_over_100`).",
+  })
+  updateOccupancy(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body(new ZodBodyPipe(occupancyUpdate)) dto: OccupancyUpdate,
+  ) {
+    return this.service.updateOccupancy(id, dto);
   }
 
   @Patch("occupancy/:id/end")

@@ -3,7 +3,7 @@
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
-import { meterReadingBatchResult, meterSaveResult } from "@yonetim/contracts";
+import { meterBillResult, meterReadingBatchResult, meterSaveResult } from "@yonetim/contracts";
 
 import { apiDelete, apiPatch, apiPost } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
@@ -17,6 +17,7 @@ import {
   optionalText,
   optionalUuidField,
   periodField,
+  requiredText,
   runAction,
   uuidField,
   V,
@@ -208,4 +209,98 @@ export async function deleteMeter(id: string): Promise<MeterMutationResult> {
   await apiDelete(`/v1/panel/operations/meters/${id}`);
 
   return { ok: true, message: t("deleted") };
+}
+
+/* ------------------------------------------------------------------ *
+ * Okuma düzeltme / silme / borçlandırma
+ * ------------------------------------------------------------------ */
+
+const correctSchema = z.object({
+  id: uuidField,
+  currentValue: decimalField({ min: 0, max: 999_999_999 }),
+  reason: requiredText(10, 500),
+});
+
+/** Tek okumayı gerekçeyle düzelt; borçlandırılmış okuma reddedilir (409). */
+export async function correctMeterReading(
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  return runAction(
+    {
+      permission: "meter:write",
+      schema: correctSchema,
+      meta: { action: "meter_reading_corrected", resource: "meter_reading" },
+    },
+    formData,
+    async ({ input }) => {
+      const t = await getTranslations("app.meters");
+      await apiPatch(`/v1/panel/operations/meters/readings/${input.id}`, {
+        currentValue: input.currentValue,
+        reason: input.reason,
+      });
+      return okState(t("readingCorrected"));
+    },
+  );
+}
+
+const removeReadingSchema = z.object({
+  id: uuidField,
+  reason: requiredText(10, 500),
+});
+
+export async function removeMeterReading(
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  return runAction(
+    {
+      permission: "meter:write",
+      schema: removeReadingSchema,
+      meta: { action: "meter_reading_deleted", resource: "meter_reading" },
+    },
+    formData,
+    async ({ input }) => {
+      const t = await getTranslations("app.meters");
+      await apiDelete(
+        `/v1/panel/operations/meters/readings/${input.id}`,
+        undefined,
+        { reason: input.reason },
+      );
+      return okState(t("readingDeleted"));
+    },
+  );
+}
+
+const billSchema = z.object({
+  period: periodField,
+  dueDate: dateField,
+});
+
+/** Dönem tüketimini daire borcu olarak yaz. */
+export async function billMeterPeriod(
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  return runAction(
+    {
+      permission: "meter:write",
+      schema: billSchema,
+      meta: { action: "meter_readings_billed", resource: "meter_reading" },
+    },
+    formData,
+    async ({ input }) => {
+      const t = await getTranslations("app.meters");
+      const result = await apiPost(
+        "/v1/panel/operations/meters/readings/bill",
+        { period: input.period, dueDate: input.dueDate },
+        meterBillResult,
+      );
+      return okState(
+        result.billed > 0
+          ? t("billed", { count: result.billed })
+          : t("billedNothing"),
+      );
+    },
+  );
 }

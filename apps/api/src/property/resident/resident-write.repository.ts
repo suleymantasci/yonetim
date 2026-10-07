@@ -10,6 +10,7 @@ import { HEALTH_CONSENT_KIND } from "@yonetim/contracts";
 import type {
   OccupancyCreate,
   OccupancyEnd,
+  OccupancyUpdate,
   ResidentCreate,
   ResidentUpdate,
 } from "@yonetim/contracts";
@@ -374,6 +375,67 @@ export class ResidentWriteRepository {
    * Devir sessiz bir UPDATE değil: her borcun metadata'sına kimden geldiği ve
    * gerekçesi yazılır, üstüne denetim kütüğüne olay düşer.
    */
+  /**
+   * İlişkiyi düzelt — hisse, başlangıç, devir politikası.
+   *
+   * Malik hisseleri dairede toplam %100'ü geçemez (409): aidatın hisseli
+   * paylaştırması bu oranlarla yapılıyor ve fazlası "kimden ne kadar"
+   * sorusunu cevapsız bırakır. Biten ilişkide başlangıç bitişten sonra olamaz.
+   */
+  async updateOccupancy(
+    occupancyId: string,
+    dto: OccupancyUpdate,
+  ): Promise<{ before: Record<string, unknown> }> {
+    return this.db.txWithReason(dto.reason, async (tx) => {
+      const [occupancy] = await tx
+        .select()
+        .from(unitOccupancies)
+        .where(eq(unitOccupancies.id, occupancyId))
+        .limit(1)
+        .for("update");
+      if (!occupancy) throw new NotFoundException("not_found");
+      if (occupancy.endDate && dto.startDate > occupancy.endDate)
+        throw new BadRequestException("validation_failed:start_after_end");
+
+      if (occupancy.relation === "owner" && !occupancy.endDate) {
+        const others = await tx
+          .select({ pct: unitOccupancies.ownershipPct, id: unitOccupancies.id })
+          .from(unitOccupancies)
+          .where(
+            and(
+              eq(unitOccupancies.unitId, occupancy.unitId),
+              eq(unitOccupancies.relation, "owner"),
+              isNull(unitOccupancies.endDate),
+            ),
+          );
+        const total =
+          others
+            .filter((row) => row.id !== occupancyId)
+            .reduce((sum, row) => sum + Number(row.pct), 0) + dto.ownershipPct;
+        if (total > 100.0005)
+          throw new ConflictException("conflict:ownership_over_100");
+      }
+
+      await tx
+        .update(unitOccupancies)
+        .set({
+          ownershipPct: dto.ownershipPct.toFixed(3),
+          startDate: dto.startDate,
+          debtTransferPolicy: dto.debtTransferPolicy,
+          updatedAt: new Date(),
+        })
+        .where(eq(unitOccupancies.id, occupancyId));
+
+      return {
+        before: {
+          ownershipPct: occupancy.ownershipPct,
+          startDate: occupancy.startDate,
+          debtTransferPolicy: occupancy.debtTransferPolicy,
+        },
+      };
+    });
+  }
+
   async endOccupancy(
     occupancyId: string,
     dto: OccupancyEnd,

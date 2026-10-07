@@ -120,11 +120,46 @@ export const meetings = pgTable(
     quorumMet: boolean("quorum_met"),
     minutesUrl: text("minutes_url"),
     status: varchar("status", { length: 20 }).notNull().default("planned"),
+    /**
+     * Çağrının tebliğ edildiği tarih ve yöntemi (KMK md.29: toplantıdan en az
+     * 15 gün önce). Boşsa çağrı yapılmamış sayılır; ekran uyarı gösterir.
+     */
+    noticeSentAt: timestamp("notice_sent_at", { withTimezone: true }),
+    /** 'hand' | 'registered_mail' | 'notice_board' | 'electronic' */
+    noticeMethod: varchar("notice_method", { length: 30 }),
+    /** İptal/erteleme gerekçesi — durumla birlikte kayda geçer. */
+    statusReason: text("status_reason"),
     createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
     ...timestamps,
     ...softDelete,
   },
   (t) => [index("idx_meetings_tenant_date").on(t.tenantId, t.scheduledAt)],
+);
+
+/**
+ * Hazirun cetveli — toplantıya katılan (bizzat ya da vekâleten) bağımsız
+ * bölümler. Yeter sayı (KMK md.30) buradan hesaplanıyor: sayı çoğunluğu ve
+ * arsa payı çoğunluğu. Arsa payı **kayıt anındaki** değerle saklanıyor;
+ * sonradan tapuda değişse bile geçmiş toplantının yeter sayısı oynamasın.
+ */
+export const meetingAttendances = pgTable(
+  "meeting_attendances",
+  {
+    id: idCol(),
+    tenantId: tenantId().references(() => tenants.id, { onDelete: "cascade" }),
+    meetingId: uuid("meeting_id").notNull().references(() => meetings.id, { onDelete: "cascade" }),
+    unitId: uuid("unit_id").notNull().references(() => units.id, { onDelete: "cascade" }),
+    /** Kat maliki (temsil edilen). */
+    ownerName: varchar("owner_name", { length: 160 }).notNull(),
+    /** Vekâleten katılımda vekilin adı; bizzat katılımda null. */
+    proxyName: varchar("proxy_name", { length: 160 }),
+    /** Vekâletname (bağlantı ya da `document:<id>`). */
+    proxyDocumentUrl: text("proxy_document_url"),
+    landShare: numeric("land_share", { precision: 10, scale: 6 }).notNull().default("0"),
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("idx_meeting_attendance_unit").on(t.meetingId, t.unitId)],
 );
 
 export const meetingDecisions = pgTable(

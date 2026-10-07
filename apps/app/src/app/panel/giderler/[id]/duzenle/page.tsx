@@ -12,6 +12,7 @@ import { Alert, Card, CardBody } from "@yonetim/ui";
 import { PageHeader } from "@/components/app-shell";
 import { apiGet } from "@/lib/api/server";
 import { getBankAccountOptions } from "@/lib/bank-accounts";
+import { getVendorOptions } from "@/lib/vendor-options";
 import { requirePermission } from "@/lib/context";
 import { ExpenseForm } from "../../expense-form";
 
@@ -85,6 +86,7 @@ export default async function EditExpensePage({
    * dokunulmamış bir alanı bozardı.
    */
   const bankAccounts = await getBankAccountOptions(expense.bankAccountId);
+  const vendors = await getVendorOptions();
 
   return (
     <>
@@ -101,13 +103,15 @@ export default async function EditExpensePage({
           <ExpenseForm
             categories={categories}
             bankAccounts={bankAccounts}
+            vendors={vendors}
             cancelHref={`/panel/giderler/${id}`}
             submitLabel={tCommon("action.save")}
             canApprove={hasPermission(ctx.roles, "expense:approve")}
             defaults={{
               id: expense.id,
               categoryId: expense.categoryId,
-              vendorName: expense.vendorName,
+              vendorId: expense.vendorId,
+            vendorName: expense.vendorName,
               description: expense.description,
               amountKurus: expense.amountMinor,
               // Sözleşmede numeric alanlar metin olarak taşınıyor (kesir

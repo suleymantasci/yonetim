@@ -16,12 +16,14 @@
 
 ## 2. Ürün kararı / büyük modül gerektiren işler
 
-- [ ] **Muhasebe raporları (Mizan, Muavin, Yevmiye, BA-BS):** Sistem çift kayıtlı defter tutmuyor; bu raporlar ya bir hesap planı + çift kayıt altyapısı ya da türetilmiş (sentetik) rapor kararı gerektiriyor. BA-BS için tedarikçi vergi numaraları da eksik.
-- [ ] **Tedarikçi ve personel cari hesapları:** Giderlerde `vendor_name`/`vendor_id` var ama tedarikçi kartı ve cari ekstresi yok.
+- [ ] **Yevmiye defteri ve açılış bakiyeleri:** Mizan ve BA/BS sentetik olarak var (`/panel/muhasebe`, 2026-10-07; mizan dönem hareketleri, açılış bakiyesi yok). Tam çift kayıtlı defter (yevmiye, kapanış/açılış fişi) ürün kararı bekliyor.
+- [ ] **Personel cari hesabı:** Tedarikçi kartı ve cari ekstresi var (`/panel/tedarikciler`); personel için avans/maaş carisi yok.
 - [ ] **Hazır evrak şablonları:** Genel kurul çağrı mektubu, hazirun cetveli, vekaletname — metin ve hukuki içerik onayı gerekiyor.
 - [ ] **AI yönetim & mevzuat asistanı** (KMK soru-cevap).
 - [ ] **Sesli arama (robocall) kanalı:** `voice` kanalı enum'da var, sağlayıcı yok.
 - [ ] **Borcu Yoktur belgesi:** Belge üretimi ve doğrulama sayfası var; barkodlu PDF ve KEP çıktısı doğrulanmadı.
+
+- [ ] **Dosya deposu (R2) kurulumu:** Gider faturası, bakım raporu ve vekâletname alanları imzalı adresle doğrudan depoya yüklüyor (`AttachmentField`). Depo yapılandırılmadıkça alan sessizce boş kalıyor ve kayıt dosyasız oluşuyor; `R2_*` değişkenleri girilince kod değişmeden çalışır. Kovanın CORS ayarında panel alan adına `PUT` izni gerekli.
 
 ## 3. Test ve doğrulama
 

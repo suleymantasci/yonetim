@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { and, count, desc, eq, isNull, sql } from "drizzle-orm";
 
@@ -47,6 +47,8 @@ export class CertificateService {
           kepSentAt: debtCertificates.kepSentAt,
           verificationCode: debtCertificates.verificationCode,
           createdAt: debtCertificates.createdAt,
+          voidedAt: debtCertificates.voidedAt,
+          voidReason: debtCertificates.voidReason,
         })
         .from(debtCertificates)
         .leftJoin(units, eq(units.id, debtCertificates.unitId))
@@ -67,6 +69,8 @@ export class CertificateService {
       kepSentAt: r.kepSentAt,
       verificationCode: r.verificationCode,
       createdAt: r.createdAt,
+      voidedAt: r.voidedAt,
+      voidReason: r.voidReason,
     }));
 
     return {
@@ -77,6 +81,39 @@ export class CertificateService {
         kepSent: mapped.filter((r) => r.kepSentAt).length,
       },
     };
+  }
+
+  /**
+   * Belgeyi iptal et — silinmez. Doğrulama sayfası iptal tarihini ve
+   * gerekçesini gösterir; elden ele dolaşan yanlış belge böylece etkisizleşir.
+   */
+  async voidCertificate(id: string, reason: string): Promise<{ id: string }> {
+    await this.db.tx(async (tx) => {
+      const [row] = await tx
+        .select({ id: debtCertificates.id, voidedAt: debtCertificates.voidedAt })
+        .from(debtCertificates)
+        .where(eq(debtCertificates.id, id))
+        .limit(1)
+        .for("update");
+      if (!row) throw new NotFoundException("not_found");
+      if (row.voidedAt) throw new ConflictException("conflict:certificate_already_void");
+      await tx
+        .update(debtCertificates)
+        .set({
+          voidedAt: new Date(),
+          voidReason: reason,
+          voidedBy: this.db.ctx().userId ?? null,
+          updatedAt: new Date(),
+        })
+        .where(eq(debtCertificates.id, id));
+    });
+    await this.audit.record({
+      action: "certificate_voided",
+      resource: "debt_certificate",
+      resourceId: id,
+      diff: { reason: { from: null, to: reason } },
+    });
+    return { id };
   }
 
   async issue(dto: DebtCertificateIssue): Promise<DebtCertificateIssueResult> {
@@ -113,7 +150,7 @@ export class CertificateService {
       ).padStart(6, "0")}`;
       const verificationCode = readableCode(8);
 
-      await tx.insert(debtCertificates).values({
+      const [created] = await tx.insert(debtCertificates).values({
         tenantId: ctx.tenantId,
         unitId: unit.id,
         requestedBy: ctx.userId,
@@ -123,9 +160,10 @@ export class CertificateService {
         serialNo,
         verificationCode,
         kepRecipient: dto.kepRecipient ?? null,
-      });
+      }).returning({ id: debtCertificates.id });
 
       return {
+        id: created!.id,
         serialNo,
         verificationCode,
         result: (outstanding === 0 ? "clear" : "outstanding") as
@@ -139,15 +177,18 @@ export class CertificateService {
     await this.audit.record({
       action: "debt_certificate_issued",
       resource: "debt_certificate",
-      resourceId: result.serialNo,
-      reason: `${result.unitLabel} · ${result.result}`,
+      // `resource_id` uuid kolonu: seri numarası yazılınca insert patlıyor ve
+      // belge üretimi 500 dönüyordu. Seri numarası gerekçede.
+      resourceId: result.id,
+      reason: `${result.serialNo} · ${result.unitLabel} · ${result.result}`,
     });
 
     // Belgeyi talep eden kişiye doğrulama kodu gidiyor: belgeyi ibraz edecek
     // olan o ve kodu elle yazması gerekiyor.
     this.events.emit("certificate.issued", {
       event: "certificate.issued",
-      resourceId: result.serialNo,
+      // uuid: worker bunu `notifications.resource_id`'ye yazıyor.
+      resourceId: result.id,
       subjectUserId: ctx.userId,
       params: { serialNo: result.serialNo, code: result.verificationCode },
     });

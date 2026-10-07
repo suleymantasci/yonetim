@@ -45,6 +45,7 @@ export class ExpenseService {
       expense: {
         id: e.id,
         description: e.description,
+        vendorId: e.vendorId,
         vendorName: e.vendorName,
         categoryId: e.categoryId,
         amountMinor: e.amountKurus,

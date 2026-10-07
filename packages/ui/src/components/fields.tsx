@@ -863,16 +863,24 @@ export function FileInput({
   id,
   disabled,
   labels,
+  onFilesChange,
 }: {
-  name: string;
+  /**
+   * Boş bırakılırsa dosya form gönderimine **girmez** — yükleme `onFilesChange`
+   * ile ayrıca (imzalı adrese) yapılıyorsa dosyanın Server Action gövdesine
+   * binip boyut sınırına takılmaması için.
+   */
+  name?: string;
   accept?: string;
   multiple?: boolean;
   maxSizeMb?: number;
   id?: string;
   disabled?: boolean;
   labels: { prompt: string; hint: string; tooLarge: string; remove: string };
+  onFilesChange?: (files: File[]) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const inputId = useId();
   const [files, setFiles] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -898,6 +906,7 @@ export function FileInput({
           if (disabled) return;
           const ok = accepted(event.dataTransfer.files);
           setFiles(ok);
+          onFilesChange?.(ok);
           if (inputRef.current) inputRef.current.files = event.dataTransfer.files;
         }}
         // Input görünmez ama kutunun tamamını kaplıyor (`sr-only` değil): bütün
@@ -913,7 +922,7 @@ export function FileInput({
       >
         <Upload aria-hidden className="mx-auto h-5 w-5 text-fg-subtle" />
         <label
-          htmlFor={id ?? name}
+          htmlFor={id ?? name ?? inputId}
           className="mt-2 block cursor-pointer text-sm font-medium text-primary underline-offset-2 hover:underline"
         >
           {labels.prompt}
@@ -921,13 +930,17 @@ export function FileInput({
         <p className="mt-0.5 text-xs text-fg-subtle">{labels.hint}</p>
         <input
           ref={inputRef}
-          id={id ?? name}
-          name={name}
+          id={id ?? name ?? inputId}
+          name={name || undefined}
           type="file"
           accept={accept}
           multiple={multiple}
           disabled={disabled}
-          onChange={(event) => setFiles(accepted(event.target.files))}
+          onChange={(event) => {
+            const ok = accepted(event.target.files);
+            setFiles(ok);
+            onFilesChange?.(ok);
+          }}
           className="absolute inset-0 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
         />
       </div>

@@ -47,6 +47,8 @@ export class PublicCertificateController {
           outstandingKurus: debtCertificates.outstandingKurus,
           asOfDate: debtCertificates.asOfDate,
           tenantName: tenants.name,
+          voidedAt: debtCertificates.voidedAt,
+          voidReason: debtCertificates.voidReason,
         })
         .from(debtCertificates)
         .innerJoin(tenants, eq(tenants.id, debtCertificates.tenantId))
@@ -67,6 +69,8 @@ export class PublicCertificateController {
         asOfDate: row.asOfDate,
         result: row.result as "clear" | "outstanding",
         outstandingMinor: row.outstandingKurus,
+        voidedAt: row.voidedAt,
+        voidReason: row.voidReason,
       };
     });
   }

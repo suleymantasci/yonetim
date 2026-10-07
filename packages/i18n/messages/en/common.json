@@ -160,7 +160,19 @@
       "start_out_of_range": "The start date must be within one year of today.",
       "announcement_already_published": "A published announcement cannot be edited or deleted; you can withdraw it.",
       "announcement_not_published": "This announcement is not published yet.",
-      "announcement_already_withdrawn": "Announcement is already withdrawn."
+      "announcement_already_withdrawn": "Announcement is already withdrawn.",
+      "reading_billed": "This reading has been billed; cancel the charge first.",
+      "next_reading_billed": "The next period's reading has been billed; changing this one would leave that charge inconsistent.",
+      "ownership_over_100": "Owner shares for this unit would exceed 100%. Correct the other owner's share first.",
+      "certificate_already_void": "This certificate is already cancelled.",
+      "reservation_not_cancellable": "This reservation can no longer be cancelled.",
+      "reservation_started": "A reservation that has started or passed cannot be cancelled.",
+      "not_own_reservation": "You can only book in your own name.",
+      "proxy_limit": "This proxy has reached the legal limit.",
+      "unit_already_attending": "This unit is already on the sheet.",
+      "meeting_cancelled": "The meeting is cancelled and cannot be changed.",
+      "parcel_already_delivered": "This parcel has already been handed over.",
+      "visitor_already_left": "This visitor has already checked out."
     }
   },
   "errorPage": {
@@ -169,5 +181,14 @@
     "retry": "Try again",
     "home": "Back to home",
     "reference": "Error reference"
+  },
+  "attachment": {
+    "prompt": "Choose file",
+    "hint": "PNG, JPG or PDF · up to {size} MB. Drag and drop works too.",
+    "tooLarge": "The file is larger than {size} MB.",
+    "uploading": "Uploading…",
+    "done": "File uploaded; it will be attached when you save.",
+    "skipped": "File storage is not enabled yet; the record will be saved without the file.",
+    "failed": "The file could not be uploaded; the record will be saved without it."
   }
 }

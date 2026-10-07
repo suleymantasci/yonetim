@@ -162,6 +162,7 @@ const expenseSchema = z.object({
     uuidField.optional(),
   ),
   categoryId: optionalUuidField,
+  vendorId: optionalUuidField,
   vendorName: optionalText(160),
   description: requiredText(3, 240),
   amountKurus: kurusField({ min: 1 }),
@@ -174,6 +175,9 @@ const expenseSchema = z.object({
   bankAccountId: optionalUuidField,
   isPaid: checkboxField,
   attachmentUrl: optionalText(500),
+  /** Yüklenen dosya (`document:<id>`) — bağlantı alanından önceliklidir. */
+  attachmentDocument: optionalText(60),
+  attachmentExisting: optionalText(60),
   status: z.enum(
     ["draft", "pending_approval", "approved", "rejected", "paid"],
     {
@@ -209,6 +213,7 @@ export async function saveExpense(
         {
           id: input.id,
           categoryId: input.categoryId ?? null,
+          vendorId: input.vendorId ?? null,
           vendorName: input.vendorName ?? null,
           description: input.description,
           amountMinor: input.amountKurus,
@@ -219,7 +224,11 @@ export async function saveExpense(
           paidVia: input.paidVia ?? null,
           bankAccountId: input.bankAccountId ?? null,
           isPaid: input.isPaid,
-          attachmentUrl: input.attachmentUrl ?? null,
+          attachmentUrl:
+            docRef(input.attachmentDocument) ??
+            input.attachmentUrl ??
+            docRef(input.attachmentExisting) ??
+            null,
           status: input.status,
         },
         savedIdSchema,
@@ -409,4 +418,9 @@ export async function previewDistribution(input: {
   } catch {
     return { rows: [], totalKurus: 0, error: t("noTargetUnits") };
   }
+}
+
+/** Yalnız `document:<uuid>` biçimini geçirir; başka bir şey gelirse yok sayar. */
+function docRef(value: string | undefined): string | undefined {
+  return value && /^document:[0-9a-f-]{36}$/i.test(value) ? value : undefined;
 }

@@ -1,12 +1,15 @@
-import { CalendarPlus, Pencil, Plus } from "lucide-react";
+import { Ban, CalendarPlus, Pencil, Plus } from "lucide-react";
 import Link from "@/components/link";
 import { getTranslations } from "next-intl/server";
 
 import { hasPermission } from "@yonetim/auth/guard";
 import { reservationListResponse } from "@yonetim/contracts";
-import { Badge, Card, CardBody, CardHeader, EmptyState } from "@yonetim/ui";
+import { Badge, Card, CardBody, CardHeader, EmptyState, Textarea } from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
+import { ActionDrawerButton } from "@/components/form/action-drawer-button";
+import { FormField } from "@/components/form/action-form";
+import { cancelOwnReservation } from "./actions";
 import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
@@ -185,6 +188,24 @@ export default async function ReservationsPage() {
                       >
                         {t("decide")}
                       </Link>
+                    ) : r.isMine &&
+                      (r.status === "pending" || r.status === "approved") &&
+                      r.startAt.getTime() > Date.now() ? (
+                      <ActionDrawerButton
+                        action={cancelOwnReservation}
+                        hidden={{ id: r.id }}
+                        icon={Ban}
+                        tone="danger"
+                        label={t("cancelOwn")}
+                        title={t("cancelOwnTitle")}
+                        description={`${r.resourceName ?? ""} · ${f.dateTime(r.startAt)}`}
+                        warning={r.feeMinor > 0 ? t("cancelOwnFeeNote") : undefined}
+                        submitLabel={t("cancelOwnConfirm")}
+                      >
+                        <FormField name="reason" label={t("cancelOwnReason")} required>
+                          <Textarea name="reason" rows={2} minLength={3} maxLength={500} required />
+                        </FormField>
+                      </ActionDrawerButton>
                     ) : null}
                   </div>
                 </li>

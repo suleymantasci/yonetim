@@ -6,8 +6,10 @@ import type {
   RequestListResponse,
   ReservationListResponse,
 } from "@yonetim/contracts";
+import { canAny } from "@yonetim/core";
 import { MAINTENANCE_TEMPLATE_SEED } from "@yonetim/db";
 
+import { DbService } from "../infra/db/db.service";
 import { OperationsRepository } from "./operations.repository";
 
 const DAY_MS = 86_400_000;
@@ -26,7 +28,10 @@ const CLOSED_REQUEST_STATUSES = ["resolved", "closed", "rejected"];
  */
 @Injectable()
 export class OperationsService {
-  constructor(private readonly repo: OperationsRepository) {}
+  constructor(
+    private readonly repo: OperationsRepository,
+    private readonly db: DbService,
+  ) {}
 
   async requests(): Promise<RequestListResponse> {
     const { rows, assignees, unitRows } = await this.repo.requests();
@@ -149,6 +154,8 @@ export class OperationsService {
   async reservations(): Promise<ReservationListResponse> {
     const { resourceRows, rows } = await this.repo.reservations();
     const now = Date.now();
+    const ctx = this.db.ctx();
+    const isManagement = canAny(ctx.roles, "reservation:approve");
 
     const mapped = rows.map((r) => ({
       id: r.id,
@@ -160,7 +167,8 @@ export class OperationsService {
       guestCount: r.guestCount,
       status: r.status,
       feeMinor: r.feeKurus,
-      note: r.note,
+      note: isManagement || r.userId === ctx.userId ? r.note : null,
+      isMine: r.userId === ctx.userId,
     }));
 
     return {
@@ -214,6 +222,7 @@ export class OperationsService {
         amountMinor: r.amountKurus,
         readingDate: r.readingDate,
         anomalyFlag: r.anomalyFlag,
+        billed: r.debtId !== null,
       })),
       totals: {
         defined: meterRows.length,

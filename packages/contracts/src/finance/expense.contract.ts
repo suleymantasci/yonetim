@@ -169,6 +169,7 @@ export type ExpenseCategorySave = z.infer<typeof expenseCategorySave>;
 export const expenseDetail = z.object({
   expense: z.object({
     id: uuid,
+    vendorId: uuid.nullable(),
     description: z.string(),
     vendorName: z.string().nullable(),
     categoryId: uuid.nullable(),
@@ -206,6 +207,8 @@ export type ExpenseDetail = z.infer<typeof expenseDetail>;
 export const expenseSave = z.object({
   id: uuid.optional(),
   categoryId: uuid.nullish(),
+  /** Tedarikçi kartı; verilirse ad karttan yazılır (cari ekstresi bu bağla). */
+  vendorId: uuid.nullish(),
   vendorName: z.string().trim().max(160).nullish(),
   description: z.string().trim().min(3).max(240),
   /** KDV **dahil** toplam tutar. */

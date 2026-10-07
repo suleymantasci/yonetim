@@ -590,6 +590,8 @@ export const debtCertificateRow = z.object({
   kepSentAt: dateTime.nullable(),
   verificationCode: z.string(),
   createdAt: dateTime,
+  voidedAt: dateTime.nullable(),
+  voidReason: z.string().nullable(),
 });
 
 export const debtCertificateListResponse = z.object({
@@ -648,8 +650,18 @@ export const certificateVerifyResult = z.discriminatedUnion("valid", [
     asOfDate: dateTime,
     result: z.enum(["clear", "outstanding"]),
     outstandingMinor: moneyMinor,
+    /** İptal edilmiş belge "geçerli değil" denmeden iptal bilgisiyle döner. */
+    voidedAt: dateTime.nullable().optional(),
+    voidReason: z.string().nullable().optional(),
   }),
 ]);
+
+/** `POST /v1/panel/certificates/:id/void` — gerekçeli iptal. */
+export const debtCertificateVoid = z.object({
+  reason: z.string().trim().min(10).max(500),
+});
+
+export type DebtCertificateVoid = z.infer<typeof debtCertificateVoid>;
 
 export type CertificateVerifyResult = z.infer<typeof certificateVerifyResult>;
 

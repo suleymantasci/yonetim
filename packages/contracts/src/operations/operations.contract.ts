@@ -361,8 +361,22 @@ export const reservationRow = z.object({
   guestCount: z.number().int(),
   status: z.string(),
   feeMinor: moneyMinor,
+  /** Başkasının notu sakine gösterilmiyor (yalnız yönetim ve sahibi görür). */
   note: z.string().nullable(),
+  /** Oturumdaki kullanıcının kendi rezervasyonu — sakin yalnız bunu iptal edebilir. */
+  isMine: z.boolean(),
 });
+
+/**
+ * `POST /v1/panel/operations/reservations/:id/cancel` — sahibi ya da yönetim.
+ * Başlamış/geçmiş rezervasyon iptal edilmez; ücret borcu açıldıysa yönetim
+ * iptali borcu ayrıca ele alır (sakine otomatik iade yok).
+ */
+export const reservationCancel = z.object({
+  reason: z.string().trim().min(3).max(500),
+});
+
+export type ReservationCancel = z.infer<typeof reservationCancel>;
 
 export const reservationListResponse = z.object({
   resources: z.array(reservationResourceRow),
@@ -535,6 +549,8 @@ export const meterReadingRow = z.object({
    * eşik değişikliği geçmiş okumaları yeniden yorumlamasın diye.
    */
   anomalyFlag: z.boolean(),
+  /** Borçlandırıldıysa okuma kilitli: düzeltme/silme borç iptali gerektirir. */
+  billed: z.boolean(),
 });
 
 export const meterListResponse = z.object({
@@ -655,6 +671,112 @@ export const meterDetail = z.object({
 
 export type MeterDetail = z.infer<typeof meterDetail>;
 
+/**
+ * `PATCH /v1/panel/operations/meters/readings/:id` — tek okumayı düzelt.
+ * Gerekçe zorunlu (denetim kütüğüne yazılır). Tüketim ve tutar sunucuda
+ * yeniden hesaplanır; sonraki dönemin "önceki endeksi" de buna göre kayar.
+ */
+export const meterReadingCorrect = z.object({
+  currentValue: z.coerce.number().min(0).max(999_999_999),
+  reason: z.string().trim().min(10).max(500),
+});
+export type MeterReadingCorrect = z.infer<typeof meterReadingCorrect>;
+
+/** `DELETE /v1/panel/operations/meters/readings/:id` — gerekçeli silme. */
+export const meterReadingRemove = z.object({
+  reason: z.string().trim().min(10).max(500),
+});
+export type MeterReadingRemove = z.infer<typeof meterReadingRemove>;
+
+/**
+ * `POST /v1/panel/operations/meters/readings/bill` — dönem tüketimini
+ * borçlandır. Yalnız daireye bağlı, tutarı > 0 ve henüz borçlandırılmamış
+ * okumalar; borç kiracıya, kiracı yoksa malike yazılır (tüketen öder).
+ */
+export const meterBill = z.object({
+  period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+  dueDate: dateTime,
+});
+export type MeterBill = z.infer<typeof meterBill>;
+
+export const meterBillResult = z.object({
+  billed: z.number().int(),
+  skipped: z.number().int(),
+  totalMinor: moneyMinor,
+});
+export type MeterBillResult = z.infer<typeof meterBillResult>;
+
 export const meterSaveResult = z.object({ id: uuid });
 
 export type MeterSaveResult = z.infer<typeof meterSaveResult>;
+
+/* ------------------------------------------------------------------ *
+ * Kargo ve ziyaretçi defteri — `/v1/panel/frontdesk`
+ * ------------------------------------------------------------------ */
+
+export const parcelCreate = z.object({
+  unitId: uuid.nullish(),
+  recipientName: z.string().trim().min(2).max(160),
+  carrier: z.string().trim().max(60).nullish(),
+  trackingNo: z.string().trim().max(80).nullish(),
+  note: z.string().trim().max(1000).nullish(),
+});
+export type ParcelCreate = z.infer<typeof parcelCreate>;
+
+export const parcelDeliver = z.object({
+  /** Teslim alan kişi (sakin ya da yakını). */
+  deliveredTo: z.string().trim().min(2).max(160),
+});
+export type ParcelDeliver = z.infer<typeof parcelDeliver>;
+
+export const parcelRow = z.object({
+  id: uuid,
+  unitId: uuid.nullable(),
+  unitLabel: z.string().nullable(),
+  recipientName: z.string(),
+  carrier: z.string().nullable(),
+  trackingNo: z.string().nullable(),
+  note: z.string().nullable(),
+  receivedAt: dateTime,
+  deliveredAt: dateTime.nullable(),
+  deliveredTo: z.string().nullable(),
+});
+
+export const visitorCreate = z.object({
+  unitId: uuid.nullish(),
+  visitorName: z.string().trim().min(2).max(160),
+  phone: z.string().trim().max(20).nullish(),
+  plate: z
+    .string()
+    .trim()
+    .max(20)
+    .transform((v) => v.toUpperCase().replace(/\s+/g, " "))
+    .nullish(),
+  purpose: z.string().trim().max(120).nullish(),
+  note: z.string().trim().max(1000).nullish(),
+});
+export type VisitorCreate = z.infer<typeof visitorCreate>;
+
+export const visitorRow = z.object({
+  id: uuid,
+  unitId: uuid.nullable(),
+  unitLabel: z.string().nullable(),
+  visitorName: z.string(),
+  phone: z.string().nullable(),
+  plate: z.string().nullable(),
+  purpose: z.string().nullable(),
+  note: z.string().nullable(),
+  arrivedAt: dateTime,
+  leftAt: dateTime.nullable(),
+});
+
+export const frontdeskResponse = z.object({
+  parcels: z.array(parcelRow),
+  visitors: z.array(visitorRow),
+  totals: z.object({
+    waitingParcels: z.number().int(),
+    visitorsInside: z.number().int(),
+    visitorsToday: z.number().int(),
+  }),
+});
+export type FrontdeskResponse = z.infer<typeof frontdeskResponse>;

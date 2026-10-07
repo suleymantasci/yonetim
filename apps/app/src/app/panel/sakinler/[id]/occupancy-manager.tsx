@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, Plus } from "lucide-react";
+import { LogOut, Pencil, Plus } from "lucide-react";
 import Link from "@/components/link";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
@@ -18,7 +18,7 @@ import {
 } from "@yonetim/ui";
 
 import { ActionForm, FormField } from "@/components/form/action-form";
-import { addOccupancy, endOccupancy } from "../actions";
+import { addOccupancy, endOccupancy, updateOccupancy } from "../actions";
 
 /**
  * Sakinin birim ilişkileri — ekleme ve **ayrılma** akışı.
@@ -38,6 +38,10 @@ export interface OccupancyView {
   startDate: string;
   endDate: string | null;
   policyLabel: string;
+  /** Düzeltme formu için ham değerler. */
+  ownershipPctValue: string;
+  startDateIso: string;
+  policy: string;
   contractUrl: string | null;
   /** Bu birimde bu kişinin açık bakiyesi — ayrılma kararında kritik. */
   outstanding: string;
@@ -86,11 +90,17 @@ export function OccupancyManager({
     noUnitFound: string;
     outstanding: string;
     contract: string;
+    editAction: string;
+    editTitle: string;
+    editHint: string;
+    editReason: string;
+    editReasonHint: string;
   };
 }) {
   const tCommon = useTranslations("common");
   const [adding, setAdding] = useState(false);
   const [ending, setEnding] = useState<OccupancyView | null>(null);
+  const [editing, setEditing] = useState<OccupancyView | null>(null);
 
   const unitOptions = units.map((unit) => ({
     value: unit.id,
@@ -182,6 +192,15 @@ export function OccupancyManager({
                     </td>
                     <td className={tc.tdMuted}>{occupancy.policyLabel}</td>
                     <td className="px-4 py-2.5 text-right">
+                      <div className="flex justify-end gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setEditing(occupancy)}
+                        className="inline-flex items-center gap-1 rounded-lg border border-border-strong px-2 py-1 text-xs font-medium text-fg hover:bg-hover"
+                      >
+                        <Pencil aria-hidden className="h-3 w-3" />
+                        {labels.editAction}
+                      </button>
                       {occupancy.endDate ? null : (
                         <button
                           type="button"
@@ -192,6 +211,7 @@ export function OccupancyManager({
                           {labels.endAction}
                         </button>
                       )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -268,6 +288,70 @@ export function OccupancyManager({
             </FormField>
           </div>
         </ActionForm>
+      </Drawer>
+
+      <Drawer
+        open={editing !== null}
+        onClose={() => setEditing(null)}
+        title={labels.editTitle}
+        description={labels.editHint}
+        closeLabel={tCommon("action.close")}
+        padded={false}
+      >
+        {editing ? (
+          <ActionForm
+            key={editing.occupancyId}
+            action={updateOccupancy}
+            submitLabel={tCommon("action.save")}
+            onSuccess={() => setEditing(null)}
+            layout="modal"
+            onCancel={() => setEditing(null)}
+          >
+            <input type="hidden" name="occupancyId" value={editing.occupancyId} />
+            <div className="space-y-4">
+              <div className="rounded-lg bg-surface-sunken p-3 text-sm">
+                <span className="font-semibold text-fg">{editing.unitLabel}</span>
+                <span className="ml-2 text-fg-muted">{editing.relationLabel}</span>
+              </div>
+              <FormField
+                name="ownershipPct"
+                label={labels.ownershipPct}
+                hint={labels.ownershipPctHint}
+                required
+              >
+                <Input
+                  name="ownershipPct"
+                  inputMode="decimal"
+                  defaultValue={editing.ownershipPctValue}
+                  required
+                />
+              </FormField>
+              <FormField name="startDate" label={labels.startDate} required>
+                <DateInput name="startDate" defaultValue={editing.startDateIso} required />
+              </FormField>
+              <FormField
+                name="debtTransferPolicy"
+                label={labels.policy}
+                hint={labels.transferHint}
+                required
+              >
+                <Select name="debtTransferPolicy" defaultValue={editing.policy} required>
+                  <option value="owner">{labels.transferOwner}</option>
+                  <option value="next_tenant">{labels.transferNextTenant}</option>
+                  <option value="keep">{labels.transferKeep}</option>
+                </Select>
+              </FormField>
+              <FormField
+                name="reason"
+                label={labels.editReason}
+                hint={labels.editReasonHint}
+                required
+              >
+                <Textarea name="reason" rows={2} minLength={10} maxLength={500} required />
+              </FormField>
+            </div>
+          </ActionForm>
+        ) : null}
       </Drawer>
 
       <Drawer

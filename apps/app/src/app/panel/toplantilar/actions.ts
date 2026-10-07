@@ -8,7 +8,7 @@ import {
   meetingSaveResult,
 } from "@yonetim/contracts";
 
-import { apiPatch, apiPost } from "@/lib/api/server";
+import { apiDelete, apiPatch, apiPost } from "@/lib/api/server";
 import {
   checkboxField,
   dateField,
@@ -156,6 +156,132 @@ export async function addMeetingDecision(
       return okState(t("decisionAdded", { no: result.decisionNo }), {
         data: { decisionNo: result.decisionNo },
       });
+    },
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ * Tebliğ, durum, hazirun (KMK md.29–31)
+ * ------------------------------------------------------------------ */
+
+const NOTICE_METHODS = ["hand", "registered_mail", "notice_board", "electronic"] as const;
+
+const noticeSchema = z.object({
+  id: uuidField,
+  noticeSentAt: dateField,
+  method: z.enum(NOTICE_METHODS, { errorMap: () => ({ message: V.invalidSelection }) }),
+});
+
+export async function recordMeetingNotice(
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  return runAction(
+    {
+      permission: "meeting:write",
+      schema: noticeSchema,
+      meta: { action: "meeting_notice_recorded", resource: "meeting" },
+    },
+    formData,
+    async ({ input }) => {
+      const t = await getTranslations("app.meetings");
+      await apiPost(`/v1/panel/communication/meetings/${input.id}/notice`, {
+        noticeSentAt: input.noticeSentAt,
+        method: input.method,
+      });
+      return okState(t("noticeSaved"));
+    },
+  );
+}
+
+const statusSchema = z.object({
+  id: uuidField,
+  status: z.enum(["cancelled", "postponed", "held"]),
+  reason: optionalText(1000),
+  newScheduledAt: optionalDateField,
+});
+
+export async function changeMeetingStatus(
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  return runAction(
+    {
+      permission: "meeting:write",
+      schema: statusSchema,
+      meta: { action: "meeting_status_changed", resource: "meeting" },
+    },
+    formData,
+    async ({ input }) => {
+      const t = await getTranslations("app.meetings");
+      await apiPost(`/v1/panel/communication/meetings/${input.id}/status`, {
+        status: input.status,
+        reason: input.reason ?? null,
+        newScheduledAt: input.newScheduledAt ?? null,
+      });
+      return okState(t(`statusChanged_${input.status}`));
+    },
+  );
+}
+
+const attendanceSchema = z.object({
+  id: uuidField,
+  unitId: uuidField,
+  proxyName: optionalText(160),
+  proxyDocumentUrl: optionalText(500),
+  proxyDocumentFile: optionalText(60),
+});
+
+export async function addMeetingAttendance(
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  return runAction(
+    {
+      permission: "meeting:write",
+      schema: attendanceSchema,
+      meta: { action: "meeting_attendance_added", resource: "meeting" },
+    },
+    formData,
+    async ({ input }) => {
+      const t = await getTranslations("app.meetings");
+      await apiPost(`/v1/panel/communication/meetings/${input.id}/attendance`, {
+        unitId: input.unitId,
+        proxyName: input.proxyName ?? null,
+        proxyDocumentUrl:
+          (input.proxyDocumentFile && /^document:[0-9a-f-]{36}$/i.test(input.proxyDocumentFile)
+            ? input.proxyDocumentFile
+            : undefined) ??
+          input.proxyDocumentUrl ??
+          null,
+      });
+      return okState(t("attendanceAdded"));
+    },
+  );
+}
+
+const removeAttendanceSchema = z.object({
+  id: uuidField,
+  attendanceId: uuidField,
+});
+
+export async function removeMeetingAttendance(
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  return runAction(
+    {
+      permission: "meeting:write",
+      schema: removeAttendanceSchema,
+      meta: { action: "meeting_attendance_removed", resource: "meeting" },
+    },
+    formData,
+    async ({ input }) => {
+      const t = await getTranslations("app.meetings");
+      await apiDelete(
+        `/v1/panel/communication/meetings/${input.id}/attendance/${input.attendanceId}`,
+      );
+      return okState(t("attendanceRemoved"));
     },
   );
 }
