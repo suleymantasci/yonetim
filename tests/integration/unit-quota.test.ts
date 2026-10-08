@@ -75,20 +75,23 @@ describe.skipIf(!apiReachable)("paket daire sınırı", () => {
     expect(r.status).toBe(201);
   });
 
+  // Durum hep yazmaya açık kalıyor (trial/active): `suspended` site zaten
+  // `TenantWritableGuard`'da salt-okunur, ve guard'ın gördüğü durum Redis'te
+  // 60 sn önbellekli — testin sonucu önbelleğin olup olmamasına bağlı kalmasın.
   it("deneme bitti, paket yok: ekleme reddedilir (iş kuyruğu çalışmamış olsa da)", async () => {
     await setTenant({ status: "trial", trialEndsAt: new Date(Date.now() - 60_000) });
     const r = await addOne();
     expect(r.status).toBe(409);
     expect(hint(r.body)).toBe("conflict:unit_limit_no_plan");
-
-    await setTenant({ status: "suspended", suspensionReason: "trial_expired" });
-    expect(hint((await addOne()).body)).toBe("conflict:unit_limit_no_plan");
   });
 
   it("demo hesap: deneme bitmiş olsa da sınır yok", async () => {
     await setTenant({ isDemo: true });
-    expect((await addOne()).status).toBe(201);
-    await setTenant({ isDemo: false });
+    try {
+      expect((await addOne()).status).toBe(201);
+    } finally {
+      await setTenant({ isDemo: false });
+    }
   });
 
   it("süper admin daire sayısından küçük paket atayamaz", async () => {
