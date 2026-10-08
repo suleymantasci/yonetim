@@ -2417,7 +2417,7 @@
     "rowOption": "Row {line}: {text}",
     "showTopRows": "Show the first rows of the file",
     "hideTopRows": "Hide first rows",
-    "debtMappingHint": "Debt columns are never dropped: map items without a matching type (fixtures fund, carried over, repair fund…) to “Other debt”. Columns mapped to the same type are summed per unit and their names go into the description. The “Total (check)” column is not written; each row's items are compared against it.",
+    "debtMappingHint": "Debt columns are never dropped: map items without a matching type (fixtures fund, advance, carried over, extra costs…) to “Debt: other”. Columns mapped to the same type are summed and their names go into the description. “Total (check)” is not written; each row's items are compared against it. If the file has “Status” and “Name” columns, each row is a person: the same unit may repeat for owner, tenant and former tenant, and the debt is written to that person.",
     "problem": {
       "missing_unit": "Choose the unit number column.",
       "duplicate_field": "The same field is mapped to two columns."
@@ -2440,13 +2440,22 @@
       "debtUtility": "Debt: fuel / water / heating",
       "debtLateFee": "Debt: late fee",
       "debtOther": "Debt: other",
-      "total": "Total (check)"
+      "total": "Total (check)",
+      "role": "Status (owner / tenant)",
+      "personName": "Person name",
+      "personPhone": "Person phone",
+      "debtRent": "Debt: rent",
+      "debtDeposit": "Debt: deposit",
+      "debtFine": "Debt: administrative fine"
     },
     "kind": {
       "dues": "Dues",
       "utility": "Fuel/water",
       "late_fee": "Late fee",
-      "extra": "Other"
+      "extra": "Other",
+      "rent": "Rent",
+      "deposit": "Deposit",
+      "admin_fine": "Admin. fine"
     },
     "previewTitle": "3. Preview",
     "sumUnits": "Units",
@@ -2464,18 +2473,22 @@
       "bad_amount": "{unit}: “{value}” in column “{column}” could not be read as an amount.",
       "total_mismatch": "{unit}: items add up to {actual}, the file total is {expected}. A debt column may be unmapped.",
       "credit_balance": "{unit}: credit balance in {column} ({actual}) cannot be written as debt; record it manually after the import.",
-      "land_share_large": "{unit}: land share looks too large ({value}); check whether it is a percentage or per mille."
+      "land_share_large": "{unit}: land share looks too large ({value}); check whether it is a percentage or per mille.",
+      "duplicate_person": "{unit}: “{value}” appears twice with the same status.",
+      "unknown_role": "{unit}: could not tell whether “{value}” is owner or tenant; imported as owner.",
+      "multiple_tenants": "{unit}: more than one current tenant; the last one in the file ({value}) is current, earlier ones are imported as former tenants (with their debts).",
+      "bad_phone": "{unit}: “{value}” could not be read as a phone number; the person is imported without a phone.",
+      "shared_phone": "{unit}: number {value} belongs to another person (possibly shared); this person is created without a phone."
     },
     "sampleBlock": "Block",
     "sampleUnit": "Unit",
-    "sampleOwner": "Owner",
     "sampleDebts": "Carried-over debt",
     "sampleStatus": "Status",
-    "tenantShort": "Tenant: {name}",
     "status": {
       "new": "New unit",
       "existing": "Existing — debt added",
-      "has_balance": "Has balance — skipped"
+      "has_balance": "Has balance — skipped",
+      "trashed": "Deleted — restored"
     },
     "previewMore": "… and {count} more units",
     "commit": "Import {count} units",
@@ -2483,7 +2496,7 @@
     "fixErrorsFirst": "Fix the red rows first (change the mapping or fix the file and upload it again).",
     "afterImportHint": "You can review the unit list and complete any missing details.",
     "carriedBalanceDescription": "Carried over from previous software",
-    "completed": "Import complete: {units} new units, {existing} existing units, {blocks} new blocks, {debts} carried-over debts. Skipped because they already had a balance: {withBalance}.",
+    "completed": "Import complete: {units} new units, {existing} existing units ({restored} restored from trash), {blocks} new blocks, {people} new people, {debts} carried-over debts. Units skipped because they already had a balance: {withBalance}.",
     "error": {
       "generic": "The import could not be completed. Please try again.",
       "migration_file_empty": "The file is empty.",
@@ -2493,7 +2506,20 @@
       "migration_duplicate_field": "The same field is mapped to two columns.",
       "migration_has_errors": "The file has rows with errors; fix the red rows in the preview.",
       "migration_no_rows": "No units found to import."
-    }
+    },
+    "sumPeople": "People: {total} ({created} new, {former} former tenants)",
+    "samplePeople": "Owner / tenant",
+    "unitDebt": "Unit debt",
+    "role": {
+      "owner": "Owner",
+      "tenant": "Tenant"
+    },
+    "roleFormer": {
+      "owner": "Former owner",
+      "tenant": "Former tenant"
+    },
+    "personExisting": "already registered",
+    "noPhone": "no phone"
   },
   "certificate": {
     "title": "Debt status certificate",

@@ -67,7 +67,9 @@ export async function commitMigration(
       message: t("completed", {
         units: r.units,
         existing: r.existingUnits,
+        restored: r.restoredUnits,
         blocks: r.blocks,
+        people: r.peopleCreated,
         debts: r.debts,
         withBalance: r.withBalance,
       }),

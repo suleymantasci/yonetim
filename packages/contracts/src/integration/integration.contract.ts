@@ -246,9 +246,15 @@ export const UNIT_IMPORT_FIELDS = [
   "ownerPhone",
   "tenantName",
   "tenantPhone",
+  "role",
+  "personName",
+  "personPhone",
   "debtDues",
   "debtUtility",
   "debtLateFee",
+  "debtRent",
+  "debtDeposit",
+  "debtFine",
   "debtOther",
   "total",
 ] as const;
@@ -271,12 +277,10 @@ export const migrationPreviewRequest = migrationFile.extend({
 });
 export type MigrationPreviewRequest = z.infer<typeof migrationPreviewRequest>;
 
-const debtKindTotals = z.object({
-  dues: moneyMinor,
-  utility: moneyMinor,
-  late_fee: moneyMinor,
-  extra: moneyMinor,
-});
+export const IMPORT_DEBT_KINDS = ["dues", "utility", "late_fee", "rent", "deposit", "admin_fine", "extra"] as const;
+const importDebtKind = z.enum(IMPORT_DEBT_KINDS);
+const debtKindTotals = z.record(importDebtKind, moneyMinor);
+const importDebtLine = z.object({ kind: importDebtKind, amountMinor: moneyMinor, columns: z.array(z.string()) });
 
 export const migrationPreview = z.object({
   format: z.enum(["xlsx", "xls", "html", "csv"]),
@@ -296,16 +300,33 @@ export const migrationPreview = z.object({
   /** `missing_unit` | `duplicate_field` — doluysa içe aktarma yapılamaz. */
   problems: z.array(z.string()),
   topRows: z.array(z.array(z.string())),
+  /** "Durumu" / "Ad Soyad" eşlendi: her satır bir kişi, borç kişinin. */
+  personMode: z.boolean(),
   rows: z.array(
     z.object({
       line: z.number().int(),
       blockName: z.string().nullable(),
       number: z.string(),
-      ownerName: z.string().nullable(),
-      tenantName: z.string().nullable(),
-      debts: z.array(z.object({ kind: z.enum(["dues", "utility", "late_fee", "extra"]), amountMinor: moneyMinor, columns: z.array(z.string()) })),
-      /** `new` oluşturulacak; `existing` var, borç eklenecek; `has_balance` var ve devri zaten aktarılmış (borç eklenmez). */
-      status: z.enum(["new", "existing", "has_balance"]),
+      /** Dairenin (kişiye bağlanmamış) borçları. */
+      debts: z.array(importDebtLine),
+      people: z.array(
+        z.object({
+          line: z.number().int(),
+          role: z.enum(["owner", "tenant"]),
+          former: z.boolean(),
+          name: z.string(),
+          hasPhone: z.boolean(),
+          debts: z.array(importDebtLine),
+          /** `existing`: sitede bu daireyle aynı ilişkide kayıtlı (telefon ya da ad). */
+          status: z.enum(["new", "existing"]),
+        }),
+      ),
+      /**
+       * `new` oluşturulacak; `existing` var, borç eklenecek; `trashed` çöp
+       * kutusunda, geri getirilip borç eklenecek; `has_balance` devri zaten
+       * aktarılmış (borç eklenmez).
+       */
+      status: z.enum(["new", "existing", "trashed", "has_balance"]),
     }),
   ),
   issues: z.array(
@@ -325,6 +346,9 @@ export const migrationPreview = z.object({
     newUnits: z.number().int(),
     existingUnits: z.number().int(),
     withBalance: z.number().int(),
+    people: z.number().int(),
+    newPeople: z.number().int(),
+    formerTenants: z.number().int(),
     blocks: z.number().int(),
     newBlocks: z.number().int(),
     debtMinor: moneyMinor,
@@ -357,6 +381,11 @@ export const migrationCommitResult = z.object({
   blocks: z.number().int(),
   debts: z.number().int(),
   debtMinor: moneyMinor,
+  /** Yeni açılan kişi kaydı / sitede zaten olan kişiye bağlanan. */
+  peopleCreated: z.number().int(),
+  peopleLinked: z.number().int(),
+  /** Çöp kutusundan geri getirilen daire. */
+  restoredUnits: z.number().int(),
   /** Devri zaten aktarılmış olduğu için borcu eklenmeyen daire. */
   withBalance: z.number().int(),
   skipped: z.number().int(),

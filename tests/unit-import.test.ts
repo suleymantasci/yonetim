@@ -5,6 +5,7 @@ import {
   applyUnitMapping,
   findUnitHeaderRow,
   guessUnitMapping,
+  parseRole,
   readTable,
   unitKey,
   validateUnitMapping,
@@ -103,9 +104,12 @@ describe("genel Excel/CSV", () => {
     const mapping = guessUnitMapping(table.rows[findUnitHeaderRow(table.rows)]!);
     expect(Object.values(mapping)).toEqual(["unit", "floor", "area", "landShare", "ownerName", "ownerPhone", "tenantName", "debtOther"]);
     const r = applyUnitMapping(table.rows, 0, mapping);
-    expect(r.units[0]).toMatchObject({ number: "5", floor: 2, areaM2: 95.5, landShare: 0.041667, ownerName: "Ali Veli" });
+    expect(r.personMode).toBe(false);
+    expect(r.units[0]).toMatchObject({ number: "5", floor: 2, areaM2: 95.5, landShare: 0.041667 });
+    expect(r.units[0]!.people).toEqual([{ line: 2, role: "owner", former: false, name: "Ali Veli", phone: "+905320000001", debts: [] }]);
     expect(r.units[0]!.debts).toEqual([{ kind: "extra", amountMinor: 125_000, columns: ["Toplam Borç"] }]);
-    expect(r.units[1]).toMatchObject({ tenantName: "Can Demir", debts: [] });
+    expect(r.units[1]!.people.map((p) => [p.role, p.name])).toEqual([["owner", "Ayşe Yılmaz"], ["tenant", "Can Demir"]]);
+    expect(r.units[1]!.debts).toEqual([]);
   });
 
   it("CSV, Türkçe sayılar; daire sütunu yoksa eşleştirme eksik", () => {
@@ -131,5 +135,79 @@ describe("genel Excel/CSV", () => {
     expect(unitKey("A Blok", "01")).toBe(unitKey("A BLOK", "1"));
     expect(unitKey("A Blok", "1")).not.toBe(unitKey("B Blok", "1"));
     expect(unitKey(null, "0")).toBe("#0");
+  });
+});
+
+describe("kişi bazlı rapor (Yönetimcell 'Üyelerin (cari) …')", () => {
+  const rows: Cell[][] = [
+    ["ÖRNEK SİTESİ ( ÜYELERİN (CARİ) BORÇLANDIRMA SEÇENEKLERİNE GÖRE DURUMU )"],
+    ["BLOK", "NO", "DURUMU", "AD SOYAD", "TELEFON", "AİDAT", "YAKIT", "DEMİRBAŞ", "AVANS", "TOPLAM"],
+    ["A BLOK", "1", "Malik", "Ali Veli", "(532) 000-00-01", "0,00", "0,00", "1.200,00", "0,00", "1.200,00"],
+    ["A BLOK", "1", "Kiracı", "Can Demir", "", "5.925,00", "750,00", "0,00", "0,00", "6.675,00"],
+    ["A BLOK", "2", "Malik", "Ayşe Kaya", "(905) 388-16-41", "100,00", "0,00", "0,00", "0,00", "100,00"],
+    ["A BLOK", "2", "Eski Kiracı", "Eda Er", "", "300,00", "0,00", "0,00", "0,00", "300,00"],
+    ["A BLOK", "2", "Kiracı", "Efe Ak", "", "50,00", "0,00", "0,00", "0,00", "50,00"],
+    ["A BLOK", "3", "Kiracı", "Önce Gelen", "", "10,00", "0,00", "0,00", "0,00", "10,00"],
+    ["A BLOK", "3", "Kiracı", "Sonra Gelen", "", "20,00", "0,00", "0,00", "0,00", "20,00"],
+    ["A BLOK", "3", "Kiracı", "Sonra Gelen", "", "20,00", "0,00", "0,00", "0,00", "20,00"],
+    ["(TOPLAM)", null, null, null, null, "6.405,00", "750,00", "1.200,00", "0,00", "8.355,00"],
+  ];
+  const headerRow = findUnitHeaderRow(rows);
+  const mapping = guessUnitMapping(rows[headerRow]!);
+  const r = applyUnitMapping(rows, headerRow, mapping);
+
+  it("Durumu / Ad Soyad / Telefon sütunlarını tanır, kişi bazlı okur", () => {
+    expect(headerRow).toBe(1);
+    // Yönetimcell'de Avans bir borç tipi (Aidat/Yakıt/Demirbaş/Avans/Kira/
+    // Depozit/Ek Gider/İdari Ceza); karşılığımız yok → diğer.
+    expect(mapping).toEqual({
+      0: "block", 1: "unit", 2: "role", 3: "personName", 4: "personPhone", 5: "debtDues", 6: "debtUtility", 7: "debtOther", 8: "debtOther", 9: "total",
+    });
+    expect(r.personMode).toBe(true);
+  });
+
+  it("aynı daire tekrar ettiğinde uyarı vermez; borç kişiye yazılır", () => {
+    expect(r.units.map((u) => u.number)).toEqual(["1", "2", "3"]);
+    const a1 = r.units[0]!;
+    expect(a1.debts).toEqual([]);
+    expect(a1.people.map((p) => [p.role, p.name, p.debts.reduce((s, d) => s + d.amountMinor, 0)])).toEqual([
+      ["owner", "Ali Veli", 120_000],
+      ["tenant", "Can Demir", 667_500],
+    ]);
+    expect(a1.people[0]!.phone).toBe("+905320000001");
+    expect(r.issues.some((i) => i.code === "duplicate_unit")).toBe(false);
+  });
+
+  it("eski kiracı borcuyla birlikte, ilişkisi kapalı aktarılır", () => {
+    const a2 = r.units[1]!;
+    expect(a2.people.map((p) => [p.role, p.former, p.name])).toEqual([
+      ["owner", false, "Ayşe Kaya"],
+      ["tenant", true, "Eda Er"],
+      ["tenant", false, "Efe Ak"],
+    ]);
+    expect(a2.people[1]!.debts).toEqual([{ kind: "dues", amountMinor: 30_000, columns: ["AİDAT"] }]);
+  });
+
+  it("okunamayan telefon uyarı; iki güncel kiracıda sonraki güncel; aynı kişi iki kez hata", () => {
+    expect(r.units[1]!.people[0]!.phone).toBeUndefined();
+    expect(r.issues).toContainEqual(expect.objectContaining({ code: "bad_phone", severity: "warning", value: "(905) 388-16-41" }));
+    const a3 = r.units[2]!;
+    expect(a3.people.map((p) => [p.name, p.former])).toEqual([["Önce Gelen", true], ["Sonra Gelen", false]]);
+    expect(r.issues).toContainEqual(expect.objectContaining({ code: "multiple_tenants", unit: "A BLOK / 3", value: "Sonra Gelen" }));
+    expect(r.issues).toContainEqual(expect.objectContaining({ code: "duplicate_person", severity: "error", line: 10 }));
+  });
+
+  it("Kira / Depozit / İdari Ceza kendi türüne; Kiracı sütunu kira sanılmaz", () => {
+    expect(Object.values(guessUnitMapping(["Daire", "Kiracı", "KİRA", "DEPOZİT", "İDARİ CEZA", "EK GİDER"]))).toEqual([
+      "unit", "tenantName", "debtRent", "debtDeposit", "debtFine", "debtOther",
+    ]);
+  });
+
+  it("rol okuma", () => {
+    expect(parseRole("Malik")).toEqual({ role: "owner", former: false });
+    expect(parseRole("KİRACI")).toEqual({ role: "tenant", former: false });
+    expect(parseRole("Eski Kiracı")).toEqual({ role: "tenant", former: true });
+    expect(parseRole("Hissedar")).toEqual({ role: "owner", former: false });
+    expect(parseRole("Yönetici")).toBeNull();
   });
 });

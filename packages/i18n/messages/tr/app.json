@@ -2417,7 +2417,7 @@
     "rowOption": "{line}. satır: {text}",
     "showTopRows": "Dosyanın ilk satırlarını göster",
     "hideTopRows": "İlk satırları gizle",
-    "debtMappingHint": "Borç sütunları kaybolmaz: karşılığı olmayan kalemleri (demirbaş, devreden, onarım fonu…) “Diğer borç”a bağlayın. Aynı türe bağlanan sütunlar daire başına toplanır, açıklamaya sütun adları yazılır. “Toplam (kontrol)” sütunu yazılmaz; her satırda kalemlerin toplamı onunla karşılaştırılır.",
+    "debtMappingHint": "Borç sütunları kaybolmaz: karşılığı olmayan kalemleri (demirbaş, avans, devreden, ek gider…) “Borç: diğer”e bağlayın. Aynı türe bağlanan sütunlar toplanır, açıklamaya sütun adları yazılır. “Toplam (kontrol)” yazılmaz; her satırda kalemlerin toplamı onunla karşılaştırılır. Dosyada “Durumu” ve “Ad Soyad” sütunu varsa her satır bir kişi sayılır: aynı daire malik, kiracı ve eski kiracı için tekrar edebilir, borç o kişiye yazılır.",
     "problem": {
       "missing_unit": "Daire numarası sütununu seçin.",
       "duplicate_field": "Aynı bilgi iki sütuna bağlanmış."
@@ -2440,13 +2440,22 @@
       "debtUtility": "Borç: yakıt / su / ısınma",
       "debtLateFee": "Borç: gecikme bedeli",
       "debtOther": "Borç: diğer",
-      "total": "Toplam (kontrol)"
+      "total": "Toplam (kontrol)",
+      "role": "Durumu (malik / kiracı)",
+      "personName": "Kişi adı (ad soyad)",
+      "personPhone": "Kişi telefonu",
+      "debtRent": "Borç: kira",
+      "debtDeposit": "Borç: depozito",
+      "debtFine": "Borç: idari ceza"
     },
     "kind": {
       "dues": "Aidat",
       "utility": "Yakıt/su",
       "late_fee": "Gecikme",
-      "extra": "Diğer"
+      "extra": "Diğer",
+      "rent": "Kira",
+      "deposit": "Depozito",
+      "admin_fine": "İdari ceza"
     },
     "previewTitle": "3. Önizleme",
     "sumUnits": "Daire",
@@ -2464,18 +2473,22 @@
       "bad_amount": "{unit}: “{column}” sütunundaki “{value}” tutar olarak okunamadı.",
       "total_mismatch": "{unit}: kalemlerin toplamı {actual}, dosyadaki toplam {expected}. Eşlenmemiş bir borç sütunu olabilir.",
       "credit_balance": "{unit}: {column} alacak bakiyesi ({actual}) borç olarak yazılamaz; aktarımdan sonra elle işleyin.",
-      "land_share_large": "{unit}: arsa payı beklenenden büyük ({value}); yüzde mi binde mi olduğunu kontrol edin."
+      "land_share_large": "{unit}: arsa payı beklenenden büyük ({value}); yüzde mi binde mi olduğunu kontrol edin.",
+      "duplicate_person": "{unit}: “{value}” aynı sıfatla iki kez geçiyor.",
+      "unknown_role": "{unit}: “{value}” malik mi kiracı mı anlaşılamadı; malik olarak aktarılacak.",
+      "multiple_tenants": "{unit}: birden çok güncel kiracı var; dosyada son geçen ({value}) güncel kiracı, öncekiler eski kiracı olarak (borçlarıyla) aktarılacak.",
+      "bad_phone": "{unit}: “{value}” telefon numarası olarak okunamadı; kişi telefonsuz aktarılacak.",
+      "shared_phone": "{unit}: {value} numarası başka bir kişiye kayıtlı (ortak numara olabilir); bu kişi telefonsuz açılacak."
     },
     "sampleBlock": "Blok",
     "sampleUnit": "Daire",
-    "sampleOwner": "Malik",
     "sampleDebts": "Devir borcu",
     "sampleStatus": "Durum",
-    "tenantShort": "Kiracı: {name}",
     "status": {
       "new": "Yeni daire",
       "existing": "Mevcut — borç eklenir",
-      "has_balance": "Devri var — atlanır"
+      "has_balance": "Devri var — atlanır",
+      "trashed": "Silinmiş — geri getirilir"
     },
     "previewMore": "… ve {count} daire daha",
     "commit": "{count} daireyi aktar",
@@ -2483,7 +2496,7 @@
     "fixErrorsFirst": "Önce kırmızı satırları düzeltin (eşleştirmeyi değiştirin ya da dosyayı düzeltip yeniden yükleyin).",
     "afterImportHint": "Bağımsız bölümler listesinden kontrol edip eksik bilgileri tamamlayabilirsiniz.",
     "carriedBalanceDescription": "Önceki programdan devir",
-    "completed": "Aktarım tamamlandı: {units} yeni daire, {existing} mevcut daire, {blocks} yeni blok, {debts} devir borcu. Devri olduğu için atlanan: {withBalance}.",
+    "completed": "Aktarım tamamlandı: {units} yeni daire, {existing} mevcut daire ({restored} tanesi çöp kutusundan geri getirildi), {blocks} yeni blok, {people} yeni kişi, {debts} devir borcu. Devri olduğu için borcu eklenmeyen daire: {withBalance}.",
     "error": {
       "generic": "Aktarım yapılamadı. Lütfen tekrar deneyin.",
       "migration_file_empty": "Dosya boş.",
@@ -2493,7 +2506,20 @@
       "migration_duplicate_field": "Aynı bilgi iki sütuna bağlanmış.",
       "migration_has_errors": "Dosyada hatalı satırlar var; önizlemedeki kırmızı satırları düzeltin.",
       "migration_no_rows": "Aktarılacak daire bulunamadı."
-    }
+    },
+    "sumPeople": "Kişi: {total} ({created} yeni, {former} eski kiracı)",
+    "samplePeople": "Malik / kiracı",
+    "unitDebt": "Daire borcu",
+    "role": {
+      "owner": "Malik",
+      "tenant": "Kiracı"
+    },
+    "roleFormer": {
+      "owner": "Eski malik",
+      "tenant": "Eski kiracı"
+    },
+    "personExisting": "sitede kayıtlı",
+    "noPhone": "telefonsuz"
   },
   "certificate": {
     "title": "Borç Durum Belgesi",

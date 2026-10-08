@@ -5,7 +5,12 @@ import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 
-import { UNIT_IMPORT_FIELDS, type MigrationPreview, type UnitImportFieldName } from "@yonetim/contracts";
+import {
+  IMPORT_DEBT_KINDS,
+  UNIT_IMPORT_FIELDS,
+  type MigrationPreview,
+  type UnitImportFieldName,
+} from "@yonetim/contracts";
 import { Alert, Badge, Card, CardBody, CardHeader, Select, Spinner, cn, tableClasses as tc, useToast } from "@yonetim/ui";
 
 import { commitMigration, previewMigration } from "@/app/panel/gecis/actions";
@@ -13,9 +18,10 @@ import { commitMigration, previewMigration } from "@/app/panel/gecis/actions";
 const MAX_BYTES = 4 * 1024 * 1024;
 /** Bir dosyada yalnız bir sütuna bağlanabilen alanlar; borç kalemleri çoklu. */
 const UNIQUE: UnitImportFieldName[] = [
-  "block", "unit", "floor", "area", "landShare", "ownerName", "ownerPhone", "tenantName", "tenantPhone", "total",
+  "block", "unit", "floor", "area", "landShare", "ownerName", "ownerPhone", "tenantName", "tenantPhone",
+  "role", "personName", "personPhone", "total",
 ];
-const KINDS = ["dues", "utility", "late_fee", "extra"] as const;
+type DebtLine = MigrationPreview["rows"][number]["debts"][number];
 
 type FileRef = { name: string; base64: string };
 
@@ -296,11 +302,16 @@ export function MigrationWizard() {
                 />
               </div>
               <div className="flex flex-wrap gap-2 text-xs">
-                {KINDS.filter((k) => preview.totals.byKind[k] > 0).map((k) => (
+                {IMPORT_DEBT_KINDS.filter((k) => (preview.totals.byKind[k] ?? 0) > 0).map((k) => (
                   <Badge key={k} tone="neutral">
-                    {t(`kind.${k}`)}: {money(preview.totals.byKind[k])}
+                    {t(`kind.${k}`)}: {money(preview.totals.byKind[k] ?? 0)}
                   </Badge>
                 ))}
+                {preview.totals.people > 0 ? (
+                  <Badge tone="neutral">
+                    {t("sumPeople", { total: preview.totals.people, created: preview.totals.newPeople, former: preview.totals.formerTenants })}
+                  </Badge>
+                ) : null}
               </div>
               {preview.totals.withBalance > 0 ? (
                 <Alert tone="warning">{t("withBalanceNote", { count: preview.totals.withBalance })}</Alert>
@@ -335,33 +346,37 @@ export function MigrationWizard() {
                       <tr>
                         <th scope="col" className={tc.th}>{t("sampleBlock")}</th>
                         <th scope="col" className={tc.th}>{t("sampleUnit")}</th>
-                        <th scope="col" className={tc.th}>{t("sampleOwner")}</th>
-                        <th scope="col" className={tc.th}>{t("sampleDebts")}</th>
+                        <th scope="col" className={tc.th}>{t("samplePeople")}</th>
+                        <th scope="col" className={`${tc.th} text-right`}>{t("sampleDebts")}</th>
                         <th scope="col" className={tc.th}>{t("sampleStatus")}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {preview.rows.map((r) => (
-                        <tr key={r.line} className={tc.tr}>
+                        <tr key={r.line} className={`${tc.tr} align-top`}>
                           <td className={`${tc.tdMuted} whitespace-nowrap text-xs`}>{r.blockName ?? "—"}</td>
                           <td className={`${tc.td} whitespace-nowrap text-xs font-semibold`}>{r.number}</td>
-                          <td className={`${tc.td} text-xs`}>
-                            {r.ownerName ?? "—"}
-                            {r.tenantName ? <div className="text-[11px] text-fg-subtle">{t("tenantShort", { name: r.tenantName })}</div> : null}
-                          </td>
-                          <td className={`${tc.td} text-xs`}>
-                            {r.debts.length === 0 ? (
-                              <span className="text-fg-subtle">—</span>
-                            ) : (
-                              r.debts.map((d) => (
-                                <div key={d.kind} className="whitespace-nowrap">
-                                  <span className="tabular-nums font-medium">{money(d.amountMinor)}</span>{" "}
-                                  <span className="text-fg-subtle">
-                                    {t(`kind.${d.kind}`)} ({d.columns.join(" + ")})
-                                  </span>
-                                </div>
-                              ))
-                            )}
+                          <td className={`${tc.td} text-xs`} colSpan={2}>
+                            {r.people.length === 0 && r.debts.length === 0 ? <span className="text-fg-subtle">—</span> : null}
+                            {r.debts.length > 0 ? (
+                              <div className="flex flex-wrap justify-between gap-x-4">
+                                <span className="text-fg-subtle">{t("unitDebt")}</span>
+                                <Debts debts={r.debts} money={money} t={t} />
+                              </div>
+                            ) : null}
+                            {r.people.map((p) => (
+                              <div key={p.line + p.name} className="flex flex-wrap justify-between gap-x-4 border-t border-border py-1 first:border-t-0 first:pt-0">
+                                <span>
+                                  <Badge tone={p.role === "owner" ? "neutral" : p.former ? "warning" : "success"}>
+                                    {t(p.former ? `roleFormer.${p.role}` : `role.${p.role}`)}
+                                  </Badge>{" "}
+                                  <span className="font-medium">{p.name}</span>
+                                  {p.status === "existing" ? <span className="text-fg-subtle"> · {t("personExisting")}</span> : null}
+                                  {!p.hasPhone ? <span className="text-fg-subtle"> · {t("noPhone")}</span> : null}
+                                </span>
+                                {p.debts.length > 0 ? <Debts debts={p.debts} money={money} t={t} /> : <span className="text-fg-subtle">—</span>}
+                              </div>
+                            ))}
                           </td>
                           <td className={`${tc.td} whitespace-nowrap text-xs`}>
                             <Badge tone={r.status === "new" ? "success" : r.status === "existing" ? "neutral" : "warning"}>
@@ -399,6 +414,29 @@ export function MigrationWizard() {
         </>
       ) : null}
     </div>
+  );
+}
+
+function Debts({
+  debts,
+  money,
+  t,
+}: {
+  debts: DebtLine[];
+  money: (minor: number) => string;
+  t: ReturnType<typeof useTranslations<"app.migration">>;
+}) {
+  return (
+    <span className="text-right">
+      {debts.map((d) => (
+        <span key={d.kind} className="block whitespace-nowrap">
+          <span className="font-medium tabular-nums">{money(d.amountMinor)}</span>{" "}
+          <span className="text-fg-subtle">
+            {t(`kind.${d.kind}`)} ({d.columns.join(" + ")})
+          </span>
+        </span>
+      ))}
+    </span>
   );
 }
 

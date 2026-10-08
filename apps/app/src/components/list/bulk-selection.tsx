@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   useMemo,
@@ -49,6 +50,7 @@ export function BulkSelection<T extends { id: string }>({
 }) {
   const t = useTranslations("common");
   const toast = useToast();
+  const router = useRouter();
   const [selected, setSelected] = useState<string[]>([]);
   const [pending, startTransition] = useTransition();
   const [confirming, setConfirming] = useState<string | null>(null);
@@ -87,6 +89,10 @@ export function BulkSelection<T extends { id: string }>({
       if (result.ok) {
         toast.success(result.message);
         setSelected([]);
+        // Liste sunucuda render ediliyor; server action `revalidatePath`
+        // çağırmıyor (bkz. ActionForm). Yenilemeden silinen satır ekranda
+        // kalıyordu.
+        router.refresh();
       } else {
         toast.error(result.message);
       }

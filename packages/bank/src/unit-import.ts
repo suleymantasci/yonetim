@@ -1,4 +1,4 @@
-import { foldTurkish } from "@yonetim/core";
+import { foldTurkish, normalizePhone } from "@yonetim/core";
 
 import { parseAmount } from "./statement";
 import { display, foldHeader } from "./statement-map";
@@ -26,6 +26,16 @@ import type { Cell } from "./table";
  * ("DEMİRBAŞ + DEVREDEN"). Dosyada toplam sütunu varsa her satırda kalemlerin
  * toplamı onunla karşılaştırılır; tutmayan satır aktarımı durdurur — eşlenmemiş
  * bir borç sütunu böyle yakalanır.
+ *
+ * İki dosya şekli var:
+ *   - **daire bazlı** (taşınmaz raporu): her daire bir satır; malik/kiracı adı
+ *     ayrı sütunlarda olabilir; borç dairenin.
+ *   - **kişi bazlı** (Yönetimcell "Üyelerin (cari) …" raporu): her satır bir
+ *     kişi — BLOK · NO · DURUMU (Malik/Kiracı) · AD SOYAD · TELEFON · kalemler.
+ *     Aynı daire birden çok satırda geçer (malik + kiracı, eski + yeni
+ *     kiracı); borç **o kişinin** borcudur. Eski kiracının kalan borcu da
+ *     kişiyle birlikte aktarılır (kira ilişkisi kapalı olarak).
+ * "Durumu" ya da "Ad Soyad" sütunu eşlenmişse dosya kişi bazlı okunur.
  */
 
 export const UNIT_IMPORT_FIELDS = [
@@ -39,9 +49,15 @@ export const UNIT_IMPORT_FIELDS = [
   "ownerPhone",
   "tenantName",
   "tenantPhone",
+  "role",
+  "personName",
+  "personPhone",
   "debtDues",
   "debtUtility",
   "debtLateFee",
+  "debtRent",
+  "debtDeposit",
+  "debtFine",
   "debtOther",
   "total",
 ] as const;
@@ -54,6 +70,9 @@ export const DEBT_FIELD_KIND = {
   debtDues: "dues",
   debtUtility: "utility",
   debtLateFee: "late_fee",
+  debtRent: "rent",
+  debtDeposit: "deposit",
+  debtFine: "admin_fine",
   debtOther: "extra",
 } as const;
 
@@ -62,9 +81,16 @@ export type ImportDebtKind = (typeof DEBT_FIELD_KIND)[DebtField];
 
 const DEBT_FIELDS = Object.keys(DEBT_FIELD_KIND) as DebtField[];
 
+export const IMPORT_DEBT_KINDS = Object.values(DEBT_FIELD_KIND) as ImportDebtKind[];
+
+export function emptyKindTotals(): Record<ImportDebtKind, number> {
+  return Object.fromEntries(IMPORT_DEBT_KINDS.map((k) => [k, 0])) as Record<ImportDebtKind, number>;
+}
+
 /** Bir dosyada yalnız bir sütuna bağlanabilen alanlar (borç kalemleri çoklu). */
 export const UNIQUE_UNIT_FIELDS: UnitImportField[] = [
-  "block", "unit", "floor", "area", "landShare", "ownerName", "ownerPhone", "tenantName", "tenantPhone", "total",
+  "block", "unit", "floor", "area", "landShare", "ownerName", "ownerPhone", "tenantName", "tenantPhone",
+  "role", "personName", "personPhone", "total",
 ];
 
 export function isDebtField(field: UnitImportField): field is DebtField {
@@ -88,10 +114,13 @@ const EXACT: Array<[UnitImportField, string[]]> = [
     "ownerName",
     [
       "malik", "malik adi", "malik adi soyadi", "malik ad soyad", "ev sahibi", "mulk sahibi", "kat maliki",
-      "daire sahibi", "sahibi", "ad soyad", "adi soyadi", "isim", "owner",
+      "daire sahibi", "sahibi", "owner",
     ],
   ],
-  ["ownerPhone", ["malik telefon", "malik tel", "malik gsm", "ev sahibi telefon", "telefon", "tel", "gsm", "cep", "cep telefonu"]],
+  ["ownerPhone", ["malik telefon", "malik tel", "malik gsm", "ev sahibi telefon"]],
+  ["role", ["durum", "durumu", "sifat", "sifati", "uye tipi", "uye turu", "iliski", "oturum sekli", "role"]],
+  ["personName", ["ad soyad", "adi soyadi", "ad soyadi", "adi soyad", "isim", "isim soyisim", "uye", "uye adi", "cari", "cari adi", "name"]],
+  ["personPhone", ["telefon", "tel", "gsm", "cep", "cep telefonu", "telefon no", "phone"]],
   ["tenantName", ["kiraci", "kiraci adi", "kiraci adi soyadi", "kiraci ad soyad", "oturan", "tenant"]],
   ["tenantPhone", ["kiraci telefon", "kiraci tel", "kiraci gsm", "tenant phone"]],
 ];
@@ -112,10 +141,13 @@ const CONTAINS: Array<[UnitImportField, string[]]> = [
   ["total", ["toplam"]],
   ["debtLateFee", ["gecikme", "faiz", "tazminat"]],
   ["debtDues", ["aidat"]],
+  ["debtRent", ["kira bedeli", "kira borcu"]],
+  ["debtDeposit", ["depozit", "depozito", "teminat"]],
+  ["debtFine", ["idari ceza", "idari para cezasi"]],
   ["debtUtility", ["yakit", "isinma", "dogalgaz", "dogal gaz", "sicak su", "elektrik", "kalorimetre", "pay olcer"]],
   [
     "debtOther",
-    ["demirbas", "devreden", "devir", "borc", "bakiye", "onarim", "tadilat", "fon", "diger", "otopark", "ek odeme", "ceza"],
+    ["demirbas", "avans", "ek gider", "devreden", "devir", "borc", "bakiye", "onarim", "tadilat", "fon", "diger", "otopark", "ek odeme", "ceza"],
   ],
 ];
 
@@ -126,6 +158,8 @@ function fieldOf(header: string): UnitImportField | null {
   for (const [field, needles] of CONTAINS) if (needles.some((n) => padded.includes(` ${n}`))) return field;
   // "Su" tek başına kelime olmalı ("şube", "sunum" değil).
   if (/(^| )su( |$)/.test(header)) return "debtUtility";
+  // "Kira" tek başına kelime ("kiracı" değil).
+  if (/(^| )kira( |$)/.test(header)) return "debtRent";
   return null;
 }
 
@@ -188,6 +222,20 @@ export interface ImportDebtLine {
   columns: string[];
 }
 
+export type PersonRole = "owner" | "tenant";
+
+export interface ImportPerson {
+  line: number;
+  role: PersonRole;
+  /** Eski malik/kiracı ("Eski Kiracı") — ilişki kapalı aktarılır. */
+  former: boolean;
+  name: string;
+  /** Biçimlenmiş (+905…) telefon; okunamadıysa yok. */
+  phone?: string;
+  /** Kişi bazlı dosyada bu kişinin borçları. */
+  debts: ImportDebtLine[];
+}
+
 export interface ImportUnitRow {
   /** 1 tabanlı dosya satırı. */
   line: number;
@@ -196,11 +244,9 @@ export interface ImportUnitRow {
   floor?: number;
   areaM2?: number;
   landShare?: number;
-  ownerName?: string;
-  ownerPhone?: string;
-  tenantName?: string;
-  tenantPhone?: string;
-  /** Yalnız pozitif toplamlı türler (aktarılacak borçlar). */
+  /** Malik/kiracı(lar), dosyadaki sırayla. */
+  people: ImportPerson[];
+  /** Daire bazlı dosyada dairenin borçları (kişi bazlıda boş). Yalnız pozitif toplamlı türler. */
   debts: ImportDebtLine[];
 }
 
@@ -210,7 +256,12 @@ export type UnitImportIssueCode =
   | "bad_amount"
   | "total_mismatch"
   | "credit_balance"
-  | "land_share_large";
+  | "land_share_large"
+  | "duplicate_person"
+  | "unknown_role"
+  | "multiple_tenants"
+  | "bad_phone"
+  | "shared_phone";
 
 export interface UnitImportIssue {
   line: number;
@@ -229,6 +280,8 @@ export interface UnitImportIssue {
 
 export interface MappedUnitImport {
   units: ImportUnitRow[];
+  /** "Durumu" / "Ad Soyad" eşlendi: her satır bir kişi. */
+  personMode: boolean;
   issues: UnitImportIssue[];
   /** Boş ve toplam/dipnot satırları (sessizce atlanan). */
   skipped: number;
@@ -271,6 +324,19 @@ function decimal(cell: Cell | undefined): number | undefined {
 
 const SUMMARY_ROW = /\b(genel )?toplam\b|\bara toplam\b|\btotal\b/;
 
+/** "Malik", "Kiracı", "Eski Kiracı", "Hissedar" … → rol. */
+export function parseRole(value: string): { role: PersonRole; former: boolean } | null {
+  const v = ` ${foldTurkish(value).replace(/[^a-z0-9]+/g, " ").trim()} `;
+  const former = /\s(eski|onceki|ayrilan|ayrildi|cikan|cikti|pasif)\s/.test(v);
+  if (/\s(kiraci|oturan|kullanici|tenant)/.test(v)) return { role: "tenant", former };
+  if (/\s(malik|mal sahibi|ev sahibi|mulk sahibi|hissedar|sahib|owner)/.test(v)) return { role: "owner", former };
+  return null;
+}
+
+export function personKey(role: PersonRole, name: string): string {
+  return `${role}#${foldTurkish(name).replace(/[^a-z0-9]+/g, " ").trim()}`;
+}
+
 export function applyUnitMapping(rows: Cell[][], headerRow: number, mapping: UnitImportMapping): MappedUnitImport {
   const header = rows[headerRow] ?? [];
   const col = (field: UnitImportField) => {
@@ -283,12 +349,24 @@ export function applyUnitMapping(rows: Cell[][], headerRow: number, mapping: Uni
   const blockCol = col("block");
   const unitCol = col("unit");
   const totalCol = col("total");
+  const personMode = col("role") !== undefined || col("personName") !== undefined;
 
   const units: ImportUnitRow[] = [];
+  const byUnit = new Map<string, ImportUnitRow>();
   const issues: UnitImportIssue[] = [];
-  const seen = new Set<string>();
-  const byKind: Record<ImportDebtKind, number> = { dues: 0, utility: 0, late_fee: 0, extra: 0 };
+  const byKind: Record<ImportDebtKind, number> = emptyKindTotals();
   let skipped = 0;
+
+  const cellText = (row: Cell[], field: UnitImportField) => {
+    const i = col(field);
+    return i === undefined ? "" : text(row[i]);
+  };
+  const phoneOf = (raw: string, line: number, label: string) => {
+    if (!raw) return undefined;
+    const phone = normalizePhone(raw);
+    if (!phone) issues.push({ line, severity: "warning", code: "bad_phone", unit: label, value: raw });
+    return phone ?? undefined;
+  };
 
   for (let r = headerRow + 1; r < rows.length; r++) {
     const row = rows[r] ?? [];
@@ -310,11 +388,38 @@ export function applyUnitMapping(rows: Cell[][], headerRow: number, mapping: Uni
     }
     const label = blockName ? `${blockName} / ${number}` : number;
     const key = unitKey(blockName, number);
-    if (seen.has(key)) {
+    let unit = byUnit.get(key);
+    if (unit && !personMode) {
       issues.push({ line, severity: "error", code: "duplicate_unit", unit: label });
       continue;
     }
-    seen.add(key);
+
+    // Kişi (kişi bazlı dosyada) — borçtan önce: yinelenen kişi satırı atlanır.
+    let person: ImportPerson | undefined;
+    if (personMode) {
+      const name = cellText(row, "personName");
+      const roleRaw = cellText(row, "role");
+      let parsed = roleRaw ? parseRole(roleRaw) : { role: "owner" as const, former: false };
+      if (!parsed) {
+        issues.push({ line, severity: "warning", code: "unknown_role", unit: label, value: roleRaw });
+        parsed = { role: "owner", former: false };
+      }
+      if (name) {
+        const pk = personKey(parsed.role, name);
+        if (unit?.people.some((p) => personKey(p.role, p.name) === pk && p.former === parsed.former)) {
+          issues.push({ line, severity: "error", code: "duplicate_person", unit: label, value: name });
+          continue;
+        }
+        person = {
+          line,
+          role: parsed.role,
+          former: parsed.former,
+          name,
+          phone: phoneOf(cellText(row, "personPhone"), line, label),
+          debts: [],
+        };
+      }
+    }
 
     // Borç kalemleri: tür başına topla, sütun adlarını koru.
     const sums = new Map<ImportDebtKind, { minor: number; columns: string[] }>();
@@ -353,46 +458,79 @@ export function applyUnitMapping(rows: Cell[][], headerRow: number, mapping: Uni
       // Alacak (fazla ödeme) bakiyesi borç olarak yazılamaz; kaybolmasın
       // diye satır uyarısıyla gösterilir, yönetici elle işler.
       if (s.minor < 0) {
-        issues.push({ line, severity: "warning", code: "credit_balance", unit: label, column: s.columns.join(" + "), actualMinor: -s.minor });
+        issues.push({ line, severity: "warning", code: "credit_balance", unit: person ? `${label} — ${person.name}` : label, column: s.columns.join(" + "), actualMinor: -s.minor });
         continue;
       }
       debts.push({ kind, amountMinor: s.minor, columns: s.columns });
       byKind[kind] += s.minor;
     }
 
-    const landShare = decimal(row[col("landShare") ?? -1]);
-    if (landShare !== undefined && landShare > 100) {
-      issues.push({ line, severity: "warning", code: "land_share_large", unit: label, value: String(landShare) });
+    if (!unit) {
+      const landShare = decimal(row[col("landShare") ?? -1]);
+      if (landShare !== undefined && landShare > 100) {
+        issues.push({ line, severity: "warning", code: "land_share_large", unit: label, value: String(landShare) });
+      }
+      const floor = decimal(row[col("floor") ?? -1]);
+      unit = {
+        line,
+        blockName: blockName || undefined,
+        number,
+        floor: floor !== undefined && Number.isInteger(floor) ? floor : undefined,
+        areaM2: decimal(row[col("area") ?? -1]),
+        landShare,
+        people: [],
+        debts: [],
+      };
+      byUnit.set(key, unit);
+      units.push(unit);
     }
-    const floor = decimal(row[col("floor") ?? -1]);
-    const opt = (field: UnitImportField) => {
-      const i = col(field);
-      const v = i === undefined ? "" : text(row[i]);
-      return v || undefined;
-    };
-    units.push({
-      line,
-      blockName: blockName || undefined,
-      number,
-      floor: floor !== undefined && Number.isInteger(floor) ? floor : undefined,
-      areaM2: decimal(row[col("area") ?? -1]),
-      landShare,
-      ownerName: opt("ownerName"),
-      ownerPhone: opt("ownerPhone"),
-      tenantName: opt("tenantName"),
-      tenantPhone: opt("tenantPhone"),
-      debts,
+
+    if (personMode) {
+      if (person) {
+        person.debts = debts;
+        unit.people.push(person);
+      } else if (debts.length > 0) {
+        // Adı boş kişi satırının borcu daireye yazılır, kaybolmaz.
+        unit.debts.push(...debts);
+      }
+    } else {
+      unit.debts = debts;
+      const owner = cellText(row, "ownerName");
+      const tenant = cellText(row, "tenantName");
+      if (owner) unit.people.push({ line, role: "owner", former: false, name: owner, phone: phoneOf(cellText(row, "ownerPhone"), line, label), debts: [] });
+      if (tenant) unit.people.push({ line, role: "tenant", former: false, name: tenant, phone: phoneOf(cellText(row, "tenantPhone"), line, label), debts: [] });
+    }
+  }
+
+  // Bir dairede birden çok "güncel" kiracı: dosyada sonra gelen güncel kabul
+  // edilir, öncekiler eski kiracı olarak (ilişki kapalı) aktarılır.
+  for (const unit of units) {
+    const current = unit.people.filter((p) => p.role === "tenant" && !p.former);
+    if (current.length < 2) continue;
+    for (const p of current.slice(0, -1)) p.former = true;
+    issues.push({
+      line: current[0]!.line,
+      severity: "warning",
+      code: "multiple_tenants",
+      unit: unit.blockName ? `${unit.blockName} / ${unit.number}` : unit.number,
+      value: current[current.length - 1]!.name,
     });
   }
 
   return {
     units,
+    personMode,
     issues,
     skipped,
     totals: {
       byKind,
-      debtMinor: byKind.dues + byKind.utility + byKind.late_fee + byKind.extra,
+      debtMinor: Object.values(byKind).reduce((a, b) => a + b, 0),
       blocks: [...new Set(units.map((u) => u.blockName).filter((b): b is string => Boolean(b)))],
     },
   };
+}
+
+/** Bir dairenin aktarılacak bütün borçları (daireninki + kişilerinki). */
+export function unitDebtTotal(unit: ImportUnitRow): number {
+  return [...unit.debts, ...unit.people.flatMap((p) => p.debts)].reduce((s, d) => s + d.amountMinor, 0);
 }

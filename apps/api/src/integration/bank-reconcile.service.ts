@@ -86,18 +86,17 @@ export class BankReconcileService {
       Math.max(header.length, ...table.rows.slice(headerRow + 1, headerRow + 30).map((r) => r.length), 0),
     );
     const below = table.rows.slice(headerRow + 1);
+    // Örnekler satır hizalı (sütun başına ilk dolu değer, boş hücreli satırda
+    // alttaki hareketin değerini yanlış satıra koyuyordu).
+    const sampleRows = below.filter((r) => r.some((c) => display(c).trim() !== "")).slice(0, 3);
     const columns = Array.from({ length: width }, (_, index) => ({
       index,
       header: display(header[index] ?? null).slice(0, 80),
       field: mapping[index] ?? ("ignore" as const),
-      samples: below
-        .map((r) => display(r[index] ?? null))
-        .filter((v) => v !== "")
-        .slice(0, 3)
-        .map((v) => v.slice(0, 80)),
+      samples: sampleRows.map((r) => display(r[index] ?? null).slice(0, 80)),
     }));
     // Tamamen boş sütunları gösterme (İş Bankası'nda araya boş sütun giriyor).
-    const visible = columns.filter((c) => c.header !== "" || c.samples.length > 0 || c.field !== "ignore");
+    const visible = columns.filter((c) => c.header !== "" || c.samples.some((v) => v !== "") || c.field !== "ignore");
 
     const incoming = mapped.rows.filter((r) => r.direction === "in");
     const outgoing = mapped.rows.filter((r) => r.direction === "out");
