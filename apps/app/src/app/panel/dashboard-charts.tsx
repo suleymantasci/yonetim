@@ -4,12 +4,9 @@ import { useLocale, useTranslations } from "next-intl";
 
 import {
   BarChart,
-  BulletChart,
   ChartFrame,
   DonutChart,
   LineChart,
-  StackedAreaChart,
-  WaterfallChart,
 } from "@yonetim/ui";
 
 /**
@@ -21,7 +18,11 @@ import {
  * gerekli (dataviz "relief" kuralı) — ve grafik motoru `ssr:false` yüklendiği
  * için JS gelmeden okunabilen tek sürüm o.
  *
- * ALTI PANO, HEPSİ MEVCUT SÖZLEŞMEDEN: yeni bir API alanı eklenmedi. Takvim
+ * BEŞ PANO, HEPSİ MEVCUT SÖZLEŞMEDEN: yeni bir API alanı eklenmedi.
+ * Aynı sayıyı ikinci kez çizen panolar kaldırıldı (2026-10-08): tahsilat
+ * bileşimi (= tahakkuk − tahsilat, ilk panonun iki serisi), hedefe karşı son
+ * üç ay (= oran grafiği + KPI kartı) ve bu ayın şelalesi (= "Bu ay tahsilat"
+ * ve "Bu ayki gider" kartları; ayın neti nakit akışı panosunda da var). Takvim
  * ısı haritası bilerek yok — `dashboardCharts` günlük çözünürlükte veri
  * taşımıyor ve "yoğunluk" panosunu uydurma veriyle kurmak, sosyal kanıta
  * uydurma müşteri sayısı yazmakla aynı şey olurdu.
@@ -58,25 +59,18 @@ export function DashboardCharts({
     openKurus: number;
     overdueKurus: number;
   };
-  /** Hedef tahsilat oranı (0–1) — bullet panosunun referans çizgisi. */
+  /** Hedef tahsilat oranı (0–1) — oran grafiğinin referans çizgisi. */
   collectionTarget: number;
   labels: {
     incomeExpenseTitle: string;
     incomeExpenseHint: string;
     accrued: string;
     collected: string;
-    outstanding: string;
     expense: string;
-    mixTitle: string;
-    mixHint: string;
     rate: string;
     rateTitle: string;
     rateHint: string;
-    targetTitle: string;
-    targetHint: string;
     target: string;
-    aboveTarget: string;
-    belowTarget: string;
     agingTitle: string;
     agingHint: string;
     agingBuckets: Record<string, string>;
@@ -85,8 +79,6 @@ export function DashboardCharts({
     forecastHint: string;
     net: string;
     forecastNote: string;
-    flowTitle: string;
-    flowHint: string;
     splitTitle: string;
     splitHint: string;
     paid: string;
@@ -94,7 +86,6 @@ export function DashboardCharts({
     overdue: string;
     month: string;
     bucket: string;
-    step: string;
     asTable: string;
     asChart: string;
     empty: string;
@@ -125,45 +116,7 @@ export function DashboardCharts({
       value / 100,
     );
 
-  const monthCount = monthly.periodLabels.length;
-  const lastIndex = monthCount - 1;
-
-  /** Tahakkuk edip henüz tahsil edilmemiş kısım — yığılmış alanın üst katmanı. */
-  const outstandingKurus = monthly.accruedKurus.map((accrued, index) =>
-    Math.max(0, accrued - (monthly.collectedKurus[index] ?? 0)),
-  );
-
   const agingLabels = aging.labels.map((key) => labels.agingBuckets[key] ?? key);
-
-  /**
-   * Son ayın nakit akışı — waterfall.
-   *
-   * Tahsilat pozitif, gider negatif, net toplam çubuğu. Yığılmış sütunla
-   * aynı sayıları gösterirdik ama "neyden nereye" sorusunu cevaplamazdı.
-   */
-  const lastCollected = monthly.collectedKurus[lastIndex] ?? 0;
-  const lastExpense = monthly.expenseKurus[lastIndex] ?? 0;
-  const flowItems = [
-    { key: "collected", label: labels.collected, value: lastCollected },
-    { key: "expense", label: labels.expense, value: -lastExpense },
-    {
-      key: "net",
-      label: labels.net,
-      value: lastCollected - lastExpense,
-      kind: "total" as const,
-    },
-  ];
-
-  /** Son üç ayın tahsilat oranı hedefe karşı (bullet). */
-  const targetRows = monthly.periodLabels
-    .map((label, index) => ({
-      key: monthly.periods[index] ?? label,
-      label,
-      value: monthly.collectionRatePct[index] ?? 0,
-      target: collectionTarget * 100,
-      max: 100,
-    }))
-    .slice(-3);
 
   return (
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
@@ -198,33 +151,6 @@ export function DashboardCharts({
         />
       </ChartFrame>
 
-      {/* Tahsil edilen / kalan: bütünün zaman içindeki bileşimi. */}
-      <ChartFrame
-        title={labels.mixTitle}
-        description={labels.mixHint}
-        labels={monthly.periodLabels}
-        labelsHeader={labels.month}
-        series={[
-          { key: "collected", label: labels.collected, values: monthly.collectedKurus },
-          { key: "outstanding", label: labels.outstanding, values: outstandingKurus },
-        ]}
-        formatValue={fullMoney}
-        tableToggleLabel={labels.asTable}
-        chartToggleLabel={labels.asChart}
-        emptyText={labels.empty}
-      >
-        <StackedAreaChart
-          labels={monthly.periodLabels}
-          series={[
-            { key: "collected", label: labels.collected, values: monthly.collectedKurus },
-            { key: "outstanding", label: labels.outstanding, values: outstandingKurus },
-          ]}
-          formatValue={shortMoney}
-          tooltipFormat={fullMoney}
-          height={220}
-        />
-      </ChartFrame>
-
       {/* Tahsilat oranı yüzde: ayrı grafik — ikinci y ekseni yok. */}
       <ChartFrame
         title={labels.rateTitle}
@@ -250,39 +176,6 @@ export function DashboardCharts({
         />
       </ChartFrame>
 
-      {/*
-       * Hedefe karşı son üç ay — bullet.
-       *
-       * Önce bu blok tahsilat oranı panosunun dipnotuna konmuştu; dipnot
-       * küçük punto ve soluk zeminli olduğu için çubuklar ve hedef işareti
-       * neredeyse görünmüyordu (tarayıcıda ölçüldü). Kendi panosu olmalıydı:
-       * çizgi grafiği **eğilimi**, bullet **bugünkü durumu** anlatıyor.
-       */}
-      <ChartFrame
-        title={labels.targetTitle}
-        description={labels.targetHint}
-        labels={targetRows.map((row) => row.label)}
-        labelsHeader={labels.month}
-        series={[
-          { key: "rate", label: labels.rate, values: targetRows.map((row) => row.value) },
-          { key: "target", label: labels.target, values: targetRows.map((row) => row.target) },
-        ]}
-        formatValue={pct}
-        tableToggleLabel={labels.asTable}
-        chartToggleLabel={labels.asChart}
-        emptyText={labels.empty}
-      >
-        <div className="py-2">
-          <BulletChart
-            rows={targetRows}
-            formatValue={pct}
-            targetLabel={labels.target}
-            aboveTargetLabel={labels.aboveTarget}
-            belowTargetLabel={labels.belowTarget}
-          />
-        </div>
-      </ChartFrame>
-
       <ChartFrame
         title={labels.agingTitle}
         description={labels.agingHint}
@@ -302,27 +195,6 @@ export function DashboardCharts({
           tooltipFormat={fullMoney}
           height={220}
           horizontal
-        />
-      </ChartFrame>
-
-      <ChartFrame
-        title={labels.flowTitle}
-        description={labels.flowHint}
-        labels={flowItems.map((item) => item.label)}
-        labelsHeader={labels.step}
-        series={[
-          { key: "flow", label: labels.net, values: flowItems.map((item) => item.value) },
-        ]}
-        formatValue={fullMoney}
-        tableToggleLabel={labels.asTable}
-        chartToggleLabel={labels.asChart}
-        emptyText={labels.empty}
-      >
-        <WaterfallChart
-          items={flowItems}
-          formatValue={shortMoney}
-          tooltipFormat={fullMoney}
-          height={220}
         />
       </ChartFrame>
 
