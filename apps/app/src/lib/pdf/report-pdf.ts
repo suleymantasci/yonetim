@@ -39,7 +39,14 @@ export interface TableRow {
 export type Block =
   | { type: "docTitle"; title: string; subtitle?: string }
   | { type: "heading"; text: string }
-  | { type: "paragraph"; text: string; muted?: boolean }
+  | {
+      type: "paragraph";
+      text: string;
+      muted?: boolean;
+      /** Mektup gövdesi için (varsayılan 9.5). */
+      size?: number;
+      align?: "left" | "right" | "center" | "justify";
+    }
   | { type: "stats"; items: { label: string; value: string }[] }
   | {
       type: "table";
@@ -64,6 +71,11 @@ export interface ReportPdf {
   landscape?: boolean;
   blocks: Block[];
   labels: { page: (page: number, total: number) => string; generated: string };
+  /**
+   * Antetli yazı: üst satır yerine ortalanmış site adı + adres satırları;
+   * altta yalnız sayfa numarası (tebligat, çağrı mektubu, serbest evrak).
+   */
+  letterhead?: { name: string; lines: string[] };
 }
 
 const FONT_DIR = path.join(process.cwd(), "assets", "fonts");
@@ -90,16 +102,18 @@ const C = {
 const MARGIN = 36;
 const HEADER_H = 22;
 const FOOTER_H = 20;
+const LETTERHEAD_H = 58;
 const PAD_X = 4;
 const PAD_Y = 3;
 
 export async function renderReportPdf(report: ReportPdf): Promise<Buffer> {
   const f = loadFonts();
+  const headH = report.letterhead ? LETTERHEAD_H : HEADER_H;
   const doc = new PDFDocument({
     size: "A4",
     layout: report.landscape ? "landscape" : "portrait",
     margins: {
-      top: MARGIN + HEADER_H,
+      top: MARGIN + headH,
       bottom: MARGIN + FOOTER_H,
       left: MARGIN,
       right: MARGIN,
@@ -153,10 +167,15 @@ export async function renderReportPdf(report: ReportPdf): Promise<Buffer> {
       case "paragraph": {
         doc
           .font("R")
-          .fontSize(block.muted ? 8 : 9.5)
+          .fontSize(block.size ?? (block.muted ? 8 : 9.5))
           .fillColor(block.muted ? C.subtle : C.fg);
-        ensure(doc.heightOfString(block.text, { width }));
-        doc.text(block.text, left, doc.y, { width, lineGap: 2 });
+        // Uzun gövde kendiliğinden sayfa atlar; yalnız ilk satırlar sığsın.
+        ensure(Math.min(doc.heightOfString(block.text, { width }), 60));
+        doc.text(block.text, left, doc.y, {
+          width,
+          lineGap: block.size ? 3 : 2,
+          align: block.align,
+        });
         doc.moveDown(0.6);
         break;
       }
@@ -297,6 +316,30 @@ export async function renderReportPdf(report: ReportPdf): Promise<Buffer> {
     // Kenar boşluğuna yazarken otomatik sayfa eklenmesin.
     const margins = doc.page.margins;
     doc.page.margins = { top: 0, bottom: 0, left: 0, right: 0 };
+
+    if (report.letterhead) {
+      const lh = report.letterhead;
+      doc.font("B").fontSize(12).fillColor(C.fg);
+      doc.text(lh.name, MARGIN, MARGIN - 6, { width, align: "center", lineBreak: false });
+      doc.font("R").fontSize(8).fillColor(C.muted);
+      lh.lines.slice(0, 2).forEach((line, li) => {
+        doc.text(line, MARGIN, MARGIN + 10 + li * 10, { width, align: "center", lineBreak: false, ellipsis: true });
+      });
+      doc
+        .moveTo(MARGIN, MARGIN + LETTERHEAD_H - 24)
+        .lineTo(pageW - MARGIN, MARGIN + LETTERHEAD_H - 24)
+        .lineWidth(0.8)
+        .strokeColor(C.strong)
+        .stroke();
+      doc.font("R").fontSize(7).fillColor(C.subtle);
+      doc.text(report.labels.page(i + 1, range.count), MARGIN, pageH - MARGIN - 8, {
+        width,
+        align: "right",
+        lineBreak: false,
+      });
+      doc.page.margins = margins;
+      continue;
+    }
 
     doc.font("B").fontSize(8).fillColor(C.fg);
     doc.text(report.tenantName, MARGIN, MARGIN, {
@@ -519,6 +562,59 @@ function drawTable(
     doc.x = left;
     doc.y = y + h;
   });
+}
+
+/**
+ * Adres etiketi sayfası — A4'e `cols × rows` eşit hücre (2×4, 2×5, 2×6
+ * hazır etiket kâğıtları). Kenar boşluğu yok; ilk satır kalın (ad), sonrası
+ * adres/telefon. Hücreye sığmayan satır kesilir, taşmaz.
+ */
+export async function renderLabelsPdf(input: {
+  cols: number;
+  rows: number;
+  items: string[][];
+  title: string;
+}): Promise<Buffer> {
+  const f = loadFonts();
+  const doc = new PDFDocument({
+    size: "A4",
+    margins: { top: 0, bottom: 0, left: 0, right: 0 },
+    info: { Title: input.title, Creator: "Site yönetim paneli" },
+    autoFirstPage: false,
+  });
+  doc.registerFont("R", f.regular);
+  doc.registerFont("B", f.bold);
+  const chunks: Buffer[] = [];
+  doc.on("data", (c: Buffer) => chunks.push(c));
+  const done = new Promise<Buffer>((resolve, reject) => {
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    doc.on("error", reject);
+  });
+
+  const perPage = input.cols * input.rows;
+  const inset = 16;
+  input.items.forEach((lines, index) => {
+    const slot = index % perPage;
+    if (slot === 0) doc.addPage();
+    const w = doc.page.width / input.cols;
+    const h = doc.page.height / input.rows;
+    const x = (slot % input.cols) * w;
+    const y = Math.floor(slot / input.cols) * h;
+    // Kesim kılavuzu: çok açık, yazıcıda zor görünür.
+    doc.rect(x, y, w, h).lineWidth(0.25).dash(1, { space: 3 }).strokeColor(C.rule).stroke().undash();
+    const size = input.rows >= 6 ? 9 : 10;
+    let ty = y + inset;
+    lines.forEach((line, li) => {
+      if (!line) return;
+      if (ty + size + 2 > y + h - inset / 2) return;
+      doc.font(li === 0 ? "B" : "R").fontSize(li === 0 ? size + 1 : size).fillColor(C.fg);
+      doc.text(line, x + inset, ty, { width: w - inset * 2, lineBreak: false, ellipsis: true });
+      ty += (li === 0 ? size + 1 : size) + 5;
+    });
+  });
+  if (input.items.length === 0) doc.addPage();
+  doc.end();
+  return done;
 }
 
 /** `inline`: tarayıcının PDF görüntüleyicisinde açılır; indir/yazdır oradan. */

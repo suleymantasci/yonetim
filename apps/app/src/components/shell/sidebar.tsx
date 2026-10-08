@@ -5,7 +5,7 @@ import {
   Gauge, Gavel, Handshake, LayoutDashboard, LineChart, Megaphone, MessageSquare, Package, Pin, PinOff,
   Receipt, Scale, ScrollText, ShieldCheck, Sparkles, Store, Truck, Users, Vote, Wallet, Wrench, X,
   Landmark, PiggyBank, CalendarDays, CreditCard, UserRound, Info, Briefcase, UserPlus, Boxes, BookOpen,
-  UserCog,
+  UserCog, FileSignature,
 } from "lucide-react";
 import Link from "@/components/link";
 import { usePathname } from "next/navigation";
@@ -68,6 +68,7 @@ const ICONS: Record<string, ComponentType<{ className?: string; "aria-hidden"?: 
   staff: UserCog,
   documents: FileText,
   legal: Gavel,
+  letters: FileSignature,
   kvkk: ShieldCheck,
   audit: ScrollText,
   reports: Activity,

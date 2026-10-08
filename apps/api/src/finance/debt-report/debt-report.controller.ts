@@ -24,7 +24,7 @@ export class DebtReportController {
   @ApiOperation({ summary: "Toplu borç dökümü — daire başına açık kalemler" })
   openItems(@Query() query: Record<string, string>) {
     const q = openItemsQuery.parse(query);
-    return this.service.openItems({ member: q.member, unitId: q.unitId, overdueOnly: q.overdueOnly === "1" });
+    return this.service.openItems({ ...q, overdueOnly: q.overdueOnly === "1" });
   }
 
   @Get("receipts")

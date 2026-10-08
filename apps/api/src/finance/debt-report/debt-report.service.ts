@@ -101,6 +101,10 @@ export class DebtReportService {
   async openItems(q: {
     member?: MemberScope;
     unitId?: string;
+    blockId?: string;
+    debtTypeId?: string;
+    periodUntil?: string;
+    minTotal?: number;
     overdueOnly: boolean;
   }): Promise<OpenItemsResponse> {
     const now = new Date();
@@ -116,6 +120,13 @@ export class DebtReportService {
         WHERE d.deleted_at IS NULL AND d.status NOT IN ('paid', 'written_off', 'cancelled')
           AND d.amount_kurus + d.late_fee_kurus - d.paid_kurus > 0
           ${q.unitId ? sql`AND d.unit_id = ${q.unitId}` : sql``}
+          ${q.blockId ? sql`AND u.block_id = ${q.blockId}` : sql``}
+          ${q.debtTypeId ? sql`AND d.debt_type_id = ${q.debtTypeId}` : sql``}
+          ${
+            q.periodUntil
+              ? sql`AND COALESCE(d.period, to_char(d.due_date AT TIME ZONE 'Europe/Istanbul', 'YYYY-MM')) <= ${q.periodUntil}`
+              : sql``
+          }
           ${q.overdueOnly ? sql`AND d.due_date < ${now.toISOString()}::timestamptz` : sql``}
           AND ${memberScopeSql(q.member, sql`d.debtor_user_id`, sql`d.unit_id`)}
         ORDER BY b.name NULLS FIRST, NULLIF(substring(u.number from '[0-9]+'), '')::numeric NULLS LAST, u.number, d.due_date
@@ -127,7 +138,7 @@ export class DebtReportService {
       const unitId = String(r.unit_id);
       let unit = units.get(unitId);
       if (!unit) {
-        unit = { unitId, label: String(r.label), holder: s(r.holder), items: [], totalMinor: 0, overdueMinor: 0 };
+        unit = { unitId, label: String(r.label), holder: s(r.holder), debtors: [], items: [], totalMinor: 0, overdueMinor: 0 };
         units.set(unitId, unit);
       }
       const dueDate = new Date(String(r.due_date));
@@ -147,8 +158,12 @@ export class DebtReportService {
       });
       unit.totalMinor += remaining;
       if (overdue) unit.overdueMinor += remaining;
+      const debtor = s(r.debtor_name);
+      if (debtor && !unit.debtors.includes(debtor)) unit.debtors.push(debtor);
     }
-    const list = [...units.values()];
+    const list = [...units.values()].filter(
+      (u) => q.minTotal === undefined || u.totalMinor >= q.minTotal,
+    );
     return {
       units: list,
       totalMinor: list.reduce((a, u) => a + u.totalMinor, 0),

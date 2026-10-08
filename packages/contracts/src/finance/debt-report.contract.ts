@@ -53,6 +53,12 @@ export type DebtMatrixResponse = z.infer<typeof debtMatrixResponse>;
 export const openItemsQuery = z.object({
   member: memberScope.optional(),
   unitId: uuid.optional(),
+  blockId: uuid.optional(),
+  debtTypeId: uuid.optional(),
+  /** Bu dönem ve öncesi (`YYYY-MM`; dönemsiz borçta vade ayı). */
+  periodUntil: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).optional(),
+  /** Daire toplamı en az (kuruş) — tebligat eşiği. */
+  minTotal: z.coerce.number().int().min(0).optional(),
   /** Yalnız vadesi geçmiş kalemler. */
   overdueOnly: z.enum(["0", "1"]).default("0"),
 });
@@ -76,6 +82,8 @@ export const openItemsResponse = z.object({
       unitId: uuid,
       label: z.string(),
       holder: z.string().nullable(),
+      /** Kalemlerdeki borçlular (tebligatta "Sayın …"). */
+      debtors: z.array(z.string()),
       items: z.array(openItem),
       totalMinor: moneyMinor,
       overdueMinor: moneyMinor,
@@ -112,3 +120,34 @@ export const receiptListResponse = z.object({
 });
 
 export type ReceiptListResponse = z.infer<typeof receiptListResponse>;
+
+/* ------------------------------ Yazışma alıcıları ------------------------------ */
+
+/**
+ * Etiket, çağrı mektubu ve vekaletname alıcıları — bağımsız bölüm başına
+ * kapsamdaki kişiler. Telefon yalnız `phones=1` ile ve denetim kaydıyla döner.
+ */
+export const recipientQuery = z.object({
+  member: memberScope.optional(),
+  blockId: uuid.optional(),
+  phones: z.enum(["0", "1"]).default("0"),
+});
+
+export const recipientRow = z.object({
+  unitId: uuid,
+  unitLabel: z.string(),
+  blockName: z.string().nullable(),
+  people: z.array(
+    z.object({
+      userId: uuid,
+      name: z.string(),
+      relation: z.string(),
+      former: z.boolean(),
+      phone: z.string().nullable(),
+    }),
+  ),
+  landShare: z.string().nullable(),
+});
+
+export const recipientResponse = z.object({ rows: z.array(recipientRow) });
+export type RecipientResponse = z.infer<typeof recipientResponse>;
