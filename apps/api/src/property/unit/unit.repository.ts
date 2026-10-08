@@ -216,6 +216,7 @@ export class UnitRepository {
       ownershipType: units.ownershipType,
       duesExempt: units.duesExempt,
       lateFeeExempt: units.lateFeeExempt,
+      ownerPaysDues: units.ownerPaysDues,
       duesMultiplier: units.duesMultiplier,
       blockId: units.blockId,
       blockName: blocks.name,
@@ -594,6 +595,7 @@ function toColumns(dto: UnitCreate, share: LandShare) {
     ownershipType: dto.ownershipType,
     duesExempt: dto.duesExempt,
     lateFeeExempt: dto.lateFeeExempt,
+    ownerPaysDues: dto.ownerPaysDues,
     duesMultiplier: (dto.duesMultiplier ?? 1).toFixed(3),
     notes: dto.notes ?? null,
   };

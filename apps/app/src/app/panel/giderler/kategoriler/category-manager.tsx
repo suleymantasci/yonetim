@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronRight, Pencil, Plus, Power, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 
@@ -88,6 +89,7 @@ export function CategoryManager({
 }) {
   const tCommon = useTranslations("common");
   const toast = useToast();
+  const router = useRouter();
   const [editing, setEditing] = useState<
     CategoryNode | { parentId: string | null } | null
   >(null);
@@ -111,6 +113,9 @@ export function CategoryManager({
       if (result.ok) toast.success(result.message);
       else toast.error(result.message);
       setArchiving(null);
+      // Sunucu eylemi `ActionForm` dışında: arşivlenen kategori listede
+      // kalıyordu, sayfa yenilenene kadar.
+      if (result.ok) router.refresh();
     });
   }
 

@@ -4,7 +4,6 @@ import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
 import {
-  MANUAL_DEBT_KINDS,
   debtBulkPreview,
   debtBulkResult,
   debtBulkResultSimple,
@@ -53,14 +52,22 @@ import {
  */
 
 /**
- * Elle borçlandırmada `late_fee` **kabul edilmiyor** (`MANUAL_DEBT_KINDS`).
+ * Elle borçlandırmada `late_fee` **kabul edilmiyor**: form türü (`debtTypeId`)
+ * gönderiyor ve tür tanımı `late_fee` sınıfını kabul etmiyor.
  *
  * Daha önce kabul ediliyordu ama form onu hiç listelemiyordu; yani yalnız
  * elle uydurulmuş bir POST ile yazılabiliyordu. Gecikme tazminatı borcunu
  * gecikme işi üretiyor — ikinci bir kaynak, aynı kalemin iki kez doğmasına ve
  * gecikme raporunun toplamıyla borç toplamının ayrışmasına yol açardı.
  */
-const SHARE_TARGETS = ["owner", "tenant", "split", "share"] as const;
+const SHARE_TARGETS = [
+  "rule",
+  "occupant",
+  "owner",
+  "tenant",
+  "split",
+  "share",
+] as const;
 
 /* ------------------------------------------------------------------ *
  * 1) Tek borç
@@ -68,9 +75,8 @@ const SHARE_TARGETS = ["owner", "tenant", "split", "share"] as const;
 
 const debtSchema = z.object({
   unitId: uuidField,
-  kind: z.enum(MANUAL_DEBT_KINDS, {
-    errorMap: () => ({ message: V.invalidSelection }),
-  }),
+  /** Borç türü: sınıf (`kind`), borçlu kuralı ve gecikme ondan gelir. */
+  debtTypeId: uuidField,
   description: requiredText(3, 200),
   amountKurus: kurusField({ min: 1 }),
   dueDate: dateField,
@@ -109,7 +115,7 @@ export async function createDebt(
         "/v1/panel/debts",
         {
           unitId: input.unitId,
-          kind: input.kind,
+          debtTypeId: input.debtTypeId,
           description: input.description,
           amountMinor: input.amountKurus,
           dueDate: input.dueDate,
@@ -147,9 +153,7 @@ export async function createDebt(
 
 const bulkDebtSchema = z.object({
   description: requiredText(3, 200),
-  kind: z.enum(MANUAL_DEBT_KINDS, {
-    errorMap: () => ({ message: V.invalidSelection }),
-  }),
+  debtTypeId: uuidField,
   period: periodField,
   dueDay: intField({ min: 1, max: 28 }),
   formula: z.enum(["equal", "land_share", "area", "person_count", "custom"], {
@@ -193,7 +197,7 @@ export interface BulkDebtResult {
 function toBulkBody(input: BulkInput) {
   return {
     description: input.description,
-    kind: input.kind,
+    debtTypeId: input.debtTypeId,
     period: input.period,
     dueDay: input.dueDay,
     formula: input.formula,

@@ -51,7 +51,8 @@
       "newPoll": "Yeni anket aç",
       "newMeeting": "Yeni toplantı planla",
       "newMessage": "Sakine mesaj gönder",
-      "newBankAccount": "Yeni banka hesabı"
+      "newBankAccount": "Yeni banka hesabı",
+      "debtTypes": "Borç türleri"
     },
     "inventory": "Demirbaş",
     "decisionBook": "Karar Defteri",
@@ -309,6 +310,8 @@
     "duesExemptHint": "Boş daire kararı veya yönetici muafiyeti gibi durumlarda borç üretilmez.",
     "lateFeeExempt": "Gecikme tazminatından muaf",
     "lateFeeExemptHint": "Taksitlendirilen veya dava konusu borçlarda gecikme faizi işlemez.",
+    "ownerPaysDues": "Aidatı maliğe yaz",
+    "ownerPaysDuesHint": "Kiracılı dairede aidat (oturana yazılan) borçlandırmaları kiracı yerine maliğe kaydedilir. Yakıt ve kira oturanda kalır.",
     "duesMultiplier": "Aidat çarpanı",
     "duesMultiplierHint": "1,000 = standart. Dükkânlar için 1,500 gibi katsayı verilebilir.",
     "duesMultiplierNote": "Çarpan zam yapmak için de kullanılır: %10 zam = çarpanı 1,100 ile çarpmak. Böylece kimin ne kadar zam gördüğü tek yerde durur.",
@@ -920,7 +923,8 @@
     "presetTitle": "“{plan}” planından dolduruldu",
     "presetBody": "Formül, tutar, vade günü ve kapsam plandan kopyalandı; hepsini değiştirebilirsiniz. Bu borçlandırma plana **bağlı değil** — planın kendi dönemsel koşusundan bağımsız, tek seferlik bir kayıt üretir.",
     "collectFromUnit": "Tahsilat gir",
-    "collectUnitLabel": "Bağımsız bölüm"
+    "collectUnitLabel": "Bağımsız bölüm",
+    "debtTypesLink": "Borç türleri"
   },
   "expenses": {
     "title": "Giderler",
@@ -4085,5 +4089,60 @@
     "quickDay": "Hatırlatma günü (isteğe bağlı)",
     "notesEmpty": "Henüz not yok.",
     "openCalendar": "Takvimi aç"
+  },
+  "debtTypes": {
+    "title": "Borç türleri",
+    "description": "Borçlandırma seçenekleri: her türün borcu kime yazılacağı (oturan ya da malik), gecikme tazminatı ve muhasebe hesabı. Tek ve toplu borçlandırma, aidat planı ve Excel aktarımı bu kuralı kullanır.",
+    "new": "Yeni borç türü",
+    "editTitle": "Borç türünü düzenle",
+    "formHint": "Yeni borçlarda geçerli olur; eski borçların borçlusu değişmez.",
+    "col": {
+      "name": "Ad",
+      "debtor": "Borçlu",
+      "lateFee": "Gecikme tazminatı",
+      "account": "Muhasebe kodu",
+      "debts": "Borç",
+      "actions": "İşlemler"
+    },
+    "debtor": {
+      "occupant": "Oturan",
+      "owner": "Malik"
+    },
+    "debtorHint": "Oturan: kiracı varsa kiracı, yoksa malik. Malik: hisseli mülkte hisseye göre bölünür. Daire kartındaki “Aidatı maliğe yaz” aidat sınıfını maliğe çevirir.",
+    "lateFee": {
+      "none": "İşlemez",
+      "monthly": "Dönemsel · aylık %{pct}",
+      "daily": "Günlük · aylık %{pct}"
+    },
+    "mode": {
+      "monthly": "Dönemsel (başlayan her ay)",
+      "daily": "Günlük (kıst)",
+      "none": "Gecikme işlemez"
+    },
+    "siteDefault": "(site ayarı)",
+    "pct": "Aylık oran (%)",
+    "pctHint": "Boş bırakılırsa site ayarı (%{pct}). KMK md.20 üst sınırı aylık %5.",
+    "baseKind": "Sınıf",
+    "baseKindHint": "Raporlarda ve muhasebede hangi kalemde görüneceği.",
+    "accountDefault": "varsayılan",
+    "accountHint": "Tahakkukun gelir hesabı (ör. 602.10). Boşsa sınıfın varsayılanı: aidat 600, diğerleri 602.",
+    "sortOrder": "Sıra",
+    "active": "Etkin",
+    "activeHint": "Pasif tür yeni borçta seçilemez; bağlı borçların gecikmesi işlemeye devam eder.",
+    "inactive": "Pasif",
+    "saved": "“{name}” kaydedildi.",
+    "deleted": "Borç türü silindi.",
+    "deleteTitle": "Borç türü silinsin mi?",
+    "deleteDescription": "“{name}” silinecek. Bağlı borcu olmadığı için geçmiş etkilenmez.",
+    "edit": "{name} düzenle",
+    "delete": "{name} sil",
+    "footnote": "Bağlı borcu olan tür silinemez; pasifleştirin.",
+    "field": "Borç türü",
+    "fieldHint": "Borçlu kuralı ve gecikme türden gelir.",
+    "manage": "Türleri yönet",
+    "ruleTarget": "Türün kuralı",
+    "ruleTargetHint": "{rule} — türde tanımlı kural (daire istisnası dahil).",
+    "occupantTarget": "Oturan",
+    "occupantTargetHint": "Kiracı varsa kiracıya, yoksa maliğe."
   }
 }

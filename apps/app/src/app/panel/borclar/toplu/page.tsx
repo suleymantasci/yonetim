@@ -1,6 +1,6 @@
 import { getTranslations } from "next-intl/server";
 
-import { blockListResponse, duesPlanRow } from "@yonetim/contracts";
+import { blockListResponse, debtTypeList, duesPlanRow } from "@yonetim/contracts";
 import { addMonths, currentPeriod, periodKey } from "@yonetim/core";
 
 import { PageHeader } from "@/components/app-shell";
@@ -35,8 +35,9 @@ export default async function BulkDebtPage({
 
   const planIdRaw = Array.isArray(query.plan) ? query.plan[0] : query.plan;
 
-  const [{ rows: blocks }, plan] = await Promise.all([
+  const [{ rows: blocks }, types, plan] = await Promise.all([
     apiGet("/v1/panel/units/blocks", blockListResponse),
+    apiGet("/v1/panel/debt-types", debtTypeList),
     // Geçersiz/yabancı bir kimlik sessizce yok sayılıyor: sihirbaz ön
     // doldurma olmadan da tam çalışan bir ekran ve bozuk bir bağlantı
     // yüzünden 404 göstermek kullanıcıyı boşuna durdururdu.
@@ -76,6 +77,9 @@ export default async function BulkDebtPage({
       />
       <BulkDebtWizard
         blocks={blocks.map((block) => ({ id: block.id, name: block.name }))}
+        debtTypes={types.rows
+          .filter((type) => type.isActive)
+          .map((type) => ({ id: type.id, name: type.name, debtor: type.debtor }))}
         defaultPeriod={periodKey(addMonths(currentPeriod(), 1))}
         cancelHref="/panel/borclar"
         preset={preset}

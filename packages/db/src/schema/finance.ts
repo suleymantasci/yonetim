@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   boolean, index, integer, jsonb, numeric, pgTable, text, timestamp, uniqueIndex, uuid, varchar,
 } from "drizzle-orm/pg-core";
@@ -54,6 +55,43 @@ export const duesPlans = pgTable(
   ],
 );
 
+/**
+ * Borç türü tanımları — kullanıcı tanımlı borçlandırma seçenekleri.
+ *
+ * `debt_kind` enum'u **davranış** sınıfı olarak kalıyor (raporlar, muhasebe
+ * varsayılanı, toplu borçlandırma); bu tablo sitenin kendi adlandırdığı
+ * kalemler: "Aidat", "Yakıt", "Demirbaş", "Kira"… Her tür için:
+ *  - `debtor`: `occupant` (oturan: kiracı varsa kiracı, yoksa malik) ya da
+ *    `owner` (malik; hisseli mülkte hisseye göre bölünür). Demirbaş maliğe,
+ *    aidat/yakıt oturana — kiracılı dairede doğru kişiye borç yazmanın temeli.
+ *  - Gecikme: `late_fee_mode` none / monthly (dönemsel) / daily (günlük), oran
+ *    aylık yüzde (KMK md.20: en çok %5). Boşsa site ayarı.
+ *  - `account_code`: tahakkukun alacak (gelir) hesabı; boşsa türün varsayılanı.
+ */
+export const debtTypes = pgTable(
+  "debt_types",
+  {
+    id: idCol(),
+    tenantId: tenantId().references(() => tenants.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 60 }).notNull(),
+    baseKind: debtKindEnum("base_kind").notNull().default("extra"),
+    /** `occupant` | `owner`. */
+    debtor: varchar("debtor", { length: 10 }).notNull().default("occupant"),
+    /** `none` | `monthly` | `daily`. */
+    lateFeeMode: varchar("late_fee_mode", { length: 10 }).notNull().default("monthly"),
+    lateFeeMonthlyPct: numeric("late_fee_monthly_pct", { precision: 5, scale: 2 }),
+    accountCode: varchar("account_code", { length: 20 }),
+    isActive: boolean("is_active").notNull().default(true),
+    sortOrder: integer("sort_order").notNull().default(0),
+    ...timestamps,
+    ...softDelete,
+  },
+  (t) => [
+    index("idx_debt_types_tenant").on(t.tenantId),
+    uniqueIndex("uq_debt_types_name").on(t.tenantId, t.name).where(sql`${t.deletedAt} IS NULL`),
+  ],
+);
+
 /** Dönem bazlı borçlandırma çalışması (idempotent üretim anahtarı). */
 export const duesRuns = pgTable(
   "dues_runs",
@@ -86,6 +124,8 @@ export const debts = pgTable(
     duesPlanId: uuid("dues_plan_id").references(() => duesPlans.id, { onDelete: "set null" }),
     duesRunId: uuid("dues_run_id").references(() => duesRuns.id, { onDelete: "set null" }),
     kind: debtKindEnum("kind").notNull().default("dues"),
+    /** Kullanıcı tanımlı tür (borçlu kuralı + gecikme); eski kayıtlarda boş. */
+    debtTypeId: uuid("debt_type_id"),
     period: varchar("period", { length: 7 }),
     description: varchar("description", { length: 200 }).notNull(),
     amountKurus: money("amount_kurus").notNull(),
@@ -117,6 +157,7 @@ export const debts = pgTable(
     index("idx_debts_status_due").on(t.tenantId, t.status, t.dueDate),
     index("idx_debts_debtor").on(t.debtorUserId),
     index("idx_debts_period").on(t.tenantId, t.period),
+    index("idx_debts_type").on(t.debtTypeId),
   ],
 );
 

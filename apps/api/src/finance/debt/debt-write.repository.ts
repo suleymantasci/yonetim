@@ -16,12 +16,16 @@ import type {
 import { dueDateFor, parsePeriodKey } from "@yonetim/core";
 import {
   blocks,
+  debtorRuleFor,
   debts,
+  debtTypes,
+  ensureDefaultDebtTypes,
   paymentAllocations,
   payments,
   unitOccupancies,
   unitOrder,
   units,
+  type DebtTypeRow,
 } from "@yonetim/db";
 import {
   allocatePayment,
@@ -60,13 +64,19 @@ export class DebtWriteRepository {
           id: units.id,
           number: units.number,
           lateFeeExempt: units.lateFeeExempt,
+          ownerPaysDues: units.ownerPaysDues,
         })
         .from(units)
         .where(and(eq(units.id, dto.unitId), isNull(units.deletedAt)))
         .limit(1);
       if (!unit) throw new NotFoundException("not_found:unit");
 
-      const debtors = await resolveDebtors(tx, dto.unitId, dto.shareTarget);
+      const { kind, type } = await resolveDebtType(tx, ctx.tenantId, dto);
+      const debtors = await resolveDebtors(
+        tx,
+        dto.unitId,
+        targetFor(dto.shareTarget, type, unit),
+      );
       const perDebtor = splitAmount(
         dto.amountMinor,
         debtors.map((entry) => entry.weight),
@@ -91,7 +101,8 @@ export class DebtWriteRepository {
             tenantId: ctx.tenantId,
             unitId: dto.unitId,
             debtorUserId: debtor.userId,
-            kind: dto.kind,
+            kind,
+            debtTypeId: type?.id ?? null,
             period: dto.period ?? null,
             description:
               dto.installmentCount > 1
@@ -129,6 +140,7 @@ export class DebtWriteRepository {
 
   async preview(dto: DebtBulkCreate) {
     return this.db.tx(async (tx) => {
+      await resolveDebtType(tx, this.db.ctx().tenantId, dto);
       const targets = await selectTargetUnits(tx, dto);
       if (targets.length === 0)
         throw new BadRequestException("validation_failed:no_target_units");
@@ -165,6 +177,7 @@ export class DebtWriteRepository {
 
     return this.db.tx(async (tx) => {
       const ctx = this.db.ctx();
+      const { kind, type } = await resolveDebtType(tx, ctx.tenantId, dto);
       const targets = await selectTargetUnits(tx, dto);
       if (targets.length === 0)
         throw new BadRequestException("validation_failed:no_target_units");
@@ -189,7 +202,11 @@ export class DebtWriteRepository {
           continue;
         }
 
-        const debtors = await resolveDebtors(tx, unit.id, dto.shareTarget);
+        const debtors = await resolveDebtors(
+          tx,
+          unit.id,
+          targetFor(dto.shareTarget, type, unit),
+        );
         const amounts = splitAmount(
           share.amountKurus,
           debtors.map((entry) => entry.weight),
@@ -202,7 +219,8 @@ export class DebtWriteRepository {
             tenantId: ctx.tenantId,
             unitId: unit.id,
             debtorUserId: debtor.userId,
-            kind: dto.kind,
+            kind,
+            debtTypeId: type?.id ?? null,
             period: dto.period,
             description: dto.description,
             amountKurus: amount,
@@ -598,6 +616,16 @@ async function resolveDebtors(
         { userId: tenant.userId, weight: 50 },
       ];
     }
+    case "occupant": {
+      // Oturan: kiracı varsa kiracı; yoksa malik(ler) hisseye göre.
+      const tenant = tenants[0];
+      if (tenant) return [{ userId: tenant.userId, weight: 1 }];
+      if (owners.length === 0) return [{ userId: null, weight: 1 }];
+      return owners.map((row) => ({
+        userId: row.userId,
+        weight: owners.length === 1 ? 1 : Number(row.ownershipPct),
+      }));
+    }
     case "share": {
       if (owners.length === 0) return [{ userId: null, weight: 1 }];
       return owners.map((row) => ({
@@ -608,6 +636,52 @@ async function resolveDebtors(
     default:
       return [{ userId: null, weight: 1 }];
   }
+}
+
+type DebtTypeRef = Pick<DebtTypeRow, "id" | "baseKind" | "debtor"> | null;
+
+/**
+ * Borç türü → davranış sınıfı (`kind`) ve kural.
+ *
+ * Tür verilirse sınıf **türden** gelir (istemcinin yolladığı `kind` yok
+ * sayılır — ikisi çelişemez). Tür yoksa eski sözleşme: `kind` zorunlu, tür
+ * bağlanmaz.
+ */
+async function resolveDebtType(
+  tx: Database,
+  tenantId: string,
+  dto: { debtTypeId?: string; kind?: DebtCreate["kind"] },
+): Promise<{ kind: NonNullable<DebtCreate["kind"]>; type: DebtTypeRef }> {
+  if (dto.debtTypeId) {
+    await ensureDefaultDebtTypes(tx, tenantId);
+    const [type] = await tx
+      .select({
+        id: debtTypes.id,
+        baseKind: debtTypes.baseKind,
+        debtor: debtTypes.debtor,
+        isActive: debtTypes.isActive,
+      })
+      .from(debtTypes)
+      .where(and(eq(debtTypes.id, dto.debtTypeId), isNull(debtTypes.deletedAt)))
+      .limit(1);
+    if (!type) throw new NotFoundException("not_found:debt_type");
+    if (!type.isActive)
+      throw new BadRequestException("validation_failed:debt_type_inactive");
+    return { kind: type.baseKind, type };
+  }
+  if (!dto.kind) throw new BadRequestException("validation_failed:kind");
+  return { kind: dto.kind, type: null };
+}
+
+/** `rule` hedefini türün kuralına (ve daire istisnasına) çevirir. */
+function targetFor(
+  target: ShareTargetValue,
+  type: DebtTypeRef,
+  unit: { ownerPaysDues: boolean },
+): ShareTargetValue {
+  if (target !== "rule") return target;
+  if (!type) return "occupant";
+  return debtorRuleFor(type, unit);
 }
 
 /** Filtreye uyan birimler (toplu borçlandırma hedefi). */
@@ -633,6 +707,7 @@ async function selectTargetUnits(
       duesMultiplier: units.duesMultiplier,
       duesExempt: units.duesExempt,
       lateFeeExempt: units.lateFeeExempt,
+      ownerPaysDues: units.ownerPaysDues,
     })
     .from(units)
     .leftJoin(blocks, eq(blocks.id, units.blockId))
@@ -673,7 +748,11 @@ async function existingUnitIds(
     .where(
       and(
         eq(debts.period, dto.period),
-        eq(debts.kind, dto.kind),
+        // Aynı sınıfta iki tür olabilir (Demirbaş ve Ek gider ikisi de
+        // `extra`): tür verildiyse "zaten var" türe göre bakılır.
+        dto.debtTypeId
+          ? eq(debts.debtTypeId, dto.debtTypeId)
+          : eq(debts.kind, dto.kind ?? "extra"),
         isNull(debts.deletedAt),
       ),
     );

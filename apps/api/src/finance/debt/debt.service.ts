@@ -71,6 +71,7 @@ export class DebtService {
       unit: data.unit ?? { id: debt.unitId, number: "—", blockName: null },
       debtorName: data.nameOf(debt.debtorUserId),
       planName: data.planName,
+      debtTypeName: data.debtTypeName,
       changes: data.changeRows.map((row) => ({
         id: row.id,
         changeType: row.changeType,

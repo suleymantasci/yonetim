@@ -1,4 +1,4 @@
-import { Layers, Plus } from "lucide-react";
+import { Layers, Plus, Tags } from "lucide-react";
 import Link from "@/components/link";
 import { getTranslations } from "next-intl/server";
 
@@ -113,6 +113,13 @@ export default async function DebtsPage({
       description={t("description")}
       action={
         <>
+          <Link
+            href="/panel/borclar/turler"
+            className="inline-flex h-10 items-center gap-2 rounded-lg border border-border-strong bg-surface px-3 text-sm font-semibold text-fg hover:bg-hover"
+          >
+            <Tags aria-hidden className="h-4 w-4" />
+            {t("debtTypesLink")}
+          </Link>
           <Link
             href="/panel/borclar/toplu"
             className="inline-flex h-10 items-center gap-2 rounded-lg border border-border-strong bg-surface px-3 text-sm font-semibold text-fg hover:bg-hover"

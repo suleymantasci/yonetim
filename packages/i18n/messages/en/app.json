@@ -51,7 +51,8 @@
       "newPoll": "Open a poll",
       "newMeeting": "Schedule a meeting",
       "newMessage": "Message a resident",
-      "newBankAccount": "New bank account"
+      "newBankAccount": "New bank account",
+      "debtTypes": "Debt types"
     },
     "inventory": "Assets",
     "decisionBook": "Decision Book",
@@ -309,6 +310,8 @@
     "duesExemptHint": "No charges are generated for vacant-unit decisions or manager exemptions.",
     "lateFeeExempt": "Exempt from late fees",
     "lateFeeExemptHint": "No late fee accrues on instalment plans or charges under litigation.",
+    "ownerPaysDues": "Charge dues to owner",
+    "ownerPaysDuesHint": "In a rented unit, dues (normally charged to the occupant) are charged to the owner instead. Fuel and rent stay with the occupant.",
     "duesMultiplier": "Dues multiplier",
     "duesMultiplierHint": "1.000 = standard. Shops may use a coefficient such as 1.500.",
     "duesMultiplierNote": "The multiplier also drives increases: a 10% rise means multiplying it by 1.100. That keeps every increase recorded in one place.",
@@ -920,7 +923,8 @@
     "presetTitle": "Prefilled from the \"{plan}\" plan",
     "presetBody": "The formula, amount, due day and scope were copied from the plan; you can change all of them. This charge is **not linked** to the plan — it creates a one-off record independent of the plan's periodic run.",
     "collectFromUnit": "Record payment",
-    "collectUnitLabel": "Unit"
+    "collectUnitLabel": "Unit",
+    "debtTypesLink": "Debt types"
   },
   "expenses": {
     "title": "Expenses",
@@ -4085,5 +4089,60 @@
     "quickDay": "Reminder day (optional)",
     "notesEmpty": "No notes yet.",
     "openCalendar": "Open calendar"
+  },
+  "debtTypes": {
+    "title": "Debt types",
+    "description": "Charge options: who each type is charged to (occupant or owner), late fee and income account. Single and bulk charges, dues plans and spreadsheet import use these rules.",
+    "new": "New debt type",
+    "editTitle": "Edit debt type",
+    "formHint": "Applies to new debts; existing debts keep their debtor.",
+    "col": {
+      "name": "Name",
+      "debtor": "Debtor",
+      "lateFee": "Late fee",
+      "account": "Account code",
+      "debts": "Debts",
+      "actions": "Actions"
+    },
+    "debtor": {
+      "occupant": "Occupant",
+      "owner": "Owner"
+    },
+    "debtorHint": "Occupant: the tenant if any, otherwise the owner. Owner: split by share in co-owned units. The unit's “Charge dues to owner” switch moves dues to the owner.",
+    "lateFee": {
+      "none": "None",
+      "monthly": "Periodic · {pct}% monthly",
+      "daily": "Daily · {pct}% monthly"
+    },
+    "mode": {
+      "monthly": "Periodic (each started month)",
+      "daily": "Daily (pro rata)",
+      "none": "No late fee"
+    },
+    "siteDefault": "(site setting)",
+    "pct": "Monthly rate (%)",
+    "pctHint": "Empty uses the site setting ({pct}%). Legal cap is 5% per month.",
+    "baseKind": "Class",
+    "baseKindHint": "Which line it appears under in reports and accounting.",
+    "accountDefault": "default",
+    "accountHint": "Income account of the accrual (e.g. 602.10). Empty uses the class default: dues 600, others 602.",
+    "sortOrder": "Order",
+    "active": "Active",
+    "activeHint": "Inactive types can't be used for new debts; linked debts keep accruing late fees.",
+    "inactive": "Inactive",
+    "saved": "“{name}” saved.",
+    "deleted": "Debt type deleted.",
+    "deleteTitle": "Delete debt type?",
+    "deleteDescription": "“{name}” will be deleted. It has no linked debts, history is unaffected.",
+    "edit": "Edit {name}",
+    "delete": "Delete {name}",
+    "footnote": "Types with linked debts can't be deleted; deactivate them.",
+    "field": "Debt type",
+    "fieldHint": "Debtor rule and late fee come from the type.",
+    "manage": "Manage types",
+    "ruleTarget": "Type's rule",
+    "ruleTargetHint": "{rule} — the rule defined on the type (unit exception included).",
+    "occupantTarget": "Occupant",
+    "occupantTargetHint": "The tenant if any, otherwise the owner."
   }
 }

@@ -120,7 +120,8 @@
     "invalidSelection": "Geçerli bir seçim yapınız.",
     "minValue": "En az {count} olmalı.",
     "maxValue": "En fazla {count} olabilir.",
-    "duplicate": "Bu kayıt zaten mevcut."
+    "duplicate": "Bu kayıt zaten mevcut.",
+    "invalidAccountCode": "Gelir hesabı kodu 6 ile başlamalı (600, 602.10 gibi)."
   },
   "error": {
     "unauthorized": "Oturum açmanız gerekiyor.",
@@ -190,7 +191,10 @@
       "range_order": "Başlangıç tarihi bitişten sonra olamaz.",
       "range_too_long": "Tarih aralığı en çok 3 yıl olabilir.",
       "migration_has_payments": "Bu aktarımın devir borçlarından bazılarına tahsilat yapılmış; önce o tahsilatları geri alın.",
-      "migration_not_revertible": "Bu aktarım geri alınamaz (zaten geri alınmış ya da tamamlanmamış)."
+      "migration_not_revertible": "Bu aktarım geri alınamaz (zaten geri alınmış ya da tamamlanmamış).",
+      "debt_type_in_use": "Bu türe bağlı borçlar var; silmek yerine pasifleştirin.",
+      "debt_type_name_taken": "Bu adla bir borç türü zaten var.",
+      "debt_type_inactive": "Bu borç türü pasif; yeni borçta seçilemez."
     }
   },
   "errorPage": {

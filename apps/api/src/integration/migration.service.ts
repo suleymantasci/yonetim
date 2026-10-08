@@ -30,7 +30,9 @@ import type {
   MigrationPreviewRequest,
 } from "@yonetim/contracts";
 import { errors, foldTurkish } from "@yonetim/core";
-import { blocks, debts, memberships, migrationJobs, unitOccupancies, units, users } from "@yonetim/db";
+import {
+  blocks, debts, defaultDebtTypeFor, memberships, migrationJobs, unitOccupancies, units, users,
+} from "@yonetim/db";
 
 import { AuditService } from "../governance/audit/audit.service";
 import { DbService } from "../infra/db/db.service";
@@ -265,12 +267,23 @@ export class MigrationService {
       let skippedPeople = 0;
       const touchedBlocks = new Set<string | null>();
 
+      // Aidat ve yakıt devri sitenin o sınıftaki türüne bağlanır (gecikme
+      // kuralı türden işler). Ek gider belirsiz (demirbaş mı, ek gider mi?),
+      // gecikme bedeli türsüz kalır.
+      const typeIds = new Map<string, string | null>();
+      const typeFor = async (kind: ImportDebtLine["kind"]) => {
+        if (kind !== "dues" && kind !== "utility") return null;
+        if (!typeIds.has(kind)) typeIds.set(kind, (await defaultDebtTypeFor(tx, ctx.tenantId, kind))?.id ?? null);
+        return typeIds.get(kind) ?? null;
+      };
+
       const addDebt = async (unitId: string, debtorUserId: string | null, d: ImportDebtLine, line: number, person = false) => {
         await tx.insert(debts).values({
           tenantId: ctx.tenantId,
           unitId,
           debtorUserId,
           kind: d.kind,
+          debtTypeId: await typeFor(d.kind),
           description: `${dto.carriedBalanceLabel}: ${d.columns.join(" + ")}`.slice(0, 200),
           amountKurus: d.amountMinor,
           // Devir borcu bugün itibarıyla vadesi gelmiş borçtur; muhasebe

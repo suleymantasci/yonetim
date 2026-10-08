@@ -118,7 +118,16 @@ export type BulkDebtKind = (typeof BULK_DEBT_KINDS)[number];
  * alanına sığmaz; bunlar **birden fazla borç kaydı** üretir. Tek kayıt üretip
  * "yarısı şunun" demek cari hesapları ve tahsilat mahsubunu bozardı.
  */
-export const SHARE_TARGETS = ["owner", "tenant", "split", "share"] as const;
+export const SHARE_TARGETS = [
+  "owner",
+  "tenant",
+  "split",
+  "share",
+  /** Oturan: kiracı varsa kiracı, yoksa malik (hisseli mülkte hisseye göre). */
+  "occupant",
+  /** Borç türünün kuralı (`debt_types.debtor` + daire istisnası). */
+  "rule",
+] as const;
 export const shareTarget = z.enum(SHARE_TARGETS);
 
 export const DUES_FORMULAS = [
@@ -277,6 +286,8 @@ export const debtDetail = z.object({
   }),
   debtorName: z.string().nullable(),
   planName: z.string().nullable(),
+  /** Kullanıcı tanımlı borç türünün adı (eski borçlarda `null`). */
+  debtTypeName: z.string().nullable().default(null),
   /** Append-only değişiklik tarihçesi — SPEC 3.2 şeffaflık. */
   changes: z.array(debtChangeEntry),
   allocations: z.array(
@@ -310,7 +321,9 @@ export type DebtDetail = z.infer<typeof debtDetail>;
 
 export const debtCreate = z.object({
   unitId: uuid,
-  kind: debtKind,
+  /** Verilirse `kind` türün davranış sınıfından gelir, borçlu kuralı türden. */
+  debtTypeId: uuid.optional(),
+  kind: debtKind.optional(),
   description: z.string().trim().min(3).max(200),
   amountMinor: z.coerce.number().int().positive(),
   dueDate: dateTime,
@@ -340,7 +353,8 @@ export type DebtCreateResult = z.infer<typeof debtCreateResult>;
 
 export const debtBulkCreate = z.object({
   description: z.string().trim().min(3).max(200),
-  kind: debtKind,
+  debtTypeId: uuid.optional(),
+  kind: debtKind.optional(),
   period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
   dueDay: z.coerce.number().int().min(1).max(28),
   formula: duesFormula,

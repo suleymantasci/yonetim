@@ -169,6 +169,13 @@
       "when": 1786034400000,
       "tag": "0023_bank_payer_note",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1786120800000,
+      "tag": "0024_debt_types",
+      "breakpoints": true
     }
   ]
 }

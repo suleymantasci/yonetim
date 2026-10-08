@@ -325,7 +325,10 @@ export default async function DebtDetailPage({
                   value={debt.period ? fmt.period(debt.period) : "—"}
                 />
                 <Row label={tUnits("dueDate")} value={fmt.date(debt.dueDate)} />
-                <Row label={t("kind")} value={tEnum(`debtKind.${debt.kind}`)} />
+                <Row
+                  label={t("kind")}
+                  value={detail.debtTypeName ?? tEnum(`debtKind.${debt.kind}`)}
+                />
                 <Row
                   label={t("debtor")}
                   value={detail.debtorName ?? t("debtorUnassigned")}

@@ -4,7 +4,6 @@ import { Eye } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 
-import { BULK_DEBT_KINDS, type BulkDebtKind } from "@yonetim/contracts";
 import {
   Alert,
   CheckboxGroup,
@@ -26,6 +25,7 @@ import {
   previewBulkDebts,
   type BulkDebtPreview,
 } from "../actions";
+import type { DebtTypeOption } from "../yeni/debt-form";
 
 /**
  * Toplu borçlandırma sihirbazı — GAP 4.1.3 ("önizleme, onay, çalıştırma").
@@ -59,11 +59,13 @@ export interface BulkDebtPreset {
 
 export function BulkDebtWizard({
   blocks,
+  debtTypes,
   defaultPeriod,
   cancelHref,
   preset,
 }: {
   blocks: { id: string; name: string }[];
+  debtTypes: DebtTypeOption[];
   defaultPeriod: string;
   cancelHref: string;
   preset?: BulkDebtPreset;
@@ -71,15 +73,16 @@ export function BulkDebtWizard({
   const t = useTranslations("app.debts");
   const tUnits = useTranslations("app.units");
   const tCommon = useTranslations("common");
-  const tEnum = useTranslations("enum");
+  const tTypes = useTranslations("app.debtTypes");
 
   const [description, setDescription] = useState(preset?.planName ?? "");
-  const [kind, setKind] = useState<BulkDebtKind>("dues");
+  const [debtTypeId, setDebtTypeId] = useState(debtTypes[0]?.id ?? "");
+  const selectedType = debtTypes.find((type) => type.id === debtTypeId);
   const [period] = useState(defaultPeriod);
   const [dueDay, setDueDay] = useState(preset?.dueDay ?? 10);
   const [formula, setFormula] = useState(preset?.formula ?? "equal");
   const [amountKurus, setAmountKurus] = useState(preset?.amountKurus ?? 0);
-  const [shareTarget, setShareTarget] = useState("owner");
+  const [shareTarget, setShareTarget] = useState("rule");
   const [blockIds] = useState<string[]>([]);
   const [skipExisting, setSkipExisting] = useState(true);
 
@@ -94,13 +97,19 @@ export function BulkDebtWizard({
     startTransition(async () => {
       const result = await previewBulkDebts({
         description: description || "önizleme",
-        kind,
+        debtTypeId,
         period,
         dueDay,
         formula: formula as
           "equal" | "land_share" | "area" | "person_count" | "custom",
         amountKurus,
-        shareTarget: shareTarget as "owner" | "tenant" | "split" | "share",
+        shareTarget: shareTarget as
+          | "rule"
+          | "occupant"
+          | "owner"
+          | "tenant"
+          | "split"
+          | "share",
         blockIds,
         unitTypes: [],
         skipExisting,
@@ -179,18 +188,24 @@ export function BulkDebtWizard({
                 </FormField>
               </div>
 
-              <FormField name="kind" label={t("kind")} required>
+              <FormField
+                name="debtTypeId"
+                label={tTypes("field")}
+                hint={tTypes("fieldHint")}
+                required
+              >
                 <Select
-                  name="kind"
-                  value={kind}
-                  onChange={(event) =>
-                    setKind(event.target.value as BulkDebtKind)
-                  }
+                  name="debtTypeId"
+                  value={debtTypeId}
+                  onChange={(event) => {
+                    setDebtTypeId(event.target.value);
+                    setPreview(null);
+                  }}
                   required
                 >
-                  {BULK_DEBT_KINDS.map((value) => (
-                    <option key={value} value={value}>
-                      {tEnum(`debtKind.${value}`)}
+                  {debtTypes.map((type) => (
+                    <option key={type.id} value={type.id}>
+                      {type.name} · {tTypes(`debtor.${type.debtor}`)}
                     </option>
                   ))}
                 </Select>
@@ -313,6 +328,20 @@ export function BulkDebtWizard({
                   setPreview(null);
                 }}
                 options={[
+                  {
+                    value: "rule",
+                    label: tTypes("ruleTarget"),
+                    description: tTypes("ruleTargetHint", {
+                      rule: selectedType
+                        ? tTypes(`debtor.${selectedType.debtor}`)
+                        : tTypes("debtor.occupant"),
+                    }),
+                  },
+                  {
+                    value: "occupant",
+                    label: tTypes("occupantTarget"),
+                    description: tTypes("occupantTargetHint"),
+                  },
                   {
                     value: "owner",
                     label: t("shareOwner"),

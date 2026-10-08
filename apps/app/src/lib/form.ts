@@ -76,6 +76,7 @@ export const V = {
   invalidDate: "invalidDate",
   invalidPeriod: "invalidPeriod",
   invalidSelection: "invalidSelection",
+  invalidAccountCode: "invalidAccountCode",
   min: (count: number) => `minLength|${count}`,
   max: (count: number) => `maxLength|${count}`,
   minValue: (value: number) => `minValue|${value}`,

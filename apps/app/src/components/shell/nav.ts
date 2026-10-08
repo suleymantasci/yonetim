@@ -256,6 +256,7 @@ export const QUICK_ACTIONS: QuickAction[] = [
   { href: "/panel/sakinler/yeni", key: "newResident", permission: "resident:write" },
   { href: "/panel/borclar/yeni", key: "newDebt", permission: "debt:write" },
   { href: "/panel/borclar/toplu", key: "bulkDebt", permission: "debt:write" },
+  { href: "/panel/borclar/turler", key: "debtTypes", permission: "debt:read" },
   { href: "/panel/giderler/yeni", key: "newExpense", permission: "expense:write" },
   { href: "/panel/giderler/kategoriler", key: "expenseCategories", permission: "expense:write" },
   { href: "/panel/duyurular?compose=1", key: "newAnnouncement", permission: "announcement:write" },

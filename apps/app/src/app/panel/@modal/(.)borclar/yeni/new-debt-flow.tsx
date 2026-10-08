@@ -8,7 +8,10 @@ import { pageActionClasses } from "@yonetim/ui";
 
 import { ModalSuccessStep } from "@/components/form/modal-step";
 import { useRouteDrawerClose } from "@/components/route-drawer";
-import { DebtForm } from "../../../borclar/yeni/debt-form";
+import {
+  DebtForm,
+  type DebtTypeOption,
+} from "../../../borclar/yeni/debt-form";
 
 /**
  * Çekmece içindeki borç girişi akışı.
@@ -18,11 +21,13 @@ import { DebtForm } from "../../../borclar/yeni/debt-form";
  */
 export function NewDebtFlow({
   units,
+  debtTypes,
   presetUnitId,
   defaultPeriod,
   labels,
 }: {
   units: { id: string; number: string; blockName: string | null }[];
+  debtTypes: DebtTypeOption[];
   presetUnitId?: string;
   defaultPeriod: string;
   labels: {
@@ -69,6 +74,7 @@ export function NewDebtFlow({
     <DebtForm
       key={formKey}
       units={units}
+      debtTypes={debtTypes}
       presetUnitId={presetUnitId}
       defaultPeriod={defaultPeriod}
       layout="modal"

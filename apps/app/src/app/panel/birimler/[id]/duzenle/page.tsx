@@ -67,6 +67,7 @@ export default async function EditUnitPage({
               ownershipType: unit.ownershipType,
               duesExempt: unit.duesExempt,
               lateFeeExempt: unit.lateFeeExempt,
+              ownerPaysDues: unit.ownerPaysDues,
               duesMultiplier: unit.duesMultiplier,
               notes: unit.notes,
             }}

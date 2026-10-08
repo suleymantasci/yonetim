@@ -67,6 +67,12 @@ export const units = pgTable(
      * haksız tahsil etmekten iyidir).
      */
     lateFeeExempt: boolean("late_fee_exempt").notNull().default(false),
+    /**
+     * "Bu dairenin aidat borçlandırmalarını maliğe kaydet" — borçlu kuralı
+     * `occupant` olan aidat türlerinde kiracı yerine malik borçlanır
+     * (kira sözleşmesinde aidat malikte kalmışsa).
+     */
+    ownerPaysDues: boolean("owner_pays_dues").notNull().default(false),
     duesMultiplier: numeric("dues_multiplier", { precision: 5, scale: 3 }).notNull().default("1"),
     notes: text("notes"),
     metadata: jsonb("metadata").notNull().default({}),

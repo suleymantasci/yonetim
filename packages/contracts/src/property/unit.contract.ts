@@ -62,6 +62,8 @@ export const unitRow = z.object({
   ownershipType,
   duesExempt: z.boolean(),
   lateFeeExempt: z.boolean(),
+  /** Aidat (oturana yazılan) borçlandırmaları maliğe kaydedilir. */
+  ownerPaysDues: z.boolean().default(false),
   duesMultiplier: z.string(),
   blockId: uuid.nullable(),
   blockName: z.string().nullable(),
@@ -201,6 +203,7 @@ export const unitCreate = z.object({
   ownershipType: ownershipType.default("owner"),
   duesExempt: z.coerce.boolean().default(false),
   lateFeeExempt: z.coerce.boolean().default(false),
+  ownerPaysDues: z.coerce.boolean().default(false),
   duesMultiplier: z.coerce.number().min(0).max(10).default(1),
   notes: z.string().trim().max(2000).nullish(),
 });

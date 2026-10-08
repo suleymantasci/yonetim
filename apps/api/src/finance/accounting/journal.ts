@@ -116,8 +116,10 @@ export async function loadJournal(tx: Database, until: Date): Promise<Journal> {
     q(sql`
       SELECT d.id, d.kind::text AS kind, d.description, d.amount_kurus, d.paid_kurus, d.status::text AS status,
              d.created_at, d.updated_at, d.due_date, u.number AS unit_number,
-             (d.metadata ? 'opening' OR d.metadata ? 'migrated') AS opening
+             (d.metadata ? 'opening' OR d.metadata ? 'migrated') AS opening,
+             dt.account_code, dt.name AS type_name
       FROM debts d LEFT JOIN units u ON u.id = d.unit_id
+      LEFT JOIN debt_types dt ON dt.id = d.debt_type_id
       WHERE d.deleted_at IS NULL AND d.status <> 'cancelled'
         AND CASE WHEN (d.metadata ? 'opening' OR d.metadata ? 'migrated') THEN d.due_date ELSE d.created_at END <= ${end}::timestamptz
     `),
@@ -214,7 +216,11 @@ export async function loadJournal(tx: Database, until: Date): Promise<Journal> {
           description: `Devir borcu${unitLabel(r)} — ${r.description}`, lines: pair("120", "549", amount),
         });
     } else if (amount > 0) {
-      const income = r.kind === "dues" ? "600" : r.kind === "late_fee" ? "649" : "602";
+      // Borç türünün muhasebe kodu varsa o; yoksa sınıfın varsayılanı.
+      const income = r.account_code
+        ? String(r.account_code)
+        : r.kind === "dues" ? "600" : r.kind === "late_fee" ? "649" : "602";
+      if (r.account_code && !accounts.has(income)) accounts.set(income, String(r.type_name ?? income));
       entries.push({
         date: d(r.created_at), order: 2, source: "debt", sourceId: String(r.id),
         description: `${r.description}${unitLabel(r)}`, lines: pair("120", income, amount),

@@ -1,7 +1,9 @@
 import { and, eq, isNull, or, sql } from "drizzle-orm";
 
 import { currentPeriod, dueDateFor, formatPeriod, parsePeriodKey, periodKey, type Period } from "@yonetim/core";
-import { debts, duesPlans, duesRuns, units, withTenant, type Database } from "@yonetim/db";
+import {
+  debtorRuleFor, debts, defaultDebtTypeFor, duesPlans, duesRuns, units, withTenant, type Database,
+} from "@yonetim/db";
 import { distributeDues, type DuesFormula, type UnitForDues } from "@yonetim/dues";
 
 /**
@@ -41,6 +43,10 @@ export async function generateDuesForTenant(params: {
       .where(isNull(units.deletedAt));
 
     const results: GenerationResult[] = [];
+    // Aidat borcu sitenin "Aidat" sınıfındaki ilk türüne bağlanır: borçlu
+    // kuralı (oturan/malik + daire istisnası) ve gecikme oradan okunur.
+    // Önizleme yazmaz — varsayılan türleri de oluşturmasın.
+    const duesType = params.dryRun ? null : await defaultDebtTypeFor(tx, params.tenantId, "dues");
 
     for (const plan of plans) {
       if (!isPeriodInPlanRange(plan.startPeriod, plan.endPeriod, period)) {
@@ -159,10 +165,15 @@ export async function generateDuesForTenant(params: {
             return {
               tenantId: params.tenantId,
               unitId: s.unitId,
-              debtorUserId: unit.currentTenantId ?? unit.currentOwnerId ?? null,
+              debtorUserId:
+                (duesType ? debtorRuleFor(duesType, unit) : "occupant") === "owner"
+                  ? (unit.currentOwnerId ?? unit.currentTenantId ?? null)
+                  : (unit.currentTenantId ?? unit.currentOwnerId ?? null),
               duesPlanId: plan.id,
               duesRunId: run.id,
               kind: "dues" as const,
+              debtTypeId: duesType?.id ?? null,
+              lateFeeExempt: unit.lateFeeExempt,
               period: pKey,
               description: `${plan.name} — ${formatPeriod(period)}`,
               amountKurus: s.amountKurus,

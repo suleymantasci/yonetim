@@ -110,6 +110,7 @@ const unitSchema = z.object({
   }),
   duesExempt: checkboxField,
   lateFeeExempt: checkboxField,
+  ownerPaysDues: checkboxField,
   duesMultiplier: decimalField({ min: 0, max: 10 }),
   notes: optionalText(2000),
 });
@@ -132,6 +133,7 @@ function toUnitBody(input: UnitInput) {
     ownershipType: input.ownershipType,
     duesExempt: input.duesExempt,
     lateFeeExempt: input.lateFeeExempt,
+    ownerPaysDues: input.ownerPaysDues,
     duesMultiplier: input.duesMultiplier ?? 1,
     notes: input.notes ?? null,
   };

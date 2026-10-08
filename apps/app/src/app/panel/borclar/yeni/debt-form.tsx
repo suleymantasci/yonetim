@@ -3,7 +3,6 @@
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
-import { MANUAL_DEBT_KINDS } from "@yonetim/contracts";
 import {
   Alert,
   Combobox,
@@ -37,8 +36,15 @@ import { createDebt } from "../actions";
  *    gecikme tazminatı otomatik kapanır: taksit anlaşması zaten gecikmenin
  *    çözümüdür, üstüne faiz yürütmek haksız olurdu.
  */
+export interface DebtTypeOption {
+  id: string;
+  name: string;
+  debtor: "occupant" | "owner";
+}
+
 export function DebtForm({
   units,
+  debtTypes,
   presetUnitId,
   defaultPeriod,
   cancelHref,
@@ -48,6 +54,8 @@ export function DebtForm({
   onCreated,
 }: {
   units: { id: string; number: string; blockName: string | null }[];
+  /** Etkin borç türleri; borçlu kuralı ve gecikme türden gelir. */
+  debtTypes: DebtTypeOption[];
   presetUnitId?: string;
   defaultPeriod: string;
   cancelHref?: string;
@@ -69,8 +77,10 @@ export function DebtForm({
   const t = useTranslations("app.debts");
   const tUnits = useTranslations("app.units");
   const tCommon = useTranslations("common");
-  const tEnum = useTranslations("enum");
+  const tTypes = useTranslations("app.debtTypes");
 
+  const [typeId, setTypeId] = useState(debtTypes[0]?.id ?? "");
+  const selectedType = debtTypes.find((type) => type.id === typeId);
   const [amountKurus, setAmountKurus] = useState(0);
   const [installments, setInstallments] = useState(1);
 
@@ -110,11 +120,21 @@ export function DebtForm({
           />
         </FormField>
 
-        <FormField name="kind" label={t("kind")} required>
-          <Select name="kind" defaultValue="dues" required>
-            {MANUAL_DEBT_KINDS.map((kind) => (
-              <option key={kind} value={kind}>
-                {tEnum(`debtKind.${kind}`)}
+        <FormField
+          name="debtTypeId"
+          label={tTypes("field")}
+          hint={tTypes("fieldHint")}
+          required
+        >
+          <Select
+            name="debtTypeId"
+            value={typeId}
+            onChange={(event) => setTypeId(event.target.value)}
+            required
+          >
+            {debtTypes.map((type) => (
+              <option key={type.id} value={type.id}>
+                {type.name} · {tTypes(`debtor.${type.debtor}`)}
               </option>
             ))}
           </Select>
@@ -194,8 +214,22 @@ export function DebtForm({
         <RadioGroup
           name="shareTarget"
           columns={2}
-          defaultValue="owner"
+          defaultValue="rule"
           options={[
+            {
+              value: "rule",
+              label: tTypes("ruleTarget"),
+              description: tTypes("ruleTargetHint", {
+                rule: selectedType
+                  ? tTypes(`debtor.${selectedType.debtor}`)
+                  : tTypes("debtor.occupant"),
+              }),
+            },
+            {
+              value: "occupant",
+              label: tTypes("occupantTarget"),
+              description: tTypes("occupantTargetHint"),
+            },
             {
               value: "owner",
               label: t("shareOwner"),

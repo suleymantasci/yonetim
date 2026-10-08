@@ -120,7 +120,8 @@
     "invalidSelection": "Make a valid selection.",
     "minValue": "Must be at least {count}.",
     "maxValue": "Must be at most {count}.",
-    "duplicate": "This record already exists."
+    "duplicate": "This record already exists.",
+    "invalidAccountCode": "Income account code must start with 6 (e.g. 600, 602.10)."
   },
   "error": {
     "unauthorized": "You need to sign in.",
@@ -190,7 +191,10 @@
       "range_order": "Start date cannot be after end date.",
       "range_too_long": "The date range can be at most 3 years.",
       "migration_has_payments": "Some carried-over debts from this import have payments; reverse those payments first.",
-      "migration_not_revertible": "This import cannot be reverted (already reverted or not completed)."
+      "migration_not_revertible": "This import cannot be reverted (already reverted or not completed).",
+      "debt_type_in_use": "Debts are linked to this type; deactivate it instead of deleting.",
+      "debt_type_name_taken": "A debt type with this name already exists.",
+      "debt_type_inactive": "This debt type is inactive and cannot be used for new debts."
     }
   },
   "errorPage": {

@@ -54,6 +54,7 @@ export function UnitForm({
     ownershipType: string;
     duesExempt: boolean;
     lateFeeExempt: boolean;
+    ownerPaysDues?: boolean;
     duesMultiplier: string;
     notes: string | null;
   };
@@ -313,6 +314,12 @@ export function UnitForm({
           label={t("lateFeeExempt")}
           description={t("lateFeeExemptHint")}
           defaultChecked={defaults?.lateFeeExempt}
+        />
+        <Switch
+          name="ownerPaysDues"
+          label={t("ownerPaysDues")}
+          description={t("ownerPaysDuesHint")}
+          defaultChecked={defaults?.ownerPaysDues}
         />
         <FormField
           name="duesMultiplier"

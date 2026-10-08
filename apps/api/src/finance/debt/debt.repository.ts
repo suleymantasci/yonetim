@@ -15,12 +15,13 @@ import {
 import type { DebtListQuery, DebtListResponse } from "@yonetim/contracts";
 import { TREND_MONTHS, toPageMeta } from "@yonetim/contracts";
 import {
+  paymentAllocations,
+  payments,
   blocks,
   debtChanges,
   debts,
+  debtTypes,
   duesPlans,
-  paymentAllocations,
-  payments,
   unitOrder,
   units,
   users,
@@ -301,12 +302,21 @@ export class DebtRepository {
               .orderBy(asc(debts.installmentNo))
           : [];
 
+      const [type] = debt.debtTypeId
+        ? await tx
+            .select({ name: debtTypes.name })
+            .from(debtTypes)
+            .where(eq(debtTypes.id, debt.debtTypeId))
+            .limit(1)
+        : [];
+
       return {
         debt,
         unit: unitRows[0],
         changeRows,
         allocationRows,
         planName: planRows[0]?.name ?? null,
+        debtTypeName: type?.name ?? null,
         siblings,
       };
     });

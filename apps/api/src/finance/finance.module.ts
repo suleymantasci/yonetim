@@ -24,6 +24,8 @@ import { CashController } from "./cash/cash.controller";
 import { CashService } from "./cash/cash.service";
 import { VendorController } from "./vendor/vendor.controller";
 import { VendorService } from "./vendor/vendor.service";
+import { DebtTypeController } from "./debt-type/debt-type.controller";
+import { DebtTypeService } from "./debt-type/debt-type.service";
 
 /**
  * `finance` bağlamı — MIMARI-PLAN §6.4: aidat planı, borç, tahsilat, gider,
@@ -48,6 +50,7 @@ import { VendorService } from "./vendor/vendor.service";
     AccountingController,
     CashController,
     BudgetController,
+    DebtTypeController,
   ],
   providers: [
     DebtService,
@@ -64,6 +67,7 @@ import { VendorService } from "./vendor/vendor.service";
     StatementService,
     CashService,
     BudgetService,
+    DebtTypeService,
   ],
   exports: [DebtService, DebtRepository, ExpenseService, DuesPlanService, VendorService],
 })

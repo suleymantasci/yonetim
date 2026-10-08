@@ -1,8 +1,8 @@
 import { and, eq, inArray, isNull, lt, sql } from "drizzle-orm";
 
 import { siteConfig } from "@yonetim/config";
-import { debts, tenants, withTenant } from "@yonetim/db";
-import { calculateLateFee } from "@yonetim/dues";
+import { debts, debtTypes, duesPlans, tenants, units, withTenant } from "@yonetim/db";
+import { calculateLateFee, lateFeePolicyFor } from "@yonetim/dues";
 
 /**
  * Gecikme tazminatı işleme — SPEC Bölüm 6.1 (KMK md.20, aylık %5).
@@ -49,6 +49,19 @@ export async function applyLateFees(params: {
         ),
       );
 
+    // Tür, plan ve daire muafiyeti — borç başına sorgu yerine bir kez.
+    const [typeRows, planRows, exemptUnits] = await Promise.all([
+      tx.select({ id: debtTypes.id, mode: debtTypes.lateFeeMode, pct: debtTypes.lateFeeMonthlyPct }).from(debtTypes),
+      tx
+        .select({ id: duesPlans.id, pct: duesPlans.lateFeeMonthlyPct, daily: duesPlans.lateFeeDailyMode })
+        .from(duesPlans),
+      tx.select({ id: units.id }).from(units).where(eq(units.lateFeeExempt, true)),
+    ]);
+    const typeById = new Map(typeRows.map((r) => [r.id, r]));
+    const planById = new Map(planRows.map((r) => [r.id, r]));
+    const unitExempt = new Set(exemptUnits.map((r) => r.id));
+    const siteMonthlyPct = settings.lateFeeMonthlyPct ?? siteConfig.dues.monthlyLateFeePct;
+
     let totalFee = 0;
     let markedOverdue = 0;
 
@@ -56,14 +69,31 @@ export async function applyLateFees(params: {
       const principal = debt.amountKurus - Math.min(debt.paidKurus, debt.amountKurus);
       if (principal <= 0) continue;
 
-      const fee = calculateLateFee({
-        principalKurus: principal,
-        dueDate: debt.dueDate,
-        asOf,
-        mode: "kmk_monthly",
-        monthlyPct: settings.lateFeeMonthlyPct ?? siteConfig.dues.monthlyLateFeePct,
-        graceDays: settings.lateFeeGraceDays ?? 0,
+      const type = debt.debtTypeId ? typeById.get(debt.debtTypeId) : undefined;
+      const plan = debt.duesPlanId ? planById.get(debt.duesPlanId) : undefined;
+      const policy = lateFeePolicyFor({
+        debtExempt: debt.lateFeeExempt,
+        unitExempt: unitExempt.has(debt.unitId),
+        type: type
+          ? { lateFeeMode: type.mode, lateFeeMonthlyPct: type.pct === null ? null : Number(type.pct) }
+          : null,
+        plan: plan ? { lateFeeMonthlyPct: Number(plan.pct), lateFeeDailyMode: plan.daily } : null,
+        siteMonthlyPct,
       });
+
+      // Muaf borçta tazminat sıfır; önceden yazılmışsa da sıfırlanır (muafiyet
+      // sonradan verildiyse eski hesap kalmasın).
+      const fee = policy.apply
+        ? calculateLateFee({
+            principalKurus: principal,
+            dueDate: debt.dueDate,
+            asOf,
+            mode: "kmk_monthly",
+            monthlyPct: policy.monthlyPct,
+            prorateDaily: policy.prorateDaily,
+            graceDays: settings.lateFeeGraceDays ?? 0,
+          })
+        : { feeKurus: 0 };
 
       const newStatus = debt.status === "partial" ? "partial" : "overdue";
       if (debt.status !== "overdue" && debt.status !== "partial") markedOverdue++;
