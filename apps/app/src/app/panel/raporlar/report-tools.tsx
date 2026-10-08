@@ -103,7 +103,7 @@ export async function ReportsSubnav({ active }: { active: ReportTab }) {
           key={item.key}
           href={item.href}
           aria-current={item.key === active ? "page" : undefined}
-          className={`-mb-px whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium ${
+          className={`whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium ${
             item.key === active
               ? "border-primary text-fg"
               : "border-transparent text-fg-subtle hover:text-fg"
