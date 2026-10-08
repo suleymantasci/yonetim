@@ -459,7 +459,7 @@
       "limitedTime": "SINIRLI SÜRE",
       "green": "YEŞİL"
     },
-    "filterLabel": "Kitleye göre süz",
+    "filterLabel": "Kitleye göre filtrele",
     "filterAll": "Tümü",
     "filterEmpty": "Bu kitle için şu an açık kampanya yok.",
     "segment": {
@@ -519,7 +519,7 @@
     "ctaTitle": "Bu işlemleri otomatikleştirin",
     "ctaBody": "Aidat tahakkuku, hatırlatma, tahsilat ve belge üretimi elle yapılmak zorunda değil.",
     "relatedTitle": "İlgili yazılar",
-    "filterLabel": "Kategoriye göre süz",
+    "filterLabel": "Kategoriye göre filtrele",
     "filterAll": "Tümü",
     "filterEmpty": "Bu kategoride henüz yazı yok.",
     "featuredLabel": "Öne çıkan",

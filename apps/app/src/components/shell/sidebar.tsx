@@ -4,7 +4,8 @@ import {
   Activity, BadgeCheck, Banknote, Building2, CalendarClock, ChevronDown, ClipboardList, Cog, FileText,
   Gauge, Gavel, Handshake, LayoutDashboard, LineChart, Megaphone, MessageSquare, Package, Pin, PinOff,
   Receipt, Scale, ScrollText, ShieldCheck, Sparkles, Store, Truck, Users, Vote, Wallet, Wrench, X,
-  Landmark, PiggyBank, CalendarDays,
+  Landmark, PiggyBank, CalendarDays, CreditCard, UserRound, Info, Briefcase, UserPlus, Boxes, BookOpen,
+  UserCog,
 } from "lucide-react";
 import Link from "@/components/link";
 import { usePathname } from "next/navigation";
@@ -35,6 +36,18 @@ const COLLAPSE_STORAGE_KEY = "yonetim.sidebar.collapsed";
 const ICONS: Record<string, ComponentType<{ className?: string; "aria-hidden"?: boolean }>> = {
   dashboard: LayoutDashboard,
   calendar: CalendarDays,
+  portfolio: Briefcase,
+  accessRequests: UserPlus,
+  inventory: Boxes,
+  decisionBook: BookOpen,
+  managementInfo: Info,
+  // Sakin menüsü — yönetim tarafındaki karşılığıyla aynı ikon (ayrı kitle).
+  myDebts: Receipt,
+  myPayments: CreditCard,
+  myRequests: ClipboardList,
+  myMessages: MessageSquare,
+  myPolls: Vote,
+  myProfile: UserRound,
   units: Building2,
   residents: Users,
   migration: Truck,
@@ -52,7 +65,7 @@ const ICONS: Record<string, ComponentType<{ className?: string; "aria-hidden"?: 
   maintenance: Wrench,
   meters: Gauge,
   reservations: CalendarClock,
-  staff: Users,
+  staff: UserCog,
   documents: FileText,
   legal: Gavel,
   kvkk: ShieldCheck,
