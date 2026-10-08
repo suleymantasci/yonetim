@@ -11,11 +11,12 @@ import {
 } from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
-import { PrintButton } from "@/components/print-button";
 import { apiGet, toQuery } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
 import { parseDay, ReportsSubnav } from "../report-tools";
+import { PdfButton } from "../pdf-button";
+import { pdfHref } from "../pdf-route";
 
 export const dynamic = "force-dynamic";
 
@@ -85,7 +86,13 @@ export default async function BalanceSheetPage({
       <PageHeader
         title={t("balanceSheetTitle")}
         description={t("balanceSheetHint")}
-        action={<PrintButton label={t("print")} />}
+        action={
+          <PdfButton
+            href={pdfHref("/panel/raporlar/bilanco", { at })}
+            label={t("pdf")}
+            title={t("pdfTitle")}
+          />
+        }
       />
       <ReportsSubnav active="balanceSheet" />
 

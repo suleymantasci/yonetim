@@ -6,15 +6,19 @@
  * yazılıyor. Ekranda kesik çizgili kutu, çıktıda düz metin.
  */
 export function EditableNote({
+  name,
   placeholder,
   minLines = 3,
 }: {
+  /** PDF'e taşınırken alan adı (`PdfButton withNotes`). */
+  name: string;
   placeholder: string;
   minLines?: number;
 }) {
   return (
     <div
       contentEditable
+      data-pdf-note={name}
       suppressContentEditableWarning
       role="textbox"
       aria-multiline="true"

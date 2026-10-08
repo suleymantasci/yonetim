@@ -8,12 +8,13 @@ import {
 import { Card, CardBody, tableClasses as tc } from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
-import { PrintButton } from "@/components/print-button";
 import { apiGet, toQuery } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
 import { EditableNote } from "../editable-note";
 import { parseRange, RangeForm, ReportsSubnav } from "../report-tools";
+import { PdfButton } from "../pdf-button";
+import { pdfHref } from "../pdf-route";
 
 export const dynamic = "force-dynamic";
 
@@ -80,7 +81,14 @@ export default async function AuditReportPage({
       <PageHeader
         title={t("auditReportTitle")}
         description={t("auditReportHint")}
-        action={<PrintButton label={t("print")} />}
+        action={
+          <PdfButton
+            href={pdfHref("/panel/raporlar/denetim-raporu", { from, to })}
+            label={t("pdf")}
+            title={t("pdfTitle")}
+            withNotes
+          />
+        }
       />
       <ReportsSubnav active="auditReport" />
       <div className="mb-4">
@@ -212,7 +220,11 @@ export default async function AuditReportPage({
             <h3 className="mb-2 font-semibold text-fg">
               {a.budget ? 6 : 5}. {t("secFindings")}
             </h3>
-            <EditableNote placeholder={t("findingsPlaceholder")} minLines={6} />
+            <EditableNote
+              name="findings"
+              placeholder={t("findingsPlaceholder")}
+              minLines={6}
+            />
           </section>
 
           <section>
@@ -220,6 +232,7 @@ export default async function AuditReportPage({
               {a.budget ? 7 : 6}. {t("secConclusion")}
             </h3>
             <EditableNote
+              name="conclusion"
               placeholder={t("conclusionPlaceholder")}
               minLines={3}
             />

@@ -245,7 +245,7 @@ export function Sidebar({
   return (
     <>
       {/* Masaüstü: kalıcı sütun */}
-      <aside className="hidden w-64 shrink-0 border-r border-border bg-surface lg:block">
+      <aside className="hidden w-64 shrink-0 print:hidden! border-r border-border bg-surface lg:block">
         <div className="sticky top-0 max-h-dvh overflow-y-auto">
           {header}
           {nav}

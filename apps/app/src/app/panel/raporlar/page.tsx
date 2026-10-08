@@ -15,6 +15,7 @@ import { PageHeader } from "@/components/app-shell";
 import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
+import { PdfButton } from "./pdf-button";
 import { ReportsSubnav } from "./report-tools";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +23,7 @@ export const dynamic = "force-dynamic";
 export default async function ReportsPage() {
   await requirePermission("report:read");
   const t = await getTranslations("app.reports");
+  const th = await getTranslations("app.reportsHub");
   const f = await formatters();
 
   const [{ summary }, { rows: unitDebts }] = await Promise.all([
@@ -39,6 +41,13 @@ export default async function ReportsPage() {
         description={t("description", {
           period: f.period(periodKey(currentPeriod())),
         })}
+        action={
+          <PdfButton
+            href="/panel/raporlar/pdf"
+            label={th("pdf")}
+            title={th("pdfTitle")}
+          />
+        }
       />
 
       <ReportsSubnav active="summary" />

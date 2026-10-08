@@ -4,12 +4,13 @@ import { activitySummaryResponse } from "@yonetim/contracts";
 import { Card, CardBody, tableClasses as tc } from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
-import { PrintButton } from "@/components/print-button";
 import { apiGet, toQuery } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
 import { EditableNote } from "../editable-note";
 import { parseRange, RangeForm, ReportsSubnav } from "../report-tools";
+import { PdfButton } from "../pdf-button";
+import { pdfHref } from "../pdf-route";
 
 export const dynamic = "force-dynamic";
 
@@ -59,7 +60,14 @@ export default async function ActivityReportPage({
       <PageHeader
         title={t("activityTitle")}
         description={t("activityHint")}
-        action={<PrintButton label={t("print")} />}
+        action={
+          <PdfButton
+            href={pdfHref("/panel/raporlar/faaliyet", { from, to })}
+            label={t("pdf")}
+            title={t("pdfTitle")}
+            withNotes
+          />
+        }
       />
       <ReportsSubnav active="activity" />
       <div className="mb-4">
@@ -178,6 +186,7 @@ export default async function ActivityReportPage({
               7. {t("secAssessment")}
             </h3>
             <EditableNote
+              name="assessment"
               placeholder={t("assessmentPlaceholder")}
               minLines={5}
             />

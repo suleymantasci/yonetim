@@ -40,6 +40,12 @@ const nextConfig = {
    * edilmiyor. Burada bırakmak zararsız görünürdü ama yanıltıcı olurdu —
    * yapılandırma dosyası, mimarinin bugünkü hâlini anlatmalı.
    */
+  /**
+   * Rapor PDF'leri (`src/lib/pdf`) pdfkit ile sunucuda üretiliyor. Paketlenirse
+   * fontkit/pdfkit'in kendi dosya okumaları (`__dirname/data`) kırılıyor;
+   * node_modules'tan olduğu gibi yüklensin.
+   */
+  serverExternalPackages: ["pdfkit"],
   transpilePackages: [
     "@yonetim/ui",
     "@yonetim/config",

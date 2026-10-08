@@ -55,8 +55,14 @@ it("bileşenler ham Tailwind renk paleti kullanmıyor", () => {
  * render edilmek zorundadır (hatanın kaynağı layout veya CSS olabilir).
  * Token'lara güvenmek "beyaz sayfa üstüne beyaz yazı" riski taşırdı;
  * bu yüzden satır içi ve sabit renkler bilinçli tercih.
+ *
+ * `lib/pdf/report-pdf.ts`: pdfkit ile çizilen rapor PDF'i. CSS yok, tema yok;
+ * kâğıt her zaman beyaz, renkler sabit.
  */
-const HEX_EXEMPT = ["apps/app/src/app/global-error.tsx"];
+const HEX_EXEMPT = [
+  "apps/app/src/app/global-error.tsx",
+  "apps/app/src/lib/pdf/report-pdf.ts",
+];
 
 it("bileşenlerde sabit hex/rgb renk yok", () => {
   // E-posta şablonları hariç: e-posta istemcileri CSS değişkeni desteklemez.
