@@ -12,6 +12,7 @@ import {
 
 import { apiPost } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
+import { reasonMessage } from "@/lib/form";
 
 export interface MigrationState {
   ok: boolean;
@@ -122,16 +123,24 @@ export async function commitMigration(
     return { ok: false, message: t("noRows") };
   }
 
-  const counts = await apiPost(
-    "/v1/panel/migrations",
-    {
-      source,
-      fileName: file.name,
-      content,
-      carriedBalanceLabel: t("carriedBalanceDescription", { source }),
-    },
-    migrationCommitResult,
-  );
+  let counts;
+  try {
+    counts = await apiPost(
+      "/v1/panel/migrations",
+      {
+        source,
+        fileName: file.name,
+        content,
+        carriedBalanceLabel: t("carriedBalanceDescription", { source }),
+      },
+      migrationCommitResult,
+    );
+  } catch (error) {
+    // Paket daire sınırını aşan göç bütünüyle geri alınıyor; sebebi göster.
+    const message = await reasonMessage(error);
+    if (message) return { ok: false, message };
+    throw error;
+  }
 
   return {
     ok: true,

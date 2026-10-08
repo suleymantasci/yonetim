@@ -20,6 +20,7 @@ import { errors } from "@yonetim/core";
 import { blocks, unitOrder, units } from "@yonetim/db";
 
 import { RequirePermission } from "../identity/decorators";
+import { assertUnitQuota } from "../property/unit/unit-quota";
 import { DbService } from "../infra/db/db.service";
 import {
   PublicV1ExceptionFilter,
@@ -158,6 +159,7 @@ export class PublicUnitController {
       if (clash[0]) {
         throw errors.conflict(`${input.number} numarası bu blokta zaten kullanılıyor.`);
       }
+      await assertUnitQuota(tx, ctx.tenantId, 1);
 
       const [row] = await tx
         .insert(units)

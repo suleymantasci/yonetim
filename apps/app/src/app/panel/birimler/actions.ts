@@ -22,6 +22,7 @@ import {
   okState,
   optionalText,
   optionalUuidField,
+  reasonMessage,
   requiredText,
   runAction,
   uuidField,
@@ -374,12 +375,19 @@ export async function restoreUnits(ids: string[]): Promise<BulkResult> {
   const targets = asArray(ids);
   if (targets.length === 0) return { ok: false, message: t("selectionEmpty") };
 
-  const result = await apiPost(
-    "/v1/panel/units/restore",
-    { ids: targets },
-    bulkResultSchema,
-  );
-  return { ok: true, message: t("bulkRestored", { count: result.affected }) };
+  try {
+    const result = await apiPost(
+      "/v1/panel/units/restore",
+      { ids: targets },
+      bulkResultSchema,
+    );
+    return { ok: true, message: t("bulkRestored", { count: result.affected }) };
+  } catch (error) {
+    // Paket daire sınırı: geri yükleme de daire sayısını artırıyor.
+    const message = await reasonMessage(error);
+    if (message) return { ok: false, message };
+    throw error;
+  }
 }
 
 const bulkPatchSchema = z.object({

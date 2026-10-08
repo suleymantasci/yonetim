@@ -31,6 +31,7 @@ import {
   promoCodes,
   subscriptions,
   tenants,
+  units,
   type Database,
 } from "@yonetim/db";
 import { BILLING_PERIODS, planForUnitCount, splitVat } from "@yonetim/pricing";
@@ -84,7 +85,10 @@ export class PlatformBillingService {
       let recommendedCode: string | null = null;
       if (tenantId) {
         const [tenant] = await tx.select({ unitCount: tenants.unitCount }).from(tenants).where(eq(tenants.id, tenantId));
-        if (tenant) recommendedCode = planForUnitCount(tenant.unitCount).code;
+        // Kayıtta beyan edilen sayı ile sitede gerçekten açılmış daireden büyüğü:
+        // denemede beyandan fazla daire açan siteye küçük paket önerilmesin.
+        if (tenant)
+          recommendedCode = planForUnitCount(Math.max(tenant.unitCount, await activeUnitCount(tx, tenantId))).code;
       }
       return {
         rows: rows.map((p) => ({
@@ -117,6 +121,13 @@ export class PlatformBillingService {
       if (tenant.status === "archived" || tenant.status === "cancelled")
         throw new ConflictException(`conflict:tenant_${tenant.status}`);
 
+      // Paket sitedeki daireleri kapsamalı: küçük paket atanırsa site sınırın
+      // üstünde kalır ve hiçbir daire ekleyemez (`assertUnitQuota`).
+      const actualUnits = await activeUnitCount(tx, dto.tenantId);
+      const [target] = await tx.select({ maxUnits: plans.maxUnits }).from(plans).where(eq(plans.id, dto.planId));
+      if (target && target.maxUnits !== null && actualUnits > target.maxUnits)
+        throw new ConflictException("conflict:plan_below_unit_count");
+
       // Fiyat burada, kilit altında yeniden hesaplanıyor (kod kilitleniyor).
       const priced = await this.price(tx, dto, true);
       if (dto.discount.kind === "promo" && priced.promoError)
@@ -139,7 +150,7 @@ export class PlatformBillingService {
           status: "active",
           billingPeriod: dto.period,
           processor: "manual",
-          unitCountSnapshot: tenant.unitCount,
+          unitCountSnapshot: Math.max(tenant.unitCount, actualUnits),
           priceKurus: priced.finalPriceMinor,
           listPriceKurus: priced.listPriceMinor,
           discountKurus: priced.discountMinor,
@@ -479,4 +490,13 @@ export class PlatformBillingService {
     if (Math.abs(startsAt.getTime() - Date.now()) > year)
       throw new BadRequestException("validation_failed:start_out_of_range");
   }
+}
+
+/** Sitede silinmemiş daire sayısı (platform bağlamı: tenant filtresi açık). */
+async function activeUnitCount(tx: Database, tenantId: string): Promise<number> {
+  const [row] = await tx
+    .select({ n: sql<number>`count(*)::int` })
+    .from(units)
+    .where(and(eq(units.tenantId, tenantId), isNull(units.deletedAt)));
+  return row?.n ?? 0;
 }

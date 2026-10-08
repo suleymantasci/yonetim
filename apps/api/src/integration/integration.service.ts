@@ -25,6 +25,7 @@ import {
 
 import { AuditService } from "../governance/audit/audit.service";
 import { DbService } from "../infra/db/db.service";
+import { assertUnitQuota } from "../property/unit/unit-quota";
 
 /**
  * Kasa kovalarının sabit anahtarları — hesap kimliği (uuid metni) ile
@@ -457,6 +458,8 @@ export class IntegrationService {
           .limit(1);
         if (existing[0]) continue;
 
+        // Paket sınırı her yeni daire için: aşan göç bütünüyle geri alınır.
+        await assertUnitQuota(tx, ctx.tenantId, 1);
         const [unit] = await tx
           .insert(units)
           .values({

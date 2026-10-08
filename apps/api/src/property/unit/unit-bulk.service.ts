@@ -10,6 +10,7 @@ import { blocks, units } from "@yonetim/db";
 
 import { DbService } from "../../infra/db/db.service";
 import { refreshBlockCount } from "./unit.repository";
+import { assertUnitQuota } from "./unit-quota";
 import type { Database } from "./types";
 
 /**
@@ -74,6 +75,7 @@ export class BulkUnitBuilder {
         ownershipType: "vacant" as const,
       }));
 
+      await assertUnitQuota(tx, ctx.tenantId, rows.length);
       if (rows.length > 0) await tx.insert(units).values(rows);
       await refreshBlockCount(tx, blockId);
 

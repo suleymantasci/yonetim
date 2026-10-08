@@ -42,6 +42,7 @@ import { resolveLandShare } from "@yonetim/dues";
 
 import { DbService } from "../../infra/db/db.service";
 import type { Database } from "./types";
+import { assertUnitQuota } from "./unit-quota";
 
 /**
  * Birim repository — **SQL yalnız burada** (MIMARI-PLAN §8.5).
@@ -434,6 +435,7 @@ export class UnitRepository {
     return this.db.tx(async (tx) => {
       await assertNumberAvailable(tx, dto.blockId ?? null, dto.number, null);
       const ctx = this.db.ctx();
+      await assertUnitQuota(tx, ctx.tenantId, 1);
       const [row] = await tx
         .insert(units)
         .values({
@@ -493,6 +495,12 @@ export class UnitRepository {
 
   async restore(ids: string[]): Promise<number> {
     return this.db.tx(async (tx) => {
+      // Geri yüklenen daire de sayıyı artırıyor: paket sınırı burada da geçerli.
+      const deleted = await tx
+        .select({ id: units.id })
+        .from(units)
+        .where(and(inArray(units.id, ids), isNotNull(units.deletedAt)));
+      await assertUnitQuota(tx, this.db.ctx().tenantId, deleted.length);
       const rows = await tx
         .update(units)
         .set({ deletedAt: null })

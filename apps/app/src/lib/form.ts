@@ -383,6 +383,19 @@ export async function runAction<TSchema extends z.ZodTypeAny, TData = undefined>
  * hataları formun beklediği şekle çevirir. Tanınmayan biçimde `undefined` döner
  * ve yalnız özet mesaj gösterilir.
  */
+/**
+ * `runAction` dışındaki aksiyonlar için (liste toplu işlemleri, göç): API'nin
+ * özel sebebinin (`details.hint`) çevirisi varsa onu döner, yoksa `null` —
+ * çağıran hatayı olduğu gibi fırlatır.
+ */
+export async function reasonMessage(error: unknown): Promise<string | null> {
+  if (!(error instanceof AppError)) return null;
+  const reason = hintKey(error.details);
+  if (!reason) return null;
+  const tError = await getTranslations("common.error");
+  return tError.has(`reason.${reason}`) ? tError(`reason.${reason}`) : null;
+}
+
 /** `{ hint: "conflict:payment_already_cancelled" }` → `payment_already_cancelled`. */
 function hintKey(details: unknown): string | null {
   if (!details || typeof details !== "object") return null;
