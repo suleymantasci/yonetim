@@ -7,3 +7,4 @@ export * from "./cash.contract";
 export * from "./budget.contract";
 export * from "./statement.contract";
 export * from "./debt-type.contract";
+export * from "./debt-report.contract";

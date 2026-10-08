@@ -79,6 +79,9 @@ export type ReportTab =
   | "balanceSheet"
   | "operatingBook"
   | "unitStatements"
+  | "debtMatrix"
+  | "openItems"
+  | "receipts"
   | "activity"
   | "auditReport";
 
@@ -91,6 +94,9 @@ export async function ReportsSubnav({ active }: { active: ReportTab }) {
     { key: "balanceSheet", href: "/panel/raporlar/bilanco" },
     { key: "operatingBook", href: "/panel/raporlar/isletme-defteri" },
     { key: "unitStatements", href: "/panel/raporlar/hesap-ozeti" },
+    { key: "debtMatrix", href: "/panel/raporlar/donem-borc" },
+    { key: "openItems", href: "/panel/raporlar/borc-dokumu" },
+    { key: "receipts", href: "/panel/raporlar/makbuzlar" },
     { key: "activity", href: "/panel/raporlar/faaliyet" },
     { key: "auditReport", href: "/panel/raporlar/denetim-raporu" },
   ];
