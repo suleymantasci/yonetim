@@ -10,7 +10,6 @@ import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
 import { RequestDetailPanel } from "../request-detail-panel";
-import { RequestForm } from "../request-form";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +30,6 @@ export default async function RequestDetailPage({
   const ctx = await requirePermission("request:read");
   const t = await getTranslations("app.requests");
   const tEnum = await getTranslations("enum");
-  const tCommon = await getTranslations("common");
   const f = await formatters();
 
   const [detail, options] = await Promise.all([
@@ -56,7 +54,7 @@ export default async function RequestDetailPage({
         ]}
       />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
         <div className="space-y-4">
           <Card>
             <CardHeader
@@ -105,39 +103,19 @@ export default async function RequestDetailPage({
               ) : null}
             </CardBody>
           </Card>
-
-          {canWrite ? (
-            <Card>
-              <CardHeader title={t("editSection")} />
-              <CardBody>
-                <RequestForm
-                  defaults={{
-                    id: detail.id,
-                    unitId: detail.unitId,
-                    category: detail.category,
-                    title: detail.title,
-                    description: detail.description,
-                    priority: detail.priority,
-                    assignedToUserId: detail.assignedToUserId,
-                    costKurus: detail.costMinor,
-                  }}
-                  units={options.units}
-                  assignees={options.assignees}
-                  canAssign={canAssign}
-                  submitLabel={tCommon("action.save")}
-                  stayOnSuccess
-                />
-              </CardBody>
-            </Card>
-          ) : null}
         </div>
 
         {canWrite ? (
-          <RequestDetailPanel
-            detail={detail}
-            assignees={options.assignees}
-            canAssign={canAssign}
-          />
+          <Card>
+            <CardBody>
+              <RequestDetailPanel
+                detail={detail}
+                assignees={options.assignees}
+                canAssign={canAssign}
+                units={options.units}
+              />
+            </CardBody>
+          </Card>
         ) : null}
       </div>
     </>

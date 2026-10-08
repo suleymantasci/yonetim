@@ -10,8 +10,8 @@ import { RequestDetailPanel } from "../../../talepler/request-detail-panel";
 /**
  * Çekmece içindeki talep detayı.
  *
- * Kayıt düzenleme formu **burada yok**, yalnız eylemler (durum, atama,
- * yorum) var. Sebep: çekmeceden bir talebe bakan kişi sırayla iş kapatıyor;
+ * Kayıt düzenleme alanları **burada yok**, yalnız durum, atama ve yorum —
+ * hepsi tek formda, tek "Kaydet". Sebep: çekmeceden bir talebe bakan kişi sırayla iş kapatıyor;
  * başlık/kategori düzeltmek nadir bir iş ve tam sayfa detayda duruyor.
  * İkisini de koymak çekmeceyi iki farklı niyetin çakıştığı bir yer yapardı.
  *
@@ -40,13 +40,13 @@ export function RequestDrawerFlow({
     );
   }
 
+  // `layout="modal"`: alanlar kayar, tek "Kaydet" panelin alt kenarında.
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-5 sm:p-6">
-      <RequestDetailPanel
-        detail={detail}
-        assignees={assignees}
-        canAssign={canAssign}
-      />
-    </div>
+    <RequestDetailPanel
+      detail={detail}
+      assignees={assignees}
+      canAssign={canAssign}
+      layout="modal"
+    />
   );
 }

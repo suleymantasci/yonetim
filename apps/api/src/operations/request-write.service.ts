@@ -134,16 +134,30 @@ export class RequestWriteService {
           ? before.slaDueAt
           : slaDueFor(dto.priority, before.createdAt);
 
+      /*
+       * Atama alanı gönderilmediyse (`undefined`) **korunur**. Eskiden `null`a
+       * çekiliyordu: atama alanını görmeyen bir rol (staff) kaydı güncelleyince
+       * talebin görevlisi sessizce siliniyordu. Atamanın asıl ucu
+       * `requests/:id/assignment` (`request:assign`).
+       */
+      const next = {
+        ...base,
+        assignedToUserId:
+          dto.assignedToUserId === undefined
+            ? before.assignedToUserId
+            : base.assignedToUserId,
+      };
+
       await tx
         .update(requests)
-        .set({ ...base, slaDueAt, updatedAt: new Date() })
+        .set({ ...next, slaDueAt, updatedAt: new Date() })
         .where(eq(requests.id, id));
 
       return {
         id,
         code: before.code,
         diff: diffOf(before as unknown as Record<string, unknown>, {
-          ...base,
+          ...next,
           slaDueAt,
         }),
       };

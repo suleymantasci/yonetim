@@ -38,6 +38,14 @@ export const portfolioRow = z.object({
   openRequestCount: z.number().int(),
   slaBreachedCount: z.number().int(),
   overdueMaintenanceCount: z.number().int(),
+  /**
+   * Bu kullanıcının o sitedeki okunmamış uygulama içi bildirimleri. Bildirim
+   * siteye özel; zil yalnız bakılan sitenin bildirimini gösterir — genel durum
+   * buradan görülür.
+   */
+  unreadNotificationCount: z.number().int().default(0),
+  /** En yeni okunmamış bildirimin başlığı (yoksa `null`). */
+  latestNotificationTitle: z.string().nullable().default(null),
   /** Deneme süresi biten site aksiyon gerektirir. */
   trialEndsAt: dateTime.nullable(),
 });
@@ -49,6 +57,7 @@ export const portfolioResponse = z.object({
     outstandingMinor: moneyMinor,
     overdueMinor: moneyMinor,
     openRequestCount: z.number().int(),
+    unreadNotificationCount: z.number().int().default(0),
   }),
   rows: z.array(portfolioRow),
 });

@@ -58,7 +58,9 @@ export class PortfolioController {
           COALESCE(d.paid_this_month, 0)::bigint      AS paid_this_month,
           COALESCE(r.open_requests, 0)::int           AS open_requests,
           COALESCE(r.sla_breached, 0)::int            AS sla_breached,
-          COALESCE(mt.overdue_maintenance, 0)::int    AS overdue_maintenance
+          COALESCE(mt.overdue_maintenance, 0)::int    AS overdue_maintenance,
+          COALESCE(n.unread, 0)::int                  AS unread_notifications,
+          n.latest_title                              AS latest_notification
         FROM memberships m
         JOIN tenants t ON t.id = m.tenant_id
         LEFT JOIN LATERAL (
@@ -93,6 +95,19 @@ export class PortfolioController {
             AND maintenance_records.is_active = TRUE
             AND maintenance_records.next_due_at < NOW()
         ) mt ON TRUE
+        LEFT JOIN LATERAL (
+          -- Bildirim siteye özel: zil yalnız bakılan siteninkini gösteriyor.
+          -- Burada her sitenin bu kullanıcıya düşen okunmamışları sayılıyor.
+          SELECT
+            COUNT(*)::int AS unread,
+            (ARRAY_AGG(COALESCE(nt.subject, nt.template) ORDER BY nt.created_at DESC))[1]
+              AS latest_title
+          FROM notifications nt
+          WHERE nt.tenant_id = t.id
+            AND nt.user_id = ${ctx.userId}
+            AND nt.channel = 'in_app'
+            AND nt.read_at IS NULL
+        ) n ON TRUE
         WHERE m.user_id = ${ctx.userId}
           AND t.deleted_at IS NULL
         ORDER BY
@@ -131,6 +146,8 @@ export class PortfolioController {
         openRequestCount: Number(row.open_requests),
         slaBreachedCount: Number(row.sla_breached),
         overdueMaintenanceCount: Number(row.overdue_maintenance),
+        unreadNotificationCount: Number(row.unread_notifications),
+        latestNotificationTitle: row.latest_notification,
         trialEndsAt: row.trial_ends_at ? new Date(row.trial_ends_at) : null,
       };
     });
@@ -142,6 +159,10 @@ export class PortfolioController {
         outstandingMinor: mapped.reduce((a, r) => a + r.outstandingMinor, 0),
         overdueMinor: mapped.reduce((a, r) => a + r.overdueMinor, 0),
         openRequestCount: mapped.reduce((a, r) => a + r.openRequestCount, 0),
+        unreadNotificationCount: mapped.reduce(
+          (a, r) => a + r.unreadNotificationCount,
+          0,
+        ),
       },
       rows: mapped,
     };
@@ -163,4 +184,6 @@ interface PortfolioSqlRow {
   open_requests: number | string;
   sla_breached: number | string;
   overdue_maintenance: number | string;
+  unread_notifications: number | string;
+  latest_notification: string | null;
 }

@@ -79,14 +79,6 @@ export function RequestForm({
   layout?: "page" | "modal";
   onCancel?: () => void;
 }) {
-  const t = useTranslations("app.requests");
-  const tEnum = useTranslations("enum");
-
-  const [priority, setPriority] = useState(defaults?.priority ?? "normal");
-  const slaHours =
-    siteConfig.sla[priority as keyof typeof siteConfig.sla]?.hours ??
-    siteConfig.sla.normal.hours;
-
   return (
     <ActionForm
       action={saveRequest}
@@ -101,6 +93,39 @@ export function RequestForm({
       }}
     >
       {defaults ? <input type="hidden" name="id" value={defaults.id} /> : null}
+      <RequestRecordFields
+        defaults={defaults}
+        units={units}
+        assignees={canAssign ? assignees : undefined}
+      />
+    </ActionForm>
+  );
+}
+
+/**
+ * Talebin kayıt alanları — yeni talep formu ve detay sayfasındaki tek form
+ * aynı alanları kullanır. `assignees` verilmezse görevli alanı çizilmez
+ * (detayda atama "Durum ve atama" bölümünde).
+ */
+export function RequestRecordFields({
+  defaults,
+  units,
+  assignees,
+}: {
+  defaults?: Omit<RequestFormDefaults, "id"> & { id?: string };
+  units: { id: string; number: string; blockName: string | null }[];
+  assignees?: { id: string; name: string; role: string }[];
+}) {
+  const t = useTranslations("app.requests");
+  const tEnum = useTranslations("enum");
+
+  const [priority, setPriority] = useState(defaults?.priority ?? "normal");
+  const slaHours =
+    siteConfig.sla[priority as keyof typeof siteConfig.sla]?.hours ??
+    siteConfig.sla.normal.hours;
+
+  return (
+    <>
 
       <FormSection title={t("sectionWhat")} description={t("sectionWhatHint")}>
         <div className="sm:col-span-2">
@@ -176,7 +201,7 @@ export function RequestForm({
           </Select>
         </FormField>
 
-        {canAssign ? (
+        {assignees ? (
           <FormField
             name="assignedToUserId"
             label={t("assignee")}
@@ -209,6 +234,6 @@ export function RequestForm({
           />
         </FormField>
       </FormSection>
-    </ActionForm>
+    </>
   );
 }

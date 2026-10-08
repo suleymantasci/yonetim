@@ -3,6 +3,7 @@
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
+import { hasPermission } from "@yonetim/auth/guard";
 import { requestSaveResult } from "@yonetim/contracts";
 
 import { apiPatch, apiPost } from "@/lib/api/server";
@@ -105,115 +106,111 @@ export async function saveRequest(
           )
         : await apiPost("/v1/panel/operations/requests", body, requestSaveResult);
 
+      // Tam sayfa "yeni talep" kayıttan sonra boş formda kalıyordu; detaya
+      // gidilsin. Çekmece `stayOnSuccess` ile bunu izlemiyor.
       return okState(t("saved", { code: result.code }), {
         data: { id: result.id },
+        ...(input.id ? {} : { redirectTo: `/panel/talepler/${result.id}` }),
       });
     },
   );
 }
 
-const statusSchema = z.object({
+const detailSchema = z.object({
   id: uuidField,
   status: z.enum(STATUSES, {
     errorMap: () => ({ message: V.invalidSelection }),
   }),
-  resolutionNote: optionalText(2000),
-});
-
-/**
- * Durum geçişi.
- *
- * Ayrı eylem, çünkü ayrı uç: geçişin yan etkileri (ilk yanıt/çözüm/kapanış
- * zamanı) formun kaydettiği alanlar değil, geçişin kendisinin ürettiği
- * izler. Kayıt formuyla birleştirmek, o izleri form alanı yapardı.
- */
-export async function setRequestStatus(
-  _previous: ActionState<{ id: string }>,
-  formData: FormData,
-): Promise<ActionState<{ id: string }>> {
-  return runAction(
-    {
-      permission: "request:write",
-      schema: statusSchema,
-      meta: { action: "request_status_changed", resource: "request" },
-    },
-    formData,
-    async ({ input }) => {
-      const t = await getTranslations("app.requests");
-
-      await apiPatch(
-        `/v1/panel/operations/requests/${input.id}/status`,
-        {
-          status: input.status,
-          resolutionNote: input.resolutionNote ?? null,
-        },
-        z.object({ id: z.string().uuid() }),
-      );
-
-      return okState(t("statusChanged"), { data: { id: input.id } });
-    },
-  );
-}
-
-const assignSchema = z.object({
-  id: uuidField,
+  previousStatus: z.enum(STATUSES),
+  /** Alan formda yoksa (yetki yok) atamaya dokunulmaz. */
   assignedToUserId: optionalUuidField,
-});
-
-export async function assignRequest(
-  _previous: ActionState<{ id: string }>,
-  formData: FormData,
-): Promise<ActionState<{ id: string }>> {
-  return runAction(
-    {
-      // `request:write` değil: kimin hangi işi yapacağına karar vermek ayrı
-      // bir yetki (`packages/core/rbac`) — `staff` rolünde yok.
-      permission: "request:assign",
-      schema: assignSchema,
-      meta: { action: "request_assigned", resource: "request" },
-    },
-    formData,
-    async ({ input }) => {
-      const t = await getTranslations("app.requests");
-
-      await apiPatch(
-        `/v1/panel/operations/requests/${input.id}/assignment`,
-        { assignedToUserId: input.assignedToUserId ?? null },
-        z.object({ id: z.string().uuid() }),
-      );
-
-      return okState(t("assigned"), { data: { id: input.id } });
-    },
-  );
-}
-
-const commentSchema = z.object({
-  id: uuidField,
-  body: requiredText(1, 4000),
+  previousAssignee: optionalUuidField,
+  body: optionalText(4000),
   isInternal: checkboxField,
 });
 
-export async function commentOnRequest(
+const detailWithRecordSchema = detailSchema.merge(
+  requestSchema.omit({ id: true, assignedToUserId: true }),
+);
+
+/**
+ * Talep detayının **tek** kaydı: kayıt alanları, durum, atama ve yeni yorum.
+ *
+ * Ekranda dört ayrı form/dört ayrı "Kaydet" vardı; panelin geri kalanı tek
+ * form + tek yapışkan kaydet çubuğu. API uçları ayrı kalıyor (yan etkileri ve
+ * yetkileri farklı), birleştirme burada: yalnız **değişen** parça kendi ucuna
+ * gidiyor. Sıra önemli — atama durumu "Atandı"ya çekebilir, kullanıcının
+ * seçtiği durum ondan sonra yazılır ki son söz onun olsun.
+ */
+export async function saveRequestDetail(
   _previous: ActionState<{ id: string }>,
   formData: FormData,
 ): Promise<ActionState<{ id: string }>> {
+  const withRecord = formData.has("title");
   return runAction(
     {
       permission: "request:write",
-      schema: commentSchema,
-      meta: { action: "request_commented", resource: "request" },
+      schema: withRecord ? detailWithRecordSchema : detailSchema,
+      meta: { action: "request_detail_saved", resource: "request" },
     },
     formData,
-    async ({ input }) => {
+    async ({ ctx, input: raw }) => {
       const t = await getTranslations("app.requests");
+      const input = raw as z.output<typeof detailWithRecordSchema>;
+      const idOnly = z.object({ id: z.string().uuid() });
+      let changed = false;
 
-      await apiPost(
-        `/v1/panel/operations/requests/${input.id}/comments`,
-        { body: input.body, isInternal: input.isInternal },
-        z.object({ id: z.string().uuid() }),
-      );
+      if (withRecord) {
+        await apiPatch(
+          `/v1/panel/operations/requests/${input.id}`,
+          {
+            unitId: input.unitId ?? null,
+            category: input.category,
+            title: input.title,
+            description: input.description ?? null,
+            priority: input.priority,
+            costMinor: input.costKurus,
+          },
+          requestSaveResult,
+        );
+        changed = true;
+      }
 
-      return okState(t("commented"), { data: { id: input.id } });
+      const assignee = input.assignedToUserId ?? null;
+      if (
+        formData.has("assignedToUserId") &&
+        hasPermission(ctx.roles, "request:assign") &&
+        assignee !== (input.previousAssignee ?? null)
+      ) {
+        await apiPatch(
+          `/v1/panel/operations/requests/${input.id}/assignment`,
+          { assignedToUserId: assignee },
+          idOnly,
+        );
+        changed = true;
+      }
+
+      if (input.status !== input.previousStatus) {
+        await apiPatch(
+          `/v1/panel/operations/requests/${input.id}/status`,
+          { status: input.status, resolutionNote: null },
+          idOnly,
+        );
+        changed = true;
+      }
+
+      if (input.body) {
+        await apiPost(
+          `/v1/panel/operations/requests/${input.id}/comments`,
+          { body: input.body, isInternal: input.isInternal },
+          idOnly,
+        );
+        changed = true;
+      }
+
+      return okState(changed ? t("detailSaved") : t("nothingChanged"), {
+        data: { id: input.id },
+      });
     },
   );
 }

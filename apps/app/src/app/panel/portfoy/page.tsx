@@ -1,4 +1,4 @@
-import { AlertTriangle, Plus } from "lucide-react";
+import { AlertTriangle, Bell, Plus } from "lucide-react";
 import Link from "@/components/link";
 import { getTranslations } from "next-intl/server";
 
@@ -168,7 +168,12 @@ export default async function PortfolioPage() {
   );
 }
 
-/** Dikkat çekenler tek hücrede: üç ayrı sütun tabloyu okunmaz yapıyordu. */
+/**
+ * Dikkat çekenler tek hücrede: üç ayrı sütun tabloyu okunmaz yapıyordu.
+ * Okunmamış bildirimler de burada — bildirim siteye özel ve zil yalnız
+ * bakılan sitenin bildirimini gösteriyor; yönetici genel durumu buradan görür.
+ * Son bildirimin başlığı rozetin üzerine gelince okunur.
+ */
 function Attention({
   row,
   t,
@@ -177,10 +182,17 @@ function Attention({
     openRequestCount: number;
     slaBreachedCount: number;
     overdueMaintenanceCount: number;
+    unreadNotificationCount: number;
+    latestNotificationTitle: string | null;
   };
   t: (key: string, values?: Record<string, string | number>) => string;
 }) {
-  const flags: { tone: "danger" | "warning" | "neutral"; text: string }[] = [];
+  const flags: {
+    tone: "danger" | "warning" | "neutral";
+    text: string;
+    title?: string;
+    bell?: boolean;
+  }[] = [];
 
   if (row.slaBreachedCount > 0) {
     flags.push({ tone: "danger", text: t("slaBreached", { count: row.slaBreachedCount }) });
@@ -189,6 +201,16 @@ function Attention({
     flags.push({
       tone: "danger",
       text: t("overdueMaintenance", { count: row.overdueMaintenanceCount }),
+    });
+  }
+  if (row.unreadNotificationCount > 0) {
+    flags.push({
+      tone: "warning",
+      bell: true,
+      text: t("unreadNotifications", { count: row.unreadNotificationCount }),
+      title: row.latestNotificationTitle
+        ? t("latestNotification", { title: row.latestNotificationTitle })
+        : undefined,
     });
   }
   if (row.openRequestCount > 0) {
@@ -202,12 +224,16 @@ function Attention({
   return (
     <div className="flex flex-wrap gap-1.5">
       {flags.map((flag) => (
-        <Badge key={flag.text} tone={flag.tone}>
-          {flag.tone === "danger" ? (
-            <AlertTriangle aria-hidden className="mr-1 inline h-3 w-3" />
-          ) : null}
-          {flag.text}
-        </Badge>
+        <span key={flag.text} title={flag.title}>
+          <Badge tone={flag.tone}>
+            {flag.bell ? (
+              <Bell aria-hidden className="mr-1 inline h-3 w-3" />
+            ) : flag.tone === "danger" ? (
+              <AlertTriangle aria-hidden className="mr-1 inline h-3 w-3" />
+            ) : null}
+            {flag.text}
+          </Badge>
+        </span>
       ))}
     </div>
   );
