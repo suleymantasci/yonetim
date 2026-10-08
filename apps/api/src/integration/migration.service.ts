@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { ConflictException, Injectable } from "@nestjs/common";
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 
 import {
@@ -45,7 +45,14 @@ interface ExistingUnit {
    *  index'i silinmişleri de kapsıyor; yeni daire açmak çakışırdı. */
   trashed: boolean;
   blockId: string | null;
+  /**
+   * Daire bazlı devir var (kişiye bağlı olmayan: daire bazlı dosya ya da
+   * açılış ekranı). Varsa daireye yeni devir yazılmaz — kişilere dağıtmak
+   * aynı borcu ikinci kez yazmak olurdu.
+   */
   hasBalance: boolean;
+  /** Kişi bazlı aktarımla devri yazılmış kişiler (borçlu kimlikleri). */
+  personBalances: Set<string>;
   debtorUserId: string | null;
 }
 
@@ -95,9 +102,18 @@ export class MigrationService {
     let formerTenants = 0;
     const rows = mapped.units.map((u) => {
       const status = statusOf(u);
+      const hit = site.units.get(unitKey(u.blockName, u.number));
       if (status === "new") newUnits += 1;
       if (status === "has_balance") withBalance += 1;
-      else for (const d of [...u.debts, ...u.people.flatMap((p) => p.debts)]) byKind[d.kind] += d.amountMinor;
+      else {
+        for (const d of u.debts) byKind[d.kind] += d.amountMinor;
+        for (const p of u.people) {
+          // resolve önbellekli: aşağıdaki ikinci çağrı aynı sonucu verir, uyarıyı tekrar yazmaz.
+          const id = people.resolve(p).userId;
+          if (id && hit?.personBalances.has(id)) continue;
+          for (const d of p.debts) byKind[d.kind] += d.amountMinor;
+        }
+      }
       return {
         line: u.line,
         blockName: u.blockName ?? null,
@@ -116,7 +132,11 @@ export class MigrationService {
             name: p.name,
             hasPhone: Boolean(p.phone) && !match.phoneTaken,
             debts: p.debts,
-            status: match.userId ? ("existing" as const) : ("new" as const),
+            status: !match.userId
+              ? ("new" as const)
+              : hit?.personBalances.has(match.userId)
+                ? ("has_balance" as const)
+                : ("existing" as const),
           };
         }),
         status,
@@ -242,9 +262,10 @@ export class MigrationService {
       let peopleCreated = 0;
       let peopleLinked = 0;
       let restoredUnits = 0;
+      let skippedPeople = 0;
       const touchedBlocks = new Set<string | null>();
 
-      const addDebt = async (unitId: string, debtorUserId: string | null, d: ImportDebtLine, line: number) => {
+      const addDebt = async (unitId: string, debtorUserId: string | null, d: ImportDebtLine, line: number, person = false) => {
         await tx.insert(debts).values({
           tenantId: ctx.tenantId,
           unitId,
@@ -258,7 +279,8 @@ export class MigrationService {
           // Önceki programın gecikme bedeline yeniden gecikme işlemez.
           lateFeeExempt: d.kind === "late_fee",
           status: "pending",
-          metadata: { migrated: true, sourceRow: line, columns: d.columns, jobId: job!.id },
+          // `person`: kişi bazlı devir (tekrar yüklemede kişi bazında atlanır).
+          metadata: { migrated: true, sourceRow: line, columns: d.columns, jobId: job!.id, ...(person ? { person: true } : {}) },
         });
         createdDebts += 1;
         debtMinor += d.amountMinor;
@@ -346,11 +368,20 @@ export class MigrationService {
         }
 
         if (hit?.hasBalance) {
-          // Devri zaten aktarılmış daireye ikinci kez borç yazılmaz.
+          // Daire bazlı devri zaten olan daireye ikinci kez borç yazılmaz.
           withBalance += 1;
           continue;
         }
-        for (const p of u.people) for (const d of p.debts) await addDebt(unitId, userOf.get(p) ?? null, d, p.line);
+        for (const p of u.people) {
+          const userId = userOf.get(p) ?? null;
+          // Kişi bazlı: bu kişinin bu dairedeki devri zaten aktarılmışsa atla
+          // (aktif üyeler ve eski kiracılar ayrı dosyalarla yüklenebilir).
+          if (userId && hit?.personBalances.has(userId)) {
+            if (p.debts.length > 0) skippedPeople += 1;
+            continue;
+          }
+          for (const d of p.debts) await addDebt(unitId, userId, d, p.line, true);
+        }
         // Daireye ait (kişiye bağlanmamış) borç: dosyadaki güncel malik, yoksa
         // sitedeki mevcut borçlu.
         const unitDebtor = (currentOwners[0] && userOf.get(currentOwners[0])) ?? hit?.debtorUserId ?? null;
@@ -379,6 +410,7 @@ export class MigrationService {
             peopleCreated,
             peopleLinked,
             restoredUnits,
+            skippedPeople,
             byKind: result.totals.byKind,
           },
           finishedAt: new Date(),
@@ -395,7 +427,7 @@ export class MigrationService {
         peopleCreated,
         peopleLinked,
         restoredUnits,
-        withBalance,
+        withBalance: withBalance + skippedPeople,
         skipped,
       };
     });
@@ -405,6 +437,56 @@ export class MigrationService {
       resource: "migration_job",
       resourceId: counts.jobId,
       reason: `${dto.fileName}: ${counts.units} yeni birim, ${counts.existingUnits} mevcut, ${counts.peopleCreated} yeni kişi, ${counts.debts} devir borcu`,
+    });
+    return counts;
+  }
+
+  /**
+   * Aktarımı geri al: yanlış eşleştirmeyle yapılmış aktarım temizlenip
+   * yeniden yapılabilsin. Tahsilat görmüş (kısmen bile) ya da icraya/silmeye
+   * gitmiş devir borcu varsa **hiçbir şey yapılmaz** — para hareketi görmüş
+   * borcu iptal etmek muhasebeyi bozar; önce tahsilat geri alınmalı.
+   *
+   * Aktarımın devir borçları iptal edilir (`cancelled`, silinmez: iz kalır);
+   * aktarımın açtığı daireler, iptalden sonra başka canlı borcu kalmadıysa
+   * çöp kutusuna gider. Kişi kayıtları ve ilişkileri kalır (başka sitede de
+   * kayıtlı olabilirler; gereksizse sakinler ekranından kaldırılır).
+   */
+  async revert(jobId: string): Promise<{ debts: number; units: number }> {
+    const counts = await this.db.tx(async (tx) => {
+      const [job] = await tx.select({ id: migrationJobs.id, status: migrationJobs.status }).from(migrationJobs).where(eq(migrationJobs.id, jobId));
+      if (!job) throw errors.notFound();
+      if (job.status !== "completed") throw new ConflictException("conflict:migration_not_revertible");
+      const jobDebts = await tx
+        .select({ id: debts.id, status: debts.status, paid: debts.paidKurus })
+        .from(debts)
+        .where(and(sql`${debts.metadata}->>'jobId' = ${jobId}`, isNull(debts.deletedAt), sql`${debts.status} <> 'cancelled'`));
+      if (jobDebts.some((d) => d.paid > 0 || !["pending", "overdue"].includes(d.status))) {
+        throw new ConflictException("conflict:migration_has_payments");
+      }
+      if (jobDebts.length > 0) {
+        await tx
+          .update(debts)
+          .set({ status: "cancelled", updatedAt: new Date() })
+          .where(inArray(debts.id, jobDebts.map((d) => d.id)));
+      }
+      const removed = (await tx.execute(sql`
+        UPDATE units u SET deleted_at = now()
+        WHERE u.metadata->>'jobId' = ${jobId} AND u.deleted_at IS NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM debts d WHERE d.unit_id = u.id AND d.deleted_at IS NULL AND d.status <> 'cancelled'
+          )
+        RETURNING u.block_id
+      `)) as unknown as Array<{ block_id: string | null }>;
+      for (const blockId of new Set(removed.map((r) => r.block_id))) await refreshBlockCount(tx, blockId);
+      await tx.update(migrationJobs).set({ status: "reverted" }).where(eq(migrationJobs.id, jobId));
+      return { debts: jobDebts.length, units: removed.length };
+    });
+    await this.audit.record({
+      action: "migration_reverted",
+      resource: "migration_job",
+      resourceId: jobId,
+      reason: `${counts.debts} devir borcu iptal, ${counts.units} birim çöp kutusuna`,
     });
     return counts;
   }
@@ -464,21 +546,27 @@ export class MigrationService {
              EXISTS (
                SELECT 1 FROM debts d
                WHERE d.unit_id = u.id AND d.deleted_at IS NULL AND d.status <> 'cancelled'
-                 AND (d.metadata ? 'opening' OR d.metadata ? 'migrated')
+                 AND (d.metadata ? 'opening' OR d.metadata ? 'migrated') AND NOT d.metadata ? 'person'
              ) AS has_balance,
+             ARRAY(
+               SELECT DISTINCT d.debtor_user_id::text FROM debts d
+               WHERE d.unit_id = u.id AND d.deleted_at IS NULL AND d.status <> 'cancelled'
+                 AND d.metadata ? 'migrated' AND d.metadata ? 'person' AND d.debtor_user_id IS NOT NULL
+             ) AS person_balances,
              (SELECT o.user_id FROM unit_occupancies o
                WHERE o.unit_id = u.id AND o.end_date IS NULL
                ORDER BY (o.relation = 'owner') DESC, o.start_date LIMIT 1) AS debtor
       FROM units u LEFT JOIN blocks b ON b.id = u.block_id
       ORDER BY u.deleted_at IS NULL
     `)) as unknown as Array<{
-      id: string; number: string; block_id: string | null; block_name: string | null; trashed: boolean; has_balance: boolean; debtor: string | null;
+      id: string; number: string; block_id: string | null; block_name: string | null; trashed: boolean; has_balance: boolean; person_balances: string[] | null; debtor: string | null;
     }>;
     // Silinmişler önce: aynı anahtarda canlı daire varsa o kazanır.
     const unitMap = new Map<string, ExistingUnit>();
     for (const r of rows) {
       unitMap.set(unitKey(r.block_name, r.number), {
-        id: r.id, trashed: r.trashed, blockId: r.block_id, hasBalance: r.has_balance, debtorUserId: r.debtor,
+        id: r.id, trashed: r.trashed, blockId: r.block_id, hasBalance: r.has_balance,
+        personBalances: new Set(r.person_balances ?? []), debtorUserId: r.debtor,
       });
     }
 

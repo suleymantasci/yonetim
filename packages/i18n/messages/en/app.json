@@ -2519,7 +2519,11 @@
       "tenant": "Former tenant"
     },
     "personExisting": "already registered",
-    "noPhone": "no phone"
+    "noPhone": "no phone",
+    "revert": "Revert",
+    "revertTitle": "Revert this import?",
+    "revertDescription": "The carried-over debts written by this import are cancelled and the units it created that have no other debts are moved to the trash. People records stay. If any carried-over debt has a payment, nothing is reverted.",
+    "reverted": "Import reverted: {debts} carried-over debts cancelled, {units} units moved to trash."
   },
   "certificate": {
     "title": "Debt status certificate",

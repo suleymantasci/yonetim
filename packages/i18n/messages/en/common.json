@@ -188,7 +188,9 @@
       "handover_in_future": "Handover date cannot be in the future.",
       "date_in_future": "Future-dated entries are not allowed.",
       "range_order": "Start date cannot be after end date.",
-      "range_too_long": "The date range can be at most 3 years."
+      "range_too_long": "The date range can be at most 3 years.",
+      "migration_has_payments": "Some carried-over debts from this import have payments; reverse those payments first.",
+      "migration_not_revertible": "This import cannot be reverted (already reverted or not completed)."
     }
   },
   "errorPage": {

@@ -208,6 +208,18 @@ export class IntegrationController {
     return this.migration.preview(dto);
   }
 
+  @Post("migrations/:id/revert")
+  @RequirePermission("unit:write")
+  @ApiOperation({
+    summary: "Aktarımı geri al",
+    description:
+      "Aktarımın devir borçları iptal edilir, açtığı (başka borcu kalmayan) daireler " +
+      "çöp kutusuna gider. Tahsilat görmüş devir borcu varsa 409 ve hiçbir şey değişmez.",
+  })
+  revertMigration(@Param("id", ParseUUIDPipe) id: string) {
+    return this.migration.revert(id);
+  }
+
   @Post("migrations")
   @RequirePermission("unit:write")
   @ApiOperation({

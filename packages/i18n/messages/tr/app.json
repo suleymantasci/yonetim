@@ -2519,7 +2519,11 @@
       "tenant": "Eski kiracı"
     },
     "personExisting": "sitede kayıtlı",
-    "noPhone": "telefonsuz"
+    "noPhone": "telefonsuz",
+    "revert": "Geri al",
+    "revertTitle": "Aktarım geri alınsın mı?",
+    "revertDescription": "Bu aktarımın yazdığı devir borçları iptal edilir, aktarımın açtığı ve başka borcu olmayan daireler çöp kutusuna gider. Kişi kayıtları kalır. Tahsilat görmüş devir borcu varsa geri alma yapılmaz.",
+    "reverted": "Aktarım geri alındı: {debts} devir borcu iptal edildi, {units} daire çöp kutusuna taşındı."
   },
   "certificate": {
     "title": "Borç Durum Belgesi",

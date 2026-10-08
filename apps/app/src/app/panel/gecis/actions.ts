@@ -1,6 +1,7 @@
 "use server";
 
 import { getTranslations } from "next-intl/server";
+import { z } from "zod";
 
 import {
   migrationCommitResult,
@@ -74,6 +75,22 @@ export async function commitMigration(
         withBalance: r.withBalance,
       }),
     };
+  } catch (error) {
+    return { ok: false, message: await explain(error) };
+  }
+}
+
+/** Aktarımı geri al: devir borçları iptal, aktarımın açtığı boş daireler çöp kutusuna. */
+export async function revertMigration(jobId: string): Promise<{ ok: boolean; message: string }> {
+  await requirePermission("unit:write");
+  const t = await getTranslations("app.migration");
+  try {
+    const r = await apiPost(
+      `/v1/panel/migrations/${encodeURIComponent(jobId)}/revert`,
+      {},
+      z.object({ debts: z.number().int(), units: z.number().int() }),
+    );
+    return { ok: true, message: t("reverted", { debts: r.debts, units: r.units }) };
   } catch (error) {
     return { ok: false, message: await explain(error) };
   }

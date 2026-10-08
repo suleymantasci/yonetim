@@ -232,6 +232,42 @@ describe.skipIf(!apiReachable)("veri aktarımı — kişi bazlı (malik / kirac�
     expect((pre.body as { totals: { newPeople: number } }).totals.newPeople).toBe(0);
     const r = await site.call("POST", "/v1/panel/migrations", { ...PEOPLE_FILE, headerRow, mapping, carriedBalanceLabel: "Devir" });
     expect(r.status).toBe(201);
-    expect(r.body).toMatchObject({ units: 0, peopleCreated: 0, debts: 0, withBalance: 2 });
+    expect(r.body).toMatchObject({ units: 0, peopleCreated: 0, debts: 0 });
+  });
+
+  it("eski kiracılar ayrı dosyayla sonradan: yalnız yeni kişinin borcu eklenir; geri alınabilir", async () => {
+    const html =
+      `<html><head><meta charset="utf-8" /></head><body><table>` +
+      `<tr><th>BLOK</th><th>NO</th><th>DURUMU</th><th>AD SOYAD</th><th>AİDAT</th><th>TOPLAM</th></tr>` +
+      row(["K BLOK", "1", "(E) Kiracı", "Eda Er", "300,00", "300,00"]) +
+      row(["K BLOK", "1", "(E) Kiracı", "Rana Ay", "120,00", "120,00"]) +
+      `</table></body></html>`;
+    const file = { fileName: "eski.xls", fileBase64: Buffer.from(html, "utf8").toString("base64") };
+    const pre = await site.call("POST", "/v1/panel/migrations/preview", file);
+    const p = pre.body as {
+      headerRow: number; columns: Array<{ index: number; field: string }>;
+      rows: Array<{ people: Array<{ name: string; former: boolean; status: string }> }>; totals: { debtMinor: number };
+    };
+    expect(p.rows[0]!.people.map((x) => [x.name, x.former, x.status])).toEqual([
+      ["Eda Er", true, "has_balance"],
+      ["Rana Ay", true, "new"],
+    ]);
+    expect(p.totals.debtMinor).toBe(12_000);
+    const m = Object.fromEntries(p.columns.map((c) => [String(c.index), c.field]));
+    const r = await site.call("POST", "/v1/panel/migrations", { ...file, headerRow: p.headerRow, mapping: m, carriedBalanceLabel: "Devir" });
+    expect(r.status).toBe(201);
+    expect(r.body).toMatchObject({ debts: 1, debtMinor: 12_000, peopleCreated: 1 });
+    const jobId = (r.body as { jobId: string }).jobId;
+    const rana = await withBypassRls("test:gecis-rana", (tx) =>
+      tx.select({ id: users.id }).from(users).innerJoin(unitOccupancies, eq(unitOccupancies.userId, users.id))
+        .where(and(eq(unitOccupancies.tenantId, site.tenantId), eq(users.firstName, "Rana"))),
+    );
+    createdUsers.push(rana[0]!.id);
+
+    const rev = await site.call("POST", `/v1/panel/migrations/${jobId}/revert`, {});
+    expect(rev.status).toBe(201);
+    expect(rev.body).toEqual({ debts: 1, units: 0 });
+    const again = await site.call("POST", `/v1/panel/migrations/${jobId}/revert`, {});
+    expect(again.status).toBe(409);
   });
 });

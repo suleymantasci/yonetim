@@ -9,6 +9,8 @@ import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
 
+import { RevertMigrationButton } from "./revert-button";
+
 /** Self-servis veri migration — SPEC Bölüm 3.11. */
 export const dynamic = "force-dynamic";
 
@@ -64,6 +66,12 @@ export default async function MigrationPage() {
                       : ""}{" "}
                     · {f.dateTime(j.createdAt)}
                   </div>
+                  {j.fileName ? <div className="mt-0.5 truncate text-xs text-fg-subtle">{j.fileName}</div> : null}
+                  {j.status === "completed" ? (
+                    <div className="mt-2">
+                      <RevertMigrationButton jobId={j.id} />
+                    </div>
+                  ) : null}
                 </div>
               ))
             )}

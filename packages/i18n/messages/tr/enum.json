@@ -337,7 +337,8 @@
     "pending": "Bekliyor",
     "running": "Çalışıyor",
     "completed": "Tamamlandı",
-    "failed": "Başarısız"
+    "failed": "Başarısız",
+    "reverted": "Geri alındı"
   },
   "inventoryStatus": {
     "active": "Kullanımda",

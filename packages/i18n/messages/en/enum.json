@@ -337,7 +337,8 @@
     "pending": "Pending",
     "running": "Running",
     "completed": "Completed",
-    "failed": "Failed"
+    "failed": "Failed",
+    "reverted": "Reverted"
   },
   "inventoryStatus": {
     "active": "In use",

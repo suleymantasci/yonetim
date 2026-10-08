@@ -324,10 +324,13 @@ function decimal(cell: Cell | undefined): number | undefined {
 
 const SUMMARY_ROW = /\b(genel )?toplam\b|\bara toplam\b|\btotal\b/;
 
-/** "Malik", "Kiracı", "Eski Kiracı", "Hissedar" … → rol. */
+/**
+ * "Malik", "Kiracı", "Eski Kiracı", "Hissedar" … → rol. Yönetimcell eski
+ * üyeyi "(E) Kiracı" / "(E) Malik" diye yazıyor: tek başına "E" eski demek.
+ */
 export function parseRole(value: string): { role: PersonRole; former: boolean } | null {
   const v = ` ${foldTurkish(value).replace(/[^a-z0-9]+/g, " ").trim()} `;
-  const former = /\s(eski|onceki|ayrilan|ayrildi|cikan|cikti|pasif)\s/.test(v);
+  const former = /\s(e|eski|onceki|ayrilan|ayrildi|cikan|cikti|pasif)\s/.test(v);
   if (/\s(kiraci|oturan|kullanici|tenant)/.test(v)) return { role: "tenant", former };
   if (/\s(malik|mal sahibi|ev sahibi|mulk sahibi|hissedar|sahib|owner)/.test(v)) return { role: "owner", former };
   return null;

@@ -317,8 +317,11 @@ export const migrationPreview = z.object({
           name: z.string(),
           hasPhone: z.boolean(),
           debts: z.array(importDebtLine),
-          /** `existing`: sitede bu daireyle aynı ilişkide kayıtlı (telefon ya da ad). */
-          status: z.enum(["new", "existing"]),
+          /**
+           * `existing`: sitede kayıtlı (telefon + ad ya da ad); `has_balance`:
+           * bu kişinin bu dairedeki devri zaten aktarılmış (borcu eklenmez).
+           */
+          status: z.enum(["new", "existing", "has_balance"]),
         }),
       ),
       /**

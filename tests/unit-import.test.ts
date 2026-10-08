@@ -207,6 +207,9 @@ describe("kişi bazlı rapor (Yönetimcell 'Üyelerin (cari) …')", () => {
     expect(parseRole("Malik")).toEqual({ role: "owner", former: false });
     expect(parseRole("KİRACI")).toEqual({ role: "tenant", former: false });
     expect(parseRole("Eski Kiracı")).toEqual({ role: "tenant", former: true });
+    // Yönetimcell taşınmaz kartındaki yazım.
+    expect(parseRole("(E) Kiracı")).toEqual({ role: "tenant", former: true });
+    expect(parseRole("(E) Malik")).toEqual({ role: "owner", former: true });
     expect(parseRole("Hissedar")).toEqual({ role: "owner", former: false });
     expect(parseRole("Yönetici")).toBeNull();
   });

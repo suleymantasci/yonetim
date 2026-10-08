@@ -188,7 +188,9 @@
       "handover_in_future": "Devir tarihi ileri bir tarih olamaz.",
       "date_in_future": "İleri tarihli kayıt girilemez.",
       "range_order": "Başlangıç tarihi bitişten sonra olamaz.",
-      "range_too_long": "Tarih aralığı en çok 3 yıl olabilir."
+      "range_too_long": "Tarih aralığı en çok 3 yıl olabilir.",
+      "migration_has_payments": "Bu aktarımın devir borçlarından bazılarına tahsilat yapılmış; önce o tahsilatları geri alın.",
+      "migration_not_revertible": "Bu aktarım geri alınamaz (zaten geri alınmış ya da tamamlanmamış)."
     }
   },
   "errorPage": {
