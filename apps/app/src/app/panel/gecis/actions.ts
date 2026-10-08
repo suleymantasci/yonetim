@@ -2,159 +2,77 @@
 
 import { getTranslations } from "next-intl/server";
 
-import { migrationCommitResult } from "@yonetim/contracts";
 import {
-  mapImport,
-  slugify,
-  type MigrationResult,
-  type MigrationSource,
-} from "@yonetim/core";
+  migrationCommitResult,
+  migrationPreview,
+  type MigrationPreview,
+  type UnitImportFieldName,
+} from "@yonetim/contracts";
 
 import { apiPost } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { reasonMessage } from "@/lib/form";
 
-export interface MigrationState {
-  ok: boolean;
-  message?: string;
-  preview?: {
-    source: MigrationSource;
-    detectedColumns: Record<string, string>;
-    summary: MigrationResult["summary"];
-    issues: MigrationResult["issues"];
-    sample: MigrationResult["units"];
-  };
-  imported?: { units: number; blocks: number; debts: number };
+type Outcome<T> = { ok: true; data: T; message?: string } | { ok: false; message: string };
+
+export interface MigrationFileInput {
+  fileName: string;
+  fileBase64: string;
+  headerRow?: number;
+  mapping?: Record<string, UnitImportFieldName>;
 }
 
-const SOURCES: MigrationSource[] = [
-  "apsiyon",
-  "biyos",
-  "dijiyon",
-  "yonetimcell",
-  "excel",
-];
-
-/** Adım 1: dosyayı analiz et, kaydetmeden önizleme döndür. */
-export async function previewMigration(
-  _prev: MigrationState,
-  formData: FormData,
-): Promise<MigrationState> {
-  await requirePermission("unit:write");
+/** API'nin `migration_*` kodunu (ya da paket sınırı gerekçesini) kullanıcı metnine çevir. */
+async function explain(error: unknown): Promise<string> {
   const t = await getTranslations("app.migration");
+  const reason = await reasonMessage(error);
+  if (reason) return reason;
+  const raw = error instanceof Error ? error.message : "";
+  if (raw.startsWith("migration_") && t.has(`error.${raw}`)) return t(`error.${raw}`);
+  return t("error.generic");
+}
 
-  const file = formData.get("file");
-  const source = String(formData.get("source") ?? "excel") as MigrationSource;
-
-  if (!(file instanceof File) || file.size === 0) {
-    return { ok: false, message: t("selectFile") };
+/** Dosyayı oku, başlık ve sütunları tahmin et (ya da verilen eşleştirmeyi uygula). Yazmaz. */
+export async function previewMigration(input: MigrationFileInput): Promise<Outcome<MigrationPreview>> {
+  await requirePermission("unit:write");
+  try {
+    const data = await apiPost("/v1/panel/migrations/preview", input, migrationPreview);
+    return { ok: true, data };
+  } catch (error) {
+    return { ok: false, message: await explain(error) };
   }
-  if (file.size > 5 * 1024 * 1024) {
-    return { ok: false, message: t("fileTooLarge") };
-  }
-  if (!SOURCES.includes(source)) {
-    return { ok: false, message: t("invalidSource") };
-  }
-
-  const content = await file.text();
-  const result = mapImport(content, source);
-
-  const blocking = result.issues.filter((i) => i.severity === "error");
-  if (blocking.length > 0) {
-    return {
-      ok: false,
-      message: blocking
-        .map((i) => t(`issue.${i.code}`, i.params ?? {}))
-        .join(" "),
-      preview: {
-        source,
-        detectedColumns: result.detectedColumns,
-        summary: result.summary,
-        issues: result.issues,
-        sample: [],
-      },
-    };
-  }
-
-  return {
-    ok: true,
-    message: t("readyMessage", { count: result.summary.importable }),
-    preview: {
-      source,
-      detectedColumns: result.detectedColumns,
-      summary: result.summary,
-      issues: result.issues.slice(0, 20),
-      sample: result.units.slice(0, 10),
-    },
-  };
 }
 
 /**
- * Adım 2: onaylanan veriyi kaydet.
- *
- * Dosya içeriği API'ye ham olarak gidiyor ve orada **yeniden** ayrıştırılıyor.
- * Burada ayrıştırıp satırları göndermek daha ucuz olurdu ama önizlemede
- * görülenle yazılanın ayrışmasına kapı açardı; aynı gerekçe toplu
- * borçlandırmadaki tek dağıtım fonksiyonu kararında da geçiyor.
+ * Onaylanan eşleştirmeyle aktar. Dosya API'de **yeniden** okunuyor: önizlemede
+ * görülenle yazılanın ayrışmaması için hazır satır gönderilmiyor.
  */
 export async function commitMigration(
-  _prev: MigrationState,
-  formData: FormData,
-): Promise<MigrationState> {
+  input: Required<Omit<MigrationFileInput, "headerRow" | "mapping">> & {
+    headerRow: number;
+    mapping: Record<string, UnitImportFieldName>;
+  },
+): Promise<Outcome<{ units: number }>> {
   await requirePermission("unit:write");
   const t = await getTranslations("app.migration");
-
-  const file = formData.get("file");
-  const source = String(formData.get("source") ?? "excel") as MigrationSource;
-  if (!(file instanceof File) || file.size === 0) {
-    return { ok: false, message: t("fileMissing") };
-  }
-  if (file.size > 5 * 1024 * 1024) {
-    return { ok: false, message: t("fileTooLarge") };
-  }
-  if (!SOURCES.includes(source)) {
-    return { ok: false, message: t("invalidSource") };
-  }
-
-  const content = await file.text();
-  // Boş dosyayı API'ye göndermeden yakalıyoruz: kullanıcıya gösterilecek
-  // mesaj burada, sunucudan dönen genel doğrulama hatası değil.
-  if (mapImport(content, source).units.length === 0) {
-    return { ok: false, message: t("noRows") };
-  }
-
-  let counts;
   try {
-    counts = await apiPost(
+    const r = await apiPost(
       "/v1/panel/migrations",
-      {
-        source,
-        fileName: file.name,
-        content,
-        carriedBalanceLabel: t("carriedBalanceDescription", { source }),
-      },
+      { ...input, carriedBalanceLabel: t("carriedBalanceDescription") },
       migrationCommitResult,
     );
+    return {
+      ok: true,
+      data: { units: r.units },
+      message: t("completed", {
+        units: r.units,
+        existing: r.existingUnits,
+        blocks: r.blocks,
+        debts: r.debts,
+        withBalance: r.withBalance,
+      }),
+    };
   } catch (error) {
-    // Paket daire sınırını aşan göç bütünüyle geri alınıyor; sebebi göster.
-    const message = await reasonMessage(error);
-    if (message) return { ok: false, message };
-    throw error;
+    return { ok: false, message: await explain(error) };
   }
-
-  return {
-    ok: true,
-    message: t("completed", {
-      units: counts.units,
-      blocks: counts.blocks,
-      debts: counts.debts,
-    }),
-    imported: {
-      units: counts.units,
-      blocks: counts.blocks,
-      debts: counts.debts,
-    },
-  };
 }
-
-export { slugify };

@@ -1,21 +1,16 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import type { SQL } from "drizzle-orm";
 import { and, desc, eq, inArray, isNotNull, isNull, ne, sql } from "drizzle-orm";
 
 import type {
   BankOverviewResponse,
   CashboxRow,
-  MigrationCommit,
-  MigrationCommitResult,
   MigrationListResponse,
 } from "@yonetim/contracts";
-import { mapImport } from "@yonetim/core";
 import {
   openingEntries,
   bankAccounts,
   bankTransactions,
-  blocks,
-  debts,
   expenses,
   migrationJobs,
   payments,
@@ -23,9 +18,7 @@ import {
   units,
 } from "@yonetim/db";
 
-import { AuditService } from "../governance/audit/audit.service";
 import { DbService } from "../infra/db/db.service";
-import { assertUnitQuota } from "../property/unit/unit-quota";
 
 /**
  * Kasa kovalarının sabit anahtarları — hesap kimliği (uuid metni) ile
@@ -49,10 +42,7 @@ const sumKurus = (expr: SQL) =>
  */
 @Injectable()
 export class IntegrationService {
-  constructor(
-    private readonly db: DbService,
-    private readonly audit: AuditService,
-  ) {}
+  constructor(private readonly db: DbService) {}
 
   async bankOverview(): Promise<BankOverviewResponse> {
     /*
@@ -389,152 +379,5 @@ export class IntegrationService {
       })),
     };
   }
-
-  /**
-   * Göçü uygular — açılış bakiyeleri "devir" borcu olarak yazılır.
-   *
-   * Dosya burada **yeniden** ayrıştırılıyor (`mapImport` saf bir fonksiyon):
-   * istemcinin gönderdiği hazır satırlara güvenmek, önizlemede görülenle
-   * yazılanın ayrışmasına kapı açardı.
-   *
-   * Tamamı tek transaction: yarım kalmış bir göç, yöneticinin hangi dairenin
-   * aktarıldığını bilemediği bir duruma yol açardı.
-   */
-  async commitMigration(dto: MigrationCommit): Promise<MigrationCommitResult> {
-    const ctx = this.db.ctx();
-    const result = mapImport(dto.content, dto.source);
-    if (result.units.length === 0) {
-      throw new BadRequestException("validation_failed:no_rows");
-    }
-
-    const counts = await this.db.tx(async (tx) => {
-      const [job] = await tx
-        .insert(migrationJobs)
-        .values({
-          tenantId: ctx.tenantId,
-          source: dto.source,
-          fileName: dto.fileName,
-          status: "running",
-          totalRows: result.summary.totalRows,
-          mapping: result.detectedColumns,
-          startedAt: new Date(),
-        })
-        .returning({ id: migrationJobs.id });
-
-      const blockIds = new Map<string, string>();
-      for (const name of result.summary.blocks) {
-        const existing = await tx
-          .select({ id: blocks.id })
-          .from(blocks)
-          .where(and(eq(blocks.name, name), isNull(blocks.deletedAt)))
-          .limit(1);
-        if (existing[0]) {
-          blockIds.set(name, existing[0].id);
-          continue;
-        }
-        const [created] = await tx
-          .insert(blocks)
-          .values({ tenantId: ctx.tenantId, name, floorCount: 1 })
-          .returning({ id: blocks.id });
-        if (created) blockIds.set(name, created.id);
-      }
-
-      let importedUnits = 0;
-      let importedDebts = 0;
-      const dueDate = new Date();
-      dueDate.setDate(dueDate.getDate() + 15);
-
-      for (const u of result.units) {
-        const blockId = u.blockName
-          ? (blockIds.get(u.blockName) ?? null)
-          : null;
-
-        // Aynı numaralı birim varsa atlanıyor: göç iki kez çalıştırıldığında
-        // daireler ikizlenmemeli.
-        const existing = await tx
-          .select({ id: units.id })
-          .from(units)
-          .where(and(eq(units.number, u.number), isNull(units.deletedAt)))
-          .limit(1);
-        if (existing[0]) continue;
-
-        // Paket sınırı her yeni daire için: aşan göç bütünüyle geri alınır.
-        await assertUnitQuota(tx, ctx.tenantId, 1);
-        const [unit] = await tx
-          .insert(units)
-          .values({
-            tenantId: ctx.tenantId,
-            blockId,
-            number: u.number,
-            floor: u.floor ?? 0,
-            type: "flat",
-            areaM2: u.areaM2 !== undefined ? String(u.areaM2) : null,
-            landShare: u.landShare !== undefined ? String(u.landShare) : null,
-            ownershipType: u.tenantName ? "tenant" : "owner",
-            metadata: {
-              importedFrom: dto.source,
-              ownerName: u.ownerName,
-              ownerPhone: u.ownerPhone,
-              tenantName: u.tenantName,
-              tenantPhone: u.tenantPhone,
-            },
-          })
-          .returning({ id: units.id });
-
-        if (!unit) continue;
-        importedUnits += 1;
-
-        if (u.openingBalanceKurus && u.openingBalanceKurus > 0) {
-          await tx.insert(debts).values({
-            tenantId: ctx.tenantId,
-            unitId: unit.id,
-            kind: "extra",
-            description: dto.carriedBalanceLabel,
-            amountKurus: u.openingBalanceKurus,
-            dueDate,
-            status: "pending",
-            metadata: { migrated: true, sourceRow: u.rowIndex },
-          });
-          importedDebts += 1;
-        }
-      }
-
-      const skipped = result.summary.totalRows - importedUnits;
-      await tx
-        .update(migrationJobs)
-        .set({
-          status: "completed",
-          importedRows: importedUnits,
-          skippedRows: skipped,
-          // Uyarılar da kaydediliyor: atlanan satırın nedeni sonradan
-          // sorulduğunda cevap kütükte olmalı.
-          errors: result.issues,
-          summary: {
-            units: importedUnits,
-            debts: importedDebts,
-            blocks: blockIds.size,
-            openingBalanceKurus: result.summary.totalOpeningBalanceKurus,
-          },
-          finishedAt: new Date(),
-        })
-        .where(eq(migrationJobs.id, job!.id));
-
-      return {
-        jobId: job!.id,
-        units: importedUnits,
-        blocks: blockIds.size,
-        debts: importedDebts,
-        skipped,
-      };
-    });
-
-    await this.audit.record({
-      action: "migration_completed",
-      resource: "migration_job",
-      resourceId: counts.jobId,
-      reason: `${dto.source}: ${counts.units} birim, ${counts.debts} devir borcu`,
-    });
-
-    return counts;
-  }
 }
+

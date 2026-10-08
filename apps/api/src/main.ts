@@ -74,6 +74,8 @@ async function bootstrap(): Promise<void> {
    * genel `json()` ikinci kez ayrıştırmaz.
    */
   app.use("/v1/panel/bank/statement", json({ limit: "8mb" }));
+  // Veri aktarımı (göç) dosyası da aynı biçimde base64 geliyor.
+  app.use("/v1/panel/migrations", json({ limit: "8mb" }));
 
   app.use(
     json({

@@ -225,31 +225,127 @@ export type MigrationListResponse = z.infer<typeof migrationListResponse>;
  * Göç uygulama
  * ------------------------------------------------------------------ */
 
-export const MIGRATION_SOURCES = [
-  "apsiyon",
-  "biyos",
-  "dijiyon",
-  "yonetimcell",
-  "excel",
-] as const;
-
 /**
- * Göç isteği **ham dosya içeriğini** taşır, ayrıştırılmış satırları değil.
+ * Göç dosyası: herhangi bir programın Excel/CSV dışa aktarımı (xlsx, eski
+ * xls, `.xls` kılıklı HTML, CSV). Program şablonu yok — rakiplerin biçimi
+ * yayımlanmış değil; başlık satırı ve sütun anlamları tahmin edilir,
+ * kullanıcı önizlemede düzeltir (banka dökümüyle aynı yol, `@yonetim/bank`).
  *
- * Önizlemede ayrıştırma istemcide de yapılıyor ama yazma yolunda sunucu
- * dosyayı **yeniden** ayrıştırıyor: istemcinin gönderdiği satırlara güvenmek,
- * önizlemede görülenle yazılanın ayrışmasına açık kapı bırakırdı (aynı
- * gerekçe toplu borçlandırmadaki tek dağıtım fonksiyonu kararında da var).
+ *   `POST migrations/preview` — dosya okunur, yazılmaz.
+ *   `POST migrations` — onaylanan eşleştirmeyle **yeniden** okunur ve yazılır;
+ *   istemcinin hazır satırlarına güvenmek önizlemeyle yazılanı ayırırdı.
  */
-export const migrationCommit = z.object({
-  source: z.enum(MIGRATION_SOURCES),
-  fileName: z.string().trim().max(255),
-  content: z.string().max(5 * 1024 * 1024),
+export const UNIT_IMPORT_FIELDS = [
+  "ignore",
+  "block",
+  "unit",
+  "floor",
+  "area",
+  "landShare",
+  "ownerName",
+  "ownerPhone",
+  "tenantName",
+  "tenantPhone",
+  "debtDues",
+  "debtUtility",
+  "debtLateFee",
+  "debtOther",
+  "total",
+] as const;
+export const unitImportField = z.enum(UNIT_IMPORT_FIELDS);
+export type UnitImportFieldName = z.infer<typeof unitImportField>;
+
+/** Sütun indeksi ("0", "1", …) → alan. */
+export const unitImportMapping = z.record(z.string().regex(/^\d{1,3}$/), unitImportField);
+
+const migrationFile = z.object({
+  fileName: z.string().trim().min(1).max(200),
+  /** Ham dosya, base64 (4 MB dosya ≈ 5,4 MB metin). */
+  fileBase64: z.string().min(4).max(5_600_000),
+});
+
+export const migrationPreviewRequest = migrationFile.extend({
+  /** 0 tabanlı başlık satırı; verilmezse bulunur. */
+  headerRow: z.number().int().min(0).max(500).optional(),
+  mapping: unitImportMapping.optional(),
+});
+export type MigrationPreviewRequest = z.infer<typeof migrationPreviewRequest>;
+
+const debtKindTotals = z.object({
+  dues: moneyMinor,
+  utility: moneyMinor,
+  late_fee: moneyMinor,
+  extra: moneyMinor,
+});
+
+export const migrationPreview = z.object({
+  format: z.enum(["xlsx", "xls", "html", "csv"]),
+  headerRow: z.number().int(),
+  headerFound: z.boolean(),
+  mappingSource: z.enum(["guess", "request"]),
+  columns: z.array(
+    z.object({
+      index: z.number().int(),
+      header: z.string(),
+      field: unitImportField,
+      samples: z.array(z.string()),
+      /** Kullanılmayan ama içinde tutar olan sütun — borç kaçmasın diye uyarı. */
+      unusedMoney: z.boolean(),
+    }),
+  ),
+  /** `missing_unit` | `duplicate_field` — doluysa içe aktarma yapılamaz. */
+  problems: z.array(z.string()),
+  topRows: z.array(z.array(z.string())),
+  rows: z.array(
+    z.object({
+      line: z.number().int(),
+      blockName: z.string().nullable(),
+      number: z.string(),
+      ownerName: z.string().nullable(),
+      tenantName: z.string().nullable(),
+      debts: z.array(z.object({ kind: z.enum(["dues", "utility", "late_fee", "extra"]), amountMinor: moneyMinor, columns: z.array(z.string()) })),
+      /** `new` oluşturulacak; `existing` var, borç eklenecek; `has_balance` var ve devri zaten aktarılmış (borç eklenmez). */
+      status: z.enum(["new", "existing", "has_balance"]),
+    }),
+  ),
+  issues: z.array(
+    z.object({
+      line: z.number().int(),
+      severity: z.enum(["error", "warning"]),
+      code: z.string(),
+      unit: z.string().nullable(),
+      column: z.string().nullable(),
+      expectedMinor: z.number().int().nullable(),
+      actualMinor: z.number().int().nullable(),
+      value: z.string().nullable(),
+    }),
+  ),
+  totals: z.object({
+    units: z.number().int(),
+    newUnits: z.number().int(),
+    existingUnits: z.number().int(),
+    withBalance: z.number().int(),
+    blocks: z.number().int(),
+    newBlocks: z.number().int(),
+    debtMinor: moneyMinor,
+    /** Aktarılacak (zaten devri olan daireler hariç) borç, türe göre. */
+    byKind: debtKindTotals,
+    errors: z.number().int(),
+    warnings: z.number().int(),
+    skipped: z.number().int(),
+  }),
+});
+export type MigrationPreview = z.infer<typeof migrationPreview>;
+
+export const migrationCommit = migrationFile.extend({
+  headerRow: z.number().int().min(0).max(500),
+  mapping: unitImportMapping,
   /**
-   * Devir borcunun açıklaması. API dile bağımsız (SPEC 4.2); metni panel
-   * gönderiyor çünkü sakinin göreceği açıklama onun dilinde olmalı.
+   * Devir borcunun açıklama öneki. API dile bağımsız (SPEC 4.2); metni panel
+   * gönderiyor çünkü sakinin göreceği açıklama onun dilinde olmalı. Sonuna
+   * dosyadaki sütun adları eklenir ("Devir: DEMİRBAŞ + DEVREDEN").
    */
-  carriedBalanceLabel: z.string().trim().min(1).max(200),
+  carriedBalanceLabel: z.string().trim().min(1).max(120),
 });
 
 export type MigrationCommit = z.infer<typeof migrationCommit>;
@@ -257,8 +353,12 @@ export type MigrationCommit = z.infer<typeof migrationCommit>;
 export const migrationCommitResult = z.object({
   jobId: uuid,
   units: z.number().int(),
+  existingUnits: z.number().int(),
   blocks: z.number().int(),
   debts: z.number().int(),
+  debtMinor: moneyMinor,
+  /** Devri zaten aktarılmış olduğu için borcu eklenmeyen daire. */
+  withBalance: z.number().int(),
   skipped: z.number().int(),
 });
 

@@ -6,6 +6,7 @@ import { BankReconcileService } from "./bank-reconcile.service";
 import { BankAccountWriteService } from "./bank-account-write.service";
 import { IntegrationController } from "./integration.controller";
 import { IntegrationService } from "./integration.service";
+import { MigrationService } from "./migration.service";
 import { IyzicoWebhookController } from "./payment/iyzico-webhook.controller";
 
 /**
@@ -18,7 +19,7 @@ import { IyzicoWebhookController } from "./payment/iyzico-webhook.controller";
 @Module({
   imports: [PropertyModule, FinanceModule],
   controllers: [IntegrationController, IyzicoWebhookController],
-  providers: [IntegrationService, BankAccountWriteService, BankReconcileService],
+  providers: [IntegrationService, BankAccountWriteService, BankReconcileService, MigrationService],
   exports: [IntegrationService],
 })
 export class IntegrationModule {}

@@ -27,7 +27,7 @@ export default async function MigrationPage() {
     <>
       <PageHeader title={t("title")} description={t("description")} />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4">
         <MigrationWizard />
 
         <Card>

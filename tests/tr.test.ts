@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   addMonths, comparePeriods, dueDateFor, formatKurus,
-  isValidIban, isValidTckn, isValidVkn, mapImport, maskIban, maskPhone, maskTckn,
+  isValidIban, isValidTckn, isValidVkn, maskIban, maskPhone, maskTckn,
   nextAllowedSendTime, normalizePhone, parsePeriodKey, periodKey, slugify, trLower, trUpper,
 } from "@yonetim/core";
 import { blindIndex, decryptField, encryptField } from "@yonetim/core/crypto";
@@ -141,35 +141,5 @@ describe("alan bazlı şifreleme (SPEC 5.6)", () => {
 describe("para biçimlendirme", () => {
   it("TRY olarak biçimlendirir", () => {
     expect(formatKurus(125_050)).toContain("1.250,50");
-  });
-});
-
-describe("veri aktarımı (SPEC 3.11)", () => {
-  it("Türkçe başlıkları tanır ve satırları eşler", () => {
-    const csv = [
-      "Blok;Daire No;Kat;Brüt m2;Arsa Payı;Malik;Malik Telefon;Bakiye",
-      "A Blok;1;1;95,50;0,041667;Ali Veli;0532 000 00 01;1.250,00",
-      "A Blok;2;1;110,00;0,048;Ayşe Yılmaz;0532 000 00 02;0",
-    ].join("\n");
-
-    const result = mapImport(csv, "apsiyon");
-    expect(result.units).toHaveLength(2);
-    expect(result.units[0]!.number).toBe("1");
-    expect(result.units[0]!.blockName).toBe("A Blok");
-    expect(result.units[0]!.areaM2).toBe(95.5);
-    expect(result.units[0]!.openingBalanceKurus).toBe(125_000);
-    expect(result.summary.blocks).toEqual(["A Blok"]);
-  });
-
-  it("daire numarası sütunu yoksa hata verir", () => {
-    const result = mapImport("Ad;Soyad\nAli;Veli", "excel");
-    expect(result.issues.some((i) => i.severity === "error")).toBe(true);
-  });
-
-  it("yinelenen kaydı atlar", () => {
-    const csv = "Daire No;Bakiye\n5;100\n5;200";
-    const result = mapImport(csv, "excel");
-    expect(result.units).toHaveLength(1);
-    expect(result.issues.some((i) => i.code === "duplicateUnit")).toBe(true);
   });
 });

@@ -22,11 +22,13 @@ import {
   bankTxConfirm,
   bankTxIgnore,
   migrationCommit,
+  migrationPreviewRequest,
   type BankAccountSave,
   type BankStatementImport,
   type BankTxConfirm,
   type BankTxIgnore,
   type MigrationCommit,
+  type MigrationPreviewRequest,
 } from "@yonetim/contracts";
 
 import { RequirePermission } from "../identity/decorators";
@@ -34,6 +36,7 @@ import { ZodBodyPipe } from "../infra/zod/zod-dto";
 import { BankAccountWriteService } from "./bank-account-write.service";
 import { BankReconcileService } from "./bank-reconcile.service";
 import { IntegrationService } from "./integration.service";
+import { MigrationService } from "./migration.service";
 
 /** Panel iç BFF yüzeyi — banka mutabakatı ve veri göçü. */
 @ApiTags("panel/integration")
@@ -43,6 +46,7 @@ export class IntegrationController {
     private readonly service: IntegrationService,
     private readonly accounts: BankAccountWriteService,
     private readonly reconcile: BankReconcileService,
+    private readonly migration: MigrationService,
   ) {}
 
   @Get("bank")
@@ -191,18 +195,29 @@ export class IntegrationController {
     return this.service.migrations();
   }
 
+  @Post("migrations/preview")
+  @RequirePermission("unit:write")
+  @ApiOperation({
+    summary: "Aktarım dosyasını önizle (yazmaz)",
+    description:
+      "xlsx / eski xls / .xls kılıklı HTML / CSV okunur; başlık satırı ve sütun " +
+      "anlamları tahmin edilir, `mapping` verilirse o kullanılır. Her daire için " +
+      "yeni / mevcut / devri zaten aktarılmış durumu döner.",
+  })
+  previewMigration(@Body(new ZodBodyPipe(migrationPreviewRequest)) dto: MigrationPreviewRequest) {
+    return this.migration.preview(dto);
+  }
+
   @Post("migrations")
   @RequirePermission("unit:write")
   @ApiOperation({
     summary: "Göçü uygula",
     description:
-      "Dosya sunucuda **yeniden** ayrıştırılır; istemcinin hazır satırlarına " +
-      "güvenmek önizlemeyle yazılanın ayrışmasına kapı açardı. Tamamı tek " +
-      "transaction: yarım kalmış göç kabul edilemez.",
+      "Dosya onaylanan eşleştirmeyle sunucuda **yeniden** okunur; istemcinin " +
+      "hazır satırlarına güvenmek önizlemeyle yazılanın ayrışmasına kapı açardı. " +
+      "Hatalı satır varsa hiçbir şey yazılmaz. Tamamı tek transaction.",
   })
-  commitMigration(
-    @Body(new ZodBodyPipe(migrationCommit)) dto: MigrationCommit,
-  ) {
-    return this.service.commitMigration(dto);
+  commitMigration(@Body(new ZodBodyPipe(migrationCommit)) dto: MigrationCommit) {
+    return this.migration.commit(dto);
   }
 }
