@@ -1103,6 +1103,13 @@
     "vendorCardNone": "Kart seçilmedi (adı aşağıya yazın)"
   },
   "bank": {
+    "sender": "Gönderen",
+    "senderUnknown": "Gönderen belirtilmemiş",
+    "payerNote": "Açıklama",
+    "suggestedUnitColumn": "Önerilen daire",
+    "outgoingShort": "Çıkan",
+    "noSuggestion": "Öneri yok — elle seçilecek",
+    "searchUnit": "Daire no ya da sakin adı yazın",
     "backToBank": "Banka & Mutabakat",
     "title": "Banka & Mutabakat",
     "description": "Birden fazla sağlayıcı tanımlanabilir; biri yanıt vermezse diğeri devreye girer. Farklar mutabakat kuyruğuna düşer.",
@@ -1128,9 +1135,11 @@
       "duplicate": "Aynı ödeme birden çok kez kaydedilmiş görünüyor"
     },
     "reason": {
+      "knownSender": "Bu gönderenden daha önce bu daireye tahsilat yapıldı ({name})",
+      "noteName": "Açıklamada sakin adı geçiyor ({name})",
       "knownIban": "Daha önce aynı IBAN'dan ödeme alınmış",
       "unitMentioned": "Açıklamada daire bilgisi geçiyor ({unit})",
-      "nameMatch": "Gönderen adı eşleşti ({name})",
+      "nameMatch": "Gönderen adı sakinle eşleşti ({name})",
       "exactAmount": "Tutar açık borcun tamamına eşit",
       "closeAmount": "Tutar açık borca çok yakın",
       "none": "Eşleşme bulunamadı",
@@ -1234,7 +1243,7 @@
       "direction": "Yön (B/A)",
       "balance": "Bakiye",
       "reference": "Dekont / referans no",
-      "counterparty": "Karşı taraf",
+      "counterparty": "Gönderen / karşı taraf",
       "iban": "IBAN",
       "ignore": "— Kullanma —"
     },

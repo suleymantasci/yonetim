@@ -2,12 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   applyMapping,
-  counterpartyFromText,
   findHeaderRow,
   guessMapping,
   mappingFromProfile,
   profileFromMapping,
   readTable,
+  splitPayerText,
   sniffFormat,
   validateMapping,
   type Cell,
@@ -110,13 +110,55 @@ describe("elle eşleştirme ve hata satırları", () => {
       description: "Elif Kübra Taşçı-FAST-4797992626 · Para Transferi",
       counterparty: "Elif Kübra Taşçı",
     });
+    expect(mapped.rows[0]!.note).toBe("");
   });
 
-  it("gönderen adını açıklamadan çıkarır", () => {
-    expect(counterpartyFromText("Elif Kübra Taşçı-FAST-4797992626 · Para Transferi")).toBe("Elif Kübra Taşçı");
-    expect(counterpartyFromText("AHMET YILMAZ - EFT - 123")).toBe("AHMET YILMAZ");
-    expect(counterpartyFromText("FAST GELEN TR12 GÖNDEREN: AYŞE KAYA AIDAT")).toBe("AYŞE KAYA AIDAT");
-    expect(counterpartyFromText("AIDAT DAIRE 12 EKIM")).toBeUndefined();
-    expect(counterpartyFromText(undefined)).toBeUndefined();
+  it("gönderen ile gönderenin notunu ayırır (gerçek Garanti dökümü satırları)", () => {
+    expect(splitPayerText("Elif Kübra Taşçı-FAST-4797992626")).toEqual({ sender: "Elif Kübra Taşçı" });
+    expect(splitPayerText("SÜLEYMAN TAŞÇI-999/5833582-Süleyman Taşçı-FAST-5008524")).toEqual({
+      sender: "SÜLEYMAN TAŞÇI",
+      note: "Süleyman Taşçı",
+    });
+    expect(splitPayerText("AYŞE KAYA-999/1234567-B Blok 7 - Ekim aidatı-FAST-1")).toEqual({
+      sender: "AYŞE KAYA",
+      note: "B Blok 7 - Ekim aidatı",
+    });
+    expect(splitPayerText("SÜLEYMAN TAŞÇI--HVL-CEP ŞUBE")).toEqual({ sender: "SÜLEYMAN TAŞÇI" });
+    expect(splitPayerText("AHMET YILMAZ - EFT - 123")).toEqual({ sender: "AHMET YILMAZ" });
+    expect(splitPayerText("FAST GELEN GÖNDEREN: AYŞE KAYA AÇIKLAMA: EKİM AİDATI")).toEqual({
+      sender: "AYŞE KAYA",
+      note: "EKİM AİDATI",
+    });
+    // Kalıp yok: gönderen yok, açıklamanın tamamı not.
+    expect(splitPayerText("FTRA-BAK.TAML.-007796607796")).toEqual({ note: "FTRA-BAK.TAML.-007796607796" });
+    expect(splitPayerText("AIDAT DAIRE 12 EKIM")).toEqual({ note: "AIDAT DAIRE 12 EKIM" });
+    expect(splitPayerText(undefined)).toEqual({});
+  });
+
+
+  it("Garanti: gönderen ve not birleşik açıklamadan ayrılır", () => {
+    const garanti = BANK_FIXTURES.find((f) => f.bank === "Garanti BBVA")!;
+    const { rows } = readTable(garanti.build());
+    const header = findHeaderRow(rows);
+    const mapped = applyMapping(rows, header, guessMapping(rows[header]!));
+    expect(mapped.rows.map((r) => [r.counterparty, r.note])).toEqual([
+      ["AYŞE YILMAZ", "A BLOK D:12 EKİM AİDAT"],
+      ["MEHMET KAYA", ""],
+      [undefined, "ASANSÖR BAKIM A.Ş.-FAT2026100710273"],
+    ]);
+  });
+
+  it("aynı dekont no'lu iki hareket ayrı kimlik alır (Garanti otomatik yatırım + fatura)", () => {
+    const rows: Cell[][] = [
+      ["Tarih", "Açıklama", "Etiket", "Tutar", "Bakiye", "Dekont No"],
+      ["17/09/2026", "ULUELK-TES21581754-FAT2026090710273A3GH", "Kurum Ödemesi", -1426, 0, "2026-09-17-17.58.03.147528"],
+      ["17/09/2026", "FTRA-BAK.TAML.-007796607796", "Para Transferi", 1398.59, 1426, "2026-09-17-17.58.03.147528"],
+    ];
+    const mapped = applyMapping(rows, 0, guessMapping(rows[0]!));
+    const ids = mapped.rows.map((r) => r.externalId);
+    expect(new Set(ids).size).toBe(2);
+    // İlk geçiş eski biçimini korur (önceden yüklenmiş kayıtlar çoğalmasın).
+    expect(ids[0]).toBe("ref-2026-09-17-17.58.03.147528-2026-09-17");
+    expect(ids[1]).toBe("ref-2026-09-17-17.58.03.147528-2026-09-17-2");
   });
 });

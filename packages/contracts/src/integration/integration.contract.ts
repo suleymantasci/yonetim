@@ -343,8 +343,13 @@ export const bankStatementPreview = z.object({
       direction: z.enum(["in", "out"]),
       amountMinor: moneyMinor,
       description: z.string().nullable(),
+      /** Gönderen (ayrı sütundan ya da açıklamadan ayrılmış). */
       counterparty: z.string().nullable(),
+      /** Gönderenin yazdığı açıklama. */
+      note: z.string().nullable(),
       reference: z.string().nullable(),
+      /** Gelen hareket için önerilecek daire (blok / no); yoksa null. */
+      suggestedUnitLabel: z.string().nullable(),
     }),
   ),
   errors: z.array(z.object({ line: z.number().int(), reason: z.string(), cells: z.array(z.string()) })),
@@ -402,6 +407,12 @@ export const bankTxActionResult = z.object({
  * Eşleştirme kuyruğu — `GET bank/queue`: sonuçlanmamış gelen (tahsilat
  * bekleyen) ve çıkan (gider bekleyen) hareketler, öneriyle birlikte.
  */
+/** Eşleştirme gerekçesi — `app.bank.reason.<code>`. */
+export const bankMatchReason = z.object({
+  code: z.string(),
+  params: z.record(z.string(), z.union([z.string(), z.number()])).optional(),
+});
+
 export const bankQueueRow = z.object({
   id: uuid,
   accountId: uuid,
@@ -411,6 +422,10 @@ export const bankQueueRow = z.object({
   counterparty: z.string().nullable(),
   counterpartyIban: z.string().nullable(),
   description: z.string().nullable(),
+  /** Gönderenin yazdığı açıklama (ham açıklamadan ayrılmış). */
+  note: z.string().nullable(),
+  /** Önerinin gerekçeleri; öneri yoksa boş. */
+  reasons: z.array(bankMatchReason),
   transactionAt: dateTime,
   matchStatus: z.string(),
   suggestedUnitId: uuid.nullable(),
@@ -423,6 +438,8 @@ export type BankQueueRow = z.infer<typeof bankQueueRow>;
 export const bankQueueResponse = z.object({
   incoming: z.array(bankQueueRow),
   outgoing: z.array(bankQueueRow),
+  /** Elle eşleştirme için daireler ve aktif sakin adları. */
+  units: z.array(z.object({ id: uuid, label: z.string(), residents: z.array(z.string()) })),
 });
 export type BankQueueResponse = z.infer<typeof bankQueueResponse>;
 

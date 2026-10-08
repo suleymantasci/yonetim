@@ -252,6 +252,7 @@ export function applyMapping(rows: Cell[][], headerRow: number, mapping: ColumnM
 
   const out: MappedStatement = { rows: [], errors: [], skipped: 0 };
   const seen = new Map<string, number>();
+  const seenRefs = new Map<string, number>();
 
   for (let r = headerRow + 1; r < rows.length; r++) {
     const row = rows[r] ?? [];
@@ -287,47 +288,94 @@ export function applyMapping(rows: Cell[][], headerRow: number, mapping: ColumnM
       continue;
     }
 
-    const description =
-      [...col.description, ...unnamed.filter((i) => typeof at(i) === "string"), ...col.detail]
+    const textOf = (cols: number[]) =>
+      cols
         .map((i) => text(at(i)))
         .filter((v): v is string => Boolean(v))
         .join(" · ") || undefined;
+    const mainText = textOf([...col.description, ...unnamed.filter((i) => typeof at(i) === "string")]);
+    const description = textOf([...col.description, ...unnamed.filter((i) => typeof at(i) === "string"), ...col.detail]);
+    // Gönderen: ayrı sütunu varsa o; yoksa açıklamanın içinden ayrılır
+    // (Garanti "AD SOYAD-HESAP-NOT-FAST-SORGU"). Not = gönderenin yazdığı.
+    const counterpartyCell = text(at(col.counterparty));
+    const payer = counterpartyCell ? { sender: counterpartyCell, note: mainText } : splitPayerText(mainText);
     const reference = text(at(col.reference));
     const key = `${date.toISOString()}|${signed}|${description ?? ""}`;
     const ordinal = (seen.get(key) ?? 0) + 1;
     seen.set(key, ordinal);
     const balance = col.balance === undefined ? null : readAmount(at(col.balance));
 
+    // Aynı dekont no birden çok harekette olabiliyor (Garanti: fatura ödemesi
+    // ve onu karşılayan otomatik yatırım aynı zaman damgasını taşıyor). İlk
+    // geçiş eski kimliğini korur; sonrakiler sıra eki alır — yeniden yükleme
+    // aynı sırayla aynı kimliği üretir.
+    let externalId: string;
+    if (reference) {
+      const base = `ref-${reference}-${date.toISOString().slice(0, 10)}`;
+      const n = (seenRefs.get(base) ?? 0) + 1;
+      seenRefs.set(base, n);
+      externalId = n === 1 ? base : `${base}-${n}`;
+    } else {
+      externalId = `row-${createHash("sha256").update(`${key}|${ordinal}`).digest("hex").slice(0, 32)}`;
+    }
+
     out.rows.push({
       line,
-      externalId: reference
-        ? `ref-${reference}-${date.toISOString().slice(0, 10)}`
-        : `row-${createHash("sha256").update(`${key}|${ordinal}`).digest("hex").slice(0, 32)}`,
+      externalId,
       direction: signed > 0 ? "in" : "out",
       amountKurus: Math.abs(signed),
       ...(balance !== null ? { balanceAfterKurus: balance } : {}),
-      counterparty: text(at(col.counterparty)) ?? counterpartyFromText(description),
+      counterparty: payer.sender,
+      note: payer.note ?? (payer.sender ? "" : undefined),
       counterpartyIban: text(at(col.iban))?.replace(/\s+/g, "").toUpperCase(),
       description,
       transactionAt: date,
       provider: "manual_file",
-      raw: { line },
+      raw: reference ? { line, reference } : { line },
     });
   }
   return out;
 }
 
+/** Havale/FAST/EFT kanal işareti: "-FAST-123", "-EFT-", "--HVL-CEP ŞUBE". */
+const CHANNEL = /\s*-\s*(?:fast|eft|hvl|havale|swift)(?:\s*-|\s*$)/giu;
+/** Kişi/kurum adı: harf, boşluk ve birkaç noktalama; rakam yok. */
+const NAME = /^[\p{L}][\p{L}\s.'&]{1,79}$/u;
+const LABELED_SENDER =
+  /g[oö]nderen(?:\s*(?:ad[ıi]|unvan[ıi]|ad[ıi]\s*soyad[ıi]))?\s*[:-]\s*(.+?)(?=\s+(?:a[cç][ıi]klama|al[ıi]c[ıi]|iban|tutar|sorgu|ref)\w*\s*[:-]|$)/iu;
+const LABELED_NOTE = /a[cç][ıi]klama(?:s[ıi])?\s*[:-]\s*(.+)$/iu;
+
 /**
- * Karşı taraf sütunu olmayan dökümlerde gönderen adı açıklamanın başında:
- * Garanti "ELİF KÜBRA TAŞÇI-FAST-4797992626", "AD SOYAD - EFT - ...",
- * Ziraat/İş "FAST GELEN ... GÖNDEREN: AD SOYAD". Bulunamazsa undefined.
+ * Dökümün ham açıklamasından gönderen ve gönderenin yazdığı notu ayırır.
+ *
+ *   - Garanti: "ELİF KÜBRA TAŞÇI-FAST-4797992626" → gönderen, not yok;
+ *     "AD SOYAD-999/5833582-Daire 5 aidat-FAST-5008524" → gönderen + not
+ *     (ortadaki hesap no atılır); "AD SOYAD--HVL-CEP ŞUBE" → gönderen
+ *   - etiketli: "GÖNDEREN: AD SOYAD AÇIKLAMA: EKİM AİDATI"
+ *
+ * Kalıp tanınmazsa gönderen yok, not = açıklamanın tamamı (eşleştirici
+ * içinde ad ve daire arar).
  */
-export function counterpartyFromText(description: string | undefined): string | undefined {
-  if (!description) return undefined;
-  const sender = /g[oö]nderen\s*(?:ad[ıi]?\s*)?[:-]\s*([^\d·,;/]{3,60})/iu.exec(description);
-  if (sender?.[1]) return sender[1].trim();
-  const prefix = /^([^\d·-]{3,60}?)\s*-\s*(?:fast|eft|havale|swift)\b/iu.exec(description);
-  return prefix?.[1]?.trim() || undefined;
+export function splitPayerText(value: string | undefined): { sender?: string; note?: string } {
+  if (!value) return {};
+  const labeled = LABELED_SENDER.exec(value);
+  if (labeled?.[1]) {
+    const note = LABELED_NOTE.exec(value)?.[1]?.trim();
+    return { sender: labeled[1].trim(), ...(note ? { note } : {}) };
+  }
+  const marks = [...value.matchAll(CHANNEL)];
+  const last = marks[marks.length - 1];
+  if (last?.index !== undefined) {
+    const head = value.slice(0, last.index);
+    const dash = head.indexOf("-");
+    const sender = (dash < 0 ? head : head.slice(0, dash)).trim();
+    if (NAME.test(sender)) {
+      // Gönderen hesap/şube no'su ("999/5833582") not değil.
+      const note = (dash < 0 ? "" : head.slice(dash + 1)).replace(/^[\d/\s]*-?/, "").trim();
+      return { sender, ...(note ? { note } : {}) };
+    }
+  }
+  return { note: value };
 }
 
 function text(cell: Cell): string | undefined {

@@ -54,6 +54,13 @@ const TX = [
   { d: [7, 10, 2026], t: "11:02", amount: -3400.75, desc: "ASANSÖR BAKIM A.Ş. FATURA ÖDEMESİ", ref: "F08203" },
 ] as const;
 
+/** Garanti'nin birleşik açıklaması (gönderen-hesap-not-kanal-sorgu). */
+const GARANTI_DESC = [
+  "AYŞE YILMAZ-999/1234567-A BLOK D:12 EKİM AİDAT-FAST-5008524",
+  "MEHMET KAYA--HVL-CEP ŞUBE",
+  "ASANSÖR BAKIM A.Ş.-FAT2026100710273",
+];
+
 const expectRows = (refs = true): FixtureExpectation["rows"] =>
   TX.map((t) => ({
     date: `2026-10-0${t.d[0]}`,
@@ -135,14 +142,19 @@ export const BANK_FIXTURES: BankFixture[] = [
   {
     bank: "Garanti BBVA",
     fileName: "garanti-hesap-hareketleri.xls",
-    expect: { headerRow: 13, rows: expectRows() },
+    // Gerçek dosyadan (2026-10): 14 künye satırı, 6 sütun, tarih "gg/aa/yyyy"
+    // metin, tutar/bakiye sayı, Dekont No zaman damgası. Gelen havalede
+    // gönderen + hesap + gönderenin notu tek hücrede: "AD-HESAP-NOT-FAST-SORGU".
+    expect: {
+      headerRow: 14,
+      rows: expectRows().map((r, i) => ({ ...r, descriptionIncludes: GARANTI_DESC[i]!.slice(0, 12) })),
+    },
     build: () => {
       running = 50_000;
       const aoa = [
-        ...preamble("GARANTİ BBVA", 13),
-        ["Tarih", "Açıklama", "Etiket", "Tutar", "Bakiye", "Dekont No", "Terminal No", "Kart Tipi", "Komisyon"],
-        ["01.10.2026", "Devir Bakiyesi", null, null, 50_000, null, null, null, null],
-        ...TX.map((t) => [trDate(t.d), t.desc, t.amount > 0 ? "Gelen Havale" : "Fatura", trMoney(t.amount), trMoney(balanceAfter(t.amount)), t.ref, null, null, null]),
+        ...preamble("T. GARANTİ BANKASI A.Ş.", 14),
+        ["Tarih", "Açıklama", "Etiket", "Tutar", "Bakiye", "Dekont No"],
+        ...TX.map((t, i) => [trDate(t.d, "/"), GARANTI_DESC[i], t.amount > 0 ? "Para Transferi" : "Kurum Ödemesi", t.amount, balanceAfter(t.amount), t.ref]),
       ];
       return sheetFile(aoa, "biff8");
     },

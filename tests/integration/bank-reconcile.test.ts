@@ -165,6 +165,8 @@ describe.skipIf(!process.env.INTEGRATION)("banka ekstresi mutabakatı", () => {
       "05/09/2026;;ALİ VELİ-FAST-4797992626;Para Transferi;2.050,00;2.169,00;2026-09-05-14.44.44.383525",
     ].join("\n");
     const first = await previewAndImport(garanti, "garanti.csv");
+    // Önizleme: gönderen ve önerilen daire içe aktarmadan önce görünür.
+    expect(first.preview.body.rows[0]).toMatchObject({ counterparty: "ALİ VELİ", note: null, suggestedUnitLabel: "A / 12" });
     expect(first.imported.body).toMatchObject({ parsed: 1, inserted: 1, suggested: 1 });
     let row = await byRef("2026-09-05-14.44.44.383525");
     expect(row).toMatchObject({ matchStatus: "suggested", matchedUnitId: unitId, counterparty: "ALİ VELİ" });
@@ -178,7 +180,26 @@ describe.skipIf(!process.env.INTEGRATION)("banka ekstresi mutabakatı", () => {
     expect(again.imported.body).toMatchObject({ parsed: 1, inserted: 0, refreshed: 1, suggested: 1 });
     row = await byRef("2026-09-05-14.44.44.383525");
     expect(row).toMatchObject({ matchStatus: "suggested", matchedUnitId: unitId, counterparty: "ALİ VELİ" });
+
+    // Kuyruk: gönderen, gerekçe ve elle seçim için sakin adlı daire listesi.
+    const queue = await call("GET", "/v1/panel/bank/queue");
+    expect(queue.body.incoming.find((r: { id: string }) => r.id === row.id)).toMatchObject({
+      counterparty: "ALİ VELİ",
+      reasons: [{ code: "nameMatch", params: { name: "Ali Veli" } }],
+    });
+    expect(queue.body.units).toContainEqual({ id: unitId, label: "A / 12", residents: ["Ali Veli"] });
     await withBypassRls("t", (tx) => tx.delete(bankTransactions).where(eq(bankTransactions.id, row.id)));
+
+    // Başkası adına ödeme: gönderen sakin değil, notunda sakin adı var.
+    const proxy = [
+      "Tarih;Açıklama;Etiket;Tutar;Bakiye;Dekont No",
+      "06/09/2026;HASAN KORKMAZ-999/1234567-Ali Veli aidat-FAST-55;Para Transferi;300,00;2.469,00;2026-09-06-10.00.00.000001",
+    ].join("\n");
+    const p = await previewAndImport(proxy, "garanti2.csv");
+    expect(p.preview.body.rows[0]).toMatchObject({ counterparty: "HASAN KORKMAZ", note: "Ali Veli aidat", suggestedUnitLabel: "A / 12" });
+    const proxyRow = await byRef("2026-09-06-10.00.00.000001");
+    expect(proxyRow).toMatchObject({ matchStatus: "suggested", matchedUnitId: unitId, payerNote: "Ali Veli aidat" });
+    await withBypassRls("t", (tx) => tx.delete(bankTransactions).where(eq(bankTransactions.id, proxyRow.id)));
   });
 
   it("çıkan hareket ödenmiş gider olarak kaydedilir, ikinci kez kaydedilemez", async () => {

@@ -1103,6 +1103,13 @@
     "vendorCardNone": "No card (type the name below)"
   },
   "bank": {
+    "sender": "Sender",
+    "senderUnknown": "Sender not identified",
+    "payerNote": "Note",
+    "suggestedUnitColumn": "Suggested unit",
+    "outgoingShort": "Outgoing",
+    "noSuggestion": "No suggestion — choose manually",
+    "searchUnit": "Type unit no. or resident name",
     "backToBank": "Bank & reconciliation",
     "title": "Bank & reconciliation",
     "description": "Several providers can be configured; if one stops responding another takes over. Differences go to the reconciliation queue.",
@@ -1128,6 +1135,8 @@
       "duplicate": "The same payment appears to have been recorded more than once"
     },
     "reason": {
+      "knownSender": "Earlier payments from this sender were collected for this unit ({name})",
+      "noteName": "Resident name appears in the note ({name})",
       "knownIban": "A payment was previously received from the same IBAN",
       "unitMentioned": "The description mentions the unit ({unit})",
       "nameMatch": "The sender's name matched ({name})",
@@ -1234,7 +1243,7 @@
       "direction": "Direction (D/C)",
       "balance": "Balance",
       "reference": "Receipt / reference no",
-      "counterparty": "Counterparty",
+      "counterparty": "Sender / counterparty",
       "iban": "IBAN",
       "ignore": "— Don't use —"
     },

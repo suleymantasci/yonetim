@@ -330,13 +330,14 @@ export function StatementImporter({ accounts }: { accounts: Array<{ id: string; 
 
               {preview.rows.length > 0 ? (
                 <div className={tc.wrapper}>
-                  <table className={tc.table}>
+                  <table className={tc.table} style={{ minWidth: 760 }}>
                     <thead className={tc.thead}>
                       <tr>
                         <th scope="col" className={tc.th}>{t("date")}</th>
-                        <th scope="col" className={tc.th}>{t("descriptionColumn")}</th>
-                        <th scope="col" className={tc.th}>{t("reference")}</th>
+                        <th scope="col" className={tc.th}>{t("sender")}</th>
+                        <th scope="col" className={tc.th}>{t("payerNote")}</th>
                         <th scope="col" className={`${tc.th} text-right`}>{t("amount")}</th>
+                        <th scope="col" className={tc.th}>{t("suggestedUnitColumn")}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -345,14 +346,25 @@ export function StatementImporter({ accounts }: { accounts: Array<{ id: string; 
                           <td className={`${tc.tdMuted} whitespace-nowrap text-xs`}>
                             {new Date(`${r.date}T12:00:00`).toLocaleDateString(locale)}
                           </td>
-                          <td className={`${tc.td} max-w-md text-xs`}>
-                            {r.counterparty ? <span className="font-semibold">{r.counterparty} · </span> : null}
-                            {r.description ?? "—"}
+                          <td className={`${tc.td} text-xs font-semibold`}>{r.counterparty ?? "—"}</td>
+                          <td className={`${tc.td} max-w-sm text-xs`}>
+                            <div>{r.note ?? (r.counterparty ? "—" : (r.description ?? "—"))}</div>
+                            {r.counterparty && r.description ? (
+                              <div className="mt-0.5 text-[11px] text-fg-subtle">{r.description}</div>
+                            ) : null}
                           </td>
-                          <td className={`${tc.tdMuted} whitespace-nowrap text-xs`}>{r.reference ?? ""}</td>
                           <td className={`${tc.tdNum} whitespace-nowrap ${r.direction === "in" ? "text-success-fg" : ""}`}>
                             {r.direction === "in" ? "+" : "−"}
                             {money(r.amountMinor)}
+                          </td>
+                          <td className={`${tc.td} whitespace-nowrap text-xs`}>
+                            {r.direction === "out" ? (
+                              <span className="text-fg-subtle">{t("outgoingShort")}</span>
+                            ) : r.suggestedUnitLabel ? (
+                              <Badge tone="success">{r.suggestedUnitLabel}</Badge>
+                            ) : (
+                              <span className="text-fg-subtle">{t("noSuggestion")}</span>
+                            )}
                           </td>
                         </tr>
                       ))}

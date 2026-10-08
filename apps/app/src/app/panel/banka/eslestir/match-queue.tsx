@@ -6,7 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 
 import type { BankQueueRow } from "@yonetim/contracts";
-import { Badge, Card, CardBody, CardHeader, EmptyState, Select, Spinner, cn, tableClasses as tc, useToast } from "@yonetim/ui";
+import { Badge, Card, CardBody, CardHeader, EmptyState, Input, Select, Spinner, cn, tableClasses as tc, useToast } from "@yonetim/ui";
 
 import { confirmBankTransactions, recordBankExpense } from "../actions";
 import { TransactionActions } from "../transaction-actions";
@@ -29,7 +29,7 @@ export function MatchQueue({
 }: {
   incoming: Row[];
   outgoing: Row[];
-  units: Array<{ id: string; label: string }>;
+  units: Array<{ id: string; label: string; residents: string[] }>;
   categories: Array<{ id: string; name: string; depth: number }>;
   vendors: Array<{ id: string; name: string }>;
   canCollect: boolean;
@@ -82,11 +82,34 @@ export function MatchQueue({
       router.refresh();
     });
 
+  // Daire seçimi yazarak: "A / 12 — Ayşe Yılmaz" — ad ya da numara ile bulunur.
+  const optionText = (u: { label: string; residents: string[] }) =>
+    u.residents.length ? `${u.label} — ${u.residents.join(", ")}` : u.label;
+  const unitText = new Map(units.map((u) => [u.id, optionText(u)]));
+  const unitByText = new Map(units.map((u) => [optionText(u), u.id]));
+  const [typed, setTyped] = useState<Record<string, string>>({});
+  const chooseUnit = (rowId: string, unitId: string) => {
+    setUnitOf({ ...unitOf, [rowId]: unitId });
+    const next = new Set(selected);
+    if (unitId) next.add(rowId);
+    else next.delete(rowId);
+    setSelected(next);
+  };
+  const reasonText = (r: Row) =>
+    r.reasons
+      .map((x) => t(`reason.${x.code}`, (x.params ?? {}) as Record<string, string | number>))
+      .join(" · ");
+
   const selectable = incoming.filter((r) => unitOf[r.id]);
   const allSelected = selectable.length > 0 && selectable.every((r) => selected.has(r.id));
 
   return (
     <div className="space-y-4">
+      <datalist id="bank-unit-options">
+        {units.map((u) => (
+          <option key={u.id} value={optionText(u)} />
+        ))}
+      </datalist>
       <Card>
         <CardHeader
           title={t("queueIncoming", { count: incoming.length })}
@@ -159,39 +182,50 @@ export function MatchQueue({
                         ) : null}
                         <td className={`${tc.tdMuted} whitespace-nowrap text-xs`}>{date(r.transactionAt)}</td>
                         <td className={`${tc.td} max-w-md text-xs`}>
-                          {r.counterparty ? <div className="font-semibold text-fg">{r.counterparty}</div> : null}
-                          <div className="text-fg-muted">{r.description ?? "—"}</div>
+                          <div className="font-semibold text-fg">
+                            <span className="sr-only">{t("sender")}: </span>
+                            {r.counterparty ?? <span className="font-normal text-fg-subtle">{t("senderUnknown")}</span>}
+                          </div>
+                          {r.note ? (
+                            <div className="mt-0.5 text-fg">
+                              <span className="text-fg-subtle">{t("payerNote")}: </span>
+                              {r.note}
+                            </div>
+                          ) : null}
+                          {r.counterparty && r.description ? (
+                            <div className="mt-0.5 text-[11px] text-fg-subtle">{r.description}</div>
+                          ) : null}
                           {r.accountLabel ? <div className="mt-0.5 text-[11px] text-fg-subtle">{r.accountLabel}</div> : null}
                           {failed[r.id] ? <div className="mt-1 font-semibold text-danger-fg">{failed[r.id]}</div> : null}
                         </td>
                         <td className={`${tc.tdNum} whitespace-nowrap text-success-fg`}>+{money(r.amountMinor)}</td>
                         <td className={tc.td}>
-                          <div className="flex items-center gap-1.5">
-                            <label className="sr-only" htmlFor={`unit-${r.id}`}>{t("unitColumn")}</label>
-                            <Select
-                              id={`unit-${r.id}`}
-                              value={unit}
-                              disabled={!canCollect}
-                              onChange={(e) => {
-                                setUnitOf({ ...unitOf, [r.id]: e.target.value });
-                                const next = new Set(selected);
-                                if (e.target.value) next.add(r.id);
-                                else next.delete(r.id);
-                                setSelected(next);
-                              }}
-                              className="h-9 w-40 text-xs"
-                            >
-                              <option value="">{t("chooseUnit")}</option>
-                              {units.map((u) => (
-                                <option key={u.id} value={u.id}>{u.label}</option>
-                              ))}
-                            </Select>
-                            {r.suggestedUnitId && unit === r.suggestedUnitId && r.confidence !== null ? (
+                          <label className="sr-only" htmlFor={`unit-${r.id}`}>{t("unitColumn")}</label>
+                          <Input
+                            id={`unit-${r.id}`}
+                            list="bank-unit-options"
+                            value={typed[r.id] ?? (unit ? (unitText.get(unit) ?? "") : "")}
+                            placeholder={t("searchUnit")}
+                            disabled={!canCollect}
+                            autoComplete="off"
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setTyped({ ...typed, [r.id]: value });
+                              const id = unitByText.get(value);
+                              if (id) chooseUnit(r.id, id);
+                              else if (value === "") chooseUnit(r.id, "");
+                            }}
+                            onBlur={() => setTyped(({ [r.id]: _drop, ...rest }) => rest)}
+                            className="h-9 w-56 text-xs"
+                          />
+                          {r.suggestedUnitId && unit === r.suggestedUnitId && r.confidence !== null ? (
+                            <div className="mt-1 flex flex-wrap items-center gap-1.5">
                               <Badge tone={r.confidence >= 0.8 ? "success" : "warning"}>
                                 {t("suggestionPct", { pct: Math.round(r.confidence * 100) })}
                               </Badge>
-                            ) : null}
-                          </div>
+                              {r.reasons.length ? <span className="text-[11px] text-fg-subtle">{reasonText(r)}</span> : null}
+                            </div>
+                          ) : null}
                         </td>
                         <td className={tc.td}>
                           <div className="flex items-center justify-end gap-1.5">

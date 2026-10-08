@@ -19,6 +19,13 @@ export interface BankTransactionDto {
   counterparty?: string;
   counterpartyIban?: string;
   description?: string;
+  /**
+   * Gönderenin yazdığı açıklama (dökümün ham açıklamasından ayrılmış). Ödeme
+   * başkası adına yapılabildiği için eşleştirmede gönderen adından sonra
+   * ikinci sinyal. `""` = gönderen not yazmamış; `undefined` = ayrılmadı
+   * (eşleştirici açıklamanın tamamına bakar).
+   */
+  note?: string;
   transactionAt: Date;
   provider: BankProviderName;
   raw: Record<string, unknown>;

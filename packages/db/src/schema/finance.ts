@@ -376,6 +376,8 @@ export const bankTransactions = pgTable(
     counterparty: varchar("counterparty", { length: 200 }),
     counterpartyIban: varchar("counterparty_iban", { length: 40 }),
     description: text("description"),
+    /** Gönderenin yazdığı açıklama (dökümün ham açıklamasından ayrılmış). */
+    payerNote: text("payer_note"),
     transactionAt: timestamp("transaction_at", { withTimezone: true }).notNull(),
     matchedPaymentId: uuid("matched_payment_id").references(() => payments.id, { onDelete: "set null" }),
     matchedUnitId: uuid("matched_unit_id").references(() => units.id, { onDelete: "set null" }),
@@ -384,6 +386,8 @@ export const bankTransactions = pgTable(
     /** 'unmatched' | 'suggested' | 'auto' | 'manual' | 'expense' | 'ignored' */
     matchStatus: varchar("match_status", { length: 20 }).notNull().default("unmatched"),
     matchConfidence: numeric("match_confidence", { precision: 4, scale: 3 }),
+    /** Önerinin gerekçeleri (`MatchReason[]`) — kuyrukta yöneticiye gösterilir. */
+    matchReasons: jsonb("match_reasons"),
     provider: varchar("provider", { length: 40 }).notNull(),
     raw: jsonb("raw").notNull().default({}),
     ...timestamps,

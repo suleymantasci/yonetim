@@ -170,6 +170,46 @@ describe("banka eşleştirme (SPEC 3.10)", () => {
     expect(r.decision).toBe("review");
   });
 
+  it("öncelik gönderen adı: açıklama başka daireyi anarsa da gönderenin dairesi önerilir", () => {
+    const r = matchTransaction(
+      tx({ amountKurus: 40_000, counterparty: "AYSE YILMAZ", note: "Mehmet Demir daire 5 aidat" }),
+      candidates,
+    );
+    expect(r.unitId).toBe("u12");
+    expect(r.reasons[0]).toEqual({ code: "nameMatch", params: { name: "Ayşe Yılmaz" } });
+  });
+
+  it("gönderen sakin değilse açıklamadaki ad ve daire belirler (başkası adına ödeme)", () => {
+    const r = matchTransaction(
+      tx({ amountKurus: 40_000, counterparty: "HASAN KORKMAZ", note: "Mehmet Demir daire 5 aidat" }),
+      candidates,
+    );
+    expect(r.unitId).toBe("u5");
+    expect(r.reasons.map((x) => x.code)).toEqual(["unitMentioned", "noteName"]);
+    expect(r.decision).toBe("review");
+  });
+
+  it("daha önce bu daireye tahsil edilen gönderen tanınır", () => {
+    const withSender = candidates.map((c) => (c.unitId === "u5" ? { ...c, knownSenders: ["Hasan Korkmaz"] } : c));
+    const r = matchTransaction(tx({ amountKurus: 40_000, counterparty: "HASAN KORKMAZ", note: "" }), withSender);
+    expect(r.unitId).toBe("u5");
+    expect(r.reasons[0]!.code).toBe("knownSender");
+  });
+
+  it("daire numarası yalnız bağlamıyla sayılır; dekont/hesap no'sundaki rakam sayılmaz", () => {
+    const six = [{ unitId: "u6", unitLabel: "6", residentNames: [], outstandingKurus: 0 }];
+    const hit = (description: string) => matchTransaction(tx({ amountKurus: 1, description }), six).unitId;
+    expect(hit("FTRA-BAK.TAML.-007796607796")).toBeNull();
+    expect(hit("D4-(BIREYSEL AMACLI KREDI TAHS.) REFERANS:00000000000")).toBeNull();
+    expect(hit("EKIM AIDATI DAIRE 6")).toBe("u6");
+    expect(hit("A BLOK D:6 EKIM")).toBe("u6");
+    expect(hit("6 NOLU DAIRE AIDAT")).toBe("u6");
+    expect(hit("daire no: 06")).toBe("u6");
+    const a12 = [{ unitId: "a12", unitLabel: "A12", residentNames: [], outstandingKurus: 0 }];
+    expect(matchTransaction(tx({ amountKurus: 1, description: "aidat a-12 ekim" }), a12).unitId).toBe("a12");
+    expect(matchTransaction(tx({ amountKurus: 1, description: "aidat a 123" }), a12).unitId).toBeNull();
+  });
+
   it("hiçbir ipucu yoksa eşleşmemiş kalır", () => {
     const r = matchTransaction(tx({ amountKurus: 7_777, description: "FAIZ" }), candidates);
     expect(r.decision).toBe("unmatched");

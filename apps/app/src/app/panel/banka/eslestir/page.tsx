@@ -2,7 +2,7 @@ import { ArrowLeft } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
 import { hasPermission } from "@yonetim/auth/guard";
-import { bankQueueResponse, categoryTree, unitOptionList, type CategoryTree } from "@yonetim/contracts";
+import { bankQueueResponse, categoryTree, type CategoryTree } from "@yonetim/contracts";
 
 import { PageHeader } from "@/components/app-shell";
 import Link from "@/components/link";
@@ -33,9 +33,8 @@ function flatten(nodes: Node[], out: Array<{ id: string; name: string; depth: nu
 export default async function MatchQueuePage() {
   const ctx = await requirePermission("bank:reconcile");
   const t = await getTranslations("app.bank");
-  const [queue, units, tree, vendors] = await Promise.all([
+  const [queue, tree, vendors] = await Promise.all([
     apiGet("/v1/panel/bank/queue", bankQueueResponse),
-    apiGet("/v1/panel/units/options", unitOptionList).catch(() => []),
     apiGet("/v1/panel/expenses/categories", categoryTree).catch(() => ({ roots: [] })),
     getVendorOptions(),
   ]);
@@ -70,9 +69,7 @@ export default async function MatchQueuePage() {
       <MatchQueue
         incoming={serialize(queue.incoming)}
         outgoing={serialize(queue.outgoing)}
-        units={units
-          .map((u) => ({ id: u.id, label: u.blockName ? `${u.blockName} / ${u.number}` : u.number }))
-          .sort((a, b) => a.label.localeCompare(b.label, "tr", { numeric: true }))}
+        units={[...queue.units].sort((a, b) => a.label.localeCompare(b.label, "tr", { numeric: true }))}
         categories={flatten(tree.roots)}
         vendors={vendors}
         canCollect={hasPermission(ctx.roles, "payment:create")}

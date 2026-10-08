@@ -27,6 +27,7 @@ import {
   type ColumnMapping,
   type ImportProfile,
   type MatchCandidate,
+  type MatchReason,
   type StatementField,
   type Table,
 } from "@yonetim/bank";
@@ -100,6 +101,12 @@ export class BankReconcileService {
 
     const incoming = mapped.rows.filter((r) => r.direction === "in");
     const outgoing = mapped.rows.filter((r) => r.direction === "out");
+    // Önizlemede de öneri gösterilir: yönetici içe aktarmadan önce gönderen,
+    // açıklama ve önerilen daireyi birlikte görür. Yazma yok.
+    const sample = mapped.rows.slice(0, 50);
+    const choices = sample.some((r) => r.direction === "in") ? await this.db.tx((tx) => this.unitChoices(tx)) : [];
+    const labelOf = new Map(choices.map((u) => [u.candidate.unitId, u.label]));
+    const candidates = choices.map((u) => u.candidate);
     return {
       format: table.format,
       headerRow,
@@ -115,7 +122,12 @@ export class BankReconcileService {
         amountMinor: r.amountKurus,
         description: r.description ?? null,
         counterparty: r.counterparty ?? null,
-        reference: r.externalId.startsWith("ref-") ? r.externalId.slice(4, -11) : null,
+        note: r.note || null,
+        reference: typeof r.raw.reference === "string" ? r.raw.reference : null,
+        suggestedUnitLabel: (() => {
+          const unitId = r.direction === "in" ? matchTransaction(r, candidates).unitId : null;
+          return unitId ? (labelOf.get(unitId) ?? null) : null;
+        })(),
       })),
       errors: mapped.errors.slice(0, 50).map((e) => ({ line: e.line, reason: e.reason, cells: e.cells.slice(0, width || 12) })),
       totals: {
@@ -154,7 +166,7 @@ export class BankReconcileService {
         .set({ importProfile: profileFromMapping(table.rows[dto.headerRow] ?? [], mapping) })
         .where(eq(bankAccounts.id, dto.accountId));
 
-      const candidates = await this.candidates(tx);
+      const candidates = (await this.unitChoices(tx)).map((u) => u.candidate);
 
       const values = parsed.rows.map(({ line: _line, ...row }) => {
         const match = matchTransaction(row, candidates);
@@ -169,11 +181,13 @@ export class BankReconcileService {
           counterparty: row.counterparty ?? null,
           counterpartyIban: row.counterpartyIban ?? null,
           description: row.description ?? null,
+          payerNote: row.note || null,
           transactionAt: row.transactionAt,
           provider: row.provider,
           raw: row.raw,
           matchedUnitId: match.unitId,
           matchConfidence: match.unitId ? String(match.confidence) : null,
+          matchReasons: match.unitId ? match.reasons : null,
           // Çıkan hareket kuyrukta gider olarak kaydedilmeyi bekler.
           matchStatus: outgoing ? "unmatched" : match.unitId ? "suggested" : "unmatched",
         };
@@ -192,6 +206,8 @@ export class BankReconcileService {
             description: sql`excluded.description`,
             counterparty: sql`excluded.counterparty`,
             counterpartyIban: sql`excluded.counterparty_iban`,
+            payerNote: sql`excluded.payer_note`,
+            matchReasons: sql`excluded.match_reasons`,
             matchedUnitId: sql`excluded.matched_unit_id`,
             matchConfidence: sql`excluded.match_confidence`,
             matchStatus: sql`excluded.match_status`,
@@ -317,6 +333,8 @@ export class BankReconcileService {
           counterparty: bankTransactions.counterparty,
           counterpartyIban: bankTransactions.counterpartyIban,
           description: bankTransactions.description,
+          payerNote: bankTransactions.payerNote,
+          matchReasons: bankTransactions.matchReasons,
           transactionAt: bankTransactions.transactionAt,
           matchStatus: bankTransactions.matchStatus,
           matchedUnitId: bankTransactions.matchedUnitId,
@@ -341,15 +359,22 @@ export class BankReconcileService {
       counterparty: r.counterparty,
       counterpartyIban: r.counterpartyIban,
       description: r.description,
+      note: r.payerNote,
+      reasons: (r.matchReasons as MatchReason[] | null) ?? [],
       transactionAt: r.transactionAt,
       matchStatus: r.matchStatus,
       suggestedUnitId: r.matchedUnitId,
       suggestedUnitLabel: r.unitNumber ? (r.blockName ? `${r.blockName} / ${r.unitNumber}` : r.unitNumber) : null,
       confidence: r.matchConfidence === null ? null : Number(r.matchConfidence),
     }));
+    const incoming = present.filter((r) => r.direction === "in");
+    // Elle eşleştirme için daire listesi sakin adlarıyla: yönetici adı
+    // yazarak daireyi bulur (otomatik öneri çıkmasa da).
+    const choices = incoming.length > 0 ? await this.db.tx((tx) => this.unitChoices(tx)) : [];
     return {
-      incoming: present.filter((r) => r.direction === "in"),
+      incoming,
       outgoing: present.filter((r) => r.direction === "out"),
+      units: choices.map((u) => ({ id: u.candidate.unitId, label: u.label, residents: u.candidate.residentNames })),
     };
   }
 
@@ -475,17 +500,26 @@ export class BankReconcileService {
    * Eşleştirme adayları: açık borcu olan daireler, aktif sakin adları ve
    * daha önce eşleşmiş hareketlerden bilinen IBAN'lar. Tek tur, üç sorgu.
    */
-  private async candidates(tx: Parameters<Parameters<DbService["tx"]>[0]>[0]): Promise<MatchCandidate[]> {
-    const units = (await tx.execute(sql`
-      SELECT u.id, u.number,
+  /**
+   * Eşleştirme adayları: daire, açık borç, aktif sakin adları, daha önce bu
+   * daireye tahsil edilmiş IBAN'lar ve gönderen adları. `label` blok/daire
+   * (kuyruk ve önizleme gösterimi).
+   */
+  private async unitChoices(
+    tx: Parameters<Parameters<DbService["tx"]>[0]>[0],
+  ): Promise<Array<{ label: string; candidate: MatchCandidate }>> {
+    const rows = (await tx.execute(sql`
+      SELECT u.id, u.number, b.name AS block_name,
              COALESCE(SUM(d.amount_kurus + d.late_fee_kurus - d.paid_kurus)
                FILTER (WHERE d.id IS NOT NULL), 0)::bigint AS outstanding
         FROM units u
+        LEFT JOIN blocks b ON b.id = u.block_id
         LEFT JOIN debts d ON d.unit_id = u.id AND d.deleted_at IS NULL
                          AND d.status NOT IN ('paid','written_off','cancelled')
        WHERE u.deleted_at IS NULL
-       GROUP BY u.id, u.number
-    `)) as unknown as Array<{ id: string; number: string; outstanding: string | number }>;
+       GROUP BY u.id, u.number, b.name
+       ORDER BY b.name NULLS FIRST, u.number
+    `)) as unknown as Array<{ id: string; number: string; block_name: string | null; outstanding: string | number }>;
 
     const names = (await tx.execute(sql`
       SELECT o.unit_id, trim(coalesce(us.first_name,'') || ' ' || coalesce(us.last_name,'')) AS name
@@ -493,22 +527,30 @@ export class BankReconcileService {
        WHERE o.end_date IS NULL
     `)) as unknown as Array<{ unit_id: string; name: string }>;
 
-    const ibans = (await tx.execute(sql`
-      SELECT matched_unit_id AS unit_id, counterparty_iban AS iban
+    const known = (await tx.execute(sql`
+      SELECT matched_unit_id AS unit_id, counterparty_iban AS iban, counterparty AS sender
         FROM bank_transactions
-       WHERE matched_unit_id IS NOT NULL AND counterparty_iban IS NOT NULL
-         AND match_status IN ('auto','manual')
-       GROUP BY matched_unit_id, counterparty_iban
-    `)) as unknown as Array<{ unit_id: string; iban: string }>;
+       WHERE matched_unit_id IS NOT NULL AND match_status IN ('auto','manual')
+         AND (counterparty_iban IS NOT NULL OR counterparty IS NOT NULL)
+       GROUP BY matched_unit_id, counterparty_iban, counterparty
+    `)) as unknown as Array<{ unit_id: string; iban: string | null; sender: string | null }>;
 
-    return units.map((u) => ({
-      unitId: u.id,
-      unitLabel: u.number,
-      residentNames: names.filter((n) => n.unit_id === u.id && n.name).map((n) => n.name),
-      outstandingKurus: Number(u.outstanding),
-      knownIbans: ibans.filter((i) => i.unit_id === u.id).map((i) => i.iban),
-    }));
+    return rows.map((u) => {
+      const own = known.filter((k) => k.unit_id === u.id);
+      return {
+        label: u.block_name ? `${u.block_name} / ${u.number}` : u.number,
+        candidate: {
+          unitId: u.id,
+          unitLabel: u.number,
+          residentNames: [...new Set(names.filter((n) => n.unit_id === u.id && n.name).map((n) => n.name))],
+          outstandingKurus: Number(u.outstanding),
+          knownIbans: [...new Set(own.map((k) => k.iban).filter((v): v is string => Boolean(v)))],
+          knownSenders: [...new Set(own.map((k) => k.sender).filter((v): v is string => Boolean(v)))],
+        },
+      };
+    });
   }
+
 }
 
 /** base64 → tablo; okunamayan dosya kullanıcıya anlamlı hata kodu. */
