@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { dateTime, isoDate, moneyMinor, uuid } from "../_shared/fields";
+import { memberScope } from "../_shared/member-scope";
 
 /**
  * Mali tablolar — `/v1/panel/reports/accounting/*` (mizan/yevmiye ile aynı
@@ -134,6 +135,8 @@ export const unitStatementQuery = rangeQuery.extend({
   detail: z.enum(["0", "1"]).optional(),
   /** "1" ise yalnız bakiyesi olan bölümler. */
   onlyOpen: z.enum(["0", "1"]).optional(),
+  /** Üye kapsamı (eski kiracılar vb.) — borç ve tahsilat borçluya göre süzülür. */
+  member: memberScope.optional(),
 });
 
 export const unitStatementLine = z.object({

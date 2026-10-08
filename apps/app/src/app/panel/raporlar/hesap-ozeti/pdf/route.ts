@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { unitStatementResponse } from "@yonetim/contracts";
 
 import { apiGet, toQuery } from "@/lib/api/server";
+import { memberScopeFromParam } from "@/lib/member-scope";
 import type { Block } from "@/lib/pdf/report-pdf";
 import { pdfRoute } from "../../pdf-route";
 import { parseRange } from "../../report-tools";
@@ -18,8 +19,9 @@ export const { GET, POST } = pdfRoute(async ({ params, f, day }) => {
   const { from, to } = parseRange(params);
   const detail = params.detail === "1";
   const onlyOpen = params.onlyOpen === "1";
+  const member = memberScopeFromParam(params.uye);
   const data = await apiGet(
-    `/v1/panel/reports/accounting/unit-statements?${toQuery({ from, to, detail: detail ? "1" : "0", onlyOpen: onlyOpen ? "1" : "0" })}`,
+    `/v1/panel/reports/accounting/unit-statements?${toQuery({ from, to, detail: detail ? "1" : "0", onlyOpen: onlyOpen ? "1" : "0", member: member === "all" ? undefined : member })}`,
     unitStatementResponse,
   );
   const range = t("rangeTitle", { from: day(from), to: day(to) });

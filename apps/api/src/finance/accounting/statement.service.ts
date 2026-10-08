@@ -6,11 +6,13 @@ import type {
   BalanceSheetResponse,
   IncomeStatementResponse,
   LedgerResponse,
+  MemberScope,
   OperatingBookResponse,
   UnitStatementResponse,
 } from "@yonetim/contracts";
 
 import { DbService } from "../../infra/db/db.service";
+import { memberScopeSql } from "../member-scope";
 import { istanbulDate, istanbulEnd, istanbulStart } from "./accounting.service";
 import { loadJournal } from "./journal";
 import {
@@ -100,6 +102,8 @@ export class StatementService {
     unitId?: string;
     detail?: boolean;
     onlyOpen?: boolean;
+    /** Üye kapsamı: yalnız o kapsamdaki borçluların borç ve tahsilatları. */
+    member?: MemberScope;
   }): Promise<UnitStatementResponse> {
     assertRange(params.from, params.to);
     const start = istanbulStart(params.from).getTime();
@@ -112,6 +116,13 @@ export class StatementService {
     const payUnitFilter = params.unitId
       ? sql`AND p.unit_id = ${params.unitId}`
       : sql``;
+    const scoped = !!params.member && params.member !== "all";
+    const debtScope = memberScopeSql(params.member, sql`d.debtor_user_id`, sql`d.unit_id`);
+    const payScope = memberScopeSql(
+      params.member,
+      sql`COALESCE(p.debtor_user_id, p.payer_user_id)`,
+      sql`p.unit_id`,
+    );
 
     return this.db.tx(async (tx) => {
       const q = async (query: ReturnType<typeof sql>) =>
@@ -129,9 +140,11 @@ export class StatementService {
         `),
         q(sql`
           SELECT d.unit_id, d.description, d.amount_kurus, d.paid_kurus, d.status::text AS status, d.updated_at,
-                 CASE WHEN (d.metadata ? 'opening' OR d.metadata ? 'migrated') THEN d.due_date ELSE d.created_at END AS at
-          FROM debts d
+                 CASE WHEN (d.metadata ? 'opening' OR d.metadata ? 'migrated') THEN d.due_date ELSE d.created_at END AS at,
+                 nullif(trim(concat_ws(' ', du.first_name, du.last_name)), '') AS debtor_name
+          FROM debts d LEFT JOIN users du ON du.id = d.debtor_user_id
           WHERE d.deleted_at IS NULL AND d.status <> 'cancelled' AND d.unit_id IS NOT NULL ${debtUnitFilter}
+            AND ${debtScope}
             AND CASE WHEN (d.metadata ? 'opening' OR d.metadata ? 'migrated') THEN d.due_date ELSE d.created_at END <= ${endIso}::timestamptz
         `),
         q(sql`
@@ -139,6 +152,7 @@ export class StatementService {
                  p.method::text AS method, p.receipt_no
           FROM payments p
           WHERE p.status = 'completed' AND p.method NOT IN ('offset', 'credit_balance') AND p.unit_id IS NOT NULL ${payUnitFilter}
+            AND ${payScope}
             AND coalesce(p.paid_at, p.created_at) <= ${endIso}::timestamptz
         `),
       ]);
@@ -155,8 +169,16 @@ export class StatementService {
         if (!list) moves.set(unitId, (list = []));
         list.push(m);
       };
+      // Kapsamlı raporda "kim": bölümün bugünkü sahibi değil, kapsamdaki
+      // borçlular (eski kiracı raporunda eski kiracının adı).
+      const debtorNames = new Map<string, Set<string>>();
       for (const r of debtRows) {
         const unitId = String(r.unit_id);
+        if (scoped && r.debtor_name) {
+          let names = debtorNames.get(unitId);
+          if (!names) debtorNames.set(unitId, (names = new Set()));
+          names.add(String(r.debtor_name));
+        }
         push(unitId, {
           at: new Date(String(r.at)),
           description: String(r.description),
@@ -232,7 +254,9 @@ export class StatementService {
           label: u.block_name
             ? `${u.block_name} / ${u.number}`
             : String(u.number),
-          holder: (u.holder as string | null) ?? null,
+          holder: scoped
+            ? [...(debtorNames.get(String(u.id)) ?? [])].join(", ") || null
+            : ((u.holder as string | null) ?? null),
           openingMinor: opening,
           chargedMinor: charged,
           paidMinor: paid,
@@ -240,9 +264,13 @@ export class StatementService {
           lines,
         };
       });
-      const visible = params.onlyOpen
-        ? rows.filter((r) => r.closingMinor !== 0)
-        : rows;
+      // Kapsam seçiliyse hareketi olmayan bölüm listelenmez: "eski kiracılar"
+      // raporunda 24 boş satır anlamsız.
+      const visible = rows.filter(
+        (r) =>
+          (!params.onlyOpen || r.closingMinor !== 0) &&
+          (!scoped || moves.has(r.unitId)),
+      );
       const sum = (
         k: "openingMinor" | "chargedMinor" | "paidMinor" | "closingMinor",
       ) => visible.reduce((s, r) => s + r[k], 0);

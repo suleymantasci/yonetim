@@ -29,6 +29,8 @@ export interface ResidentRowView {
     unitId: string;
     label: string;
     relation: string;
+    /** Bitmiş ilişki — "(E) Kiracı" olarak, soluk gösterilir. */
+    former?: boolean;
     relationLabel: string;
   }[];
   roleLabel: string;
@@ -131,10 +133,14 @@ export function ResidentsTable({
           <span className="flex flex-wrap gap-1">
             {row.units.map((unit) => (
               <Link
-                key={`${unit.unitId}-${unit.relation}`}
+                key={`${unit.unitId}-${unit.relation}-${unit.former ? "e" : "a"}`}
                 href={`/panel/birimler/${unit.unitId}`}
                 title={unit.relationLabel}
-                className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 text-xs text-fg-muted hover:bg-hover hover:text-fg"
+                className={`inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-xs hover:bg-hover hover:text-fg ${
+                  unit.former
+                    ? "border-dashed border-warning-border text-warning-fg"
+                    : "border-border text-fg-muted"
+                }`}
               >
                 <span
                   aria-hidden
@@ -143,6 +149,7 @@ export function ResidentsTable({
                   }`}
                 />
                 {unit.label}
+                {unit.former ? <span>(E)</span> : null}
               </Link>
             ))}
           </span>

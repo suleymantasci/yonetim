@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { dateTime, moneyMinor, uuid } from "../_shared/fields";
 import { listQuery, pageMeta, option } from "../_shared/list";
+import { memberScope } from "../_shared/member-scope";
 
 /**
  * Sakin (malik / kiracı) sözleşmesi — MIMARI-PLAN §6.4 `property/resident`.
@@ -73,6 +74,8 @@ export const residentListQuery = listQuery.extend({
   role: residentRole.optional(),
   /** `inDebt` = açık bakiyesi olanlar, `multiUnit` = birden çok birimde ilişkisi olanlar. */
   status: z.enum(["inDebt", "multiUnit"]).optional(),
+  /** Üye kapsamı — eski malik/kiracılar dahil (bkz. `MEMBER_SCOPES`). */
+  member: memberScope.optional(),
 });
 
 export type ResidentListQuery = z.infer<typeof residentListQuery>;
@@ -82,6 +85,8 @@ export const residentOccupancyBrief = z.object({
   unitNumber: z.string(),
   blockName: z.string().nullable(),
   relation: z.string(),
+  /** İlişki bitmiş (eski malik/kiracı) — "(E) Kiracı". */
+  former: z.boolean().default(false),
 });
 
 export const residentRow = z.object({

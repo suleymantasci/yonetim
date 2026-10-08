@@ -32,6 +32,9 @@ export interface DebtRowView {
   unitId: string;
   unitLabel: string;
   debtorName: string | null;
+  /** "Kiracı", "(E) Kiracı" … */
+  debtorRelation: string | null;
+  debtorFormer: boolean;
   description: string;
   kindLabel: string;
   period: string;
@@ -180,7 +183,18 @@ export function DebtsTable({
     {
       key: "debtor",
       header: labels.debtor,
-      render: (row) => <span className="text-fg-muted">{row.debtorName ?? "—"}</span>,
+      render: (row) => (
+        <span className="text-fg-muted">
+          {row.debtorName ?? "—"}
+          {row.debtorRelation ? (
+            <span
+              className={`block text-xs ${row.debtorFormer ? "font-semibold text-warning-fg" : "text-fg-subtle"}`}
+            >
+              {row.debtorRelation}
+            </span>
+          ) : null}
+        </span>
+      ),
     },
     {
       key: "period",

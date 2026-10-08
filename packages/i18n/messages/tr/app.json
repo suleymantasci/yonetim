@@ -4144,5 +4144,16 @@
     "ruleTargetHint": "{rule} — türde tanımlı kural (daire istisnası dahil).",
     "occupantTarget": "Oturan",
     "occupantTargetHint": "Kiracı varsa kiracıya, yoksa maliğe."
+  },
+  "memberScope": {
+    "label": "Üye durumu",
+    "all": "Tümü",
+    "active": "Aktif malik ve kiracılar",
+    "occupant": "Oturanlar",
+    "owner": "Malikler",
+    "tenant": "Kiracılar",
+    "former_owner": "Eski malikler",
+    "former_tenant": "Eski kiracılar",
+    "formerBadge": "(E) {relation}"
   }
 }

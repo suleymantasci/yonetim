@@ -28,6 +28,7 @@ import {
 } from "@yonetim/db";
 
 import { DbService } from "../../infra/db/db.service";
+import { memberScopeSql } from "../member-scope";
 
 /**
  * Borç repository — SQL yalnız burada (MIMARI-PLAN §8.5).
@@ -104,6 +105,15 @@ export class DebtRepository {
               // sorguda aynı desen sessizce yanlış tabloya bağlanırdı (bkz. §A1).
               changeCount: sql<number>`(
               SELECT COUNT(*) FROM audit_debt_changes c WHERE c.debt_id = ${debts.id}
+            )`,
+              // Borçlunun bu dairedeki ilişkisi: süren ilişki önce; yoksa
+              // biten ("(E) Kiracı"). Eski üye borcu listede görünür olsun.
+              debtorRelation: sql<string | null>`(
+              SELECT CASE WHEN o.end_date IS NULL THEN o.relation::text ELSE 'former_' || o.relation::text END
+              FROM unit_occupancies o
+              WHERE o.unit_id = "debts"."unit_id" AND o.user_id = "debts"."debtor_user_id"
+              ORDER BY (o.end_date IS NULL) DESC, o.end_date DESC NULLS LAST
+              LIMIT 1
             )`,
             })
             .from(debts)
@@ -211,6 +221,11 @@ export class DebtRepository {
     if (q.status === "odendi") conditions.push(eq(debts.status, "paid"));
     if (q.status === "taksit")
       conditions.push(sql`${debts.installmentCount} IS NOT NULL`);
+    if (q.member && q.member !== "all") {
+      conditions.push(
+        memberScopeSql(q.member, sql`"debts"."debtor_user_id"`, sql`"debts"."unit_id"`),
+      );
+    }
 
     // "Riskli cari" eşiği — satır bazında kalan borç. Ödenmiş borcun kalanı
     // 0'dır, dolayısıyla eşik verildiğinde `status='paid'` satırları zaten

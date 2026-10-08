@@ -4144,5 +4144,16 @@
     "ruleTargetHint": "{rule} — the rule defined on the type (unit exception included).",
     "occupantTarget": "Occupant",
     "occupantTargetHint": "The tenant if any, otherwise the owner."
+  },
+  "memberScope": {
+    "label": "Member status",
+    "all": "All",
+    "active": "Active owners and tenants",
+    "occupant": "Occupants",
+    "owner": "Owners",
+    "tenant": "Tenants",
+    "former_owner": "Former owners",
+    "former_tenant": "Former tenants",
+    "formerBadge": "(F) {relation}"
   }
 }

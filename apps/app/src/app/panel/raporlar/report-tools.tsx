@@ -1,9 +1,10 @@
 import { getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 
-import { Input } from "@yonetim/ui";
+import { Input, Select } from "@yonetim/ui";
 
 import Link from "@/components/link";
+import { memberScopeOptions } from "@/lib/member-scope";
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -113,5 +114,26 @@ export async function ReportsSubnav({ active }: { active: ReportTab }) {
         </Link>
       ))}
     </nav>
+  );
+}
+
+/**
+ * Üye kapsamı seçicisi (`?uye=`) — `RangeForm` içine konur. Tüm kişi bazlı
+ * raporlarda aynı seçenekler (Yönetimcell'deki "Tümü / Aktif malik ve
+ * kiracılar / … / Eski kiracılar").
+ */
+export async function MemberScopeSelect({ value }: { value: string | undefined }) {
+  const tMember = await getTranslations("app.memberScope");
+  return (
+    <label className="text-xs text-fg-subtle">
+      {tMember("label")}
+      <Select name="uye" defaultValue={value ?? ""} className="mt-0.5 h-9">
+        {memberScopeOptions(tMember).map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </Select>
+    </label>
   );
 }

@@ -28,6 +28,7 @@ import { toListQuery } from "@/lib/api/list";
 import { apiGet, toQuery } from "@/lib/api/server";
 import { can, requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
+import { memberScopeFromParam, memberScopeOptions } from "@/lib/member-scope";
 import {
   buildListHref,
   pageRange,
@@ -58,6 +59,7 @@ export default async function DebtsPage({
   const tUnits = await getTranslations("app.units");
   const tCommon = await getTranslations("common");
   const tEnum = await getTranslations("enum");
+  const tMember = await getTranslations("app.memberScope");
   const fmt = await formatters();
 
   const query = await searchParams;
@@ -70,7 +72,7 @@ export default async function DebtsPage({
     sortableKeys: DEBT_SORT_KEYS,
     defaultSort: "dueDate",
     defaultDirection: "desc",
-    filterKeys: ["blok", "donem", "tur", "durum", "risk"],
+    filterKeys: ["blok", "donem", "tur", "durum", "risk", "uye"],
   });
 
   // Eşik URL'de **kuruş** taşınıyor (₺ değil): `toListQuery` değeri olduğu gibi
@@ -87,6 +89,7 @@ export default async function DebtsPage({
       kind: params.filters.tur,
       status: params.filters.durum,
       minOutstanding: riskThreshold,
+      member: params.filters.uye ? memberScopeFromParam(params.filters.uye) : undefined,
     })}`,
     debtListResponse,
   );
@@ -291,6 +294,14 @@ export default async function DebtsPage({
         ? `${row.blockName}/${row.unitNumber}`
         : row.unitNumber,
       debtorName: row.debtorName,
+      debtorRelation: row.debtorRelation
+        ? row.debtorRelation.startsWith("former_")
+          ? tMember("formerBadge", {
+              relation: tEnum(`ownership.${row.debtorRelation.slice(7)}`),
+            })
+          : tEnum(`ownership.${row.debtorRelation}`)
+        : null,
+      debtorFormer: row.debtorRelation?.startsWith("former_") ?? false,
       description: row.description,
       kindLabel: tEnum(`debtKind.${row.kind}`),
       period: row.period ? fmt.period(row.period) : "—",
@@ -378,6 +389,12 @@ export default async function DebtsPage({
                 label: t("riskAtLeast", { amount: fmt.money(minor) }),
               })),
             ],
+          },
+          {
+            param: "uye",
+            label: tMember("label"),
+            value: params.filters.uye ?? "",
+            options: memberScopeOptions(tMember),
           },
           {
             param: "durum",

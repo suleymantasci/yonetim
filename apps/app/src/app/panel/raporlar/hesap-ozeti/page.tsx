@@ -13,7 +13,13 @@ import { PageHeader } from "@/components/app-shell";
 import { apiGet, toQuery } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
-import { parseRange, RangeForm, ReportsSubnav } from "../report-tools";
+import { memberScopeFromParam } from "@/lib/member-scope";
+import {
+  MemberScopeSelect,
+  parseRange,
+  RangeForm,
+  ReportsSubnav,
+} from "../report-tools";
 import { PdfButton } from "../pdf-button";
 import { pdfHref } from "../pdf-route";
 
@@ -36,8 +42,9 @@ export default async function UnitStatementsPage({
   const { from, to } = parseRange(params);
   const detail = params.detail === "1";
   const onlyOpen = params.onlyOpen === "1";
+  const member = memberScopeFromParam(params.uye);
   const data = await apiGet(
-    `/v1/panel/reports/accounting/unit-statements?${toQuery({ from, to, detail: detail ? "1" : "0", onlyOpen: onlyOpen ? "1" : "0" })}`,
+    `/v1/panel/reports/accounting/unit-statements?${toQuery({ from, to, detail: detail ? "1" : "0", onlyOpen: onlyOpen ? "1" : "0", member: member === "all" ? undefined : member })}`,
     unitStatementResponse,
   );
   const fromLabel = f.date(new Date(`${from}T12:00:00`));
@@ -55,6 +62,7 @@ export default async function UnitStatementsPage({
               to,
               ...(detail ? { detail: "1" } : {}),
               ...(onlyOpen ? { onlyOpen: "1" } : {}),
+              ...(params.uye ? { uye: params.uye } : {}),
             })}
             label={t("pdf")}
             title={t("pdfTitle")}
@@ -82,6 +90,7 @@ export default async function UnitStatementsPage({
           title={t("rangeTitle", { from: fromLabel, to: toLabel })}
           action={
             <RangeForm from={from} to={to}>
+              <MemberScopeSelect value={params.uye} />
               <label className="flex h-9 items-center gap-2 text-sm text-fg">
                 <input
                   type="checkbox"

@@ -71,6 +71,7 @@ export class AccountingController {
       unitId: input.unitId,
       detail: input.detail === "1",
       onlyOpen: input.onlyOpen === "1",
+      member: input.member,
     });
   }
 

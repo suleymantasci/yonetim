@@ -19,6 +19,7 @@ import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { toListQuery } from "@/lib/api/list";
 import { formatters } from "@/lib/format";
+import { memberScopeFromParam, memberScopeOptions } from "@/lib/member-scope";
 import {
   buildListHref,
   pageRange,
@@ -41,12 +42,13 @@ export default async function ResidentsPage({
   const t = await getTranslations("app.residents");
   const tCommon = await getTranslations("common");
   const tEnum = await getTranslations("enum");
+  const tMember = await getTranslations("app.memberScope");
   const fmt = await formatters();
 
   const params = parseListParams(await searchParams, {
     sortableKeys: RESIDENT_SORT_KEYS,
     defaultSort: "name",
-    filterKeys: ["blok", "rol", "durum"],
+    filterKeys: ["blok", "rol", "durum", "uye"],
   });
 
   // KVKK md.12 erişim kaydını artık API yazıyor: kayıt, uçtan **dönen**
@@ -62,6 +64,7 @@ export default async function ResidentsPage({
           : params.filters.durum === "coklu"
             ? "multiUnit"
             : undefined,
+      member: params.filters.uye ? memberScopeFromParam(params.filters.uye) : undefined,
     })}`,
     residentListResponse,
   );
@@ -114,14 +117,17 @@ export default async function ResidentsPage({
         ? `${occupancy.blockName}/${occupancy.unitNumber}`
         : occupancy.unitNumber,
       relation: occupancy.relation,
-      relationLabel: tEnum(`occupancy.${occupancy.relation}`),
+      former: occupancy.former,
+      relationLabel: occupancy.former
+        ? tMember("formerBadge", { relation: tEnum(`ownership.${occupancy.relation}`) })
+        : tEnum(`occupancy.${occupancy.relation}`),
     })),
     roleLabel: row.roles[0] ? tEnum(`role.${row.roles[0] as Role}`) : "—",
     whatsappOptIn: row.whatsappOptIn,
     outstanding:
       row.outstandingMinor > 0 ? fmt.money(row.outstandingMinor) : "—",
     hasOutstanding: row.outstandingMinor > 0,
-    multiUnit: row.occupancies.length > 1,
+    multiUnit: row.occupancies.filter((o) => !o.former).length > 1,
   }));
 
   return (
@@ -197,6 +203,12 @@ export default async function ResidentsPage({
                 ] as const
               ).map((role) => ({ value: role, label: tEnum(`role.${role}`) })),
             ],
+          },
+          {
+            param: "uye",
+            label: tMember("label"),
+            value: params.filters.uye ?? "",
+            options: memberScopeOptions(tMember),
           },
           {
             param: "durum",

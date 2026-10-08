@@ -10,7 +10,11 @@ import {
   type SQL,
 } from "drizzle-orm";
 
-import { HEALTH_CONSENT_KIND } from "@yonetim/contracts";
+import {
+  HEALTH_CONSENT_KIND,
+  relationMatchesScope,
+  type MemberRelation,
+} from "@yonetim/contracts";
 import type { ResidentListQuery } from "@yonetim/contracts";
 import {
   blocks,
@@ -74,13 +78,14 @@ export class ResidentRepository {
               blockId: units.blockId,
               blockName: blocks.name,
               relation: unitOccupancies.relation,
+              endDate: unitOccupancies.endDate,
             })
             .from(unitOccupancies)
             .innerJoin(units, eq(units.id, unitOccupancies.unitId))
             .leftJoin(blocks, eq(blocks.id, units.blockId))
-            .where(
-              and(isNull(unitOccupancies.endDate), isNull(units.deletedAt)),
-            ),
+            // Biten ilişkiler de okunuyor: eski malik/kiracı süzgeci ve
+            // "(E) Kiracı" rozeti için. Sayımlar yalnız aktiflere bakar.
+            .where(isNull(units.deletedAt)),
 
           tx
             .select({
@@ -115,15 +120,40 @@ export class ResidentRepository {
       unitNumber: string;
       blockName: string | null;
       relation: string;
+      former: boolean;
     };
+    const activeRows = scoped.occupancyRows.filter((row) => row.endDate === null);
+    const unitsWithTenant = new Set(
+      activeRows.filter((row) => row.relation === "tenant").map((row) => row.unitId),
+    );
     const occupanciesByUser = new Map<string, Brief[]>();
+    const relationsByUser = new Map<string, MemberRelation[]>();
     for (const row of scoped.occupancyRows) {
+      const former = row.endDate !== null;
+      const rels = relationsByUser.get(row.userId) ?? [];
+      rels.push({
+        relation: row.relation,
+        ended: former,
+        unitHasActiveTenant: unitsWithTenant.has(row.unitId),
+      });
+      relationsByUser.set(row.userId, rels);
       const list = occupanciesByUser.get(row.userId) ?? [];
+      // Aynı dairede aynı ilişki yeniden başladıysa eskisi gösterilmez.
+      if (
+        former &&
+        activeRows.some(
+          (a) => a.userId === row.userId && a.unitId === row.unitId && a.relation === row.relation,
+        )
+      )
+        continue;
+      if (former && list.some((b) => b.former && b.unitId === row.unitId && b.relation === row.relation))
+        continue;
       list.push({
         unitId: row.unitId,
         unitNumber: row.unitNumber,
         blockName: row.blockName,
         relation: row.relation,
+        former,
       });
       occupanciesByUser.set(row.userId, list);
     }
@@ -146,7 +176,7 @@ export class ResidentRepository {
     if (q.blockId) {
       // Blok filtresi: kişinin **en az bir** ilişkisi o blokta olmalı.
       const inBlock = new Set(
-        scoped.occupancyRows
+        activeRows
           .filter((row) => row.blockId === q.blockId)
           .map((row) => row.userId),
       );
@@ -159,7 +189,14 @@ export class ResidentRepository {
     }
     if (q.status === "multiUnit") {
       candidateIds = candidateIds.filter(
-        (id) => (occupanciesByUser.get(id)?.length ?? 0) > 1,
+        (id) =>
+          (occupanciesByUser.get(id)?.filter((o) => !o.former).length ?? 0) > 1,
+      );
+    }
+    if (q.member && q.member !== "all") {
+      const scope = q.member;
+      candidateIds = candidateIds.filter((id) =>
+        relationMatchesScope(relationsByUser.get(id) ?? [], scope),
       );
     }
 
@@ -265,12 +302,8 @@ export class ResidentRepository {
       blocks: scoped.blockRows,
       totals: {
         activeCount: candidateIds.length,
-        ownerCount: scoped.occupancyRows.filter(
-          (row) => row.relation === "owner",
-        ).length,
-        tenantCount: scoped.occupancyRows.filter(
-          (row) => row.relation === "tenant",
-        ).length,
+        ownerCount: activeRows.filter((row) => row.relation === "owner").length,
+        tenantCount: activeRows.filter((row) => row.relation === "tenant").length,
         optInCount: people.filter((person) => person.whatsappOptIn).length,
       },
     };

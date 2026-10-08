@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { changeReason, dateTime, moneyMinor, uuid } from "../_shared/fields";
 import { listQuery, option, pageMeta } from "../_shared/list";
+import { memberScope } from "../_shared/member-scope";
 
 /**
  * Borç sözleşmesi — MIMARI-PLAN §6.4 `debt`.
@@ -194,6 +195,8 @@ export const debtListQuery = listQuery.extend({
    * gereksiz kısıtlardı. Ekran hazır eşikleri sunuyor, uç eşiği doğruluyor.
    */
   minOutstanding: z.coerce.number().int().min(0).optional(),
+  /** Borçlunun daireyle ilişkisine göre süzgeç (eski kiracı borçları vb.). */
+  member: memberScope.optional(),
 });
 
 export type DebtListQuery = z.infer<typeof debtListQuery>;
@@ -205,6 +208,8 @@ export const debtRow = z.object({
   blockName: z.string().nullable(),
   debtorUserId: uuid.nullable(),
   debtorName: z.string().nullable(),
+  /** `owner` / `tenant` / `former_owner` / `former_tenant`; ilişki yoksa `null`. */
+  debtorRelation: z.string().nullable().default(null),
   kind: z.string(),
   description: z.string(),
   period: z.string().nullable(),
