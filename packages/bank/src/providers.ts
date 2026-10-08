@@ -9,7 +9,7 @@ import {
  * çoklu sağlayıcı + devre kesici + polling fallback.
  */
 
-export type BankProviderName = "param" | "bkm" | "manual_csv";
+export type BankProviderName = "param" | "bkm" | "manual_csv" | "manual_file";
 
 export interface BankTransactionDto {
   externalId: string;

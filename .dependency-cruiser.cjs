@@ -91,6 +91,9 @@ module.exports = {
           "\\.d\\.ts$",
           "(^|/)(eslint|vitest|next|drizzle|tailwind|postcss)\\.config\\.",
           "^apps/[^/]+/src/(main|middleware|migrate)\\.ts$",
+          // Test dökümleri (`@yonetim/bank/fixtures`) yalnız testlerden içe alınıyor;
+          // testler taranan yolların dışında.
+          "^packages/[^/]+/src/fixtures\\.ts$",
           // Next App Router dosyaları konvansiyonla yükleniyor, import edilmez.
           "^apps/(app|web)/src/app/",
           "^apps/[^/]+/src/instrumentation\\.ts$",

@@ -67,6 +67,14 @@ async function bootstrap(): Promise<void> {
    * büyük payload'lar bu yoldan geçmiyor; 64 KB sınırı, büyük gövdeyle
    * belleği doldurma girişimlerini engeller (M-31).
    */
+  /**
+   * Banka dökümü yükleme (önizleme + içe aktarma) dosyayı base64 gövdede
+   * taşıyor: 4 MB dosya ≈ 5,4 MB. Yalnız bu yolda geniş sınır; genel sınır
+   * aşağıda dar kalıyor. Önce bu ayrıştırıcı çalışır, gövde işaretlenir,
+   * genel `json()` ikinci kez ayrıştırmaz.
+   */
+  app.use("/v1/panel/bank/statement", json({ limit: "8mb" }));
+
   app.use(
     json({
       limit: "256kb",

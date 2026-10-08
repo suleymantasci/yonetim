@@ -1,4 +1,4 @@
-import { Pencil, Plus } from "lucide-react";
+import { ArrowRight, FileUp, Pencil, Plus } from "lucide-react";
 import Link from "@/components/link";
 import { getTranslations } from "next-intl/server";
 
@@ -19,7 +19,6 @@ import { PageHeader } from "@/components/app-shell";
 import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
-import { StatementUpload } from "./statement-upload";
 import { TransactionActions } from "./transaction-actions";
 
 export const dynamic = "force-dynamic";
@@ -334,14 +333,22 @@ export default async function BankPage() {
 
       {canReconcile && activeAccounts.length > 0 ? (
         <Card className="mt-4">
-          <CardHeader title={t("statementTitle")} />
-          <CardBody>
-            <StatementUpload
-              accounts={activeAccounts.map((a) => ({
-                id: a.id,
-                label: [a.bankName, a.accountName, a.ibanMasked].filter(Boolean).join(" · "),
-              }))}
-            />
+          <CardHeader title={t("statementTitle")} description={t("statementIntro")} />
+          <CardBody className="flex flex-wrap gap-2">
+            <Link
+              href="/panel/banka/aktar"
+              className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-fg hover:bg-primary-hover"
+            >
+              <FileUp aria-hidden className="h-4 w-4" />
+              {t("importStatement")}
+            </Link>
+            <Link
+              href="/panel/banka/eslestir"
+              className="inline-flex h-10 items-center gap-2 rounded-lg border border-border-strong px-4 text-sm font-semibold text-fg hover:bg-hover"
+            >
+              {t("matchQueue", { count: totals.unmatched })}
+              <ArrowRight aria-hidden className="h-4 w-4" />
+            </Link>
           </CardBody>
         </Card>
       ) : null}

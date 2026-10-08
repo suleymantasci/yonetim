@@ -1,16 +1,39 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
-import { and, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 
 import type {
+  BankQueueResponse,
   BankStatementImport,
+  BankStatementPreview,
+  BankStatementPreviewRequest,
   BankStatementResult,
   BankTxActionResult,
+  BankTxConfirmBulk,
+  BankTxExpense,
 } from "@yonetim/contracts";
 import { errors } from "@yonetim/core";
-import { matchTransaction, parseStatementCsv, type MatchCandidate } from "@yonetim/bank";
-import { bankAccounts, bankTransactions } from "@yonetim/db";
+import {
+  applyMapping,
+  display,
+  findHeaderRow,
+  guessMapping,
+  mappingFromProfile,
+  matchTransaction,
+  profileFromMapping,
+  readTable,
+  StatementFileError,
+  validateMapping,
+  type Cell,
+  type ColumnMapping,
+  type ImportProfile,
+  type MatchCandidate,
+  type StatementField,
+  type Table,
+} from "@yonetim/bank";
+import { bankAccounts, bankTransactions, blocks, units } from "@yonetim/db";
 
 import { DebtService } from "../finance/debt/debt.service";
+import { ExpenseService } from "../finance/expense/expense.service";
 import { AuditService } from "../governance/audit/audit.service";
 import { DbService } from "../infra/db/db.service";
 import { grants } from "../identity/permission";
@@ -42,10 +65,77 @@ export class BankReconcileService {
     private readonly db: DbService,
     private readonly audit: AuditService,
     private readonly debts: DebtService,
+    private readonly expenses: ExpenseService,
   ) {}
 
+  /**
+   * Dökümü oku, başlığı ve sütunları bul (ya da hesabın kayıtlı
+   * eşleştirmesini uygula), ilk satırları ve hataları göster. Yazma yok.
+   */
+  async previewStatement(dto: BankStatementPreviewRequest): Promise<BankStatementPreview> {
+    const table = readStatement(dto.fileBase64);
+    const profile = await this.accountProfile(dto.accountId);
+    const { headerRow, headerFound, mapping, source } = resolveMapping(table, profile, dto.headerRow, dto.mapping);
+    const header = table.rows[headerRow] ?? [];
+    const problems = validateMapping(mapping);
+    const mapped = problems.length > 0 ? { rows: [], errors: [], skipped: 0 } : applyMapping(table.rows, headerRow, mapping);
+
+    const width = Math.min(
+      40,
+      Math.max(header.length, ...table.rows.slice(headerRow + 1, headerRow + 30).map((r) => r.length), 0),
+    );
+    const below = table.rows.slice(headerRow + 1);
+    const columns = Array.from({ length: width }, (_, index) => ({
+      index,
+      header: display(header[index] ?? null).slice(0, 80),
+      field: mapping[index] ?? ("ignore" as const),
+      samples: below
+        .map((r) => display(r[index] ?? null))
+        .filter((v) => v !== "")
+        .slice(0, 3)
+        .map((v) => v.slice(0, 80)),
+    }));
+    // Tamamen boş sütunları gösterme (İş Bankası'nda araya boş sütun giriyor).
+    const visible = columns.filter((c) => c.header !== "" || c.samples.length > 0 || c.field !== "ignore");
+
+    const incoming = mapped.rows.filter((r) => r.direction === "in");
+    const outgoing = mapped.rows.filter((r) => r.direction === "out");
+    return {
+      format: table.format,
+      headerRow,
+      headerFound,
+      mappingSource: source,
+      columns: visible,
+      problems,
+      topRows: table.rows.slice(0, 25).map((r) => r.slice(0, width || 12).map((c) => display(c).slice(0, 60))),
+      rows: mapped.rows.slice(0, 50).map((r) => ({
+        line: r.line,
+        date: r.transactionAt.toISOString().slice(0, 10),
+        direction: r.direction,
+        amountMinor: r.amountKurus,
+        description: r.description ?? null,
+        counterparty: r.counterparty ?? null,
+        reference: r.externalId.startsWith("ref-") ? r.externalId.slice(4, -11) : null,
+      })),
+      errors: mapped.errors.slice(0, 50).map((e) => ({ line: e.line, reason: e.reason, cells: e.cells.slice(0, width || 12) })),
+      totals: {
+        rows: mapped.rows.length,
+        incoming: incoming.length,
+        outgoing: outgoing.length,
+        incomingMinor: incoming.reduce((sum, r) => sum + r.amountKurus, 0),
+        outgoingMinor: outgoing.reduce((sum, r) => sum + r.amountKurus, 0),
+        errors: mapped.errors.length,
+        skipped: mapped.skipped,
+      },
+    };
+  }
+
   async importStatement(dto: BankStatementImport): Promise<BankStatementResult> {
-    const parsed = parseStatementCsv(dto.csv);
+    const table = readStatement(dto.fileBase64);
+    const mapping = toColumnMapping(dto.mapping);
+    const problems = validateMapping(mapping);
+    if (problems.length > 0) throw errors.validation(`statement_${problems[0]}`);
+    const parsed = applyMapping(table.rows, dto.headerRow, mapping);
     if (parsed.rows.length === 0) {
       throw errors.validation("statement_unreadable", { errors: parsed.errors.slice(0, 20) });
     }
@@ -58,9 +148,15 @@ export class BankReconcileService {
         .limit(1);
       if (!account) throw new NotFoundException("bank_account_not_found");
 
+      // Eşleştirme hesaba kaydedilir: aynı bankanın sonraki dökümü doğru gelir.
+      await tx
+        .update(bankAccounts)
+        .set({ importProfile: profileFromMapping(table.rows[dto.headerRow] ?? [], mapping) })
+        .where(eq(bankAccounts.id, dto.accountId));
+
       const candidates = await this.candidates(tx);
 
-      const values = parsed.rows.map((row) => {
+      const values = parsed.rows.map(({ line: _line, ...row }) => {
         const match = matchTransaction(row, candidates);
         const outgoing = row.direction === "out";
         return {
@@ -78,7 +174,8 @@ export class BankReconcileService {
           raw: row.raw,
           matchedUnitId: match.unitId,
           matchConfidence: match.unitId ? String(match.confidence) : null,
-          matchStatus: outgoing ? "ignored" : match.unitId ? "suggested" : "unmatched",
+          // Çıkan hareket kuyrukta gider olarak kaydedilmeyi bekler.
+          matchStatus: outgoing ? "unmatched" : match.unitId ? "suggested" : "unmatched",
         };
       });
 
@@ -86,13 +183,18 @@ export class BankReconcileService {
         .insert(bankTransactions)
         .values(values)
         .onConflictDoNothing()
-        .returning({ externalId: bankTransactions.externalId, status: bankTransactions.matchStatus });
+        .returning({
+          externalId: bankTransactions.externalId,
+          status: bankTransactions.matchStatus,
+          direction: bankTransactions.direction,
+        });
 
+      const incoming = inserted.filter((r) => r.direction === "in");
       return {
         inserted: inserted.length,
-        suggested: inserted.filter((r) => r.status === "suggested").length,
-        unmatched: inserted.filter((r) => r.status === "unmatched").length,
-        outgoing: inserted.filter((r) => r.status === "ignored").length,
+        suggested: incoming.filter((r) => r.status === "suggested").length,
+        unmatched: incoming.filter((r) => r.status === "unmatched").length,
+        outgoing: inserted.length - incoming.length,
       };
     });
 
@@ -107,7 +209,7 @@ export class BankReconcileService {
       parsed: parsed.rows.length,
       ...result,
       duplicates: parsed.rows.length - result.inserted,
-      errors: parsed.errors.slice(0, 50),
+      errors: parsed.errors.slice(0, 50).map(({ line, reason }) => ({ line, reason })),
     };
   }
 
@@ -180,6 +282,154 @@ export class BankReconcileService {
     }
   }
 
+  /**
+   * Eşleştirme kuyruğu: sonuçlanmamış gelen (tahsilat) ve çıkan (gider)
+   * hareketler, öneriyle. En yeni 300; daha eskisi kuyruk boşaldıkça görünür.
+   */
+  async queue(): Promise<BankQueueResponse> {
+    const rows = await this.db.tx((tx) =>
+      tx
+        .select({
+          id: bankTransactions.id,
+          accountId: bankTransactions.accountId,
+          bankName: bankAccounts.bankName,
+          accountName: bankAccounts.accountName,
+          direction: bankTransactions.direction,
+          amountKurus: bankTransactions.amountKurus,
+          counterparty: bankTransactions.counterparty,
+          counterpartyIban: bankTransactions.counterpartyIban,
+          description: bankTransactions.description,
+          transactionAt: bankTransactions.transactionAt,
+          matchStatus: bankTransactions.matchStatus,
+          matchedUnitId: bankTransactions.matchedUnitId,
+          matchConfidence: bankTransactions.matchConfidence,
+          unitNumber: units.number,
+          blockName: blocks.name,
+        })
+        .from(bankTransactions)
+        .leftJoin(bankAccounts, eq(bankAccounts.id, bankTransactions.accountId))
+        .leftJoin(units, eq(units.id, bankTransactions.matchedUnitId))
+        .leftJoin(blocks, eq(blocks.id, units.blockId))
+        .where(inArray(bankTransactions.matchStatus, ["unmatched", "suggested"]))
+        .orderBy(desc(bankTransactions.transactionAt))
+        .limit(300),
+    );
+    const present = rows.map((r) => ({
+      id: r.id,
+      accountId: r.accountId,
+      accountLabel: [r.bankName, r.accountName].filter(Boolean).join(" · ") || null,
+      direction: r.direction as "in" | "out",
+      amountMinor: r.amountKurus,
+      counterparty: r.counterparty,
+      counterpartyIban: r.counterpartyIban,
+      description: r.description,
+      transactionAt: r.transactionAt,
+      matchStatus: r.matchStatus,
+      suggestedUnitId: r.matchedUnitId,
+      suggestedUnitLabel: r.unitNumber ? (r.blockName ? `${r.blockName} / ${r.unitNumber}` : r.unitNumber) : null,
+      confidence: r.matchConfidence === null ? null : Number(r.matchConfidence),
+    }));
+    return {
+      incoming: present.filter((r) => r.direction === "in"),
+      outgoing: present.filter((r) => r.direction === "out"),
+    };
+  }
+
+  /**
+   * Toplu tahsilat: her hareket kendi seçilen dairesine, sırayla. Biri
+   * başarısız olursa (zaten çözülmüş, daire silinmiş) diğerleri sürer;
+   * sonuç satır satır döner.
+   */
+  async confirmBulk(dto: BankTxConfirmBulk) {
+    const results: Array<{ id: string; ok: boolean; paymentId: string | null; error: string | null }> = [];
+    for (const item of dto.items) {
+      try {
+        const r = await this.confirm(item.id, item.unitId);
+        results.push({ id: item.id, ok: true, paymentId: r.paymentId, error: null });
+      } catch (error) {
+        results.push({ id: item.id, ok: false, paymentId: null, error: errorCode(error) });
+      }
+    }
+    return { results };
+  }
+
+  /**
+   * Çıkan hareketi ödenmiş gider olarak kaydet: tutar, tarih ve ödendiği
+   * hesap hareketten; kategori (ve isteğe bağlı tedarikçi) yöneticiden.
+   * Onaydaki gibi önce satır sahipleniliyor — iki sekmeden iki gider olmasın.
+   */
+  async recordExpense(id: string, dto: BankTxExpense): Promise<{ id: string; expenseId: string }> {
+    if (!grants(this.db.maybeCtx(), "expense:write")) {
+      throw new ForbiddenException("forbidden:expense:write");
+    }
+    const row = await this.db.tx(async (tx) => {
+      const [taken] = await tx
+        .update(bankTransactions)
+        .set({ matchStatus: "expense" })
+        .where(
+          and(
+            eq(bankTransactions.id, id),
+            eq(bankTransactions.direction, "out"),
+            inArray(bankTransactions.matchStatus, ["unmatched", "suggested"]),
+          ),
+        )
+        .returning();
+      if (!taken) throw new BadRequestException("conflict:already_resolved");
+      return taken;
+    });
+
+    try {
+      const description = (
+        dto.description ??
+        [row.counterparty, row.description].filter(Boolean).join(" — ") ??
+        ""
+      ).slice(0, 240);
+      const { id: expenseId } = await this.expenses.save({
+        categoryId: dto.categoryId,
+        vendorId: dto.vendorId ?? null,
+        description: description.length >= 3 ? description : "Banka gideri",
+        amountMinor: row.amountKurus,
+        vatRate: dto.vatRate ?? null,
+        withholdingMinor: 0,
+        expenseDate: row.transactionAt,
+        paidVia: "bank_transfer",
+        bankAccountId: row.accountId,
+        isPaid: true,
+        status: "paid",
+      });
+      await this.db.tx((tx) =>
+        tx.update(bankTransactions).set({ matchedExpenseId: expenseId }).where(eq(bankTransactions.id, id)),
+      );
+      await this.audit.record({
+        action: "bank_transaction_expensed",
+        resource: "bank_transaction",
+        resourceId: id,
+        reason: `gider ${expenseId}`,
+      });
+      return { id, expenseId };
+    } catch (error) {
+      await this.db.tx((tx) =>
+        tx
+          .update(bankTransactions)
+          .set({ matchStatus: "unmatched" })
+          .where(and(eq(bankTransactions.id, id), isNull(bankTransactions.matchedExpenseId))),
+      );
+      throw error;
+    }
+  }
+
+  private async accountProfile(accountId: string): Promise<ImportProfile | null> {
+    const [account] = await this.db.tx((tx) =>
+      tx
+        .select({ id: bankAccounts.id, importProfile: bankAccounts.importProfile })
+        .from(bankAccounts)
+        .where(and(eq(bankAccounts.id, accountId), isNull(bankAccounts.deletedAt)))
+        .limit(1),
+    );
+    if (!account) throw new NotFoundException("bank_account_not_found");
+    return (account.importProfile as ImportProfile | null) ?? null;
+  }
+
   async ignore(id: string, reason: string): Promise<BankTxActionResult> {
     const updated = await this.db.tx((tx) =>
       tx
@@ -241,4 +491,45 @@ export class BankReconcileService {
       knownIbans: ibans.filter((i) => i.unit_id === u.id).map((i) => i.iban),
     }));
   }
+}
+
+/** base64 → tablo; okunamayan dosya kullanıcıya anlamlı hata kodu. */
+function readStatement(fileBase64: string): Table {
+  try {
+    return readTable(Buffer.from(fileBase64, "base64"));
+  } catch (error) {
+    if (error instanceof StatementFileError) throw errors.validation(`statement_${error.code}`);
+    throw error;
+  }
+}
+
+function toColumnMapping(raw: Record<string, StatementField>): ColumnMapping {
+  const mapping: ColumnMapping = {};
+  for (const [key, field] of Object.entries(raw)) if (field !== "ignore") mapping[Number(key)] = field;
+  return mapping;
+}
+
+/**
+ * Önizlemenin eşleştirmesi: istek > hesabın kayıtlı profili > tahmin.
+ * Başlık satırı istekte yoksa bulunur; bulunamazsa 0 (kullanıcı seçer).
+ */
+function resolveMapping(
+  table: Table,
+  profile: ImportProfile | null,
+  requestedRow: number | undefined,
+  requested: Record<string, StatementField> | undefined,
+): { headerRow: number; headerFound: boolean; mapping: ColumnMapping; source: "profile" | "guess" | "request" } {
+  const found = findHeaderRow(table.rows);
+  const headerRow = requestedRow ?? (found >= 0 ? found : 0);
+  const headerFound = requestedRow !== undefined || found >= 0;
+  const header: Cell[] = table.rows[headerRow] ?? [];
+  if (requested) return { headerRow, headerFound, mapping: toColumnMapping(requested), source: "request" };
+  const fromProfile = mappingFromProfile(header, profile);
+  if (fromProfile) return { headerRow, headerFound, mapping: fromProfile, source: "profile" };
+  return { headerRow, headerFound, mapping: guessMapping(header), source: "guess" };
+}
+
+function errorCode(error: unknown): string {
+  if (error && typeof error === "object" && "message" in error) return String((error as Error).message).slice(0, 80);
+  return "unknown";
 }

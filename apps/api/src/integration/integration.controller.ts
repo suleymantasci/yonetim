@@ -13,6 +13,12 @@ import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import {
   bankAccountSave,
   bankStatementImport,
+  bankStatementPreviewRequest,
+  bankTxConfirmBulk,
+  bankTxExpense,
+  type BankStatementPreviewRequest,
+  type BankTxConfirmBulk,
+  type BankTxExpense,
   bankTxConfirm,
   bankTxIgnore,
   migrationCommit,
@@ -101,14 +107,54 @@ export class IntegrationController {
     return this.accounts.remove(id);
   }
 
+  @Post("bank/statement/preview")
+  @RequirePermission("bank:reconcile")
+  @ApiOperation({
+    summary: "Banka dökümünü önizle (yazmaz)",
+    description:
+      "xlsx / eski xls / HTML kılıklı xlsx / CSV okunur; başlık satırı ve sütun " +
+      "anlamları tahmin edilir ya da hesabın kayıtlı eşleştirmesi uygulanır. " +
+      "`mapping` verilirse o kullanılır (kullanıcı düzeltmesi).",
+  })
+  previewStatement(@Body(new ZodBodyPipe(bankStatementPreviewRequest)) dto: BankStatementPreviewRequest) {
+    return this.reconcile.previewStatement(dto);
+  }
+
+  @Get("bank/queue")
+  @RequirePermission("bank:reconcile")
+  @ApiOperation({ summary: "Eşleştirme kuyruğu — tahsilat ve gider bekleyen hareketler" })
+  queue() {
+    return this.reconcile.queue();
+  }
+
+  @Post("bank/transactions/confirm-bulk")
+  @RequirePermission("bank:reconcile")
+  @ApiOperation({ summary: "Seçilen gelen hareketleri seçilen dairelere tahsil et" })
+  confirmBulk(@Body(new ZodBodyPipe(bankTxConfirmBulk)) dto: BankTxConfirmBulk) {
+    return this.reconcile.confirmBulk(dto);
+  }
+
+  @Post("bank/transactions/:id/expense")
+  @RequirePermission("bank:reconcile")
+  @ApiOperation({
+    summary: "Çıkan hareketi ödenmiş gider olarak kaydet",
+    description: "Tutar/tarih/hesap hareketten; `expense:write` de gerekir.",
+  })
+  recordExpense(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body(new ZodBodyPipe(bankTxExpense)) dto: BankTxExpense,
+  ) {
+    return this.reconcile.recordExpense(id, dto);
+  }
+
   @Post("bank/statement")
   @RequirePermission("bank:reconcile")
   @ApiOperation({
-    summary: "Banka ekstresi (CSV) yükle ve eşleştir",
+    summary: "Banka dökümünü onaylanan eşleştirmeyle içe aktar",
     description:
-      "Hareketler yazılır, gelenler için daire önerisi üretilir (`suggested`). " +
-      "Öneri tahsilat açmaz; onay `bank/transactions/:id/confirm` ile. Aynı " +
-      "ekstrenin tekrar yüklenmesi hareketleri çoğaltmaz.",
+      "Hareketler yazılır, gelenler için daire önerisi üretilir (`suggested`); " +
+      "çıkanlar gider kuyruğuna düşer. Öneri tahsilat açmaz. Eşleştirme hesaba " +
+      "kaydedilir. Aynı dökümün tekrar yüklenmesi hareketleri çoğaltmaz.",
   })
   importStatement(@Body(new ZodBodyPipe(bankStatementImport)) dto: BankStatementImport) {
     return this.reconcile.importStatement(dto);

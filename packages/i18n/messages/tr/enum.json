@@ -278,7 +278,8 @@
     "unmatched": "Eşleşmedi",
     "auto": "Otomatik eşleşti",
     "manual": "Elle eşleştirildi",
-    "ignored": "Yok sayıldı"
+    "ignored": "Yok sayıldı",
+    "expense": "Gider kaydedildi"
   },
   "channel": {
     "whatsapp": "WhatsApp",

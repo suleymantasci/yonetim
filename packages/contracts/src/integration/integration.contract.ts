@@ -269,12 +269,100 @@ export type MigrationCommitResult = z.infer<typeof migrationCommitResult>;
  * ------------------------------------------------------------------ */
 
 /**
- * `POST /v1/panel/bank/statement` — CSV ekstre. Metin gövdede geliyor (dosya
- * yükleme depoya bağlı değil); 2 MB, bir yıllık hareket için fazlasıyla yeter.
+ * Banka dökümü içe aktarma — her bankanın dosyası farklı (xlsx, eski xls,
+ * HTML kılıklı xlsx, CSV), bu yüzden iki adım:
+ *
+ *   `POST bank/statement/preview` — dosya okunur, başlık satırı ve sütun
+ *   anlamları tahmin edilir (ya da hesabın kayıtlı eşleştirmesi uygulanır);
+ *   okunan ilk satırlar ve hatalı satırlar döner. Kullanıcı eşleştirmeyi
+ *   düzeltip tekrar önizler.
+ *
+ *   `POST bank/statement` — onaylanan eşleştirmeyle hareketler yazılır,
+ *   eşleştirme hesaba kaydedilir.
+ *
+ * Dosya gövdede base64 (depo bağımlılığı yok); üst sınır 4 MB ham dosya —
+ * bir yıllık hareket için fazlasıyla yeter.
  */
-export const bankStatementImport = z.object({
+export const STATEMENT_FIELDS = [
+  "date",
+  "time",
+  "description",
+  "detail",
+  "amount",
+  "debit",
+  "credit",
+  "direction",
+  "balance",
+  "reference",
+  "counterparty",
+  "iban",
+  "ignore",
+] as const;
+export const statementField = z.enum(STATEMENT_FIELDS);
+export type StatementFieldName = z.infer<typeof statementField>;
+
+/** Sütun indeksi ("0", "1", …) → alan. */
+export const statementMapping = z.record(z.string().regex(/^\d{1,3}$/), statementField);
+
+const statementFile = z.object({
   accountId: uuid,
-  csv: z.string().min(10).max(2_000_000),
+  fileName: z.string().trim().min(1).max(200),
+  /** Ham dosya, base64 (4 MB dosya ≈ 5,4 MB metin). */
+  fileBase64: z.string().min(4).max(5_600_000),
+});
+
+export const bankStatementPreviewRequest = statementFile.extend({
+  /** 0 tabanlı başlık satırı; verilmezse bulunur. */
+  headerRow: z.number().int().min(0).max(500).optional(),
+  mapping: statementMapping.optional(),
+});
+export type BankStatementPreviewRequest = z.infer<typeof bankStatementPreviewRequest>;
+
+export const bankStatementPreview = z.object({
+  format: z.enum(["xlsx", "xls", "html", "csv"]),
+  headerRow: z.number().int(),
+  headerFound: z.boolean(),
+  /** Eşleştirmenin kaynağı: hesabın kayıtlı profili, tahmin ya da istek. */
+  mappingSource: z.enum(["profile", "guess", "request"]),
+  columns: z.array(
+    z.object({
+      index: z.number().int(),
+      header: z.string(),
+      field: statementField,
+      samples: z.array(z.string()),
+    }),
+  ),
+  /** `missing_date` | `missing_amount` — doluysa içe aktarma yapılamaz. */
+  problems: z.array(z.string()),
+  /** Dosyanın ilk satırları (başlık satırını elle seçmek için). */
+  topRows: z.array(z.array(z.string())),
+  rows: z.array(
+    z.object({
+      line: z.number().int(),
+      date: z.string(),
+      direction: z.enum(["in", "out"]),
+      amountMinor: moneyMinor,
+      description: z.string().nullable(),
+      counterparty: z.string().nullable(),
+      reference: z.string().nullable(),
+    }),
+  ),
+  errors: z.array(z.object({ line: z.number().int(), reason: z.string(), cells: z.array(z.string()) })),
+  totals: z.object({
+    rows: z.number().int(),
+    incoming: z.number().int(),
+    outgoing: z.number().int(),
+    incomingMinor: moneyMinor,
+    outgoingMinor: moneyMinor,
+    errors: z.number().int(),
+    skipped: z.number().int(),
+  }),
+});
+export type BankStatementPreview = z.infer<typeof bankStatementPreview>;
+
+export const bankStatementImport = statementFile.extend({
+  headerRow: z.number().int().min(0).max(500),
+  mapping: statementMapping,
 });
 
 export const bankStatementResult = z.object({
@@ -287,7 +375,7 @@ export const bankStatementResult = z.object({
   suggested: z.number().int(),
   /** Öneri çıkmayan gelen hareket — elle daire seçilecek. */
   unmatched: z.number().int(),
-  /** Çıkan hareket — aidatla eşleştirilmiyor, `ignored` yazılır. */
+  /** Çıkan hareket — eşleştirme kuyruğunda gider olarak kaydedilmeyi bekler. */
   outgoing: z.number().int(),
   errors: z.array(z.object({ line: z.number().int(), reason: z.string() })),
 });
@@ -306,6 +394,58 @@ export const bankTxActionResult = z.object({
   status: z.string(),
   paymentId: uuid.nullable(),
 });
+
+/**
+ * Eşleştirme kuyruğu — `GET bank/queue`: sonuçlanmamış gelen (tahsilat
+ * bekleyen) ve çıkan (gider bekleyen) hareketler, öneriyle birlikte.
+ */
+export const bankQueueRow = z.object({
+  id: uuid,
+  accountId: uuid,
+  accountLabel: z.string().nullable(),
+  direction: z.enum(["in", "out"]),
+  amountMinor: moneyMinor,
+  counterparty: z.string().nullable(),
+  counterpartyIban: z.string().nullable(),
+  description: z.string().nullable(),
+  transactionAt: dateTime,
+  matchStatus: z.string(),
+  suggestedUnitId: uuid.nullable(),
+  suggestedUnitLabel: z.string().nullable(),
+  /** 0–1. */
+  confidence: z.number().nullable(),
+});
+export type BankQueueRow = z.infer<typeof bankQueueRow>;
+
+export const bankQueueResponse = z.object({
+  incoming: z.array(bankQueueRow),
+  outgoing: z.array(bankQueueRow),
+});
+export type BankQueueResponse = z.infer<typeof bankQueueResponse>;
+
+/** Toplu tahsilat: her hareket kendi dairesine; biri başarısızsa diğerleri sürer. */
+export const bankTxConfirmBulk = z.object({
+  items: z.array(z.object({ id: uuid, unitId: uuid })).min(1).max(200),
+});
+export type BankTxConfirmBulk = z.infer<typeof bankTxConfirmBulk>;
+
+export const bankTxConfirmBulkResult = z.object({
+  results: z.array(
+    z.object({ id: uuid, ok: z.boolean(), paymentId: uuid.nullable(), error: z.string().nullable() }),
+  ),
+});
+
+/** Çıkan hareketi ödenmiş gider olarak kaydet (tutar/tarih/hesap hareketten). */
+export const bankTxExpense = z.object({
+  categoryId: uuid,
+  vendorId: uuid.nullish(),
+  description: z.string().trim().min(3).max(240).nullish(),
+  /** KDV oranı (0–1); verilmezse kategorinin varsayılanı / 0. */
+  vatRate: z.coerce.number().min(0).max(1).nullish(),
+});
+export type BankTxExpense = z.infer<typeof bankTxExpense>;
+
+export const bankTxExpenseResult = z.object({ id: uuid, expenseId: uuid });
 
 export type BankStatementImport = z.infer<typeof bankStatementImport>;
 export type BankStatementResult = z.infer<typeof bankStatementResult>;

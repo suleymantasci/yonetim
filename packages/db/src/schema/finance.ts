@@ -350,6 +350,12 @@ export const bankAccounts = pgTable(
     lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
     syncStatus: varchar("sync_status", { length: 20 }).notNull().default("idle"),
     syncError: text("sync_error"),
+    /**
+     * Döküm içe aktarma eşleştirmesi (başlık adı → alan). Bankanın dökümü
+     * her ay aynı geldiği için ilk yüklemede yapılan düzeltme saklanır,
+     * sonrakinde önizleme doğrudan doğru gelir (`@yonetim/bank` profil).
+     */
+    importProfile: jsonb("import_profile"),
     isActive: boolean("is_active").notNull().default(true),
     ...timestamps,
     ...softDelete,
@@ -373,7 +379,9 @@ export const bankTransactions = pgTable(
     transactionAt: timestamp("transaction_at", { withTimezone: true }).notNull(),
     matchedPaymentId: uuid("matched_payment_id").references(() => payments.id, { onDelete: "set null" }),
     matchedUnitId: uuid("matched_unit_id").references(() => units.id, { onDelete: "set null" }),
-    /** 'unmatched' | 'auto' | 'manual' | 'ignored' */
+    /** Çıkan hareket gider olarak kaydedildiyse (`match_status = 'expense'`). */
+    matchedExpenseId: uuid("matched_expense_id").references(() => expenses.id, { onDelete: "set null" }),
+    /** 'unmatched' | 'suggested' | 'auto' | 'manual' | 'expense' | 'ignored' */
     matchStatus: varchar("match_status", { length: 20 }).notNull().default("unmatched"),
     matchConfidence: numeric("match_confidence", { precision: 4, scale: 3 }),
     provider: varchar("provider", { length: 40 }).notNull(),

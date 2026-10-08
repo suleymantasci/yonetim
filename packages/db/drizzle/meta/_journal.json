@@ -155,6 +155,13 @@
       "when": 1785861600000,
       "tag": "0021_agenda",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1785948000000,
+      "tag": "0022_bank_statement_import",
+      "breakpoints": true
     }
   ]
 }

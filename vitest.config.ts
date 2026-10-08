@@ -96,6 +96,10 @@ export default defineConfig({
         "./packages/notifications/src/index.ts",
         import.meta.url,
       ).pathname,
+      "@yonetim/bank/fixtures": new URL(
+        "./packages/bank/src/fixtures.ts",
+        import.meta.url,
+      ).pathname,
       "@yonetim/bank": new URL("./packages/bank/src/index.ts", import.meta.url)
         .pathname,
       "@yonetim/seo": new URL("./packages/seo/src/index.ts", import.meta.url)

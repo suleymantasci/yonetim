@@ -278,7 +278,8 @@
     "unmatched": "Unmatched",
     "auto": "Matched automatically",
     "manual": "Matched manually",
-    "ignored": "Ignored"
+    "ignored": "Ignored",
+    "expense": "Recorded as expense"
   },
   "channel": {
     "whatsapp": "WhatsApp",
