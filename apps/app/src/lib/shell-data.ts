@@ -1,5 +1,7 @@
 import {
+  agendaList,
   inAppNotificationList,
+  type AgendaItem,
   navBadges,
   type InAppNotificationList,
   type NavBadgesResponse,
@@ -29,6 +31,16 @@ export async function getNavBadges(): Promise<NavBadges> {
 }
 
 export type InAppNotification = InAppNotificationList["items"][number];
+
+/**
+ * Üst bardaki not menüsü (son 30 not). Ajanda erişilemezse menü boş açılır:
+ * kabuk, yardımcı bir listenin hatası yüzünden çökmemeli.
+ */
+export function getAgendaNotes(): Promise<AgendaItem[]> {
+  return apiGet("/v1/panel/agenda/notes", agendaList)
+    .then((r) => r.rows)
+    .catch(() => []);
+}
 
 /** Kullanıcının uygulama içi bildirimleri (son 20 + okunmamış sayısı). */
 export function getInAppNotifications(): Promise<InAppNotificationList> {
@@ -70,6 +82,8 @@ export function notificationHref(
       return "/panel/toplantilar";
     case "debt_certificate":
       return "/panel/borcu-yoktur";
+    case "agenda":
+      return `/panel/takvim?kayit=${resourceId}`;
     default:
       return null;
   }

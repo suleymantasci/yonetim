@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { hasPermission } from "@yonetim/auth/guard";
 import { isPlatformContext } from "@yonetim/core";
 import {
   A11Y_COOKIE,
@@ -13,7 +14,7 @@ import { AppShell } from "@/components/app-shell";
 import { ScrollMemory } from "@/components/scroll-memory";
 import { audienceOf, navItemsFor } from "@/components/shell/nav";
 import { requireContext } from "@/lib/context";
-import { getInAppNotifications, getNavBadges } from "@/lib/shell-data";
+import { getAgendaNotes, getInAppNotifications, getNavBadges } from "@/lib/shell-data";
 
 /**
  * `modal` paralel rota yuvası — UI Faz 2.4.
@@ -46,11 +47,13 @@ export default async function PanelLayout({
   // Rozet sayaçları yönetim sorguları (açık talep, eşleşmemiş banka hareketi);
   // sakinde ne izni ne anlamı var, bu yüzden hiç çağrılmıyor.
   const isResident = audienceOf(ctx.roles) === "resident";
-  const [badges, notifications] = await Promise.all([
+  const canAgenda = !isResident && hasPermission(ctx.roles, "agenda:read");
+  const [badges, notifications, notes] = await Promise.all([
     isResident
       ? Promise.resolve({} as Awaited<ReturnType<typeof getNavBadges>>)
       : getNavBadges(),
     getInAppNotifications(),
+    canAgenda ? getAgendaNotes() : Promise.resolve(null),
   ]);
 
   return (
@@ -72,6 +75,7 @@ export default async function PanelLayout({
       badges={badges}
       notifications={notifications.items}
       unreadNotificationCount={notifications.unreadCount}
+      notes={notes}
     >
       <ScrollMemory />
       {children}

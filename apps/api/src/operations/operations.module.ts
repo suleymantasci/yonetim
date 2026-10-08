@@ -11,6 +11,8 @@ import { OperationsRepository } from "./operations.repository";
 import { OperationsService } from "./operations.service";
 import { RequestWriteService } from "./request-write.service";
 import { ReservationWriteService } from "./reservation-write.service";
+import { AgendaController } from "./agenda.controller";
+import { AgendaService } from "./agenda.service";
 import { FrontdeskController } from "./frontdesk.controller";
 import { FrontdeskService } from "./frontdesk.service";
 
@@ -23,7 +25,7 @@ import { FrontdeskService } from "./frontdesk.service";
  * takibi, bakım ve talep akışlarıyla aynı operasyonel alan.
  */
 @Module({
-  controllers: [OperationsController, JobRunController, InventoryController, FrontdeskController],
+  controllers: [OperationsController, JobRunController, InventoryController, FrontdeskController, AgendaController],
   providers: [
     OperationsService,
     OperationsRepository,
@@ -34,6 +36,7 @@ import { FrontdeskService } from "./frontdesk.service";
     JobRunService,
     InventoryService,
     FrontdeskService,
+    AgendaService,
   ],
   // `JobRunService` dışa açık: uzun süren işi başlatan her modül (göç,
   // toplu borç, rapor) koşu kaydını buradan açıyor ve worker aynı servisle

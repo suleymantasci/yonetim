@@ -1,6 +1,7 @@
 import { and, eq, gte, inArray, isNotNull, isNull, lt, lte, sql } from "drizzle-orm";
 
 import {
+  agendaItems,
   debts,
   documents,
   meetings,
@@ -402,5 +403,87 @@ export async function legalEscalation(params: { tenantId: string; now?: Date }):
       });
     }
     return { tenantId: params.tenantId, candidates, totalKurus: total, notified };
+  });
+}
+
+/* -------------------------------------------------------------------------- */
+
+export interface AgendaReminderResult {
+  tenantId: string;
+  items: number;
+  notified: number;
+}
+
+/**
+ * `agenda.reminders` — hatırlatma zamanı gelen ajanda kayıtları.
+ *
+ * Kişisel kayıt yalnız sahibine, paylaşılan kayıt sahibine ve sitenin
+ * yöneticilerine düşer. Tamamlanmış görev bildirim üretmez ama
+ * `reminded_at` yine yazılır: kısmi indeks ("hatırlatılmamış") boşalsın.
+ *
+ * Şablon adı hatırlatma dakikasını taşıyor (`agenda_29341234`): kullanıcı
+ * kaydın tarihini değiştirirse tekillik indeksi ikinci hatırlatmayı
+ * yutmasın.
+ */
+export async function agendaReminders(params: { tenantId: string; now?: Date }): Promise<AgendaReminderResult> {
+  const now = params.now ?? new Date();
+  return withTenant(params.tenantId, async (tx) => {
+    const due = await tx
+      .select()
+      .from(agendaItems)
+      .where(
+        and(
+          isNull(agendaItems.remindedAt),
+          isNull(agendaItems.deletedAt),
+          isNotNull(agendaItems.remindAt),
+          lte(agendaItems.remindAt, now),
+        ),
+      )
+      .limit(500);
+    if (due.length === 0) return { tenantId: params.tenantId, items: 0, notified: 0 };
+
+    const managers = due.some((d) => d.shared) ? await usersWithRoles(tx, MANAGER_ROLES) : [];
+    const authorIds = [...new Set(due.map((d) => d.createdBy))];
+    const authors = await tx
+      .select({ userId: users.id, locale: users.locale })
+      .from(users)
+      .where(and(inArray(users.id, authorIds), isNull(users.deletedAt)));
+    const authorById = new Map(authors.map((a) => [a.userId, a] as const));
+
+    let notified = 0;
+    for (const item of due) {
+      if (!item.doneAt) {
+        const recipients = new Map<string, Recipient>();
+        const author = authorById.get(item.createdBy);
+        if (author) recipients.set(author.userId, author);
+        if (item.shared) for (const m of managers) recipients.set(m.userId, m);
+        const isTask = item.kind === "task";
+        for (const recipient of recipients.values()) {
+          notified += await writeInApp(tx, {
+            tenantId: params.tenantId,
+            recipient,
+            template: `agenda_${Math.floor(item.remindAt!.getTime() / 60_000)}`,
+            resourceType: "agenda",
+            resourceId: item.id,
+            text: {
+              tr: {
+                subject: isTask ? `Görev: ${item.title}` : `Not: ${item.title}`,
+                body: item.body?.slice(0, 280) || (isTask ? "Ajandadaki görevin zamanı geldi." : "Ajandadaki notun zamanı geldi."),
+              },
+              en: {
+                subject: isTask ? `Task: ${item.title}` : `Note: ${item.title}`,
+                body: item.body?.slice(0, 280) || (isTask ? "Your agenda task is due." : "Your agenda note is due."),
+              },
+            },
+            now,
+          });
+        }
+      }
+    }
+    await tx
+      .update(agendaItems)
+      .set({ remindedAt: now })
+      .where(inArray(agendaItems.id, due.map((d) => d.id)));
+    return { tenantId: params.tenantId, items: due.length, notified };
   });
 }

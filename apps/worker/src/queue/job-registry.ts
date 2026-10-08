@@ -5,6 +5,7 @@ import { tenants } from "@yonetim/db";
 import {
   applyLateFees,
   collectMaintenanceReminders,
+  agendaReminders,
   documentExpiry,
   duesLateWarning,
   duesReminder,
@@ -84,7 +85,7 @@ export class JobRegistry {
       };
     }
 
-    const targets = await this.writableTenants(only, JOB_TENANT_STATUSES[jobId]);
+    const targets = await this.writableTenants(only, JOB_TENANT_STATUSES[jobId], DEMO_JOBS.has(jobId));
     const outcomes: JobOutcome[] = [];
 
     for (const { id: tenantId, status } of targets) {
@@ -134,6 +135,8 @@ export class JobRegistry {
         return applyLateFees({ tenantId });
       case "maintenance.reminders":
         return collectMaintenanceReminders({ tenantId });
+      case "agenda.reminders":
+        return agendaReminders({ tenantId });
       case "billing.trial-expiry":
         return expireTrial({ tenantId });
       case "sla.breach-check":
@@ -183,6 +186,7 @@ export class JobRegistry {
   private writableTenants(
     only?: string,
     statuses: readonly string[] = DEFAULT_TENANT_STATUSES,
+    includeDemo = false,
   ): Promise<{ id: string; status: string }[]> {
     return this.db.bypass("job:tenants", async (tx) =>
       tx
@@ -195,7 +199,7 @@ export class JobRegistry {
             // Demo siteler zamanlanmış işlere girmez: aidat üretimi, gecikme
             // faizi, hatırlatmalar ve faturalama verisini değiştirirdi; demo
             // içeriği herkeste aynı kalmalı ve 24 saat sonra zaten siliniyor.
-            eq(tenants.isDemo, false),
+            ...(includeDemo ? [] : [eq(tenants.isDemo, false)]),
             ...(only ? [eq(tenants.id, only)] : []),
           ),
         ),
@@ -216,6 +220,14 @@ const JOB_TENANT_STATUSES: Record<string, readonly string[]> = {
   "billing.renewal": ["active", "past_due"],
   "billing.archive-purge": ["archived"],
 };
+
+/**
+ * Demo sitelerde de koşan işler. Ajanda hatırlatması yalnız ziyaretçinin
+ * kendi girdiği kayda uygulama içi bildirim yazıyor: demo içeriğini
+ * değiştirmiyor, ve denenen özelliğin "tarih gelince bildirim düşer"
+ * vaadi demoda da görülebilmeli.
+ */
+const DEMO_JOBS = new Set(["agenda.reminders"]);
 
 /** Gövdesi henüz yazılmamış iş — `skipped` olarak raporlanır. */
 const NO_HANDLER = Symbol("no_handler");

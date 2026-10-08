@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 
 import { siteConfig } from "@yonetim/config";
+import type { AgendaItem } from "@yonetim/contracts";
 import type { Role, TenantStatus } from "@yonetim/core";
 import {
   A11yMenu, Badge, BrandMark, PageHeader as UiPageHeader, ThemeToggle,
@@ -11,7 +12,9 @@ import {
 
 import { markAllNotificationsRead, markNotificationRead } from "@/components/shell/actions";
 import { CommandPalette, type PaletteEntry } from "@/components/shell/command-palette";
+import { NotesMenu } from "@/components/shell/notes-menu";
 import { NotificationBell } from "@/components/shell/notification-bell";
+import { quickNote } from "@/app/panel/takvim/actions";
 import {
   NAV_GROUP_ORDER, NAV_ITEMS, QUICK_ACTIONS, type NavBadgeKey, type NavGroup,
 } from "@/components/shell/nav";
@@ -67,6 +70,7 @@ export async function AppShell({
   notifications,
   unreadNotificationCount,
   memberships,
+  notes = null,
 }: {
   children: ReactNode;
   tenantId: string;
@@ -86,6 +90,8 @@ export async function AppShell({
   unreadNotificationCount: number;
   /** Kullanıcının erişebildiği siteler — site değiştirici için. */
   memberships: { id: string; slug: string; name: string }[];
+  /** Üst bardaki not menüsü; ajanda izni yoksa `null` ve menü çizilmez. */
+  notes?: AgendaItem[] | null;
 }) {
   const t = await getTranslations("app");
   const tCommon = await getTranslations("common");
@@ -245,6 +251,28 @@ export async function AppShell({
             <Badge tone={tenantStatus === "trial" ? "info" : "warning"} className="hidden sm:inline-flex">
               {trialLabel}
             </Badge>
+          ) : null}
+
+          {notes ? (
+            <NotesMenu
+              notes={notes.map((note) => ({
+                id: note.id,
+                title: note.title,
+                body: note.body,
+                day: note.day ? fmt.date(new Date(`${note.day}T12:00:00`)) : null,
+                unitLabel: note.unitLabel,
+              }))}
+              action={quickNote}
+              labels={{
+                trigger: t("shell.notes"),
+                title: t("shell.notes"),
+                placeholder: t("agenda.quickPlaceholder"),
+                day: t("agenda.quickDay"),
+                save: tCommon("action.save"),
+                empty: t("agenda.notesEmpty"),
+                openCalendar: t("agenda.openCalendar"),
+              }}
+            />
           ) : null}
 
           <NotificationBell

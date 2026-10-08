@@ -1,6 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
-  boolean, index, integer, jsonb, numeric, pgTable, text, timestamp, uniqueIndex, uuid, varchar,
+  boolean, date, index, integer, jsonb, numeric, pgTable, text, timestamp, uniqueIndex, uuid, varchar,
 } from "drizzle-orm/pg-core";
 
 import { idCol, money, softDelete, tenantId, timestamps } from "./_shared";
@@ -524,5 +524,42 @@ export const jobRuns = pgTable(
   (t) => [
     index("idx_job_runs_tenant_created").on(t.tenantId, t.createdAt),
     index("idx_job_runs_status").on(t.status),
+  ],
+);
+
+/**
+ * Ajanda — yöneticinin takvimdeki görev ve notları (rakipte "Ajanda").
+ *
+ * Kayıt siteye ait (`tenant_id`), istenirse bir daireye bağlı. Varsayılan
+ * kişisel: yalnız `created_by` görür; `shared` ise sitenin panel ekibi görür.
+ * `remind_at` gelince `agenda.reminders` işi zile bildirim düşer ve
+ * `reminded_at` yazar (bir kez). Not tarihsiz olabilir (`day` boş): üst
+ * bardaki not listesinde durur, takvimde görünmez.
+ */
+export const agendaItems = pgTable(
+  "agenda_items",
+  {
+    id: idCol(),
+    tenantId: tenantId().references(() => tenants.id, { onDelete: "cascade" }),
+    unitId: uuid("unit_id").references(() => units.id, { onDelete: "set null" }),
+    /** `task` | `note`. */
+    kind: varchar("kind", { length: 10 }).notNull(),
+    title: varchar("title", { length: 200 }).notNull(),
+    body: text("body"),
+    /** Takvim günü (İstanbul). */
+    day: date("day", { mode: "string" }),
+    remindAt: timestamp("remind_at", { withTimezone: true }),
+    remindedAt: timestamp("reminded_at", { withTimezone: true }),
+    doneAt: timestamp("done_at", { withTimezone: true }),
+    shared: boolean("shared").notNull().default(false),
+    createdBy: uuid("created_by").notNull().references(() => users.id, { onDelete: "cascade" }),
+    ...timestamps,
+    ...softDelete,
+  },
+  (t) => [
+    index("idx_agenda_tenant_day").on(t.tenantId, t.day),
+    index("idx_agenda_due_reminder")
+      .on(t.remindAt)
+      .where(sql`${t.remindedAt} IS NULL AND ${t.deletedAt} IS NULL`),
   ],
 );

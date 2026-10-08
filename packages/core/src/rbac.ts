@@ -59,6 +59,9 @@ export const PERMISSIONS = [
   // Kargo ve ziyaretçi defteri: kapıcı/güvenliğin günlük işi; finans ya da
   // sakin verisi yetkisi gerektirmemeli.
   "frontdesk:read", "frontdesk:write",
+  // Ajanda (takvim görev/not): kişisel çalışma aracı, sakin dışındaki her
+  // panel rolünde; paylaşılan kayıt yalnız aynı sitenin ekibine görünür.
+  "agenda:read", "agenda:write",
   "message:read", "message:read_own", "message:write",
   "report:read", "report:export",
   "nps:read",
@@ -132,6 +135,7 @@ const MANAGER_PERMS: Permission[] = [
   "legal:read", "legal:write",
   "vendor:read", "vendor:write",
   "frontdesk:read", "frontdesk:write",
+  "agenda:read", "agenda:write",
   "message:read", "message:write",
   "report:read", "report:export",
   "nps:read",
@@ -168,7 +172,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
   auditor: [
     ...READ_ONLY_FINANCE,
     "meeting:read", "poll:read", "maintenance:read", "legal:read",
-    "inventory:read", "decision:read",
+    "inventory:read", "decision:read", "agenda:read", "agenda:write",
   ],
   accountant: [
     ...READ_ONLY_FINANCE,
@@ -176,6 +180,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     "vendor:write",
     // Demirbaş alış bedeli gider raporlarına giriyor; okuma yeterli.
     "inventory:read",
+    "agenda:read", "agenda:write",
   ],
   staff: [
     "tenant:read", "unit:read", "request:read", "request:write",
@@ -184,6 +189,7 @@ export const ROLE_PERMISSIONS: Record<Role, readonly Permission[]> = {
     // Kapıcı/teknisyen zimmetindeki ekipmanı görebilmeli; deftere yazmak
     // yönetimin işi (arıza bildirimi zaten `request:write` üzerinden).
     "inventory:read",
+    "agenda:read", "agenda:write",
   ],
   owner: [...RESIDENT_BASE, "meeting:read"],
   tenant_resident: RESIDENT_BASE,

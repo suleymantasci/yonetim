@@ -148,6 +148,13 @@
       "when": 1785775200000,
       "tag": "0020_cash_budget",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1785861600000,
+      "tag": "0021_agenda",
+      "breakpoints": true
     }
   ]
 }

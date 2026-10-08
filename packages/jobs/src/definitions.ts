@@ -99,6 +99,16 @@ export const JOBS: JobDefinition[] = [
     specRef: "Bölüm 6.3",
   },
   {
+    id: "agenda.reminders",
+    name: "Ajanda hatırlatmaları",
+    cron: "*/15 * * * *",
+    description:
+      "Hatırlatma zamanı gelen ajanda görev ve notları için sahibine (paylaşılanda yöneticilere de) uygulama içi bildirim yazar; demo sitelerde de koşar.",
+    timeoutSeconds: 120,
+    singleton: false,
+    specRef: "Ajanda (2026-10-08)",
+  },
+  {
     id: "billing.trial-expiry",
     name: "Deneme süresi kontrolü",
     cron: "0 2 * * *",

@@ -4,7 +4,7 @@ import {
   Activity, BadgeCheck, Banknote, Building2, CalendarClock, ChevronDown, ClipboardList, Cog, FileText,
   Gauge, Gavel, Handshake, LayoutDashboard, LineChart, Megaphone, MessageSquare, Package, Pin, PinOff,
   Receipt, Scale, ScrollText, ShieldCheck, Sparkles, Store, Truck, Users, Vote, Wallet, Wrench, X,
-  Landmark, PiggyBank,
+  Landmark, PiggyBank, CalendarDays,
 } from "lucide-react";
 import Link from "@/components/link";
 import { usePathname } from "next/navigation";
@@ -34,6 +34,7 @@ const COLLAPSE_STORAGE_KEY = "yonetim.sidebar.collapsed";
 
 const ICONS: Record<string, ComponentType<{ className?: string; "aria-hidden"?: boolean }>> = {
   dashboard: LayoutDashboard,
+  calendar: CalendarDays,
   units: Building2,
   residents: Users,
   migration: Truck,

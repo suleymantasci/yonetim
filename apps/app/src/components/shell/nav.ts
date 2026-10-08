@@ -136,6 +136,7 @@ export const NAV_ITEMS: NavItem[] = [
     group: "general",
     audience: ["staff"],
   },
+  { href: "/panel/takvim", key: "calendar", permission: "agenda:read", group: "general" },
   { href: "/panel/birimler", key: "units", permission: "unit:read", group: "property" },
   { href: "/panel/sakinler", key: "residents", permission: "resident:read", group: "property" },
   /*
