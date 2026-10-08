@@ -1,3 +1,4 @@
+import { ArrowLeft } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
 import { hasPermission } from "@yonetim/auth/guard";
@@ -47,13 +48,23 @@ export default async function MatchQueuePage() {
       <PageHeader
         title={t("queueTitle")}
         description={t("queueDescription")}
+        breadcrumb={[{ label: t("title"), href: "/panel/banka" }, { label: t("queueTitle") }]}
         action={
-          <Link
-            href="/panel/banka/aktar"
-            className="inline-flex h-10 items-center rounded-lg border border-border-strong px-4 text-sm font-semibold text-fg hover:bg-hover"
-          >
-            {t("importStatement")}
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link
+              href="/panel/banka"
+              className="inline-flex h-10 items-center gap-2 rounded-lg border border-border-strong bg-surface px-3 text-sm font-semibold text-fg hover:bg-hover"
+            >
+              <ArrowLeft aria-hidden className="h-4 w-4" />
+              {t("backToBank")}
+            </Link>
+            <Link
+              href="/panel/banka/aktar"
+              className="inline-flex h-10 items-center rounded-lg border border-border-strong px-4 text-sm font-semibold text-fg hover:bg-hover"
+            >
+              {t("importStatement")}
+            </Link>
+          </div>
         }
       />
       <MatchQueue

@@ -151,8 +151,34 @@ describe.skipIf(!process.env.INTEGRATION)("banka ekstresi mutabakatı", () => {
     if (!apiReachable) return;
     const { preview, imported } = await previewAndImport(CSV, "ekstre.csv");
     expect(preview.body.mappingSource).toBe("profile");
-    expect(imported.body).toMatchObject({ inserted: 0, duplicates: 3 });
+    // Hiçbiri henüz işlenmedi: yeni okumayla tazelenir, kimlikleri aynı kalır.
+    expect(imported.body).toMatchObject({ inserted: 0, refreshed: 3, duplicates: 0 });
     expect(await txRows()).toHaveLength(3);
+  });
+
+  it("gönderen adı başlıksız sütunda ya da '-FAST-' önekinde: sakine önerilir, yeniden yükleme eskiyi düzeltir", async () => {
+    if (!apiReachable) return;
+    await withBypassRls("t", (tx) => tx.update(bankAccounts).set({ importProfile: null }).where(eq(bankAccounts.id, ACCOUNT)));
+    // Garanti: "Açıklama" başlığı birleştirilmiş hücre; ad yandaki adsız sütunda.
+    const garanti = [
+      "Tarih;Açıklama;;Etiket;Tutar;Bakiye;Dekont No",
+      "05/09/2026;;ALİ VELİ-FAST-4797992626;Para Transferi;2.050,00;2.169,00;2026-09-05-14.44.44.383525",
+    ].join("\n");
+    const first = await previewAndImport(garanti, "garanti.csv");
+    expect(first.imported.body).toMatchObject({ parsed: 1, inserted: 1, suggested: 1 });
+    let row = await byRef("2026-09-05-14.44.44.383525");
+    expect(row).toMatchObject({ matchStatus: "suggested", matchedUnitId: unitId, counterparty: "ALİ VELİ" });
+    expect(row.description).toContain("ALİ VELİ-FAST-4797992626");
+
+    // Eski sürümün yazdığı adsız satır: yeniden yükleme düzeltir.
+    await withBypassRls("t", (tx) => tx.update(bankTransactions)
+      .set({ description: "Para Transferi", counterparty: null, matchedUnitId: null, matchConfidence: null, matchStatus: "unmatched" })
+      .where(eq(bankTransactions.id, row.id)));
+    const again = await previewAndImport(garanti, "garanti.csv");
+    expect(again.imported.body).toMatchObject({ parsed: 1, inserted: 0, refreshed: 1, suggested: 1 });
+    row = await byRef("2026-09-05-14.44.44.383525");
+    expect(row).toMatchObject({ matchStatus: "suggested", matchedUnitId: unitId, counterparty: "ALİ VELİ" });
+    await withBypassRls("t", (tx) => tx.delete(bankTransactions).where(eq(bankTransactions.id, row.id)));
   });
 
   it("çıkan hareket ödenmiş gider olarak kaydedilir, ikinci kez kaydedilemez", async () => {

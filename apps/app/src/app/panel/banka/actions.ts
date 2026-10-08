@@ -194,6 +194,7 @@ export async function importStatementFile(
       data: { inserted: result.inserted },
       message: t("importDone", {
         inserted: result.inserted,
+        refreshed: result.refreshed,
         suggested: result.suggested,
         unmatched: result.unmatched,
         outgoing: result.outgoing,

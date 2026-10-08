@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   applyMapping,
+  counterpartyFromText,
   findHeaderRow,
   guessMapping,
   mappingFromProfile,
@@ -94,5 +95,28 @@ describe("elle eşleştirme ve hata satırları", () => {
 
   it("boş ve okunamayan dosyayı reddeder", () => {
     expect(() => readTable(new Uint8Array())).toThrow("empty");
+  });
+
+  it("başlığı boş sütundaki metni açıklamaya ekler (birleştirilmiş 'Açıklama' başlığı)", () => {
+    const rows: Cell[][] = [
+      ["Tarih", "Açıklama", null, "Etiket", "Tutar", "Bakiye", "Dekont No"],
+      ["05/09/2026", null, "Elif Kübra Taşçı-FAST-4797992626", "Para Transferi", "2.050,00", "2.169,00", "2026-09-05-14.44.44.383525"],
+    ];
+    const mapped = applyMapping(rows, 0, guessMapping(rows[0]!));
+    expect(mapped.errors).toEqual([]);
+    expect(mapped.rows[0]).toMatchObject({
+      direction: "in",
+      amountKurus: 205_000,
+      description: "Elif Kübra Taşçı-FAST-4797992626 · Para Transferi",
+      counterparty: "Elif Kübra Taşçı",
+    });
+  });
+
+  it("gönderen adını açıklamadan çıkarır", () => {
+    expect(counterpartyFromText("Elif Kübra Taşçı-FAST-4797992626 · Para Transferi")).toBe("Elif Kübra Taşçı");
+    expect(counterpartyFromText("AHMET YILMAZ - EFT - 123")).toBe("AHMET YILMAZ");
+    expect(counterpartyFromText("FAST GELEN TR12 GÖNDEREN: AYŞE KAYA AIDAT")).toBe("AYŞE KAYA AIDAT");
+    expect(counterpartyFromText("AIDAT DAIRE 12 EKIM")).toBeUndefined();
+    expect(counterpartyFromText(undefined)).toBeUndefined();
   });
 });

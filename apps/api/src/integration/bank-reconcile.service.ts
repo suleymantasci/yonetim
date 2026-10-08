@@ -179,22 +179,40 @@ export class BankReconcileService {
         };
       });
 
-      const inserted = await tx
+      // Aynı döküm yeniden yüklenirse çoğaltılmaz. Henüz işlenmemiş
+      // (eşleşmeyen/önerili) hareket ise yeni okumayla tazelenir: düzeltilen
+      // sütun eşleştirmesi ya da sonradan eklenen sakin öneriye yansısın.
+      // Tahsil edilmiş/yok sayılmış/gidere dönmüş harekete dokunulmaz.
+      const written = await tx
         .insert(bankTransactions)
         .values(values)
-        .onConflictDoNothing()
+        .onConflictDoUpdate({
+          target: [bankTransactions.accountId, bankTransactions.externalId],
+          set: {
+            description: sql`excluded.description`,
+            counterparty: sql`excluded.counterparty`,
+            counterpartyIban: sql`excluded.counterparty_iban`,
+            matchedUnitId: sql`excluded.matched_unit_id`,
+            matchConfidence: sql`excluded.match_confidence`,
+            matchStatus: sql`excluded.match_status`,
+          },
+          setWhere: sql`${bankTransactions.matchStatus} IN ('unmatched', 'suggested')`,
+        })
         .returning({
-          externalId: bankTransactions.externalId,
           status: bankTransactions.matchStatus,
           direction: bankTransactions.direction,
+          // xmax = 0 → yeni satır; değilse çakışmada güncellenen satır.
+          fresh: sql<boolean>`(xmax = 0)`,
         });
 
-      const incoming = inserted.filter((r) => r.direction === "in");
+      const incoming = written.filter((r) => r.direction === "in");
+      const inserted = written.filter((r) => r.fresh).length;
       return {
-        inserted: inserted.length,
+        inserted,
+        refreshed: written.length - inserted,
         suggested: incoming.filter((r) => r.status === "suggested").length,
         unmatched: incoming.filter((r) => r.status === "unmatched").length,
-        outgoing: inserted.length - incoming.length,
+        outgoing: written.length - incoming.length,
       };
     });
 
@@ -208,7 +226,7 @@ export class BankReconcileService {
     return {
       parsed: parsed.rows.length,
       ...result,
-      duplicates: parsed.rows.length - result.inserted,
+      duplicates: parsed.rows.length - result.inserted - result.refreshed,
       errors: parsed.errors.slice(0, 50).map(({ line, reason }) => ({ line, reason })),
     };
   }

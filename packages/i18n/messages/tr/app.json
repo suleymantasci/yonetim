@@ -1103,6 +1103,7 @@
     "vendorCardNone": "Kart seçilmedi (adı aşağıya yazın)"
   },
   "bank": {
+    "backToBank": "Banka & Mutabakat",
     "title": "Banka & Mutabakat",
     "description": "Birden fazla sağlayıcı tanımlanabilir; biri yanıt vermezse diğeri devreye girer. Farklar mutabakat kuyruğuna düşer.",
     "accounts": "Tanımlı hesap",
@@ -1253,7 +1254,7 @@
     "previewMore": "… ve {count} hareket daha",
     "importButton": "{count} hareketi içe aktar",
     "importHint": "Aynı döküm tekrar yüklenirse hareketler çoğalmaz.",
-    "importDone": "{inserted} hareket aktarıldı: {suggested} öneri, {unmatched} eşleşmeyen, {outgoing} çıkan. {duplicates} hareket zaten vardı.",
+    "importDone": "{inserted} yeni hareket aktarıldı, {refreshed} mevcut hareket güncellendi: {suggested} öneri, {unmatched} eşleşmeyen, {outgoing} çıkan. {duplicates} hareket zaten işlenmişti.",
     "fileError": {
       "statement_empty": "Dosya boş.",
       "statement_too_large": "Dosya 4 MB'tan büyük. Daha kısa bir tarih aralığı indirin.",

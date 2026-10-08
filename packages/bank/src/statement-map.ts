@@ -241,6 +241,14 @@ export function applyMapping(rows: Cell[][], headerRow: number, mapping: ColumnM
     description: columnsOf("description"),
     detail: columnsOf("detail"),
   };
+  // Başlığı boş ve eşleştirilmemiş sütunlar: bazı dökümlerde (birleştirilmiş
+  // başlık hücresi) açıklama metni başlığın yanındaki adsız sütunda duruyor.
+  // Metin içeriyorsa açıklamaya eklenir; gönderen adı kaybolmasın.
+  const header = rows[headerRow] ?? [];
+  const width = rows.reduce((max, row, i) => (i > headerRow ? Math.max(max, row.length) : max), header.length);
+  const unnamed = Array.from({ length: width }, (_, i) => i).filter(
+    (i) => mapping[i] === undefined && foldHeader(header[i] ?? null) === "",
+  );
 
   const out: MappedStatement = { rows: [], errors: [], skipped: 0 };
   const seen = new Map<string, number>();
@@ -280,7 +288,7 @@ export function applyMapping(rows: Cell[][], headerRow: number, mapping: ColumnM
     }
 
     const description =
-      [...col.description, ...col.detail]
+      [...col.description, ...unnamed.filter((i) => typeof at(i) === "string"), ...col.detail]
         .map((i) => text(at(i)))
         .filter((v): v is string => Boolean(v))
         .join(" · ") || undefined;
@@ -298,7 +306,7 @@ export function applyMapping(rows: Cell[][], headerRow: number, mapping: ColumnM
       direction: signed > 0 ? "in" : "out",
       amountKurus: Math.abs(signed),
       ...(balance !== null ? { balanceAfterKurus: balance } : {}),
-      counterparty: text(at(col.counterparty)),
+      counterparty: text(at(col.counterparty)) ?? counterpartyFromText(description),
       counterpartyIban: text(at(col.iban))?.replace(/\s+/g, "").toUpperCase(),
       description,
       transactionAt: date,
@@ -307,6 +315,19 @@ export function applyMapping(rows: Cell[][], headerRow: number, mapping: ColumnM
     });
   }
   return out;
+}
+
+/**
+ * Karşı taraf sütunu olmayan dökümlerde gönderen adı açıklamanın başında:
+ * Garanti "ELİF KÜBRA TAŞÇI-FAST-4797992626", "AD SOYAD - EFT - ...",
+ * Ziraat/İş "FAST GELEN ... GÖNDEREN: AD SOYAD". Bulunamazsa undefined.
+ */
+export function counterpartyFromText(description: string | undefined): string | undefined {
+  if (!description) return undefined;
+  const sender = /g[oö]nderen\s*(?:ad[ıi]?\s*)?[:-]\s*([^\d·,;/]{3,60})/iu.exec(description);
+  if (sender?.[1]) return sender[1].trim();
+  const prefix = /^([^\d·-]{3,60}?)\s*-\s*(?:fast|eft|havale|swift)\b/iu.exec(description);
+  return prefix?.[1]?.trim() || undefined;
 }
 
 function text(cell: Cell): string | undefined {

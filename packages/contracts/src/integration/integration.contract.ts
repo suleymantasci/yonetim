@@ -370,6 +370,9 @@ export const bankStatementResult = z.object({
   parsed: z.number().int(),
   /** Yeni yazılan; aynı ekstrenin tekrar yüklenmesi çoğaltmaz. */
   inserted: z.number().int(),
+  /** Daha önce yüklenmiş, henüz işlenmemiş ve yeni okumayla tazelenen hareket. */
+  refreshed: z.number().int(),
+  /** Daha önce yüklenmiş ve işlenmiş (tahsil/gider/yok sayıldı) — dokunulmadı. */
   duplicates: z.number().int(),
   /** Daire önerisi çıkan gelen hareket — onay bekliyor. */
   suggested: z.number().int(),

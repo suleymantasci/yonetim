@@ -1103,6 +1103,7 @@
     "vendorCardNone": "No card (type the name below)"
   },
   "bank": {
+    "backToBank": "Bank & reconciliation",
     "title": "Bank & reconciliation",
     "description": "Several providers can be configured; if one stops responding another takes over. Differences go to the reconciliation queue.",
     "accounts": "Configured accounts",
@@ -1253,7 +1254,7 @@
     "previewMore": "… and {count} more",
     "importButton": "Import {count} transactions",
     "importHint": "Uploading the same statement again does not duplicate transactions.",
-    "importDone": "{inserted} transactions imported: {suggested} suggested, {unmatched} unmatched, {outgoing} outgoing. {duplicates} already existed.",
+    "importDone": "{inserted} new transactions imported, {refreshed} existing ones refreshed: {suggested} suggested, {unmatched} unmatched, {outgoing} outgoing. {duplicates} were already processed.",
     "fileError": {
       "statement_empty": "The file is empty.",
       "statement_too_large": "The file is larger than 4 MB. Download a shorter date range.",
