@@ -21,5 +21,8 @@ export async function switchTenant(formData: FormData): Promise<void> {
 
   await apiPost("/v1/auth/web/switch-tenant", { tenantId }, z.unknown());
 
-  redirect("/panel");
+  // Yalnız panel içi göreli yol (açık yönlendirme yok): kişi aramasından
+  // "siteye geç ve kartı aç".
+  const next = String(formData.get("next") ?? "");
+  redirect(/^\/panel\/[a-z0-9/-]*$/.test(next) ? next : "/panel");
 }

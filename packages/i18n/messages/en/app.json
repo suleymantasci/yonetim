@@ -3107,7 +3107,12 @@
       "collectionRate": "Collection",
       "overdue": "Overdue",
       "attention": "Attention",
-      "action": "Action"
+      "action": "Action",
+      "cash": "Cash + bank",
+      "payable": "Payables",
+      "person": "Person",
+      "unitsOf": "Units",
+      "balance": "Balance"
     },
     "current": "Current",
     "viewing": "You are here",
@@ -3117,7 +3122,18 @@
     "openRequests": "{count} open requests",
     "unreadNotifications": "{count} unread notifications",
     "latestNotification": "Latest: {title}",
-    "footnote": "The list is built from {user}'s memberships."
+    "footnote": "The list is built from {user}'s memberships.",
+    "cashTotal": "Cash + bank (managed sites)",
+    "payableTotal": "Payables",
+    "peopleTitle": "Search people across sites",
+    "peopleHint": "Search your managed sites by name, email or phone; switch to the site and open the card from the result.",
+    "peopleSearch": "Name, email or phone",
+    "peoplePlaceholder": "At least 2 characters",
+    "peopleSubmit": "Search",
+    "peopleEmpty": "No matching people.",
+    "peopleTruncated": "Showing the first 50; narrow the search.",
+    "openCard": "Open card",
+    "switchOpen": "Switch site, open card"
   },
   "signup": {
     "title": "Start your free trial",

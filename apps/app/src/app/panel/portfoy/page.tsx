@@ -2,10 +2,10 @@ import { AlertTriangle, Bell, Plus } from "lucide-react";
 import Link from "@/components/link";
 import { getTranslations } from "next-intl/server";
 
-import { portfolioResponse } from "@yonetim/contracts";
+import { portfolioFinance, portfolioPeople, portfolioResponse } from "@yonetim/contracts";
 import { HEALTHY_COLLECTION_RATE } from "@yonetim/dues";
 import {
-  Badge, Card, CardBody, EmptyState, Stat, tableClasses as tc,
+  Badge, Card, CardBody, CardHeader, EmptyState, Input, Stat, tableClasses as tc,
 } from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
@@ -32,13 +32,27 @@ export async function generateMetadata() {
   return { title: t("title") };
 }
 
-export default async function PortfolioPage() {
+export default async function PortfolioPage({
+  searchParams,
+}: {
+  readonly searchParams: Promise<Record<string, string | undefined>>;
+}) {
   const ctx = await requireContext();
+  const query = ((await searchParams).ara ?? "").trim().slice(0, 60);
   const t = await getTranslations("app.portfolio");
   const tEnum = await getTranslations("enum");
   const f = await formatters();
 
-  const { totals, rows } = await apiGet("/v1/panel/portfolio", portfolioResponse);
+  const [{ totals, rows }, finance, people] = await Promise.all([
+    apiGet("/v1/panel/portfolio", portfolioResponse),
+    apiGet("/v1/panel/portfolio/finance", portfolioFinance).catch(() => ({ rows: [] })),
+    query.length >= 2
+      ? apiGet(`/v1/panel/portfolio/people?q=${encodeURIComponent(query)}`, portfolioPeople).catch(() => null)
+      : Promise.resolve(null),
+  ]);
+  const money = new Map(finance.rows.map((r) => [r.tenantId, r]));
+  const cashTotal = finance.rows.reduce((s, r) => s + r.cashMinor + r.bankMinor, 0);
+  const payableTotal = finance.rows.reduce((s, r) => s + r.payableMinor, 0);
 
   // Risk skoru: gecikmiş borç, SLA ihlali ve geciken bakım birlikte bakılır.
   // Tek boyuta indirmek (ör. yalnız gecikmiş borç) SLA'sı patlamış ama borcu
@@ -78,6 +92,81 @@ export default async function PortfolioPage() {
         />
       </div>
 
+      {finance.rows.length > 0 ? (
+        <div className="mt-3 grid grid-cols-2 gap-3 sm:gap-4">
+          <Stat label={t("cashTotal")} value={f.money(cashTotal)} />
+          <Stat label={t("payableTotal")} value={f.money(payableTotal)} tone={payableTotal > 0 ? "warning" : "success"} />
+        </div>
+      ) : null}
+
+      <Card className="mt-4">
+        <CardHeader title={t("peopleTitle")} description={t("peopleHint")} />
+        <CardBody className={people ? "border-b border-border" : undefined}>
+          <form method="get" role="search" className="flex flex-wrap items-end gap-2">
+            <label className="text-xs text-fg-subtle">
+              {t("peopleSearch")}
+              <Input name="ara" defaultValue={query} minLength={2} maxLength={60} placeholder={t("peoplePlaceholder")} className="mt-0.5 h-9 w-64" />
+            </label>
+            <button type="submit" className="inline-flex h-9 items-center rounded-lg border border-border-strong px-3 text-sm font-semibold text-fg hover:bg-hover">
+              {t("peopleSubmit")}
+            </button>
+          </form>
+        </CardBody>
+        {people ? (
+          <CardBody className="p-0">
+            {people.rows.length === 0 ? (
+              <p className="p-6 text-sm text-fg-subtle">{t("peopleEmpty")}</p>
+            ) : (
+              <div className={tc.wrapper}>
+                <table className={tc.table}>
+                  <thead className={tc.thead}>
+                    <tr>
+                      <th className={tc.th}>{t("col.person")}</th>
+                      <th className={tc.th}>{t("col.property")}</th>
+                      <th className={tc.th}>{t("col.unitsOf")}</th>
+                      <th className={`${tc.th} text-right`}>{t("col.balance")}</th>
+                      <th className={tc.th}>
+                        <span className="sr-only">{t("col.action")}</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {people.rows.map((p) => {
+                      const current = p.tenantId === ctx.tenantId;
+                      return (
+                        <tr key={`${p.tenantId}:${p.userId}`} className={tc.tr}>
+                          <td className={tc.td}>
+                            <span className="font-medium text-fg">{p.name}</span>
+                            <span className="block text-xs text-fg-subtle">
+                              {[p.roles.map((r) => tEnum(`role.${r}`)).join(", "), p.phone].filter(Boolean).join(" · ")}
+                            </span>
+                          </td>
+                          <td className={tc.td}>{p.siteName}</td>
+                          <td className={tc.tdMuted}>{p.units.join(", ") || "—"}</td>
+                          <td className={tc.tdNum}>
+                            <span className={p.outstandingMinor > 0 ? "text-danger-fg" : ""}>{f.money(p.outstandingMinor)}</span>
+                          </td>
+                          <td className={tc.td}>
+                            {current ? (
+                              <Link href={`/panel/sakinler/${p.userId}`} className="text-sm font-semibold text-primary hover:underline">
+                                {t("openCard")}
+                              </Link>
+                            ) : (
+                              <SwitchTenantButton tenantId={p.tenantId} label={t("switchOpen")} next={`/panel/sakinler/${p.userId}`} />
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                {people.truncated ? <p className="p-3 text-xs text-fg-subtle">{t("peopleTruncated")}</p> : null}
+              </div>
+            )}
+          </CardBody>
+        ) : null}
+      </Card>
+
       <Card className="mt-4">
         <CardBody className="p-0">
           {sorted.length === 0 ? (
@@ -93,6 +182,8 @@ export default async function PortfolioPage() {
                     <th className={`${tc.th} text-right`}>{t("col.units")}</th>
                     <th className={`${tc.th} text-right`}>{t("col.collectionRate")}</th>
                     <th className={`${tc.th} text-right`}>{t("col.overdue")}</th>
+                    <th className={`${tc.th} text-right`}>{t("col.cash")}</th>
+                    <th className={`${tc.th} text-right`}>{t("col.payable")}</th>
                     <th className={tc.th}>{t("col.attention")}</th>
                     <th className={tc.th}>
                       <span className="sr-only">{t("col.action")}</span>
@@ -138,6 +229,20 @@ export default async function PortfolioPage() {
                         <span className={row.overdueMinor > 0 ? "text-danger-fg" : ""}>
                           {f.money(row.overdueMinor)}
                         </span>
+                      </td>
+                      <td className={tc.tdNum}>
+                        {money.get(row.tenantId) ? (
+                          f.money(money.get(row.tenantId)!.cashMinor + money.get(row.tenantId)!.bankMinor)
+                        ) : (
+                          <span className="text-fg-subtle">—</span>
+                        )}
+                      </td>
+                      <td className={tc.tdNum}>
+                        {money.get(row.tenantId) ? (
+                          f.money(money.get(row.tenantId)!.payableMinor)
+                        ) : (
+                          <span className="text-fg-subtle">—</span>
+                        )}
                       </td>
                       <td className={tc.td}>
                         <Attention row={row} t={t} />

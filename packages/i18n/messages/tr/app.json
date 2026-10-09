@@ -3107,7 +3107,12 @@
       "collectionRate": "Tahsilat",
       "overdue": "Gecikmiş",
       "attention": "Dikkat",
-      "action": "İşlem"
+      "action": "İşlem",
+      "cash": "Kasa + banka",
+      "payable": "Ödenecek",
+      "person": "Kişi",
+      "unitsOf": "Bölüm",
+      "balance": "Borç"
     },
     "current": "Bakılan",
     "viewing": "Buradasınız",
@@ -3117,7 +3122,18 @@
     "openRequests": "{count} açık talep",
     "unreadNotifications": "{count} okunmamış bildirim",
     "latestNotification": "Son: {title}",
-    "footnote": "Liste {user} kullanıcısının üyeliklerine göre hazırlanır."
+    "footnote": "Liste {user} kullanıcısının üyeliklerine göre hazırlanır.",
+    "cashTotal": "Kasa + banka (yönetilen siteler)",
+    "payableTotal": "Ödenecek giderler",
+    "peopleTitle": "Tüm sitelerde kişi ara",
+    "peopleHint": "Yönettiğiniz sitelerde ad, e-posta ya da telefonla arayın; sonuçtan siteye geçip kişinin kartını açabilirsiniz.",
+    "peopleSearch": "Ad, e-posta ya da telefon",
+    "peoplePlaceholder": "En az 2 karakter",
+    "peopleSubmit": "Ara",
+    "peopleEmpty": "Eşleşen kişi yok.",
+    "peopleTruncated": "İlk 50 sonuç gösteriliyor; aramayı daraltın.",
+    "openCard": "Kartı aç",
+    "switchOpen": "Siteye geç, kartı aç"
   },
   "signup": {
     "title": "Ücretsiz deneyin",

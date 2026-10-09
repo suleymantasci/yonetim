@@ -14,13 +14,17 @@ import { switchTenant } from "./actions";
 export function SwitchTenantButton({
   tenantId,
   label,
+  next,
 }: {
   tenantId: string;
   label: string;
+  /** Geçişten sonra açılacak panel yolu. */
+  next?: string;
 }) {
   return (
     <form action={switchTenant}>
       <input type="hidden" name="tenantId" value={tenantId} />
+      {next ? <input type="hidden" name="next" value={next} /> : null}
       <SubmitButton label={label} />
     </form>
   );

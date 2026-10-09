@@ -108,7 +108,7 @@ Tamamı ✓ (2026-10-08 analizi §6). Banka entegrasyon tanımları ⏸.
 - [x] **Y7 — Borçlandırma:** (`/panel/borclar/toplu` düzenlenebilir önizleme + bitiş dönemi, `/panel/sayaclar/firma-dosyasi`) önizlemede satır bazında tutar düzeltme ve borçlu seçimi; ileri tarihli borçlandırma (her tür, dönem aralığı); sayaç okumasında okuma bedeli; okuma firması dosyasıyla borçlandırma.
 - [x] **Y8 — Isı pay ölçerli dağıtım:** (`/panel/sayaclar/isi-paylasim`; okumalar sayaç okuma girişinden) doğalgaz faturası → ortak (%30) / tüketim (%70) payı, pay ölçer endeksleri, hizmet bedeli, okunamayan dairede emsal ceza; yakıt+su ve yaz dönemi su çeşitleri.
 - [x] **Y9 — Veri araçları:** (`/panel/veri-araclari`, `/panel/giderler/aktar`) giderleri Excel'den yükle; cari (kişi) birleştir; veri tutarlılık kontrolü (borçlusuz borç, maliksiz daire, hissesi %100 etmeyen daire…).
-- [ ] **Y10 — Çok site:** tüm sitelerde üye arama; portföyde site başı kasa ve alacak/borç özeti.
+- [x] **Y10 — Çok site:** (`/panel/portfoy` kasa/ödenecek sütunları + kişi arama) tüm sitelerde üye arama; portföyde site başı kasa ve alacak/borç özeti.
 
 Her madde: API + ekran + birim/entegrasyon testi + Playwright UI testi (360 px dahil) + canlı kontrol.
 

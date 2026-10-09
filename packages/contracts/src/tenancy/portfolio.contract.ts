@@ -64,3 +64,41 @@ export const portfolioResponse = z.object({
 
 export type PortfolioRow = z.infer<typeof portfolioRow>;
 export type PortfolioResponse = z.infer<typeof portfolioResponse>;
+
+/**
+ * Portföy finans özeti (Y10) — yalnız yönetim rolündeki siteler (malik /
+ * kiracı olarak üye olunan sitede kasa görünmez). Kasa + banka bakiyesi
+ * kasa ekranıyla aynı yevmiye fişlerinden.
+ */
+export const portfolioFinance = z.object({
+  rows: z.array(
+    z.object({
+      tenantId: uuid,
+      cashMinor: moneyMinor,
+      bankMinor: moneyMinor,
+      receivableMinor: moneyMinor,
+      payableMinor: moneyMinor,
+    }),
+  ),
+});
+export type PortfolioFinance = z.infer<typeof portfolioFinance>;
+
+/** Tüm sitelerde üye arama (Y10). */
+export const portfolioPeopleQuery = z.object({ q: z.string().trim().min(2).max(60) });
+export const portfolioPeople = z.object({
+  rows: z.array(
+    z.object({
+      userId: uuid,
+      tenantId: uuid,
+      slug: z.string(),
+      siteName: z.string(),
+      name: z.string(),
+      phone: z.string().nullable(),
+      roles: z.array(z.string()),
+      units: z.array(z.string()),
+      outstandingMinor: moneyMinor,
+    }),
+  ),
+  truncated: z.boolean(),
+});
+export type PortfolioPeople = z.infer<typeof portfolioPeople>;

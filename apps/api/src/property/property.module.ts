@@ -19,6 +19,7 @@ import { ListsController } from "./lists/lists.controller";
 import { ListsService } from "./lists/lists.service";
 import { UnitExtrasController, UnitExtrasService } from "./unit/unit-extras.controller";
 import { DataToolsController, DataToolsService } from "./data-tools/data-tools.controller";
+import { PortfolioPeopleController } from "./data-tools/portfolio-people.controller";
 
 /**
  * `property` bağlamı — blok, birim, sakin, adres, sayaç (MIMARI-PLAN §6.3).
@@ -33,6 +34,7 @@ import { DataToolsController, DataToolsService } from "./data-tools/data-tools.c
     PortalController,
     LettersController,
     DataToolsController,
+    PortfolioPeopleController,
   ],
   providers: [
     LettersService,
