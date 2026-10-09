@@ -346,6 +346,8 @@ export const expenses = pgTable(
     /** Bu gider sakinlere yansıtıldı mı (borçlandırma). */
     distributedAt: timestamp("distributed_at", { withTimezone: true }),
     period: varchar("period", { length: 7 }),
+    /** Tekrarlayan fatura tanımından üretildiyse (dönem başına tekil). */
+    recurringId: uuid("recurring_id"),
     createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
     approvedBy: uuid("approved_by").references(() => users.id, { onDelete: "set null" }),
     ...timestamps,
@@ -610,4 +612,30 @@ export const operatingBudgetLines = pgTable(
     ...timestamps,
   },
   (t) => [index("idx_operating_budget_lines_budget").on(t.budgetId)],
+);
+
+/**
+ * Tekrarlayan (ileri tarihli) fatura — her ay `day_of_month` günü ödenecek
+ * gider kaydı açılır (`expenses.recurring` işi). `last_period` idempotans.
+ */
+export const recurringExpenses = pgTable(
+  "recurring_expenses",
+  {
+    id: idCol(),
+    tenantId: tenantId().references(() => tenants.id, { onDelete: "cascade" }),
+    description: varchar("description", { length: 240 }).notNull(),
+    categoryId: uuid("category_id").references(() => expenseCategories.id, { onDelete: "set null" }),
+    vendorId: uuid("vendor_id"),
+    staffId: uuid("staff_id"),
+    amountKurus: money("amount_kurus").notNull(),
+    vatRate: numeric("vat_rate", { precision: 4, scale: 2 }).notNull().default("0.20"),
+    dayOfMonth: integer("day_of_month").notNull().default(1),
+    startPeriod: varchar("start_period", { length: 7 }).notNull(),
+    endPeriod: varchar("end_period", { length: 7 }),
+    lastPeriod: varchar("last_period", { length: 7 }),
+    isActive: boolean("is_active").notNull().default(true),
+    ...timestamps,
+    ...softDelete,
+  },
+  (t) => [index("idx_recurring_expenses_tenant").on(t.tenantId)],
 );

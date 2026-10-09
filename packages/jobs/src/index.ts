@@ -7,3 +7,4 @@ export * from "./dunning";
 export * from "./compliance-jobs";
 export * from "./billing-jobs";
 export * from "./reminder-jobs";
+export * from "./recurring-expenses";

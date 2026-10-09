@@ -1,4 +1,4 @@
-import { FolderTree, Plus, Receipt } from "lucide-react";
+import { FolderTree, Plus, Receipt, Repeat, Wallet } from "lucide-react";
 import Link from "@/components/link";
 import { getTranslations } from "next-intl/server";
 
@@ -46,6 +46,8 @@ export default async function ExpensesPage({
 }) {
   const ctx = await requirePermission("expense:read");
   const t = await getTranslations("app.expenses");
+  const tPay = await getTranslations("app.payables");
+  const tRec = await getTranslations("app.recurring");
   const tCommon = await getTranslations("common");
   const tEnum = await getTranslations("enum");
   const fmt = await formatters();
@@ -73,6 +75,20 @@ export default async function ExpensesPage({
 
   const actions = (
     <>
+      <Link
+        href="/panel/giderler/odenecekler"
+        className="inline-flex h-10 items-center gap-2 rounded-lg border border-border-strong bg-surface px-3 text-sm font-semibold text-fg hover:bg-hover"
+      >
+        <Wallet aria-hidden className="h-4 w-4" />
+        {tPay("title")}
+      </Link>
+      <Link
+        href="/panel/giderler/tekrarlayan"
+        className="inline-flex h-10 items-center gap-2 rounded-lg border border-border-strong bg-surface px-3 text-sm font-semibold text-fg hover:bg-hover"
+      >
+        <Repeat aria-hidden className="h-4 w-4" />
+        {tRec("title")}
+      </Link>
       {canWrite ? (
         <Link
           href="/panel/giderler/kategoriler"

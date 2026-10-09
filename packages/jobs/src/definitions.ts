@@ -99,6 +99,16 @@ export const JOBS: JobDefinition[] = [
     specRef: "Bölüm 6.3",
   },
   {
+    id: "expenses.recurring",
+    name: "Tekrarlayan faturalar",
+    cron: "0 4 * * *",
+    description:
+      "Tekrarlayan fatura tanımlarından vadesi gelen dönemlerin gider kaydını (onaylı, ödenmemiş) açar; kaçırılan aylar da üretilir, aynı dönem iki kez üretilmez.",
+    timeoutSeconds: 300,
+    singleton: true,
+    specRef: "Yönetimcell karşılaştırması Y4 (2026-10-09)",
+  },
+  {
     id: "agenda.reminders",
     name: "Ajanda hatırlatmaları",
     cron: "*/15 * * * *",

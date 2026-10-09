@@ -6,6 +6,7 @@ import {
   applyLateFees,
   collectMaintenanceReminders,
   agendaReminders,
+  generateRecurringExpenses,
   documentExpiry,
   duesLateWarning,
   duesReminder,
@@ -137,6 +138,8 @@ export class JobRegistry {
         return collectMaintenanceReminders({ tenantId });
       case "agenda.reminders":
         return agendaReminders({ tenantId });
+      case "expenses.recurring":
+        return generateRecurringExpenses({ tenantId });
       case "billing.trial-expiry":
         return expireTrial({ tenantId });
       case "sla.breach-check":
