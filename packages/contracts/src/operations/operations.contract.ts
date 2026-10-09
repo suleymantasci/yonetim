@@ -813,3 +813,68 @@ export const frontdeskResponse = z.object({
   }),
 });
 export type FrontdeskResponse = z.infer<typeof frontdeskResponse>;
+
+/* ------------------------------------------------------------------ *
+ * Isı pay ölçerli paylaşım (yakıt, yakıt + su, yaz suyu)
+ * ------------------------------------------------------------------ */
+
+export const heatCostRequest = z.object({
+  period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+  mode: z.enum(["heat", "heat_water", "summer_water"]),
+  invoiceMinor: z.coerce.number().int().positive(),
+  /** Ortak (m²) pay yüzdesi; yönetmelik %30–%50 arası. */
+  commonPct: z.coerce.number().min(0).max(70).default(30),
+  /** Asgari tüketim: bina ortalamasının yüzdesi (m² başına); boş = yok. */
+  minConsumptionPct: z.coerce.number().min(0).max(200).nullish(),
+  readingFeeMinor: z.coerce.number().int().min(0).max(100_000_00).default(0),
+  rounding: z.enum(["none", "lira", "ten_kurus"]).default("none"),
+  blockIds: z.array(uuid).default([]),
+  water: z
+    .object({
+      coldWaterPriceMinor: z.coerce.number().int().min(0).default(0),
+      inletTemp: z.coerce.number().min(-10).max(40),
+      outletTemp: z.coerce.number().min(0).max(100),
+      lowerHeatingValue: z.coerce.number().positive().max(20_000),
+      gasConsumptionM3: z.coerce.number().positive(),
+    })
+    .nullish(),
+  summerSplitEnergy: z.coerce.boolean().default(false),
+  debtTypeId: uuid.nullish(),
+  description: z.string().trim().min(3).max(160).nullish(),
+  dueDate: dateTime.nullish(),
+});
+export type HeatCostRequest = z.infer<typeof heatCostRequest>;
+
+export const heatCostPreview = z.object({
+  rows: z.array(
+    z.object({
+      unitId: uuid,
+      unitLabel: z.string(),
+      areaM2: z.number(),
+      heatConsumption: z.number(),
+      adjustedConsumption: z.number(),
+      waterConsumption: z.number(),
+      hasHeatMeter: z.boolean(),
+      minApplied: z.boolean(),
+      commonMinor: moneyMinor,
+      consumptionMinor: moneyMinor,
+      coldWaterMinor: moneyMinor,
+      waterHeatingMinor: moneyMinor,
+      readingFeeMinor: moneyMinor,
+      totalMinor: moneyMinor,
+    }),
+  ),
+  totals: z.object({
+    areaM2: z.number(),
+    heatConsumption: z.number(),
+    waterConsumption: z.number(),
+    waterHeatingMinor: moneyMinor,
+    totalMinor: moneyMinor,
+  }),
+  /** Hesap yapılamadıysa kod (ör. `no_area`, `water_params`). */
+  error: z.string().nullable(),
+  /** Bu dönemin ısı/su okumaları daha önce borçlandırıldı. */
+  alreadyBilled: z.boolean(),
+  missingArea: z.number().int(),
+});
+export type HeatCostPreview = z.infer<typeof heatCostPreview>;

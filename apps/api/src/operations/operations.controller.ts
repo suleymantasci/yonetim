@@ -15,6 +15,8 @@ import {
   maintenanceSave,
   meterBill,
   meterVendorImport,
+  heatCostRequest,
+  type HeatCostRequest,
   type MeterVendorImport,
   meterReadingBatch,
   meterReadingCorrect,
@@ -48,6 +50,7 @@ import {
 import { RequirePermission } from "../identity/decorators";
 import { ZodBodyPipe } from "../infra/zod/zod-dto";
 import { MaintenanceWriteService } from "./maintenance-write.service";
+import { HeatCostService } from "./heat-cost.service";
 import { MeterWriteService } from "./meter-write.service";
 import { OperationsService } from "./operations.service";
 import { RequestWriteService } from "./request-write.service";
@@ -69,6 +72,7 @@ export class OperationsController {
     private readonly maintenanceWrite: MaintenanceWriteService,
     private readonly meterWrite: MeterWriteService,
     private readonly reservationWrite: ReservationWriteService,
+    private readonly heatCost: HeatCostService,
   ) {}
 
   @Get("requests")
@@ -408,6 +412,20 @@ export class OperationsController {
   })
   billMeterReadings(@Body(new ZodBodyPipe(meterBill)) dto: MeterBill) {
     return this.meterWrite.bill(dto);
+  }
+
+  @Post("meters/heat-cost/preview")
+  @RequirePermission("meter:write")
+  @ApiOperation({ summary: "Isı pay ölçerli paylaşım önizlemesi (yakıt / yakıt+su / yaz suyu)" })
+  previewHeatCost(@Body(new ZodBodyPipe(heatCostRequest)) dto: HeatCostRequest) {
+    return this.heatCost.preview(dto);
+  }
+
+  @Post("meters/heat-cost")
+  @RequirePermission("meter:write", "debt:write")
+  @ApiOperation({ summary: "Isı pay ölçerli paylaşımla borçlandır; dönemin okumaları kilitlenir" })
+  billHeatCost(@Body(new ZodBodyPipe(heatCostRequest)) dto: HeatCostRequest) {
+    return this.heatCost.bill(dto);
   }
 
   @Post("meters/vendor-import/preview")

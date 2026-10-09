@@ -5,6 +5,7 @@ import { InventoryService } from "./inventory/inventory.service";
 import { JobRunController } from "./job-run/job-run.controller";
 import { JobRunService } from "./job-run/job-run.service";
 import { MaintenanceWriteService } from "./maintenance-write.service";
+import { HeatCostService } from "./heat-cost.service";
 import { MeterWriteService } from "./meter-write.service";
 import { OperationsController } from "./operations.controller";
 import { OperationsRepository } from "./operations.repository";
@@ -32,6 +33,7 @@ import { FrontdeskService } from "./frontdesk.service";
     RequestWriteService,
     MaintenanceWriteService,
     MeterWriteService,
+    HeatCostService,
     ReservationWriteService,
     JobRunService,
     InventoryService,

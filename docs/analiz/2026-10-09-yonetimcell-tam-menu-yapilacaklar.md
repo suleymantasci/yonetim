@@ -106,7 +106,7 @@ Tamamı ✓ (2026-10-08 analizi §6). Banka entegrasyon tanımları ⏸.
 - [x] **Y5 — Kasa:** (`/panel/kasa/talimat`, kasa → dönem kilidi; tetikleyici `app_guard_period_lock`) banka EFT/havale talimatı (firma/personel seç, IBAN, tutar → talimat listesi PDF); dönem kilidi (seçilen tarih ve öncesindeki finans hareketleri değiştirilemez).
 - [x] **Y6 — Raporlar:** (`/panel/raporlar/{tahsilat,gider,kasa-gunluk,aylik,borclandirma,muhasebe-kodlari,uye-notlari}`, her biri PDF) tahsilat raporu; detaylı gider + gider grubu raporu; günlük / aylık / aylık özet bilanço; borçlandırma durum ve detay raporu; muhasebe kodları listesi; üyelere kaydedilen notlar raporu.
 - [x] **Y7 — Borçlandırma:** (`/panel/borclar/toplu` düzenlenebilir önizleme + bitiş dönemi, `/panel/sayaclar/firma-dosyasi`) önizlemede satır bazında tutar düzeltme ve borçlu seçimi; ileri tarihli borçlandırma (her tür, dönem aralığı); sayaç okumasında okuma bedeli; okuma firması dosyasıyla borçlandırma.
-- [ ] **Y8 — Isı pay ölçerli dağıtım:** doğalgaz faturası → ortak (%30) / tüketim (%70) payı, pay ölçer endeksleri, hizmet bedeli, okunamayan dairede emsal ceza; yakıt+su ve yaz dönemi su çeşitleri.
+- [x] **Y8 — Isı pay ölçerli dağıtım:** (`/panel/sayaclar/isi-paylasim`; okumalar sayaç okuma girişinden) doğalgaz faturası → ortak (%30) / tüketim (%70) payı, pay ölçer endeksleri, hizmet bedeli, okunamayan dairede emsal ceza; yakıt+su ve yaz dönemi su çeşitleri.
 - [ ] **Y9 — Veri araçları:** giderleri Excel'den yükle; cari (kişi) birleştir; veri tutarlılık kontrolü (borçlusuz borç, maliksiz daire, hissesi %100 etmeyen daire…).
 - [ ] **Y10 — Çok site:** tüm sitelerde üye arama; portföyde site başı kasa ve alacak/borç özeti.
 

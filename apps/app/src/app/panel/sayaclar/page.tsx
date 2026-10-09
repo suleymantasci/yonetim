@@ -1,4 +1,4 @@
-import { ClipboardList, FileSpreadsheet, Pencil, Plus, ReceiptText, Trash2 } from "lucide-react";
+import { ClipboardList, FileSpreadsheet, Flame, Pencil, Plus, ReceiptText, Trash2 } from "lucide-react";
 import Link from "@/components/link";
 import { getTranslations } from "next-intl/server";
 
@@ -55,6 +55,13 @@ export default async function MetersPage() {
       >
         <ClipboardList aria-hidden className="h-4 w-4" />
         {t("batchTitle")}
+      </Link>
+      <Link
+        href="/panel/sayaclar/isi-paylasim"
+        className="inline-flex h-10 items-center gap-2 rounded-lg border border-border px-4 text-sm font-semibold text-fg hover:bg-hover"
+      >
+        <Flame aria-hidden className="h-4 w-4" />
+        {t("heatCost")}
       </Link>
       <Link
         href="/panel/sayaclar/firma-dosyasi"

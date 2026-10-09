@@ -7,7 +7,11 @@ import {
   meterBillResult,
   meterReadingBatchResult,
   meterSaveResult,
+  heatCostPreview,
+  heatCostRequest,
   meterVendorPreview,
+  type HeatCostPreview,
+  type HeatCostRequest,
   type MeterVendorPreview,
 } from "@yonetim/contracts";
 
@@ -366,5 +370,40 @@ export async function importVendorFile(input: VendorFileInput): Promise<{ ok: bo
     return { ok: true, message: tVendor("created", { count: r.created }) };
   } catch (error) {
     return { ok: false, message: (await reasonMessage(error)) ?? tVendor("fileError") };
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Isı pay ölçerli paylaşım
+ * ------------------------------------------------------------------ */
+
+export async function previewHeatCost(
+  input: HeatCostRequest,
+): Promise<{ ok: true; data: HeatCostPreview } | { ok: false; message: string }> {
+  await requirePermission("meter:write");
+  const tHeat = await getTranslations("app.heatCost");
+  const parsed = heatCostRequest.safeParse(input);
+  if (!parsed.success) return { ok: false, message: tHeat("invalid") };
+  try {
+    return { ok: true, data: await apiPost("/v1/panel/operations/meters/heat-cost/preview", parsed.data, heatCostPreview) };
+  } catch (error) {
+    return { ok: false, message: (await reasonMessage(error)) ?? tHeat("failed") };
+  }
+}
+
+export async function billHeatCost(input: HeatCostRequest): Promise<{ ok: boolean; message: string }> {
+  await requirePermission("meter:write");
+  const tHeat = await getTranslations("app.heatCost");
+  const parsed = heatCostRequest.safeParse(input);
+  if (!parsed.success) return { ok: false, message: tHeat("invalid") };
+  try {
+    const r = await apiPost(
+      "/v1/panel/operations/meters/heat-cost",
+      parsed.data,
+      z.object({ created: z.number(), totalMinor: z.number() }),
+    );
+    return { ok: true, message: tHeat("billed", { count: r.created }) };
+  } catch (error) {
+    return { ok: false, message: (await reasonMessage(error)) ?? tHeat("failed") };
   }
 }
