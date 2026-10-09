@@ -150,8 +150,10 @@ export async function loadJournal(tx: Database, until: Date): Promise<Journal> {
     `),
     q(sql`
       SELECT m.id, m.kind, m.movement_date, m.amount_kurus, m.from_account, m.from_bank_account_id,
-             m.to_account, m.to_bank_account_id, m.income_category, m.payer_name, m.description
+             m.to_account, m.to_bank_account_id, m.income_category, m.payer_name, m.description,
+             ig.account_code AS group_code, ig.name AS group_name
       FROM cash_movements m
+      LEFT JOIN income_groups ig ON ig.id = m.income_group_id
       WHERE m.voided_at IS NULL AND m.movement_date <= ${end}::timestamptz
     `),
   ]);
@@ -305,7 +307,11 @@ export async function loadJournal(tx: Database, until: Date): Promise<Journal> {
         description: `Virman${note}`, lines: pair(to, sideCode(r.from_account, r.from_bank_account_id), amount),
       });
     } else if (r.kind === "income") {
-      const [incomeCode] = INCOME_ACCOUNTS[String(r.income_category)] ?? INCOME_ACCOUNTS.other!;
+      // Kullanıcı tanımlı grup kendi koduna; yoksa sabit grubun alt hesabı.
+      const incomeCode = r.group_code
+        ? String(r.group_code)
+        : (INCOME_ACCOUNTS[String(r.income_category)] ?? INCOME_ACCOUNTS.other!)[0];
+      if (r.group_code && !accounts.has(incomeCode)) accounts.set(incomeCode, String(r.group_name));
       entries.push({
         date: d(r.movement_date), order: 3, source: "income", sourceId: String(r.id),
         description: `Harici tahsilat: ${r.payer_name ?? ""}${note}`.trim(), lines: pair(to, incomeCode, amount),

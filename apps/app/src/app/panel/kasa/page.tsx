@@ -1,4 +1,4 @@
-import { ArrowLeftRight, FileSignature, HandCoins } from "lucide-react";
+import { ArrowLeftRight, FileSignature, HandCoins, Pencil, Plus } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
 import { hasPermission } from "@yonetim/auth/guard";
@@ -22,12 +22,14 @@ import { formatters } from "@/lib/format";
 import {
   createHandover,
   saveIncome,
+  saveIncomeGroup,
   saveTransfer,
   voidMovement,
 } from "./actions";
 import {
   HandoverFields,
   IncomeFields,
+  IncomeGroupFields,
   TransferFields,
   VoidFields,
 } from "./fields";
@@ -61,7 +63,10 @@ export default async function CashPage() {
         description={t("newIncomeHint")}
         submitLabel={tCommon("action.save")}
       >
-        <IncomeFields banks={data.bankOptions} />
+        <IncomeFields
+          banks={data.bankOptions}
+          groups={data.incomeGroups.filter((g) => g.isActive)}
+        />
       </ActionDrawerButton>
       {data.bankOptions.length > 0 ? (
         <ActionDrawerButton
@@ -165,9 +170,10 @@ export default async function CashPage() {
                       <td className={tc.td}>
                         <Badge tone={m.kind === "income" ? "success" : "info"}>
                           {m.kind === "income"
-                            ? t(
+                            ? (m.incomeGroupName ??
+                              t(
                                 `incomeCategory.${m.category ?? "other"}` as "incomeCategory.other",
-                              )
+                              ))
                             : t("transfer")}
                         </Badge>
                         {m.voidedAt ? (
@@ -223,6 +229,56 @@ export default async function CashPage() {
                 </tbody>
               </table>
             </div>
+          )}
+        </CardBody>
+      </Card>
+
+      <Card className="mb-4">
+        <CardHeader
+          title={t("groupsTitle")}
+          description={t("groupsHint")}
+          action={
+            canWrite ? (
+              <ActionDrawerButton
+                action={saveIncomeGroup}
+                hidden={{}}
+                icon={<Plus />}
+                label={t("newGroup")}
+                title={t("newGroup")}
+                description={t("groupsHint")}
+                submitLabel={tCommon("action.save")}
+              >
+                <IncomeGroupFields />
+              </ActionDrawerButton>
+            ) : null
+          }
+        />
+        <CardBody className="p-0">
+          {data.incomeGroups.length === 0 ? (
+            <p className="p-4 text-sm text-fg-subtle">{t("groupsEmpty")}</p>
+          ) : (
+            <ul className="divide-y divide-border">
+              {data.incomeGroups.map((g) => (
+                <li key={g.id} className="flex flex-wrap items-center gap-3 px-4 py-2.5 text-sm">
+                  <span className="min-w-0 flex-1 font-medium">{g.name}</span>
+                  <span className="font-mono text-xs text-fg-subtle">{g.accountCode}</span>
+                  <span className="text-xs text-fg-subtle">{t("groupUsage", { count: g.usage })}</span>
+                  {g.isActive ? null : <Badge tone="neutral">{t("groupInactive")}</Badge>}
+                  {canWrite ? (
+                    <ActionDrawerButton
+                      action={saveIncomeGroup}
+                      hidden={{}}
+                      icon={<Pencil />}
+                      label={t("editGroup", { name: g.name })}
+                      title={t("editGroup", { name: g.name })}
+                      submitLabel={tCommon("action.save")}
+                    >
+                      <IncomeGroupFields group={g} />
+                    </ActionDrawerButton>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
           )}
         </CardBody>
       </Card>

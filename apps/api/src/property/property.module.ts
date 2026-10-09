@@ -15,15 +15,17 @@ import { UnitRepository } from "./unit/unit.repository";
 import { UnitService } from "./unit/unit.service";
 import { LettersController } from "./letters/letters.controller";
 import { LettersService } from "./letters/letters.service";
+import { UnitExtrasController, UnitExtrasService } from "./unit/unit-extras.controller";
 
 /**
  * `property` bağlamı — blok, birim, sakin, adres, sayaç (MIMARI-PLAN §6.3).
  * A1'de blok + birim, A3'te sakin; sayaç Track E'de eklenir.
  */
 @Module({
-  controllers: [UnitController, ResidentController, PortalController, LettersController],
+  controllers: [UnitExtrasController, UnitController, ResidentController, PortalController, LettersController],
   providers: [
     LettersService,
+    UnitExtrasService,
     UnitService,
     UnitRepository,
     BulkUnitBuilder,

@@ -110,6 +110,8 @@ export const legalCaseRow = z.object({
   id: uuid,
   unitId: uuid.nullable(),
   unitNumber: z.string().nullable(),
+  lawyerId: uuid.nullable().default(null),
+  lawyerName: z.string().nullable().default(null),
   caseNo: z.string().nullable(),
   stage: z.string(),
   principalMinor: moneyMinor,
@@ -202,6 +204,8 @@ export const legalCaseCreate = z.object({
  */
 export const legalCaseUpdate = z.object({
   stage: legalStage.optional(),
+  /** Dosyayı takip eden avukat (`null`: atamayı kaldır). */
+  lawyerId: uuid.nullish(),
   caseNo: z.string().trim().max(60).nullish(),
   nextActionAt: z.coerce.date().nullish(),
   nextActionNote: z.string().trim().max(500).nullish(),
@@ -454,3 +458,33 @@ export type DataBreachRow = z.infer<typeof dataBreachRow>;
 export const dataBreachList = z.object({ rows: z.array(dataBreachRow) });
 
 export type DataBreachList = z.infer<typeof dataBreachList>;
+
+/* --------------------------------------------------- avukatlar */
+
+export const lawyerRow = z.object({
+  id: uuid,
+  name: z.string(),
+  barNo: z.string().nullable(),
+  barCity: z.string().nullable(),
+  phone: z.string().nullable(),
+  email: z.string().nullable(),
+  commissionPct: z.number(),
+  isActive: z.boolean(),
+  openCases: z.number().int(),
+  collectedMinor: moneyMinor,
+});
+
+export const lawyerList = z.object({ rows: z.array(lawyerRow) });
+export type LawyerList = z.infer<typeof lawyerList>;
+
+export const lawyerSave = z.object({
+  name: z.string().trim().min(3).max(160),
+  barNo: z.string().trim().max(40).nullish(),
+  barCity: z.string().trim().max(60).nullish(),
+  phone: z.string().trim().max(20).nullish(),
+  email: z.string().trim().email().max(200).nullish(),
+  /** Tahsilattan avukat payı (%). */
+  commissionPct: z.coerce.number().min(0).max(100).default(10),
+  isActive: z.coerce.boolean().default(true),
+});
+export type LawyerSave = z.infer<typeof lawyerSave>;

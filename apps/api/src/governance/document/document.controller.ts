@@ -7,6 +7,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
 } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 
@@ -18,6 +19,7 @@ import {
   legalCaseCreate,
   legalCaseUpdate,
   legalEventCreate,
+  lawyerSave,
   type DocumentCreate,
   type DocumentUploadUrlRequest,
   type LegalAmountEntry,
@@ -25,12 +27,14 @@ import {
   type LegalCaseCreate,
   type LegalCaseUpdate,
   type LegalEventCreate,
+  type LawyerSave,
 } from "@yonetim/contracts";
 
 import { RequirePermission } from "../../identity/decorators";
 import { ZodBodyPipe } from "../../infra/zod/zod-dto";
 import { DocumentWriteService } from "./document-write.service";
 import { DocumentService } from "./document.service";
+import { LawyerService } from "./lawyer.service";
 import { LegalWriteService } from "./legal-write.service";
 
 /** Panel iç BFF yüzeyi — belge, hukuk, KVKK. */
@@ -41,7 +45,29 @@ export class DocumentController {
     private readonly service: DocumentService,
     private readonly documentWrite: DocumentWriteService,
     private readonly legalWrite: LegalWriteService,
+    private readonly lawyers: LawyerService,
   ) {}
+
+  @Get("legal/lawyers")
+  @RequirePermission("legal:read")
+  @ApiOperation({ summary: "Avukatlar — açık dosya sayısı ve tahsilat toplamıyla" })
+  lawyerList() {
+    return this.lawyers.list();
+  }
+
+  @Post("legal/lawyers")
+  @RequirePermission("legal:write")
+  @ApiOperation({ summary: "Avukat ekle" })
+  lawyerCreate(@Body(new ZodBodyPipe(lawyerSave)) dto: LawyerSave) {
+    return this.lawyers.create(dto);
+  }
+
+  @Patch("legal/lawyers/:id")
+  @RequirePermission("legal:write")
+  @ApiOperation({ summary: "Avukatı güncelle (pasifleştirme dahil)" })
+  lawyerUpdate(@Param("id", ParseUUIDPipe) id: string, @Body(new ZodBodyPipe(lawyerSave)) dto: LawyerSave) {
+    return this.lawyers.update(id, dto);
+  }
 
   @Get("documents")
   @RequirePermission("document:read")
@@ -101,8 +127,10 @@ export class DocumentController {
       "Tahsil edilebilirlik puanı yanında `scoreFactors` da dönüyor: icra " +
       "kararı verirken 'neden bu puan' sorusunun cevabı ekranda olmalı.",
   })
-  legalCases() {
-    return this.service.legalCases();
+  legalCases(@Query("lawyerId") lawyerId?: string) {
+    return this.service.legalCases(
+      lawyerId && /^[0-9a-f-]{36}$/.test(lawyerId) ? lawyerId : undefined,
+    );
   }
 
   @Post("legal")

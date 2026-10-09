@@ -19,6 +19,8 @@ import { StaffLedgerService } from "./staff-ledger.service";
 import { StaffWriteService } from "./staff-write.service";
 import { TenancyController } from "./tenancy.controller";
 import { TenancyService } from "./tenancy.service";
+import { TeamController } from "./team/team.controller";
+import { TeamService } from "./team/team.service";
 
 /**
  * `tenancy` bağlamı — site, abonelik, personel (MIMARI-PLAN §6.3).
@@ -37,6 +39,7 @@ import { TenancyService } from "./tenancy.service";
     PortfolioController,
     DemoController,
     DemoPlatformController,
+    TeamController,
   ],
   providers: [
     TenancyService,
@@ -49,6 +52,7 @@ import { TenancyService } from "./tenancy.service";
     ImpersonationService,
     DemoService,
     DemoLifecycleService,
+    TeamService,
   ],
   exports: [TenancyService, LifecycleService],
 })

@@ -1,10 +1,13 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import { sql } from "drizzle-orm";
 
+import { maskPhone } from "@yonetim/core";
 import type {
   DebtMatrixQuery,
   DebtMatrixResponse,
+  DeletedResponse,
   MemberScope,
+  MessageReportResponse,
   OpenItemsResponse,
   ReceiptListResponse,
 } from "@yonetim/contracts";
@@ -215,5 +218,120 @@ export class DebtReportService {
       })),
     }));
     return { rows: list, totalMinor: list.reduce((a, r) => a + r.amountMinor, 0) };
+  }
+
+  /**
+   * Silinen hareketler — iptal edilen borç ve tahsilat, iptal edilen kasa
+   * hareketi, silinen gider: ne zaman, kim, neden. Kim bilgisi kaydın kendi
+   * izinden (borç/tahsilat `metadata`, kasa `void_reason` + denetim kaydı,
+   * gider denetim kaydı); eski kayıtlarda boş olabilir.
+   */
+  async deleted(q: { from: string; to: string; kind?: DeletedResponse["rows"][number]["kind"] }): Promise<DeletedResponse> {
+    if (q.from > q.to) throw new BadRequestException("validation_failed:range_order");
+    const from = istanbulStart(q.from).toISOString();
+    const to = istanbulEnd(q.to).toISOString();
+    const want = (k: string) => !q.kind || q.kind === k;
+    const rows = await this.db.tx(async (tx) =>
+      (await tx.execute(sql`
+        SELECT * FROM (
+          SELECT 'debt' AS kind, d.id, d.deleted_at AS at, d.description, ${UNIT_LABEL} AS unit_label,
+                 d.amount_kurus AS amount, (d.metadata->'cancelled'->>'by')::uuid AS by_id,
+                 d.metadata->'cancelled'->>'reason' AS reason
+          FROM debts d JOIN units u ON u.id = d.unit_id LEFT JOIN blocks b ON b.id = u.block_id
+          WHERE ${want("debt")} AND d.deleted_at IS NOT NULL AND d.status = 'cancelled'
+          UNION ALL
+          SELECT 'payment', p.id, (p.metadata->'voided'->>'at')::timestamptz, 'Tahsilat' || COALESCE(' · makbuz ' || p.receipt_no, ''),
+                 CASE WHEN u.id IS NULL THEN NULL ELSE ${UNIT_LABEL} END,
+                 p.amount_kurus, (p.metadata->'voided'->>'by')::uuid, p.metadata->'voided'->>'reason'
+          FROM payments p LEFT JOIN units u ON u.id = p.unit_id LEFT JOIN blocks b ON b.id = u.block_id
+          WHERE ${want("payment")} AND p.status = 'cancelled' AND p.metadata ? 'voided'
+          UNION ALL
+          SELECT 'cash', m.id, m.voided_at, COALESCE(m.payer_name, 'Kasa hareketi') || COALESCE(' — ' || m.description, ''), NULL,
+                 m.amount_kurus,
+                 (SELECT a.user_id FROM audit_logs a WHERE a.resource_id = m.id AND a.action = 'cash_movement_voided' ORDER BY a.created_at DESC LIMIT 1),
+                 m.void_reason
+          FROM cash_movements m
+          WHERE ${want("cash")} AND m.voided_at IS NOT NULL
+          UNION ALL
+          SELECT 'expense', e.id, e.deleted_at, e.description, NULL, e.amount_kurus,
+                 (SELECT a.user_id FROM audit_logs a WHERE a.resource_id = e.id AND a.action = 'expense_deleted' ORDER BY a.created_at DESC LIMIT 1),
+                 NULL
+          FROM expenses e
+          WHERE ${want("expense")} AND e.deleted_at IS NOT NULL
+        ) x
+        LEFT JOIN LATERAL (
+          SELECT nullif(trim(concat_ws(' ', us.first_name, us.last_name)), '') AS by_name FROM users us WHERE us.id = x.by_id
+        ) who ON TRUE
+        WHERE x.at BETWEEN ${from}::timestamptz AND ${to}::timestamptz
+        ORDER BY x.at DESC
+        LIMIT 1000
+      `)) as unknown as Row[],
+    );
+    const list = rows.map((r) => ({
+      kind: String(r.kind) as DeletedResponse["rows"][number]["kind"],
+      id: String(r.id),
+      at: new Date(String(r.at)),
+      description: String(r.description),
+      unitLabel: s(r.unit_label),
+      amountMinor: n(r.amount),
+      byName: s(r.by_name),
+      reason: s(r.reason),
+    }));
+    return { rows: list, totals: { count: list.length, amountMinor: list.reduce((a, r) => a + r.amountMinor, 0) } };
+  }
+
+  /** SMS / e-posta / WhatsApp gönderim raporu — alıcı maskeli. */
+  async messages(q: { from: string; to: string; channel?: string; status?: string }): Promise<MessageReportResponse> {
+    if (q.from > q.to) throw new BadRequestException("validation_failed:range_order");
+    const statusSql =
+      q.status === "sent"
+        ? sql`AND n.status IN ('sent','delivered','read')`
+        : q.status === "failed"
+          ? sql`AND n.status = 'failed'`
+          : q.status === "pending"
+            ? sql`AND n.status IN ('queued','scheduled')`
+            : sql``;
+    const rows = await this.db.tx(async (tx) =>
+      (await tx.execute(sql`
+        SELECT n.id, n.created_at, n.channel::text AS channel, n.status::text AS status, n.recipient,
+               n.subject, n.template, n.error, n.cost_kurus,
+               nullif(trim(concat_ws(' ', us.first_name, us.last_name)), '') AS name
+        FROM notifications n LEFT JOIN users us ON us.id = n.user_id
+        WHERE n.channel IN ('sms','email','whatsapp')
+          ${q.channel ? sql`AND n.channel = ${q.channel}::channel` : sql``}
+          ${statusSql}
+          AND n.created_at BETWEEN ${istanbulStart(q.from).toISOString()}::timestamptz AND ${istanbulEnd(q.to).toISOString()}::timestamptz
+        ORDER BY n.created_at DESC
+        LIMIT 1000
+      `)) as unknown as Row[],
+    );
+    const bucket = (status: string) =>
+      status === "failed" ? "failed" : status === "queued" || status === "scheduled" || status === "cancelled" ? "pending" : "sent";
+    const byChannel = new Map<string, MessageReportResponse["byChannel"][number]>();
+    const list = rows.map((r) => {
+      const channel = String(r.channel);
+      const b = bucket(String(r.status));
+      const agg = byChannel.get(channel) ?? { channel, sent: 0, failed: 0, pending: 0, costMinor: 0 };
+      agg[b] += 1;
+      agg.costMinor += n(r.cost_kurus);
+      byChannel.set(channel, agg);
+      const recipient = String(r.recipient ?? "");
+      return {
+        id: String(r.id),
+        at: new Date(String(r.created_at)),
+        channel,
+        status: String(r.status),
+        recipient: recipient.includes("@")
+          ? recipient.replace(/^(.{0,2}).*(@.*)$/, "$1***$2")
+          : recipient.startsWith("+")
+            ? maskPhone(recipient)
+            : "***",
+        recipientName: s(r.name),
+        subject: s(r.subject) ?? s(r.template),
+        error: s(r.error),
+        costMinor: n(r.cost_kurus),
+      };
+    });
+    return { rows: list, byChannel: [...byChannel.values()] };
   }
 }

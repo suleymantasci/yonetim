@@ -8,6 +8,7 @@ import { tenantLifecycleResult } from "@yonetim/contracts";
 import { apiPatch, apiPost } from "@/lib/api/server";
 import {
   checkboxField,
+  optionalUuidField,
   decimalField,
   emailField,
   intField,
@@ -50,6 +51,8 @@ const settingsSchema = z.object({
 
   whatsappOptInRequired: checkboxField,
   onlinePaymentEnabled: checkboxField,
+  defaultPaymentMethod: z.enum(["bank_transfer", "cash", "card"]).default("bank_transfer"),
+  defaultBankAccountId: optionalUuidField,
 });
 
 export async function saveSettings(
@@ -85,6 +88,8 @@ export async function saveSettings(
           invoiceAddress: input.invoiceAddress ?? null,
           whatsappOptInRequired: input.whatsappOptInRequired,
           onlinePaymentEnabled: input.onlinePaymentEnabled,
+          defaultPaymentMethod: input.defaultPaymentMethod,
+          defaultBankAccountId: input.defaultBankAccountId ?? null,
         },
         z.object({ id: z.string().uuid() }),
       );

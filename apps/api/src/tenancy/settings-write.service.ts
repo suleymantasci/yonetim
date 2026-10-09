@@ -40,6 +40,14 @@ export class SettingsWriteService {
         .where(eq(tenants.id, tenantId))
         .limit(1);
       if (!before) throw new NotFoundException("not_found");
+      if (dto.defaultBankAccountId) {
+        const [account] = await tx
+          .select({ id: bankAccounts.id })
+          .from(bankAccounts)
+          .where(and(eq(bankAccounts.id, dto.defaultBankAccountId), isNull(bankAccounts.deletedAt)))
+          .limit(1);
+        if (!account) throw new NotFoundException("not_found:bank_account");
+      }
 
       /*
        * `settings` JSONB **birleştiriliyor**, ezilmiyor.
@@ -65,6 +73,10 @@ export class SettingsWriteService {
          * (`readPaymentSettings`) alanı zaten görmezden geliyor.
          */
         payment: { onlineEnabled: dto.onlinePaymentEnabled },
+        collection: {
+          method: dto.defaultPaymentMethod,
+          bankAccountId: dto.defaultBankAccountId ?? null,
+        },
         invoiceInfo: {
           title: dto.invoiceTitle ?? null,
           taxNumber: dto.invoiceTaxNumber ?? null,

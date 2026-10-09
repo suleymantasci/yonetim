@@ -11,6 +11,7 @@ import {
   consents,
   documents,
   kvkkRequests,
+  lawyers,
   legalCases,
   units,
   users,
@@ -86,13 +87,15 @@ export class DocumentService {
    * bir iş paketi üzerinden veritabanına ulaşması, doğrudan ulaşmasından
    * farksızdı (§8.3). Taşırken `units` join'i eklendi.
    */
-  async legalCases(): Promise<LegalCaseListResponse> {
+  async legalCases(lawyerId?: string): Promise<LegalCaseListResponse> {
     const rows = await this.db.tx(async (tx) =>
       tx
         .select({
           id: legalCases.id,
           unitId: legalCases.unitId,
           unitNumber: units.number,
+          lawyerId: legalCases.lawyerId,
+          lawyerName: lawyers.name,
           caseNo: legalCases.caseNo,
           stage: legalCases.stage,
           principalKurus: legalCases.principalKurus,
@@ -108,6 +111,8 @@ export class DocumentService {
         })
         .from(legalCases)
         .leftJoin(units, eq(units.id, legalCases.unitId))
+        .leftJoin(lawyers, eq(lawyers.id, legalCases.lawyerId))
+        .where(lawyerId ? eq(legalCases.lawyerId, lawyerId) : undefined)
         .orderBy(desc(legalCases.openedAt))
         .limit(100),
     );
@@ -116,6 +121,8 @@ export class DocumentService {
       id: r.id,
       unitId: r.unitId,
       unitNumber: r.unitNumber,
+      lawyerId: r.lawyerId,
+      lawyerName: r.lawyerName,
       caseNo: r.caseNo,
       stage: r.stage,
       principalMinor: r.principalKurus,

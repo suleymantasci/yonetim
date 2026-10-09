@@ -145,6 +145,7 @@ export class LegalWriteService {
         .set({
           ...(dto.stage ? { stage: dto.stage } : {}),
           ...(dto.caseNo !== undefined ? { caseNo: dto.caseNo ?? null } : {}),
+          ...(dto.lawyerId !== undefined ? { lawyerId: dto.lawyerId ?? null } : {}),
           ...(dto.nextActionAt !== undefined
             ? { nextActionAt: dto.nextActionAt ?? null }
             : {}),

@@ -93,6 +93,11 @@ export const tenantSettingsSave = z.object({
    * komisyon sakinden ek olarak alınır (2026-07-29 kararı).
    */
   onlinePaymentEnabled: z.coerce.boolean().default(false),
+
+  /** Tahsilat formunda başlangıç ödeme şekli. */
+  defaultPaymentMethod: z.enum(["bank_transfer", "cash", "card"]).default("bank_transfer"),
+  /** Varsayılan kasa/banka hesabı — nakit dışı tahsilatta önceden seçilir. */
+  defaultBankAccountId: z.string().uuid().nullish(),
 });
 
 export type TenantSettingsSave = z.infer<typeof tenantSettingsSave>;

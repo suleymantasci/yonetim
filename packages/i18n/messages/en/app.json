@@ -70,7 +70,8 @@
     "cash": "Cash Operations",
     "budget": "Operating Budget",
     "calendar": "Calendar",
-    "letters": "Legal documents"
+    "letters": "Legal documents",
+    "knowledge": "Knowledge base"
   },
   "shell": {
     "trialDaysLeft": "Trial · {days} days left",
@@ -416,7 +417,38 @@
     "drawerCreatedTitle": "Unit added",
     "drawerCreatedHint": "You can continue here — the list stayed open behind this panel.",
     "drawerAddResident": "Add a resident to this unit",
-    "drawerAddAnother": "Add another unit"
+    "drawerAddAnother": "Add another unit",
+    "extras": {
+      "title": "Household and vehicles",
+      "hint": "Other people living in the unit and vehicle plates (parking, gate). A plate is unique within the site.",
+      "household": "Household · {count}",
+      "householdEmpty": "None.",
+      "removeMember": "Remove {name}",
+      "addMember": "Add person",
+      "fullName": "Full name",
+      "relationLabel": "Relation",
+      "relation": {
+        "spouse": "Spouse",
+        "child": "Child",
+        "parent": "Parent",
+        "relative": "Relative",
+        "other": "Other"
+      },
+      "birthYear": "Birth year",
+      "phone": "Phone",
+      "vehicles": "Vehicles · {count}",
+      "vehiclesEmpty": "No vehicles.",
+      "removeVehicle": "Remove {plate}",
+      "addVehicle": "Add vehicle",
+      "plate": "Plate",
+      "vehicleDescription": "Vehicle",
+      "vehicleDescriptionPlaceholder": "e.g. White Fiat Egea",
+      "vehicleOwner": "Driver",
+      "memberAdded": "Person added.",
+      "memberRemoved": "Person removed.",
+      "vehicleAdded": "Vehicle added.",
+      "vehicleRemoved": "Vehicle removed."
+    }
   },
   "residents": {
     "title": "Residents",
@@ -2179,7 +2211,33 @@
     "eventAdded": "Event added to the case log.",
     "costAdded": "Cost recorded.",
     "collectionAdded": "Collection recorded.",
-    "caseClosed": "Case closed."
+    "caseClosed": "Case closed.",
+    "lawyersLink": "Lawyers",
+    "lawyerFilter": "By lawyer",
+    "allLawyers": "All lawyers",
+    "filter": "Filter",
+    "lawyerShort": "Lawyer: {name}",
+    "lawyer": "Lawyer",
+    "noLawyer": "Unassigned",
+    "lawyersTitle": "Lawyers",
+    "lawyersDescription": "Lawyers following enforcement cases: open cases and collections. Assign a case when updating its stage.",
+    "newLawyer": "Add lawyer",
+    "lawyersEmpty": "No lawyers yet.",
+    "lawyerName": "Name / firm",
+    "bar": "Bar",
+    "contact": "Contact",
+    "commission": "Share (%)",
+    "commissionHint": "Lawyer's share of collections.",
+    "openCasesCol": "Open cases",
+    "edit": "Edit",
+    "editLawyer": "Edit {name}",
+    "barCity": "Bar",
+    "barNo": "Registry no",
+    "phone": "Phone",
+    "email": "Email",
+    "lawyerActive": "Active (assignable)",
+    "inactive": "Inactive",
+    "lawyerSaved": "“{name}” saved."
   },
   "kvkkPanel": {
     "title": "Data protection",
@@ -2398,7 +2456,16 @@
       "restoreReasonLabel": "Reason for restoring",
       "restoreAction": "Restore property",
       "restoreDone": "Property restored."
-    }
+    },
+    "collectionDefaults": "Collection defaults",
+    "collectionDefaultsHint": "Collection forms open with this method and account (default till).",
+    "defaultPaymentMethod": "Default method",
+    "methodTransfer": "Bank transfer",
+    "methodCash": "Cash",
+    "methodCard": "Card (POS)",
+    "defaultBankAccount": "Default account",
+    "defaultBankAccountHint": "Preselected for non-cash collections; pick your POS account if any.",
+    "defaultBankAccountNone": "None"
   },
   "migration": {
     "title": "Data import",
@@ -3816,7 +3883,22 @@
       "compensation": "Compensation / insurance",
       "sale": "Scrap / asset sale",
       "other": "Other income"
-    }
+    },
+    "customGroups": "Custom groups",
+    "groupName": "Group name",
+    "groupNamePlaceholder": "e.g. Deposit interest",
+    "groupCode": "Income account",
+    "groupCodeHint": "Leave empty to get the next 602.1x.",
+    "groupCodeLocked": "The account code can't change: past vouchers use it.",
+    "groupActive": "Active (selectable in the income form)",
+    "groupSaved": "“{name}” saved.",
+    "groupsTitle": "Other income groups",
+    "groupsHint": "Your own groups for non-dues income: rent, ads, deposit interest… Each posts to its own income account.",
+    "newGroup": "Add group",
+    "groupsEmpty": "No custom groups; built-in groups (rent, ads, interest…) are available.",
+    "groupUsage": "{count} movements",
+    "groupInactive": "Inactive",
+    "editGroup": "Edit {name}"
   },
   "budget": {
     "title": "Operating Budget",
@@ -3928,7 +4010,9 @@
       "openItems": "Debt statement",
       "receipts": "Receipts",
       "activity": "Activity report",
-      "auditReport": "Audit report"
+      "auditReport": "Audit report",
+      "messages": "Messages",
+      "deleted": "Deleted"
     },
     "from": "From",
     "to": "To",
@@ -4287,5 +4371,93 @@
     "labelPhoneNote": "Phone numbers are printed in full; access is written to the audit log.",
     "labelsPdf": "Labels PDF",
     "labelResident": "Resident"
+  },
+  "team": {
+    "title": "Panel users",
+    "description": "The team using the panel: second manager, accountant, auditor, staff. Residents are not listed here.",
+    "invite": "Invite user",
+    "inviteHint": "They sign in with a code sent to their phone or email; no password needed. If the phone is already registered elsewhere, the existing person is linked.",
+    "inviteSubmit": "Invite",
+    "name": "Name",
+    "contact": "Contact",
+    "role": "Role",
+    "lastLogin": "Last sign-in",
+    "actions": "Actions",
+    "you": "You",
+    "neverLoggedIn": "Never",
+    "roleOf": "Role of {name}",
+    "removeOf": "Remove access of {name}",
+    "footnote": "You can't change your own role or remove the last manager. Management-company roles aren't changed here.",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "phone": "Phone",
+    "email": "Email",
+    "contactHint": "Phone or email is required.",
+    "roleHelp": "Manager: all permissions. Accountant: finance read, collections and reports. Auditor: read-only. Staff: requests, parcels/visitors.",
+    "invited": "User added; they can sign in with their phone or email.",
+    "invitedExisting": "Existing person linked to this site.",
+    "roleChanged": "Role updated.",
+    "removed": "Access removed.",
+    "removeTitle": "Remove access?",
+    "removeDescription": "{name} will no longer access this site's panel. Their record and history are kept.",
+    "remove": "Remove",
+    "settingsLink": "Panel users"
+  },
+  "knowledge": {
+    "title": "Knowledge base",
+    "description": "Legislation links, frequently asked questions and ready-made letters.",
+    "faq": "FAQ",
+    "laws": "Legislation",
+    "templates": "Ready-made letters",
+    "disclaimer": "These answers are general information, not legal advice. Check the law text and a lawyer for your case."
+  },
+  "messageReport": {
+    "title": "Messaging report",
+    "hint": "SMS, email and WhatsApp sends: to whom, what, when, result and cost. Recipients are masked.",
+    "channel": {
+      "sms": "SMS",
+      "email": "Email",
+      "whatsapp": "WhatsApp"
+    },
+    "failedCount": "{count} failed",
+    "cost": "Cost",
+    "channelLabel": "Channel",
+    "allChannels": "All channels",
+    "statusLabel": "Status",
+    "allStatuses": "All statuses",
+    "statusGroup": {
+      "sent": "Delivered",
+      "failed": "Failed",
+      "pending": "Pending"
+    },
+    "status": {
+      "queued": "Queued",
+      "scheduled": "Scheduled",
+      "sent": "Sent",
+      "delivered": "Delivered",
+      "read": "Read",
+      "failed": "Failed",
+      "cancelled": "Cancelled"
+    },
+    "recipient": "Recipient",
+    "subject": "Subject",
+    "empty": "No messages in this range."
+  },
+  "deletedReport": {
+    "title": "Deleted transactions",
+    "hint": "Cancelled debts and payments, voided cash movements and deleted expenses: when, who, why.",
+    "count": "Records",
+    "amount": "Amount",
+    "kindLabel": "Type",
+    "allKinds": "All types",
+    "kind": {
+      "debt": "Debt cancelled",
+      "payment": "Payment voided",
+      "cash": "Cash voided",
+      "expense": "Expense deleted"
+    },
+    "by": "By",
+    "reason": "Reason",
+    "empty": "No deleted transactions in this range."
   }
 }

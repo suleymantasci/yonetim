@@ -19,7 +19,7 @@ export async function GET(req: Request): Promise<Response> {
   const q = new URL(req.url).searchParams;
   const member = memberScopeFromParam(q.get("uye") ?? undefined);
   const blockId = q.get("blok") ?? undefined;
-  const phones = q.get("tel") === "1" && can(ctx, "report:export");
+  const phones = q.get("tel") === "1" && can(ctx, "resident:write");
   const [cols, rows] = (["2x4", "2x5", "2x6"].includes(q.get("boyut") ?? "") ? q.get("boyut")! : "2x5")
     .split("x")
     .map(Number) as [number, number];

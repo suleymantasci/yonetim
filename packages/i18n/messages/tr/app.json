@@ -70,7 +70,8 @@
     "cash": "Kasa İşlemleri",
     "budget": "İşletme Projesi",
     "calendar": "Takvim",
-    "letters": "Hukuki evrak"
+    "letters": "Hukuki evrak",
+    "knowledge": "Bilgi bankası"
   },
   "shell": {
     "trialDaysLeft": "Deneme · {days} gün kaldı",
@@ -416,7 +417,38 @@
     "drawerCreatedTitle": "Bağımsız bölüm eklendi",
     "drawerCreatedHint": "Akışı burada sürdürebilirsiniz — liste arkada açık kaldı.",
     "drawerAddResident": "Bu birime sakin ekle",
-    "drawerAddAnother": "Bir birim daha ekle"
+    "drawerAddAnother": "Bir birim daha ekle",
+    "extras": {
+      "title": "Hane halkı ve araçlar",
+      "hint": "Dairede yaşayan diğer kişiler ve araç plakaları (otopark, kapı kontrolü). Plaka site içinde tekildir.",
+      "household": "Hane halkı · {count}",
+      "householdEmpty": "Kayıt yok.",
+      "removeMember": "{name} kaydını sil",
+      "addMember": "Kişi ekle",
+      "fullName": "Ad soyad",
+      "relationLabel": "Yakınlık",
+      "relation": {
+        "spouse": "Eş",
+        "child": "Çocuk",
+        "parent": "Ebeveyn",
+        "relative": "Akraba",
+        "other": "Diğer"
+      },
+      "birthYear": "Doğum yılı",
+      "phone": "Telefon",
+      "vehicles": "Araçlar · {count}",
+      "vehiclesEmpty": "Kayıtlı araç yok.",
+      "removeVehicle": "{plate} plakayı sil",
+      "addVehicle": "Araç ekle",
+      "plate": "Plaka",
+      "vehicleDescription": "Araç",
+      "vehicleDescriptionPlaceholder": "Örn. Beyaz Fiat Egea",
+      "vehicleOwner": "Kullanan",
+      "memberAdded": "Kişi eklendi.",
+      "memberRemoved": "Kişi silindi.",
+      "vehicleAdded": "Araç eklendi.",
+      "vehicleRemoved": "Araç silindi."
+    }
   },
   "residents": {
     "title": "Sakinler",
@@ -2179,7 +2211,33 @@
     "eventAdded": "Olay dosya kütüğüne eklendi.",
     "costAdded": "Masraf işlendi.",
     "collectionAdded": "Tahsilat işlendi.",
-    "caseClosed": "Dosya kapatıldı."
+    "caseClosed": "Dosya kapatıldı.",
+    "lawyersLink": "Avukatlar",
+    "lawyerFilter": "Avukata göre",
+    "allLawyers": "Tüm avukatlar",
+    "filter": "Süz",
+    "lawyerShort": "Avukat: {name}",
+    "lawyer": "Avukat",
+    "noLawyer": "Atanmadı",
+    "lawyersTitle": "Avukatlar",
+    "lawyersDescription": "İcra dosyalarını takip eden avukatlar: açık dosya sayısı ve tahsilat. Dosya avukata, aşama güncellenirken atanır.",
+    "newLawyer": "Avukat ekle",
+    "lawyersEmpty": "Henüz avukat tanımlı değil.",
+    "lawyerName": "Ad soyad / büro",
+    "bar": "Baro",
+    "contact": "İletişim",
+    "commission": "Pay (%)",
+    "commissionHint": "Tahsilattan avukatın payı.",
+    "openCasesCol": "Açık dosya",
+    "edit": "Düzenle",
+    "editLawyer": "{name} düzenle",
+    "barCity": "Baro",
+    "barNo": "Sicil no",
+    "phone": "Telefon",
+    "email": "E-posta",
+    "lawyerActive": "Etkin (dosyaya atanabilir)",
+    "inactive": "Pasif",
+    "lawyerSaved": "“{name}” kaydedildi."
   },
   "kvkkPanel": {
     "title": "KVKK Yönetimi",
@@ -2398,7 +2456,16 @@
       "restoreReasonLabel": "Geri açma gerekçesi",
       "restoreAction": "Siteyi geri aç",
       "restoreDone": "Site geri açıldı."
-    }
+    },
+    "collectionDefaults": "Tahsilat varsayılanları",
+    "collectionDefaultsHint": "Tahsilat formları bu ödeme şekli ve hesapla açılır (varsayılan kasa).",
+    "defaultPaymentMethod": "Varsayılan ödeme şekli",
+    "methodTransfer": "Havale / EFT",
+    "methodCash": "Nakit",
+    "methodCard": "Kart (POS)",
+    "defaultBankAccount": "Varsayılan hesap",
+    "defaultBankAccountHint": "Nakit dışı tahsilatta önceden seçilir; POS hesabını seçebilirsiniz.",
+    "defaultBankAccountNone": "Seçilmesin"
   },
   "migration": {
     "title": "Veri Aktarımı",
@@ -3816,7 +3883,22 @@
       "compensation": "Tazminat / sigorta",
       "sale": "Hurda / demirbaş satışı",
       "other": "Diğer gelir"
-    }
+    },
+    "customGroups": "Tanımlı gruplar",
+    "groupName": "Grup adı",
+    "groupNamePlaceholder": "Örn. Vadeli hesap faizi",
+    "groupCode": "Gelir hesabı",
+    "groupCodeHint": "Boş bırakılırsa sıradaki 602.1x verilir.",
+    "groupCodeLocked": "Hesap kodu değişmez: geçmiş fişler bu koda yazıldı.",
+    "groupActive": "Etkin (tahsilat formunda seçilebilir)",
+    "groupSaved": "“{name}” kaydedildi.",
+    "groupsTitle": "Harici tahsilat grupları",
+    "groupsHint": "Aidat dışı gelirler için kendi gruplarınız: kira, reklam, vadeli hesap faizi… Her grup ayrı gelir hesabına yazılır.",
+    "newGroup": "Grup ekle",
+    "groupsEmpty": "Tanımlı grup yok; sabit gruplar (kira, reklam, faiz…) kullanılabilir.",
+    "groupUsage": "{count} hareket",
+    "groupInactive": "Pasif",
+    "editGroup": "{name} düzenle"
   },
   "budget": {
     "title": "İşletme Projesi",
@@ -3928,7 +4010,9 @@
       "openItems": "Borç dökümü",
       "receipts": "Makbuzlar",
       "activity": "Faaliyet raporu",
-      "auditReport": "Denetim raporu"
+      "auditReport": "Denetim raporu",
+      "messages": "Gönderimler",
+      "deleted": "Silinenler"
     },
     "from": "Başlangıç",
     "to": "Bitiş",
@@ -4287,5 +4371,93 @@
     "labelPhoneNote": "Telefonlu etiketlerde numaralar açık basılır; erişim denetim kaydına yazılır (KVKK).",
     "labelsPdf": "Etiket PDF",
     "labelResident": "Sayın Sakin"
+  },
+  "team": {
+    "title": "Program kullanıcıları",
+    "description": "Paneli kullanan ekip: ikinci yönetici, muhasebeci, denetçi, personel. Sakinler bu listede değil.",
+    "invite": "Kullanıcı davet et",
+    "inviteHint": "Kişi telefon ya da e-postasıyla kodla giriş yapar; parola gerekmez. Aynı telefonla başka sitede kayıtlıysa yeni kişi açılmaz, bu siteye bağlanır.",
+    "inviteSubmit": "Davet et",
+    "name": "Ad soyad",
+    "contact": "İletişim",
+    "role": "Rol",
+    "lastLogin": "Son giriş",
+    "actions": "İşlemler",
+    "you": "Siz",
+    "neverLoggedIn": "Henüz giriş yok",
+    "roleOf": "{name} rolü",
+    "removeOf": "{name} erişimini kaldır",
+    "footnote": "Kendi rolünüzü değiştiremez, son yöneticiyi kaldıramazsınız. Yönetim şirketi rolleri buradan değiştirilmez.",
+    "firstName": "Ad",
+    "lastName": "Soyad",
+    "phone": "Telefon",
+    "email": "E-posta",
+    "contactHint": "Telefon ya da e-postadan en az biri gerekli.",
+    "roleHelp": "Yönetici: tüm yetkiler. Muhasebeci: finans okuma, tahsilat ve rapor. Denetçi: salt okuma (denetim kurulu). Personel: talepler, kargo/ziyaretçi.",
+    "invited": "Kullanıcı eklendi; telefon ya da e-postasıyla giriş yapabilir.",
+    "invitedExisting": "Kayıtlı kişi bu siteye bağlandı.",
+    "roleChanged": "Rol güncellendi.",
+    "removed": "Erişim kaldırıldı.",
+    "removeTitle": "Erişim kaldırılsın mı?",
+    "removeDescription": "{name} bu sitenin paneline giremeyecek. Kişinin kaydı ve geçmiş işlemleri korunur.",
+    "remove": "Kaldır",
+    "settingsLink": "Program kullanıcıları"
+  },
+  "knowledge": {
+    "title": "Bilgi bankası",
+    "description": "Mevzuat bağlantıları, sık sorulan sorular ve hazır yazışmalar.",
+    "faq": "Sık sorulanlar",
+    "laws": "Mevzuat",
+    "templates": "Hazır yazışmalar",
+    "disclaimer": "Bu cevaplar genel bilgilendirmedir, hukuki danışmanlık değildir. Kesin durum için kanun metnine ve bir avukata başvurun."
+  },
+  "messageReport": {
+    "title": "Gönderim raporu",
+    "hint": "SMS, e-posta ve WhatsApp gönderimleri: kime, ne, ne zaman, sonuç ve maliyet. Alıcılar maskelidir.",
+    "channel": {
+      "sms": "SMS",
+      "email": "E-posta",
+      "whatsapp": "WhatsApp"
+    },
+    "failedCount": "{count} başarısız",
+    "cost": "Maliyet",
+    "channelLabel": "Kanal",
+    "allChannels": "Tüm kanallar",
+    "statusLabel": "Durum",
+    "allStatuses": "Tüm durumlar",
+    "statusGroup": {
+      "sent": "İletildi",
+      "failed": "Başarısız",
+      "pending": "Bekliyor"
+    },
+    "status": {
+      "queued": "Kuyrukta",
+      "scheduled": "Zamanlandı",
+      "sent": "Gönderildi",
+      "delivered": "Teslim edildi",
+      "read": "Okundu",
+      "failed": "Başarısız",
+      "cancelled": "İptal"
+    },
+    "recipient": "Alıcı",
+    "subject": "Konu",
+    "empty": "Bu aralıkta gönderim yok."
+  },
+  "deletedReport": {
+    "title": "Silinen hareketler",
+    "hint": "İptal edilen borç ve tahsilatlar, iptal edilen kasa hareketleri ve silinen giderler: ne zaman, kim, neden.",
+    "count": "Kayıt",
+    "amount": "Tutar",
+    "kindLabel": "Tür",
+    "allKinds": "Tüm türler",
+    "kind": {
+      "debt": "Borç iptali",
+      "payment": "Tahsilat iptali",
+      "cash": "Kasa iptali",
+      "expense": "Gider silme"
+    },
+    "by": "Yapan",
+    "reason": "Gerekçe",
+    "empty": "Bu aralıkta silinen hareket yok."
   }
 }

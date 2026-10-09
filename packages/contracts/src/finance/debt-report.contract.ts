@@ -151,3 +151,58 @@ export const recipientRow = z.object({
 
 export const recipientResponse = z.object({ rows: z.array(recipientRow) });
 export type RecipientResponse = z.infer<typeof recipientResponse>;
+
+/* ------------------------------ Silinen hareketler ------------------------------ */
+
+export const DELETED_KINDS = ["debt", "payment", "cash", "expense"] as const;
+
+export const deletedQuery = z.object({ from: isoDate, to: isoDate, kind: z.enum(DELETED_KINDS).optional() });
+
+export const deletedRow = z.object({
+  kind: z.enum(DELETED_KINDS),
+  id: uuid,
+  at: dateTime,
+  description: z.string(),
+  unitLabel: z.string().nullable(),
+  amountMinor: moneyMinor,
+  byName: z.string().nullable(),
+  reason: z.string().nullable(),
+});
+
+export const deletedResponse = z.object({
+  rows: z.array(deletedRow),
+  totals: z.object({ count: z.number().int(), amountMinor: moneyMinor }),
+});
+export type DeletedResponse = z.infer<typeof deletedResponse>;
+
+/* ------------------------------ Gönderim raporu ------------------------------ */
+
+export const MESSAGE_CHANNELS = ["sms", "email", "whatsapp"] as const;
+
+export const messageReportQuery = z.object({
+  from: isoDate,
+  to: isoDate,
+  channel: z.enum(MESSAGE_CHANNELS).optional(),
+  status: z.enum(["sent", "failed", "pending"]).optional(),
+});
+
+export const messageReportRow = z.object({
+  id: uuid,
+  at: dateTime,
+  channel: z.string(),
+  status: z.string(),
+  /** Maskeli alıcı (telefon/e-posta). */
+  recipient: z.string(),
+  recipientName: z.string().nullable(),
+  subject: z.string().nullable(),
+  error: z.string().nullable(),
+  costMinor: moneyMinor,
+});
+
+export const messageReportResponse = z.object({
+  rows: z.array(messageReportRow),
+  byChannel: z.array(
+    z.object({ channel: z.string(), sent: z.number().int(), failed: z.number().int(), pending: z.number().int(), costMinor: moneyMinor }),
+  ),
+});
+export type MessageReportResponse = z.infer<typeof messageReportResponse>;

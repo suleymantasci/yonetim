@@ -82,6 +82,8 @@ export type ReportTab =
   | "debtMatrix"
   | "openItems"
   | "receipts"
+  | "messages"
+  | "deleted"
   | "activity"
   | "auditReport";
 
@@ -97,6 +99,8 @@ export async function ReportsSubnav({ active }: { active: ReportTab }) {
     { key: "debtMatrix", href: "/panel/raporlar/donem-borc" },
     { key: "openItems", href: "/panel/raporlar/borc-dokumu" },
     { key: "receipts", href: "/panel/raporlar/makbuzlar" },
+    { key: "messages", href: "/panel/raporlar/gonderimler" },
+    { key: "deleted", href: "/panel/raporlar/silinenler" },
     { key: "activity", href: "/panel/raporlar/faaliyet" },
     { key: "auditReport", href: "/panel/raporlar/denetim-raporu" },
   ];

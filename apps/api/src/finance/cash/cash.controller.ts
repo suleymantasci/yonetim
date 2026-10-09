@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
 } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
@@ -13,21 +14,26 @@ import {
   cashIncomeCreate,
   cashTransferCreate,
   cashVoid,
+  incomeGroupSave,
   type CashHandoverCreate,
   type CashIncomeCreate,
   type CashTransferCreate,
   type CashVoid,
+  type IncomeGroupSave,
 } from "@yonetim/contracts";
 
 import { RequirePermission } from "../../identity/decorators";
 import { ZodBodyPipe } from "../../infra/zod/zod-dto";
-import { CashService } from "./cash.service";
+import { CashService, IncomeGroupService } from "./cash.service";
 
 /** Kasa işlemleri — `/v1/panel/cash`. */
 @ApiTags("panel/cash")
 @Controller("v1/panel/cash")
 export class CashController {
-  constructor(private readonly service: CashService) {}
+  constructor(
+    private readonly service: CashService,
+    private readonly groups: IncomeGroupService,
+  ) {}
 
   @Get()
   @RequirePermission("bank:read")
@@ -54,6 +60,20 @@ export class CashController {
   })
   income(@Body(new ZodBodyPipe(cashIncomeCreate)) dto: CashIncomeCreate) {
     return this.service.income(dto);
+  }
+
+  @Post("income-groups")
+  @RequirePermission("bank:write")
+  @ApiOperation({ summary: "Harici tahsilat grubu ekle (hesap kodu boşsa 602.1x)" })
+  createGroup(@Body(new ZodBodyPipe(incomeGroupSave)) dto: IncomeGroupSave) {
+    return this.groups.create(dto);
+  }
+
+  @Patch("income-groups/:id")
+  @RequirePermission("bank:write")
+  @ApiOperation({ summary: "Harici tahsilat grubunu güncelle (ad, aktiflik)" })
+  updateGroup(@Param("id", ParseUUIDPipe) id: string, @Body(new ZodBodyPipe(incomeGroupSave)) dto: IncomeGroupSave) {
+    return this.groups.update(id, dto);
   }
 
   @Post("movements/:id/void")

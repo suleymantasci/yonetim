@@ -1,3 +1,4 @@
+import { UsersRound } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
 import { hasPermission } from "@yonetim/auth/guard";
@@ -10,7 +11,9 @@ import {
 import { Alert, Badge, Card, CardBody, CardHeader } from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
+import Link from "@/components/link";
 import { apiGet } from "@/lib/api/server";
+import { getBankAccountOptions } from "@/lib/bank-accounts";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
 import { LifecycleCard } from "./lifecycle-card";
@@ -45,12 +48,14 @@ export default async function SettingsPage() {
   const t = await getTranslations("app.settings");
   const tCommon = await getTranslations("common");
   const tEnum = await getTranslations("enum");
+  const tTeam = await getTranslations("app.team");
   const f = await formatters();
 
-  const [tenant, integrations, lifecycle] = await Promise.all([
+  const [tenant, integrations, lifecycle, bankAccounts] = await Promise.all([
     apiGet("/v1/panel/settings", tenantSettingsResponse),
     apiGet("/v1/panel/settings/integrations", integrationStatusResponse),
     apiGet("/v1/panel/tenancy/lifecycle", tenantLifecycleState),
+    getBankAccountOptions(),
   ]);
 
   const settings = tenant.settings as {
@@ -60,6 +65,7 @@ export default async function SettingsPage() {
     kvkkContactEmail?: string | null;
     whatsappOptInRequired?: boolean;
     payment?: { onlineEnabled?: boolean };
+    collection?: { method?: string; bankAccountId?: string | null };
     invoiceInfo?: {
       title?: string | null;
       taxNumber?: string | null;
@@ -74,7 +80,19 @@ export default async function SettingsPage() {
 
   return (
     <>
-      <PageHeader title={t("title")} description={t("description")} />
+      <PageHeader
+        title={t("title")}
+        description={t("description")}
+        action={
+          <Link
+            href="/panel/ayarlar/kullanicilar"
+            className="inline-flex h-10 items-center gap-2 rounded-lg border border-border-strong bg-surface px-3 text-sm font-semibold text-fg hover:bg-hover"
+          >
+            <UsersRound aria-hidden className="h-4 w-4" />
+            {tTeam("settingsLink")}
+          </Link>
+        }
+      />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="lg:col-span-2">
@@ -108,7 +126,10 @@ export default async function SettingsPage() {
                     // `readPaymentSettings` ile aynı kural).
                     onlinePaymentEnabled:
                       settings.payment?.onlineEnabled === true,
+                    defaultPaymentMethod: settings.collection?.method ?? "bank_transfer",
+                    defaultBankAccountId: settings.collection?.bankAccountId ?? null,
                   }}
+                  bankAccounts={bankAccounts}
                 />
               </CardBody>
             </Card>

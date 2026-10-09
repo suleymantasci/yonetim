@@ -57,15 +57,20 @@ export const cashTransferCreate = z
   );
 export type CashTransferCreate = z.infer<typeof cashTransferCreate>;
 
-export const cashIncomeCreate = z.object({
-  date: isoDate,
-  amountMinor: positiveMoneyMinor,
-  to: accountRef,
-  category: incomeCategory,
-  payerName: z.string().trim().min(2).max(160),
-  description: z.string().trim().max(500).nullish(),
-  documentNo: z.string().trim().max(60).nullish(),
-});
+export const cashIncomeCreate = z
+  .object({
+    date: isoDate,
+    amountMinor: positiveMoneyMinor,
+    to: accountRef,
+    /** Sabit grup; `incomeGroupId` verilirse yok sayılır. */
+    category: incomeCategory.optional(),
+    /** Kullanıcı tanımlı harici tahsilat grubu. */
+    incomeGroupId: uuid.optional(),
+    payerName: z.string().trim().min(2).max(160),
+    description: z.string().trim().max(500).nullish(),
+    documentNo: z.string().trim().max(60).nullish(),
+  })
+  .refine((v) => !!v.category || !!v.incomeGroupId, { message: "category_required", path: ["category"] });
 export type CashIncomeCreate = z.infer<typeof cashIncomeCreate>;
 
 export const cashVoid = z.object({ reason: z.string().trim().min(5).max(500) });
@@ -92,6 +97,8 @@ export const cashMovementRow = z.object({
   fromLabel: z.string().nullable(),
   toLabel: z.string(),
   category: z.string().nullable(),
+  /** Kullanıcı tanımlı grubun adı (varsa `category` yerine gösterilir). */
+  incomeGroupName: z.string().nullable().default(null),
   payerName: z.string().nullable(),
   description: z.string().nullable(),
   documentNo: z.string().nullable(),
@@ -106,6 +113,10 @@ export const cashOverview = z.object({
   movements: z.array(cashMovementRow),
   /** Seçim listeleri için aktif banka hesapları. */
   bankOptions: z.array(z.object({ id: uuid, label: z.string() })),
+  /** Kullanıcı tanımlı harici tahsilat grupları. */
+  incomeGroups: z
+    .array(z.object({ id: uuid, name: z.string(), accountCode: z.string(), isActive: z.boolean(), usage: z.number().int() }))
+    .default([]),
 });
 export type CashOverview = z.infer<typeof cashOverview>;
 
@@ -156,3 +167,11 @@ export type CashHandoverRow = z.infer<typeof cashHandoverRow>;
 export const cashHandoverList = z.object({ rows: z.array(cashHandoverRow) });
 
 export const cashWriteResult = z.object({ id: uuid });
+
+export const incomeGroupSave = z.object({
+  name: z.string().trim().min(2).max(80),
+  /** Boşsa sıradaki 602.1x verilir. */
+  accountCode: z.string().trim().regex(/^6\d{2}(\.\d{1,3})?$/).nullish(),
+  isActive: z.coerce.boolean().default(true),
+});
+export type IncomeGroupSave = z.infer<typeof incomeGroupSave>;

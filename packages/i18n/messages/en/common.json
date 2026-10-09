@@ -194,7 +194,13 @@
       "migration_not_revertible": "This import cannot be reverted (already reverted or not completed).",
       "debt_type_in_use": "Debts are linked to this type; deactivate it instead of deleting.",
       "debt_type_name_taken": "A debt type with this name already exists.",
-      "debt_type_inactive": "This debt type is inactive and cannot be used for new debts."
+      "debt_type_inactive": "This debt type is inactive and cannot be used for new debts.",
+      "income_group_name_taken": "An income group with this name already exists.",
+      "income_group_code_taken": "This account code is used by another group.",
+      "member_exists": "This person already has this role.",
+      "team_self": "You can't change your own role or remove your own access.",
+      "last_manager": "The site's last manager can't be removed; add another manager first.",
+      "plate_taken": "This plate is registered to another unit."
     }
   },
   "errorPage": {

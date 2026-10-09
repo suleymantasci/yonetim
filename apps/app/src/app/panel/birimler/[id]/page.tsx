@@ -7,6 +7,7 @@ import {
   bankOverviewResponse,
   openDebtList,
   unitDetail,
+  unitExtras,
 } from "@yonetim/contracts";
 import { AppError } from "@yonetim/core";
 import {
@@ -26,6 +27,7 @@ import { VoidPaymentButton } from "@/components/payments/void-payment-button";
 import { can, requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
 import type { SearchParamsInput } from "@/lib/list-params";
+import { UnitExtrasCard } from "./unit-extras-card";
 
 export const dynamic = "force-dynamic";
 
@@ -80,9 +82,10 @@ export default async function UnitDetailPage({
    * İkisi de hatada yutuluyor: banka modülü kapalıysa ya da borç listesi
    * alınamıyorsa ekranın kalanı yine açılmalı.
    */
-  const [openDebts, bank] = await Promise.all([
+  const [openDebts, bank, extras] = await Promise.all([
     apiGet(`/v1/panel/debts/open/${id}`, openDebtList).catch(() => null),
     apiGet("/v1/panel/bank", bankOverviewResponse).catch(() => null),
+    apiGet(`/v1/panel/units/${id}/extras`, unitExtras).catch(() => null),
   ]);
 
   const rawTab = Array.isArray(query.sekme) ? query.sekme[0] : query.sekme;
@@ -159,6 +162,7 @@ export default async function UnitDetailPage({
                     .filter(Boolean)
                     .join(" ") || occupant.userId,
               }))}
+              collectDefaults={bank?.collectionDefaults}
               bankAccounts={(bank?.accounts ?? [])
                 .filter((account) => account.isActive)
                 .map((account) => ({
@@ -357,6 +361,15 @@ export default async function UnitDetailPage({
                     )}
                   </CardBody>
                 </Card>
+
+                {extras ? (
+                  <UnitExtrasCard
+                    unitId={id}
+                    extras={extras}
+                    canWriteHousehold={can(ctx, "resident:write")}
+                    canWriteVehicles={can(ctx, "unit:write")}
+                  />
+                ) : null}
               </div>
             ),
           },

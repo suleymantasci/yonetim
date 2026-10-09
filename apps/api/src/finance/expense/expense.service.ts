@@ -125,13 +125,18 @@ export class ExpenseService {
   }
 
   async softDelete(ids: string[]) {
-    const affected = await this.write.softDelete(ids);
+    const deleted = await this.write.softDelete(ids);
+    // Kayıt başına iz: silinen hareket raporu "kim, ne zaman" sorusunu
+    // giderin kendisiyle eşleyerek cevaplıyor.
+    for (const id of deleted) {
+      await this.audit.record({ action: "expense_deleted", resource: "expense", resourceId: id });
+    }
     await this.audit.record({
       action: "expense_bulk_deleted",
       resource: "expense",
-      reason: `${affected}/${ids.length}`,
+      reason: `${deleted.length}/${ids.length}`,
     });
-    return { affected, requested: ids.length };
+    return { affected: deleted.length, requested: ids.length };
   }
 
   previewDistribution(dto: ExpenseDistribute) {

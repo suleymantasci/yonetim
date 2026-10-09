@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { and, desc, eq, inArray, isNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 
 import type {
   CashHandoverCreate,
@@ -13,8 +13,9 @@ import type {
   CashOverview,
   CashTransferCreate,
   HandoverSnapshot,
+  IncomeGroupSave,
 } from "@yonetim/contracts";
-import { bankAccounts, cashHandovers, cashMovements } from "@yonetim/db";
+import { bankAccounts, cashHandovers, cashMovements, incomeGroups } from "@yonetim/db";
 
 import { AuditService } from "../../governance/audit/audit.service";
 import { DbService } from "../../infra/db/db.service";
@@ -43,7 +44,7 @@ export class CashService {
   async overview(): Promise<CashOverview> {
     const now = new Date();
     return this.db.tx(async (tx) => {
-      const [journal, banks, movements] = await Promise.all([
+      const [journal, banks, movements, groups] = await Promise.all([
         loadJournal(tx, now),
         tx
           .select()
@@ -58,7 +59,19 @@ export class CashService {
             desc(cashMovements.createdAt),
           )
           .limit(200),
+        tx
+          .select({
+            id: incomeGroups.id,
+            name: incomeGroups.name,
+            accountCode: incomeGroups.accountCode,
+            isActive: incomeGroups.isActive,
+            usage: sql<number>`(SELECT COUNT(*)::int FROM cash_movements cm WHERE cm.income_group_id = income_groups.id AND cm.voided_at IS NULL)`,
+          })
+          .from(incomeGroups)
+          .where(isNull(incomeGroups.deletedAt))
+          .orderBy(incomeGroups.name),
       ]);
+      const groupName = new Map(groups.map((g) => [g.id, g.name]));
       const balances = balancesAt(journal, now);
       const since = now.getTime() - 30 * DAY_MS;
       const flow = new Map<string, { in: number; out: number }>();
@@ -129,6 +142,7 @@ export class CashService {
           fromLabel: side(m.fromAccount, m.fromBankAccountId),
           toLabel: side(m.toAccount, m.toBankAccountId) ?? "",
           category: m.incomeCategory,
+          incomeGroupName: m.incomeGroupId ? (groupName.get(m.incomeGroupId) ?? null) : null,
           payerName: m.payerName,
           description: m.description,
           documentNo: m.documentNo,
@@ -138,6 +152,7 @@ export class CashService {
         bankOptions: banks
           .filter((b) => b.isActive)
           .map((b) => ({ id: b.id, label: label(b) })),
+        incomeGroups: groups.map((g) => ({ ...g, usage: Number(g.usage) })),
       };
     });
   }
@@ -180,6 +195,14 @@ export class CashService {
     const date = dayOf(dto.date);
     const id = await this.db.tx(async (tx) => {
       await assertBanks(tx, [dto.to.bankAccountId]);
+      if (dto.incomeGroupId) {
+        const [group] = await tx
+          .select({ id: incomeGroups.id })
+          .from(incomeGroups)
+          .where(and(eq(incomeGroups.id, dto.incomeGroupId), eq(incomeGroups.isActive, true), isNull(incomeGroups.deletedAt)))
+          .limit(1);
+        if (!group) throw new NotFoundException("not_found:income_group");
+      }
       const ctx = this.db.ctx();
       const [row] = await tx
         .insert(cashMovements)
@@ -191,7 +214,8 @@ export class CashService {
           toAccount: dto.to.account,
           toBankAccountId:
             dto.to.account === "bank" ? dto.to.bankAccountId! : null,
-          incomeCategory: dto.category,
+          incomeCategory: dto.incomeGroupId ? null : (dto.category ?? "other"),
+          incomeGroupId: dto.incomeGroupId ?? null,
           payerName: dto.payerName,
           description: dto.description ?? null,
           documentNo: dto.documentNo ?? null,
@@ -206,7 +230,7 @@ export class CashService {
       resourceId: id,
       diff: {
         amountMinor: { from: null, to: dto.amountMinor },
-        category: { from: null, to: dto.category },
+        category: { from: null, to: dto.incomeGroupId ?? dto.category ?? null },
       },
     });
     return { id };
@@ -380,4 +404,59 @@ function toHandoverRow(r: typeof cashHandovers.$inferSelect): CashHandoverRow {
     snapshot: r.snapshot as HandoverSnapshot,
     createdAt: r.createdAt,
   };
+}
+
+/**
+ * Harici tahsilat grupları — kullanıcı tanımlı gelir kalemleri. Hesap kodu
+ * verilmezse sıradaki boş 602.1x atanır (602.01–602.09 sabit gruplarda).
+ * Silme yok: kullanılmış grup fişlerde adıyla kalmalı; pasifleştirme.
+ */
+@Injectable()
+export class IncomeGroupService {
+  constructor(
+    private readonly db: DbService,
+    private readonly audit: AuditService,
+  ) {}
+
+  async create(dto: IncomeGroupSave): Promise<{ id: string }> {
+    const id = await this.db.tx(async (tx) => {
+      const existing = await tx
+        .select({ name: incomeGroups.name, code: incomeGroups.accountCode })
+        .from(incomeGroups)
+        .where(isNull(incomeGroups.deletedAt));
+      if (existing.some((g) => g.name.toLocaleLowerCase("tr") === dto.name.toLocaleLowerCase("tr")))
+        throw new ConflictException("conflict:income_group_name_taken");
+      const taken = new Set(existing.map((g) => g.code));
+      let code = dto.accountCode ?? null;
+      if (code && taken.has(code)) throw new ConflictException("conflict:income_group_code_taken");
+      for (let n = 10; !code && n < 1000; n++) if (!taken.has(`602.${n}`)) code = `602.${n}`;
+      const [row] = await tx
+        .insert(incomeGroups)
+        .values({ tenantId: this.db.ctx().tenantId, name: dto.name, accountCode: code!, isActive: dto.isActive })
+        .returning({ id: incomeGroups.id });
+      return row!.id;
+    });
+    await this.audit.record({ action: "income_group_created", resource: "income_group", resourceId: id });
+    return { id };
+  }
+
+  async update(id: string, dto: IncomeGroupSave): Promise<{ id: string }> {
+    await this.db.tx(async (tx) => {
+      const [dup] = await tx
+        .select({ id: incomeGroups.id })
+        .from(incomeGroups)
+        .where(and(isNull(incomeGroups.deletedAt), sql`lower(${incomeGroups.name}) = lower(${dto.name})`, sql`${incomeGroups.id} <> ${id}`))
+        .limit(1);
+      if (dup) throw new ConflictException("conflict:income_group_name_taken");
+      // Hesap kodu değişmez: geçmiş fişler o koda yazıldı.
+      const updated = await tx
+        .update(incomeGroups)
+        .set({ name: dto.name, isActive: dto.isActive, updatedAt: new Date() })
+        .where(and(eq(incomeGroups.id, id), isNull(incomeGroups.deletedAt)))
+        .returning({ id: incomeGroups.id });
+      if (updated.length === 0) throw new NotFoundException("not_found");
+    });
+    await this.audit.record({ action: "income_group_updated", resource: "income_group", resourceId: id });
+    return { id };
+  }
 }

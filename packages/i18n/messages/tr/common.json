@@ -194,7 +194,13 @@
       "migration_not_revertible": "Bu aktarım geri alınamaz (zaten geri alınmış ya da tamamlanmamış).",
       "debt_type_in_use": "Bu türe bağlı borçlar var; silmek yerine pasifleştirin.",
       "debt_type_name_taken": "Bu adla bir borç türü zaten var.",
-      "debt_type_inactive": "Bu borç türü pasif; yeni borçta seçilemez."
+      "debt_type_inactive": "Bu borç türü pasif; yeni borçta seçilemez.",
+      "income_group_name_taken": "Bu adla bir tahsilat grubu zaten var.",
+      "income_group_code_taken": "Bu hesap kodu başka bir grupta kullanılıyor.",
+      "member_exists": "Bu kişi bu rolde zaten kullanıcı.",
+      "team_self": "Kendi rolünüzü değiştiremez ya da kendi erişiminizi kaldıramazsınız.",
+      "last_manager": "Sitenin son yöneticisi kaldırılamaz; önce başka bir yönetici ekleyin.",
+      "plate_taken": "Bu plaka başka bir daireye kayıtlı."
     }
   },
   "errorPage": {

@@ -15,6 +15,7 @@ import {
   migrationJobs,
   payments,
   reconciliationIssues,
+  tenants,
   units,
 } from "@yonetim/db";
 
@@ -288,7 +289,26 @@ export class IntegrationService {
       { openingMinor: 0, incomingMinor: 0, outgoingMinor: 0 },
     );
 
+    const [tenant] = await this.db.tx((tx) =>
+      tx
+        .select({ settings: tenants.settings })
+        .from(tenants)
+        .where(eq(tenants.id, this.db.ctx().tenantId))
+        .limit(1),
+    );
+    const collection = ((tenant?.settings ?? {}) as { collection?: { method?: string; bankAccountId?: string | null } })
+      .collection;
+    const defaultAccount =
+      collection?.bankAccountId && accounts.some((a) => a.id === collection.bankAccountId && a.isActive)
+        ? collection.bankAccountId
+        : null;
+
     return {
+      collectionDefaults: {
+        method:
+          collection?.method === "cash" || collection?.method === "card" ? collection.method : "bank_transfer",
+        bankAccountId: defaultAccount,
+      },
       accounts: accounts.map((a) => ({
         id: a.id,
         bankName: a.bankName,

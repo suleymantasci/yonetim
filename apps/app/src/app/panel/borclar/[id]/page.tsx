@@ -193,6 +193,7 @@ export default async function DebtDetailPage({
                 [person.firstName, person.lastName].filter(Boolean).join(" ") ||
                 person.id,
             }))}
+            collectDefaults={bank?.collectionDefaults}
             bankAccounts={(bank?.accounts ?? [])
               .filter((account) => account.isActive)
               .map((account) => ({

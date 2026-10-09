@@ -5,8 +5,9 @@ import { z } from "zod";
 
 import { cashWriteResult, INCOME_CATEGORIES } from "@yonetim/contracts";
 
-import { apiPost } from "@/lib/api/server";
+import { apiPatch, apiPost } from "@/lib/api/server";
 import {
+  checkboxField,
   dateField,
   errorState,
   kurusField,
@@ -15,6 +16,7 @@ import {
   requiredText,
   runAction,
   uuidField,
+  V,
   type ActionState,
 } from "@/lib/form";
 
@@ -84,7 +86,13 @@ const incomeSchema = z.object({
   date: dateField,
   amountMinor: kurusField({ min: 1 }),
   to: accountField,
-  category: z.enum(INCOME_CATEGORIES),
+  /** Sabit grup ya da `g:<uuid>` (kullanıcı tanımlı harici tahsilat grubu). */
+  category: z
+    .string()
+    .refine(
+      (v) => (INCOME_CATEGORIES as readonly string[]).includes(v) || /^g:[0-9a-f-]{36}$/.test(v),
+      { message: V.invalidSelection },
+    ),
   payerName: requiredText(2, 160),
   description: optionalText(500),
   documentNo: optionalText(60),
@@ -109,7 +117,9 @@ export async function saveIncome(
           date: isoDay(input.date),
           amountMinor: input.amountMinor,
           to: input.to,
-          category: input.category,
+          ...(input.category.startsWith("g:")
+            ? { incomeGroupId: input.category.slice(2) }
+            : { category: input.category }),
           payerName: input.payerName,
           description: input.description ?? null,
           documentNo: input.documentNo ?? null,
@@ -179,6 +189,38 @@ export async function createHandover(
       return okState(t("handoverSaved"), {
         redirectTo: `/panel/kasa/devir/${result.id}`,
       });
+    },
+  );
+}
+
+const groupSchema = z.object({
+  id: z.preprocess((v) => (v === "" || v === null ? undefined : v), uuidField.optional()),
+  name: requiredText(2, 80),
+  accountCode: z.preprocess(
+    (v) => (typeof v === "string" ? v.trim() || undefined : v),
+    z.string().regex(/^6\d{2}(\.\d{1,3})?$/, V.invalidAccountCode).optional(),
+  ),
+  isActive: checkboxField,
+});
+
+/** Harici tahsilat grubu ekle/güncelle (hesap kodu yalnız eklerken). */
+export async function saveIncomeGroup(
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  return runAction(
+    {
+      permission: "bank:write",
+      schema: groupSchema,
+      meta: { action: "income_group_saved", resource: "income_group" },
+    },
+    formData,
+    async ({ input }) => {
+      const t = await getTranslations("app.cash");
+      const body = { name: input.name, accountCode: input.accountCode ?? null, isActive: input.isActive };
+      if (input.id) await apiPatch(`/v1/panel/cash/income-groups/${input.id}`, body, cashWriteResult);
+      else await apiPost("/v1/panel/cash/income-groups", body, cashWriteResult);
+      return okState(t("groupSaved", { name: input.name }));
     },
   );
 }

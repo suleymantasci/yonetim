@@ -74,6 +74,7 @@ export interface CollectLabels {
 }
 
 export function CollectPaymentButton({
+  collectDefaults,
   units,
   openDebts,
   payers,
@@ -85,12 +86,14 @@ export function CollectPaymentButton({
   openDebts: CollectDebtOption[];
   payers: CollectUnitOption[];
   bankAccounts: CollectUnitOption[];
+  /** Site ayarındaki varsayılan ödeme şekli ve hesap ("varsayılan kasa"). */
+  collectDefaults?: { method: string; bankAccountId: string | null };
   labels: CollectLabels;
   /** Sakin ekranından açıldığında ödeyen önceden seçili gelir. */
   defaultPayerId?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [method, setMethod] = useState("bank_transfer");
+  const [method, setMethod] = useState(collectDefaults?.method ?? "bank_transfer");
   const [unitId, setUnitId] = useState(units[0]?.id ?? "");
 
   // Birim yoksa tahsilat girilemez: borç birime yazılıyor.
@@ -180,7 +183,7 @@ export function CollectPaymentButton({
                 label={labels.bankAccount}
                 hint={labels.bankAccountHint}
               >
-                <Select name="bankAccountId" defaultValue="">
+                <Select name="bankAccountId" defaultValue={collectDefaults?.bankAccountId ?? ""}>
                   <option value="">{labels.bankAccountNone}</option>
                   {bankAccounts.map((account) => (
                     <option key={account.id} value={account.id}>

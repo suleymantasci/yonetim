@@ -17,6 +17,7 @@ import {
   type SQL,
 } from "drizzle-orm";
 
+import { normalizePlate } from "@yonetim/contracts";
 import type {
   BlockRow,
   UnitBulkPatch,
@@ -182,10 +183,14 @@ export class UnitRepository {
 
     if (q.search) {
       const needle = `%${q.search}%`;
-      // Numara veya blok adında arama; trigram indeksi numarayı hızlandırıyor.
+      // Numara, blok adı ya da araç plakası (kapı görevlisi plakadan daireyi bulur).
+      const plate = normalizePlate(q.search);
       const search = or(
         ilike(units.number, needle),
         ilike(blocks.name, needle),
+        ...(plate.length >= 3
+          ? [sql`EXISTS (SELECT 1 FROM unit_vehicles v WHERE v.unit_id = ${units.id} AND v.plate LIKE ${`%${plate}%`})`]
+          : []),
       );
       if (search) conditions.push(search);
     }

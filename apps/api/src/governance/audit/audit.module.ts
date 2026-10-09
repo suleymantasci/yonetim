@@ -8,6 +8,7 @@ import { DecisionBookController } from "../decision-book/decision-book.controlle
 import { DecisionBookService } from "../decision-book/decision-book.service";
 import { DocumentWriteService } from "../document/document-write.service";
 import { DocumentController } from "../document/document.controller";
+import { LawyerService } from "../document/lawyer.service";
 import { DocumentService } from "../document/document.service";
 import { LegalWriteService } from "../document/legal-write.service";
 import { KvkkController } from "../kvkk/kvkk.controller";
@@ -30,6 +31,7 @@ import { KvkkWriteService } from "../kvkk/kvkk-write.service";
     DocumentService,
     DocumentWriteService,
     LegalWriteService,
+    LawyerService,
     KvkkWriteService,
     // Karar defteri `governance` bağlamında: denetim kütüğü ve belge deposuyla
     // aynı yükümlülük ailesinden (kayıt tutma, hesap verme).

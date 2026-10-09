@@ -83,7 +83,17 @@ export function OpenCaseButton({
  * farklı. Birleştirilseydi olay eklemek isteyen yönetici, önce aşama seçmek
  * ve tutar yazmak zorunda kalırdı.
  */
-export function CaseActions({ caseId, stage }: { caseId: string; stage: string }) {
+export function CaseActions({
+  caseId,
+  stage,
+  lawyerId = null,
+  lawyers = [],
+}: {
+  caseId: string;
+  stage: string;
+  lawyerId?: string | null;
+  lawyers?: { id: string; name: string }[];
+}) {
   const t = useTranslations("app.legal");
   const tEnum = useTranslations("enum");
   const [tab, setTab] = useState<"none" | "stage" | "event" | "amount" | "close">(
@@ -125,6 +135,16 @@ export function CaseActions({ caseId, stage }: { caseId: string; stage: string }
           footer={<Bar label={t("save")} onCancel={() => setTab("none")} />}
         >
           <input type="hidden" name="id" value={caseId} />
+          <FormField name="lawyerId" label={t("lawyer")}>
+            <Select name="lawyerId" defaultValue={lawyerId ?? ""}>
+              <option value="">{t("noLawyer")}</option>
+              {lawyers.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.name}
+                </option>
+              ))}
+            </Select>
+          </FormField>
           <FormField name="stage" label={t("stage")}>
             <Select name="stage" defaultValue={stage}>
               {STAGES.map((s) => (

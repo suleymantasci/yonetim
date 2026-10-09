@@ -501,6 +501,21 @@ export const openingEntries = pgTable(
  * Silinmiyor, iptal ediliyor (`voided_at`): defterden iz kaybolmasın.
  * Hesap tarafı: `*_account` = "cash" | "bank"; banka ise `*_bank_account_id`.
  */
+/** Harici tahsilat grupları — kullanıcı tanımlı gelir kalemleri (602.1x). */
+export const incomeGroups = pgTable(
+  "income_groups",
+  {
+    id: idCol(),
+    tenantId: tenantId().references(() => tenants.id, { onDelete: "cascade" }),
+    name: varchar("name", { length: 80 }).notNull(),
+    accountCode: varchar("account_code", { length: 20 }).notNull(),
+    isActive: boolean("is_active").notNull().default(true),
+    ...timestamps,
+    ...softDelete,
+  },
+  (t) => [index("idx_income_groups_tenant").on(t.tenantId)],
+);
+
 export const cashMovements = pgTable(
   "cash_movements",
   {
@@ -514,6 +529,8 @@ export const cashMovements = pgTable(
     toAccount: varchar("to_account", { length: 10 }).notNull(),
     toBankAccountId: uuid("to_bank_account_id").references(() => bankAccounts.id, { onDelete: "restrict" }),
     incomeCategory: varchar("income_category", { length: 30 }),
+    /** Kullanıcı tanımlı harici tahsilat grubu (varsa kategori yerine). */
+    incomeGroupId: uuid("income_group_id").references(() => incomeGroups.id, { onDelete: "restrict" }),
     payerName: varchar("payer_name", { length: 160 }),
     description: text("description"),
     documentNo: varchar("document_no", { length: 60 }),

@@ -213,6 +213,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/panel/belgeler", key: "documents", permission: "document:read", group: "operations" },
   { href: "/panel/hukuk", key: "legal", permission: "legal:read", group: "compliance" },
   { href: "/panel/evrak", key: "letters", permission: "legal:read", group: "compliance" },
+  { href: "/panel/bilgi-bankasi", key: "knowledge", permission: "settings:read", group: "compliance" },
   {
     href: "/panel/karar-defteri",
     key: "decisionBook",

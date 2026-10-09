@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 
-import { Alert, FormSection, Input, Switch, Textarea } from "@yonetim/ui";
+import { Alert, FormSection, Input, Select, Switch, Textarea } from "@yonetim/ui";
 
 import { ActionForm, FormField } from "@/components/form/action-form";
 import { saveSettings } from "./actions";
@@ -25,6 +25,8 @@ export interface SettingsFormDefaults {
   invoiceAddress: string | null;
   whatsappOptInRequired: boolean;
   onlinePaymentEnabled: boolean;
+  defaultPaymentMethod: string;
+  defaultBankAccountId: string | null;
 }
 
 /**
@@ -46,9 +48,12 @@ export interface SettingsFormDefaults {
 export function SettingsForm({
   defaults,
   submitLabel,
+  bankAccounts = [],
 }: {
   defaults: SettingsFormDefaults;
   submitLabel: string;
+  /** Varsayılan kasa/banka hesabı seçenekleri. */
+  bankAccounts?: { id: string; label: string }[];
 }) {
   const t = useTranslations("app.settings");
 
@@ -255,6 +260,26 @@ export function SettingsForm({
           description={t("onlinePaymentEnabledHint")}
           defaultChecked={defaults.onlinePaymentEnabled}
         />
+      </FormSection>
+
+      <FormSection title={t("collectionDefaults")} description={t("collectionDefaultsHint")}>
+        <FormField name="defaultPaymentMethod" label={t("defaultPaymentMethod")}>
+          <Select name="defaultPaymentMethod" defaultValue={defaults.defaultPaymentMethod}>
+            <option value="bank_transfer">{t("methodTransfer")}</option>
+            <option value="cash">{t("methodCash")}</option>
+            <option value="card">{t("methodCard")}</option>
+          </Select>
+        </FormField>
+        <FormField name="defaultBankAccountId" label={t("defaultBankAccount")} hint={t("defaultBankAccountHint")}>
+          <Select name="defaultBankAccountId" defaultValue={defaults.defaultBankAccountId ?? ""}>
+            <option value="">{t("defaultBankAccountNone")}</option>
+            {bankAccounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.label}
+              </option>
+            ))}
+          </Select>
+        </FormField>
       </FormSection>
     </ActionForm>
   );

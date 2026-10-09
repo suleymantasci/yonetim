@@ -176,6 +176,20 @@
       "when": 1786120800000,
       "tag": "0024_debt_types",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1786207200000,
+      "tag": "0025_income_groups",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1786293600000,
+      "tag": "0026_unit_household_vehicles",
+      "breakpoints": true
     }
   ]
 }

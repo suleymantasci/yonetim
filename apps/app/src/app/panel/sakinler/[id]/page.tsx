@@ -220,6 +220,7 @@ export default async function ResidentDetailPage({
               payers={[{ id, label: name }]}
               defaultPayerId={id}
               bankAccounts={collectBankAccounts}
+              collectDefaults={bank?.collectionDefaults}
               labels={collectLabels}
             />
             <Link

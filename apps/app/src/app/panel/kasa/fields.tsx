@@ -1,7 +1,7 @@
 import { getTranslations } from "next-intl/server";
 
 import { INCOME_CATEGORIES } from "@yonetim/contracts";
-import { DateInput, Input, MoneyInput, Select, Textarea } from "@yonetim/ui";
+import { DateInput, Input, MoneyInput, Select, Switch, Textarea } from "@yonetim/ui";
 
 import { FormField } from "@/components/form/action-form";
 
@@ -77,7 +77,14 @@ export async function TransferFields({ banks }: { banks: BankOption[] }) {
   );
 }
 
-export async function IncomeFields({ banks }: { banks: BankOption[] }) {
+export async function IncomeFields({
+  banks,
+  groups = [],
+}: {
+  banks: BankOption[];
+  /** Kullanıcı tanımlı harici tahsilat grupları (etkin olanlar). */
+  groups?: { id: string; name: string }[];
+}) {
   const t = await getTranslations("app.cash");
   return (
     <>
@@ -89,6 +96,15 @@ export async function IncomeFields({ banks }: { banks: BankOption[] }) {
                 {t(`incomeCategory.${c}`)}
               </option>
             ))}
+            {groups.length > 0 ? (
+              <optgroup label={t("customGroups")}>
+                {groups.map((g) => (
+                  <option key={g.id} value={`g:${g.id}`}>
+                    {g.name}
+                  </option>
+                ))}
+              </optgroup>
+            ) : null}
           </Select>
         </FormField>
         <FormField name="to" label={t("toAccount")} required>
@@ -176,5 +192,25 @@ export async function VoidFields() {
     >
       <Textarea name="reason" rows={2} minLength={5} maxLength={500} required />
     </FormField>
+  );
+}
+
+export async function IncomeGroupFields({
+  group,
+}: {
+  group?: { id: string; name: string; accountCode: string; isActive: boolean };
+}) {
+  const t = await getTranslations("app.cash");
+  return (
+    <>
+      {group ? <input type="hidden" name="id" value={group.id} /> : null}
+      <FormField name="name" label={t("groupName")} required>
+        <Input name="name" defaultValue={group?.name} required minLength={2} maxLength={80} placeholder={t("groupNamePlaceholder")} />
+      </FormField>
+      <FormField name="accountCode" label={t("groupCode")} hint={group ? t("groupCodeLocked") : t("groupCodeHint")}>
+        <Input name="accountCode" defaultValue={group?.accountCode} disabled={!!group} placeholder="602.10" maxLength={20} />
+      </FormField>
+      <Switch name="isActive" label={t("groupActive")} defaultChecked={group?.isActive ?? true} />
+    </>
   );
 }

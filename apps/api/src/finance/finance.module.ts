@@ -21,7 +21,7 @@ import { StatementService } from "./accounting/statement.service";
 import { BudgetController } from "./budget/budget.controller";
 import { BudgetService } from "./budget/budget.service";
 import { CashController } from "./cash/cash.controller";
-import { CashService } from "./cash/cash.service";
+import { CashService, IncomeGroupService } from "./cash/cash.service";
 import { VendorController } from "./vendor/vendor.controller";
 import { VendorService } from "./vendor/vendor.service";
 import { DebtTypeController } from "./debt-type/debt-type.controller";
@@ -69,6 +69,7 @@ import { DebtReportService } from "./debt-report/debt-report.service";
     OpeningService,
     StatementService,
     CashService,
+    IncomeGroupService,
     BudgetService,
     DebtTypeService,
     DebtReportService,

@@ -30,7 +30,7 @@ export default async function LabelsPage({
     apiGet(`/v1/panel/letters/recipients?${toQuery({ member: member === "all" ? undefined : member, blockId })}`, recipientResponse),
   ]);
   const size = (LABEL_SIZES as readonly string[]).includes(params.boyut ?? "") ? params.boyut! : "2x5";
-  const canPhones = can(ctx, "report:export");
+  const canPhones = can(ctx, "resident:write");
   // PDF ile aynı kural: kişi başına seçiliyse her kişi, değilse bölüm başına bir etiket.
   const labelCount =
     params.kisi === "1" ? data.rows.reduce((n, u) => n + Math.max(1, u.people.length), 0) : data.rows.length;

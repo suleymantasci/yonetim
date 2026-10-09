@@ -142,3 +142,44 @@ export const resources = pgTable(
   },
   (t) => [index("idx_resources_tenant").on(t.tenantId)],
 );
+
+/**
+ * Hane halkı — dairede yaşayan, panel kullanıcısı olmayan kişiler (eş,
+ * çocuk…). Acil durum listesi ve kişi sayısı kontrolü için; `resident_count`
+ * aidat formülünün girdisi olarak ayrıca tutulur.
+ */
+export const householdMembers = pgTable(
+  "household_members",
+  {
+    id: idCol(),
+    tenantId: tenantId().references(() => tenants.id, { onDelete: "cascade" }),
+    unitId: uuid("unit_id").notNull().references(() => units.id, { onDelete: "cascade" }),
+    fullName: varchar("full_name", { length: 120 }).notNull(),
+    /** `spouse` | `child` | `parent` | `relative` | `other`. */
+    relation: varchar("relation", { length: 20 }).notNull().default("other"),
+    birthYear: integer("birth_year"),
+    phone: varchar("phone", { length: 20 }),
+    note: varchar("note", { length: 200 }),
+    ...timestamps,
+  },
+  (t) => [index("idx_household_unit").on(t.tenantId, t.unitId)],
+);
+
+/** Araç plakaları — daireye bağlı; plaka site içinde tekil (otopark/kapı kontrolü). */
+export const unitVehicles = pgTable(
+  "unit_vehicles",
+  {
+    id: idCol(),
+    tenantId: tenantId().references(() => tenants.id, { onDelete: "cascade" }),
+    unitId: uuid("unit_id").notNull().references(() => units.id, { onDelete: "cascade" }),
+    /** Normalize: büyük harf, boşluksuz (34ABC123). */
+    plate: varchar("plate", { length: 16 }).notNull(),
+    description: varchar("description", { length: 120 }),
+    ownerName: varchar("owner_name", { length: 120 }),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("uq_unit_vehicles_plate").on(t.tenantId, t.plate),
+    index("idx_unit_vehicles_unit").on(t.tenantId, t.unitId),
+  ],
+);

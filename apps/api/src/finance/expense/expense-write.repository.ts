@@ -243,7 +243,7 @@ export class ExpenseWriteRepository {
     });
   }
 
-  async softDelete(ids: string[]): Promise<number> {
+  async softDelete(ids: string[]): Promise<string[]> {
     return this.db.tx(async (tx) => {
       const rows = await tx
         .update(expenses)
@@ -257,7 +257,7 @@ export class ExpenseWriteRepository {
           ),
         )
         .returning({ id: expenses.id });
-      return rows.length;
+      return rows.map((r) => r.id);
     });
   }
 

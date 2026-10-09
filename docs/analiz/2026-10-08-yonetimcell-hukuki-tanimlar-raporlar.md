@@ -83,3 +83,22 @@ değiştirilmedi. "Bizde" sütunu bu tarihteki `main` (fc9d109).
 3. **Taşınmaz/üye × dönem borç raporları** + toplu hesap özeti / borç dökümü / makbuz dökümü (PDF, mevcut `pdfRoute` altyapısıyla).
 4. **Tebligat / ihtarname** (filtreli toplu; metin şablonu; PDF) + genel kurul çağrı mektubu + vekaletname şablonu + antetli evrak + adres etiketi.
 5. Program kullanıcıları (davet + rol), avukat ekranı, varsayılan kasa, harici tahsilat grupları, SMS/e-posta gönderim raporu, silinen hareket raporu, araç plakası, hane halkı, bilgi bankası.
+
+## 6. Uygulama durumu (2026-10-09)
+
+| # | Madde | Durum | Nerede |
+|---|---|---|---|
+| 1 | Borç türü tanımları (borçlu oturan/malik, tür başına gecikme türü+oranı, muhasebe kodu) + daire "aidatı maliğe yaz" | ✓ | `/panel/borclar/turler`, `debt_types` (0024), `units.owner_pays_dues`; tek/toplu borç, aidat planı, geçiş türe bağlı; gecikme işi tür > plan > site ve muafiyetler |
+| 2 | Eski üye ayrımı (tümü/aktif/oturan/malik/kiracı/eski malik/eski kiracı) | ✓ | `?uye=` borçlar, sakinler (`(E)` rozeti), hesap özeti (+PDF), dönemsel borç, borç dökümü, makbuzlar, tebligat, etiket |
+| 3 | Taşınmaz/üye × dönem borç raporu; toplu borç dökümü; toplu makbuz dökümü (PDF) | ✓ | `/panel/raporlar/donem-borc`, `/borc-dokumu`, `/makbuzlar` (+PDF); toplu hesap özeti zaten vardı |
+| 4 | Tebligat/ihtarname, genel kurul çağrısı, vekaletname, antetli evrak, adres etiketi | ✓ | `/panel/evrak` (+ `genel-kurul`, `antetli`, `etiket`), antetli PDF modu, etiket sayfası |
+| 5 | Program kullanıcıları | ✓ | `/panel/ayarlar/kullanicilar` (davet, rol, kaldır; son yönetici ve kendisi korunur) |
+| 5 | Avukat ekranı | ✓ | `/panel/hukuk/avukatlar`, dosyaya avukat atama, avukata göre süzgeç |
+| 5 | Varsayılan kasa | ✓ | Ayarlar → Tahsilat varsayılanları; tahsilat formları önceden seçer |
+| 5 | Harici tahsilat grupları | ✓ | Kasa → grup (602.1x), `income_groups` (0025), yevmiye/mizan grubun kodu |
+| 5 | SMS/e-posta gönderim raporu | ✓ | `/panel/raporlar/gonderimler` (alıcı maskeli, kanal özeti) |
+| 5 | Silinen hareket raporu | ✓ | `/panel/raporlar/silinenler` (borç/tahsilat iptali, kasa iptali, gider silme; kim/neden) |
+| 5 | Araç plakası, hane halkı | ✓ | Daire kartı "Hane halkı ve araçlar" (0026), plaka tekil + daire listesinde plaka araması |
+| 5 | Bilgi bankası | ✓ | `/panel/bilgi-bankasi` (mevzuat bağlantıları, madde referanslı SSS, hazır yazışmalar) |
+
+Açık kalanlar (bu listenin dışında, §4 tablosundan): muhasebe kodu eşleme ekranı, banka API entegrasyonu, borçlandırma durum/detay raporu ayrı ekranı.

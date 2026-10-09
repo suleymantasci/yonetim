@@ -21,13 +21,13 @@ export class LettersController {
   @RequirePermission("resident:read")
   @ApiOperation({
     summary: "Daire başına yazışma alıcıları (etiket, çağrı, vekaletname)",
-    description: "`phones=1` için ayrıca `report:export` gerekir; erişim denetim kaydına yazılır.",
+    description: "`phones=1` için ayrıca `resident:write` gerekir; erişim denetim kaydına yazılır.",
   })
   recipients(@Query() query: Record<string, string>) {
     const q = recipientQuery.parse(query);
     const phones = q.phones === "1";
-    if (phones && !grants(this.db.ctx(), "report:export")) {
-      throw new ForbiddenException("forbidden:report_export");
+    if (phones && !grants(this.db.ctx(), "resident:write")) {
+      throw new ForbiddenException("forbidden:resident_write");
     }
     return this.service.recipients({ member: q.member, blockId: q.blockId, phones });
   }

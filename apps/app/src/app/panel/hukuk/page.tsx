@@ -1,6 +1,6 @@
 import { getTranslations } from "next-intl/server";
 
-import { legalCaseListResponse } from "@yonetim/contracts";
+import { lawyerList, legalCaseListResponse } from "@yonetim/contracts";
 import {
   Alert,
   Badge,
@@ -8,6 +8,7 @@ import {
   CardBody,
   CardHeader,
   EmptyState,
+  Select,
   Stat,
   tableClasses as tc,
 } from "@yonetim/ui";
@@ -15,6 +16,7 @@ import {
 import { hasPermission } from "@yonetim/auth/guard";
 
 import { PageHeader } from "@/components/app-shell";
+import Link from "@/components/link";
 import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { formatters } from "@/lib/format";
@@ -22,8 +24,14 @@ import { CaseActions, OpenCaseButton } from "./case-actions";
 
 export const dynamic = "force-dynamic";
 
-export default async function LegalPage() {
+export default async function LegalPage({
+  searchParams,
+}: {
+  readonly searchParams: Promise<Record<string, string | undefined>>;
+}) {
   const ctx = await requirePermission("legal:read");
+  const params = await searchParams;
+  const lawyerId = params.avukat && /^[0-9a-f-]{36}$/.test(params.avukat) ? params.avukat : undefined;
   const t = await getTranslations("app.legal");
   const tEnum = await getTranslations("enum");
   const f = await formatters();
@@ -35,7 +43,8 @@ export default async function LegalPage() {
     candidates,
     thresholdDays,
     totals,
-  } = await apiGet("/v1/panel/legal", legalCaseListResponse);
+  } = await apiGet(`/v1/panel/legal${lawyerId ? `?lawyerId=${lawyerId}` : ""}`, legalCaseListResponse);
+  const { rows: lawyers } = await apiGet("/v1/panel/legal/lawyers", lawyerList);
   const canWrite = hasPermission(ctx.roles, "legal:write");
 
   return (
@@ -43,6 +52,14 @@ export default async function LegalPage() {
       <PageHeader
         title={t("title")}
         description={t("description", { days: thresholdDays })}
+        action={
+          <Link
+            href="/panel/hukuk/avukatlar"
+            className="inline-flex h-10 items-center rounded-lg border border-border-strong bg-surface px-3 text-sm font-semibold text-fg hover:bg-hover"
+          >
+            {t("lawyersLink")}
+          </Link>
+        }
       />
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -123,7 +140,26 @@ export default async function LegalPage() {
       ) : null}
 
       <Card className="mt-4">
-        <CardHeader title={t("casesTitle")} />
+        <CardHeader
+          title={t("casesTitle")}
+          action={
+            lawyers.length > 0 ? (
+              <form method="get" className="flex items-end gap-2">
+                <Select name="avukat" defaultValue={lawyerId ?? ""} aria-label={t("lawyerFilter")} className="h-9 w-48">
+                  <option value="">{t("allLawyers")}</option>
+                  {lawyers.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.name}
+                    </option>
+                  ))}
+                </Select>
+                <button type="submit" className="inline-flex h-9 items-center rounded-lg border border-border-strong px-3 text-sm font-semibold text-fg hover:bg-hover">
+                  {t("filter")}
+                </button>
+              </form>
+            ) : null
+          }
+        />
         <CardBody className="p-0">
           {cases.length === 0 ? (
             <div className="p-4">
@@ -149,6 +185,7 @@ export default async function LegalPage() {
                     </div>
                     <div className="text-xs text-fg-subtle">
                       {t("openedAt", { date: f.date(c.openedAt) })}
+                      {c.lawyerName ? ` · ${t("lawyerShort", { name: c.lawyerName })}` : ""}
                       {c.nextActionAt
                         ? ` · ${t("nextAction", { date: f.date(c.nextActionAt) })}`
                         : ""}
@@ -180,7 +217,12 @@ export default async function LegalPage() {
                   {/* Kapanmış dosyada işlem yok: aşama ilerletmek, tutar
                       işlemek ve yeniden kapatmak anlamsız. */}
                   {canWrite && !c.closedAt ? (
-                    <CaseActions caseId={c.id} stage={c.stage} />
+                    <CaseActions
+                      caseId={c.id}
+                      stage={c.stage}
+                      lawyerId={c.lawyerId}
+                      lawyers={lawyers.filter((l) => l.isActive || l.id === c.lawyerId).map((l) => ({ id: l.id, name: l.name }))}
+                    />
                   ) : null}
                 </li>
               ))}

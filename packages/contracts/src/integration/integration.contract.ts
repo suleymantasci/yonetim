@@ -98,6 +98,16 @@ export type CashboxRow = z.infer<typeof cashboxRow>;
 
 export const bankOverviewResponse = z.object({
   accounts: z.array(bankAccountRow),
+  /**
+   * Tahsilat formlarının başlangıç değerleri (site ayarı): varsayılan ödeme
+   * şekli ve paranın girdiği hesap ("varsayılan kasa").
+   */
+  collectionDefaults: z
+    .object({
+      method: z.enum(["bank_transfer", "cash", "card"]),
+      bankAccountId: z.string().uuid().nullable(),
+    })
+    .default({ method: "bank_transfer", bankAccountId: null }),
   transactions: z.array(bankTransactionRow),
   issues: z.array(reconciliationIssueRow),
   /** Kasa dökümü — her hesap ve nakit için ayrı, altında toplam. */

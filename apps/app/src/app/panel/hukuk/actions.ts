@@ -7,7 +7,9 @@ import { apiPatch, apiPost } from "@/lib/api/server";
 import {
   kurusField,
   okState,
+  checkboxField,
   optionalText,
+  optionalUuidField,
   requiredText,
   runAction,
   uuidField,
@@ -81,6 +83,7 @@ export async function updateLegalCase(
       schema: z.object({
         id: uuidField,
         stage: z.enum(STAGES, { errorMap: () => ({ message: V.invalidSelection }) }),
+        lawyerId: optionalUuidField,
         nextActionAt: z.preprocess(
           (v) => (typeof v === "string" && v.trim() === "" ? undefined : v),
           z.coerce.date().optional(),
@@ -98,6 +101,7 @@ export async function updateLegalCase(
         `/v1/panel/legal/${input.id}`,
         {
           stage: input.stage,
+          lawyerId: input.lawyerId ?? null,
           nextActionAt: input.nextActionAt ?? null,
           nextActionNote: input.nextActionNote ?? null,
           note: input.note ?? null,
@@ -201,6 +205,44 @@ export async function closeLegalCase(
       await apiPost(`/v1/panel/legal/${input.id}/close`, { reason: input.reason }, ok);
 
       return okState(t("caseClosed"));
+    },
+  );
+}
+
+const lawyerSchema = z.object({
+  id: z.preprocess((v) => (v === "" || v === null ? undefined : v), uuidField.optional()),
+  name: requiredText(3, 160),
+  barNo: optionalText(40),
+  barCity: optionalText(60),
+  phone: optionalText(20),
+  email: z.preprocess((v) => (typeof v === "string" ? v.trim() || undefined : v), z.string().email(V.invalidEmail).optional()),
+  commissionPct: z.preprocess(
+    (v) => (typeof v === "string" ? (v.trim() === "" ? undefined : Number(v.replace(",", "."))) : v),
+    z.number({ invalid_type_error: V.invalidAmount }).min(0, V.minValue(0)).max(100, V.maxValue(100)).optional(),
+  ),
+  isActive: checkboxField,
+});
+
+/** Avukat ekle/güncelle. */
+export async function saveLawyer(_previous: ActionState, formData: FormData): Promise<ActionState> {
+  return runAction(
+    { permission: "legal:write", schema: lawyerSchema, meta: { action: "lawyer_saved", resource: "lawyer" } },
+    formData,
+    async ({ input }) => {
+      const t = await getTranslations("app.legal");
+      const body = {
+        name: input.name,
+        barNo: input.barNo ?? null,
+        barCity: input.barCity ?? null,
+        phone: input.phone ?? null,
+        email: input.email ?? null,
+        commissionPct: input.commissionPct ?? 10,
+        isActive: input.isActive,
+      };
+      const idOnly = z.object({ id: z.string().uuid() });
+      if (input.id) await apiPatch(`/v1/panel/legal/lawyers/${input.id}`, body, idOnly);
+      else await apiPost("/v1/panel/legal/lawyers", body, idOnly);
+      return okState(t("lawyerSaved", { name: input.name }));
     },
   );
 }

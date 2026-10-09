@@ -487,9 +487,19 @@ export class DebtWriteRepository {
   /** Borç iptali (soft-delete). Kısmen bile ödenmiş borç iptal edilemez. */
   async cancel(ids: string[], reason: string): Promise<number> {
     return this.db.txWithReason(reason, async (tx) => {
+      // Kim, ne zaman, neden — silinen hareket raporu bunu okur.
+      const stamp = {
+        at: new Date().toISOString(),
+        by: this.db.ctx().userId ?? null,
+        reason,
+      };
       const rows = await tx
         .update(debts)
-        .set({ status: "cancelled", deletedAt: new Date() })
+        .set({
+          status: "cancelled",
+          deletedAt: new Date(),
+          metadata: sql`${debts.metadata} || jsonb_build_object('cancelled', ${JSON.stringify(stamp)}::jsonb)`,
+        })
         .where(
           and(
             inArray(debts.id, ids),

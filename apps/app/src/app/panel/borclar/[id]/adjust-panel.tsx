@@ -30,6 +30,7 @@ import { adjustDebt, collectPayment } from "../actions";
  * en eski vade önce kapanır. Borcu aşan tutar avans olarak bildirilir.
  */
 export function DebtActionPanels({
+  collectDefaults,
   debtId,
   unitId,
   currentAmountKurus,
@@ -51,6 +52,8 @@ export function DebtActionPanels({
   residents: { id: string; label: string }[];
   /** Aktif banka hesapları — nakit dışı tahsilatta paranın girdiği hesap. */
   bankAccounts: { id: string; label: string }[];
+  /** Site ayarındaki varsayılan ödeme şekli ve hesap. */
+  collectDefaults?: { method: string; bankAccountId: string | null };
   labels: {
     adjust: string;
     adjustTitle: string;
@@ -92,7 +95,7 @@ export function DebtActionPanels({
   const [adjusting, setAdjusting] = useState(false);
   const [collecting, setCollecting] = useState(false);
   // Ödeme yöntemi banka hesabı alanının görünürlüğünü belirliyor.
-  const [method, setMethod] = useState("bank_transfer");
+  const [method, setMethod] = useState(collectDefaults?.method ?? "bank_transfer");
 
   return (
     <>
@@ -240,7 +243,7 @@ export function DebtActionPanels({
                 label={labels.bankAccount}
                 hint={labels.bankAccountHint}
               >
-                <Select name="bankAccountId" defaultValue="">
+                <Select name="bankAccountId" defaultValue={collectDefaults?.bankAccountId ?? ""}>
                   <option value="">{labels.bankAccountNone}</option>
                   {bankAccounts.map((account) => (
                     <option key={account.id} value={account.id}>

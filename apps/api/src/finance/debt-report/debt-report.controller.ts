@@ -1,7 +1,13 @@
 import { Controller, Get, Query } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 
-import { debtMatrixQuery, openItemsQuery, receiptListQuery } from "@yonetim/contracts";
+import {
+  debtMatrixQuery,
+  deletedQuery,
+  messageReportQuery,
+  openItemsQuery,
+  receiptListQuery,
+} from "@yonetim/contracts";
 
 import { RequirePermission } from "../../identity/decorators";
 import { DebtReportService } from "./debt-report.service";
@@ -32,5 +38,19 @@ export class DebtReportController {
   @ApiOperation({ summary: "Toplu tahsilat makbuzu dökümü" })
   receipts(@Query() query: Record<string, string>) {
     return this.service.receipts(receiptListQuery.parse(query));
+  }
+
+  @Get("deleted")
+  @RequirePermission("audit:read")
+  @ApiOperation({ summary: "Silinen hareket raporu — iptal borç/tahsilat, iptal kasa hareketi, silinen gider" })
+  deleted(@Query() query: Record<string, string>) {
+    return this.service.deleted(deletedQuery.parse(query));
+  }
+
+  @Get("messages")
+  @RequirePermission("report:read")
+  @ApiOperation({ summary: "SMS / e-posta / WhatsApp gönderim raporu (alıcı maskeli)" })
+  messages(@Query() query: Record<string, string>) {
+    return this.service.messages(messageReportQuery.parse(query));
   }
 }
