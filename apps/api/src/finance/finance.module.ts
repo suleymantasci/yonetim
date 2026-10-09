@@ -30,6 +30,7 @@ import { DebtReportController } from "./debt-report/debt-report.controller";
 import { DebtReportService } from "./debt-report/debt-report.service";
 import { PayablesController, PayablesService } from "./payables/payables.controller";
 import { CashToolsController, CashToolsService } from "./cash/cash-tools.controller";
+import { ExtraReportsController, ExtraReportsService } from "./reports/extra-reports.controller";
 
 /**
  * `finance` bağlamı — MIMARI-PLAN §6.4: aidat planı, borç, tahsilat, gider,
@@ -58,6 +59,7 @@ import { CashToolsController, CashToolsService } from "./cash/cash-tools.control
     DebtReportController,
     PayablesController,
     CashToolsController,
+    ExtraReportsController,
   ],
   providers: [
     DebtService,
@@ -79,6 +81,7 @@ import { CashToolsController, CashToolsService } from "./cash/cash-tools.control
     DebtReportService,
     PayablesService,
     CashToolsService,
+    ExtraReportsService,
   ],
   exports: [DebtService, DebtRepository, ExpenseService, DuesPlanService, VendorService],
 })

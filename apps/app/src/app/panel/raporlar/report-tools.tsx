@@ -5,6 +5,7 @@ import { Input, Select } from "@yonetim/ui";
 
 import Link from "@/components/link";
 import { memberScopeOptions } from "@/lib/member-scope";
+import { SubnavScroll } from "./subnav-scroll";
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -82,6 +83,13 @@ export type ReportTab =
   | "debtMatrix"
   | "openItems"
   | "receipts"
+  | "collections"
+  | "expenseDetail"
+  | "cashDays"
+  | "monthly"
+  | "debtRuns"
+  | "accountCodes"
+  | "memberNotes"
   | "messages"
   | "deleted"
   | "activity"
@@ -99,16 +107,25 @@ export async function ReportsSubnav({ active }: { active: ReportTab }) {
     { key: "debtMatrix", href: "/panel/raporlar/donem-borc" },
     { key: "openItems", href: "/panel/raporlar/borc-dokumu" },
     { key: "receipts", href: "/panel/raporlar/makbuzlar" },
+    { key: "collections", href: "/panel/raporlar/tahsilat" },
+    { key: "expenseDetail", href: "/panel/raporlar/gider" },
+    { key: "cashDays", href: "/panel/raporlar/kasa-gunluk" },
+    { key: "monthly", href: "/panel/raporlar/aylik" },
+    { key: "debtRuns", href: "/panel/raporlar/borclandirma" },
     { key: "messages", href: "/panel/raporlar/gonderimler" },
     { key: "deleted", href: "/panel/raporlar/silinenler" },
     { key: "activity", href: "/panel/raporlar/faaliyet" },
     { key: "auditReport", href: "/panel/raporlar/denetim-raporu" },
+    { key: "memberNotes", href: "/panel/raporlar/uye-notlari" },
+    { key: "accountCodes", href: "/panel/raporlar/muhasebe-kodlari" },
   ];
   return (
     <nav
+      id="reports-subnav"
       aria-label={t("navLabel")}
       className="relative mb-4 flex gap-1 overflow-x-auto border-b border-border print:hidden"
     >
+      <SubnavScroll id="reports-subnav" />
       {items.map((item) => (
         <Link
           key={item.key}
