@@ -73,7 +73,8 @@
     "letters": "Hukuki evrak",
     "knowledge": "Bilgi bankası",
     "lists": "Üye listeleri",
-    "bulkNotice": "Toplu bildirim"
+    "bulkNotice": "Toplu bildirim",
+    "dataTools": "Veri araçları"
   },
   "shell": {
     "trialDaysLeft": "Deneme · {days} gün kaldı",
@@ -4668,7 +4669,8 @@
     "amount": "Tutar",
     "paidOn": "Ödendi {date}",
     "waiting": "Bekliyor",
-    "recurringBadge": "Tekrarlayan faturadan"
+    "recurringBadge": "Tekrarlayan faturadan",
+    "import": "Excel'den yükle"
   },
   "recurring": {
     "title": "Tekrarlayan faturalar",
@@ -4998,5 +5000,136 @@
     "needDueDate": "Önce son ödeme tarihini girin.",
     "bill": "{count} bölümü borçlandır",
     "billed": "{count} borç yazıldı; dönemin okumaları kilitlendi."
+  },
+  "dataTools": {
+    "title": "Veri araçları",
+    "description": "Kayıtlardaki tutarsızlıkları bulun (borçlusuz borç, hissesi %100 etmeyen daire, mükerrer kişi…) ve aynı kişinin iki kaydını birleştirin.",
+    "checksTitle": "Tutarlılık kontrolü",
+    "allGood": "Sorun bulunmadı.",
+    "problems": "{count} kayıt düzeltme bekliyor.",
+    "ok": "Sorun yok",
+    "more": "… ve {count} kayıt daha",
+    "mergeThis": "Birleştir",
+    "shareTotal": "hisse toplamı %{pct}",
+    "samePhone": "aynı telefon",
+    "sameName": "aynı ad soyad",
+    "statusLabel": "{value}",
+    "check": {
+      "open_debt_no_debtor": {
+        "title": "Borçlusu olmayan açık borç",
+        "hint": "Kime ait olduğu belli olmayan borç tahsil edilemez ve hesap özetlerinde görünmez."
+      },
+      "overpaid_debt": {
+        "title": "Ödenen tutarı borcu aşan kayıt",
+        "hint": "Fazla tahsilat; mahsup ya da iade gerekir."
+      },
+      "debt_status_mismatch": {
+        "title": "Durumu tutmayan borç",
+        "hint": "Ödenen tutarla durum (ödendi / kısmi / bekliyor) uyuşmuyor."
+      },
+      "unit_no_owner": {
+        "title": "Maliki olmayan bölüm",
+        "hint": "Demirbaş gibi malike yazılan borçlar bu bölümde borçlusuz kalır."
+      },
+      "owner_share_not_100": {
+        "title": "Malik hisseleri %100 etmeyen bölüm",
+        "hint": "Hisseye göre bölüşümde tutar eksik ya da fazla yazılır."
+      },
+      "member_no_unit": {
+        "title": "Bölümü olmayan sakin",
+        "hint": "Sakin kaydı var ama hiçbir bölüme bağlı değil."
+      },
+      "duplicate_people": {
+        "title": "Mükerrer olabilecek kişiler",
+        "hint": "Aynı telefon ya da ad soyadla birden çok kayıt; Cari birleştir ile tek kayda indirin."
+      },
+      "meter_no_unit": {
+        "title": "Bölüme bağlı olmayan sayaç",
+        "hint": "Ortak alan sayacı değilse bölümü seçin; aksi halde borçlandırılamaz."
+      },
+      "unit_no_area": {
+        "title": "m² girilmemiş bölüm",
+        "hint": "m²'ye ve ısı pay ölçere göre paylaşımda bu bölüm dışarıda kalır."
+      }
+    },
+    "mergeTitle": "Cari birleştir",
+    "mergeHint": "Aynı kişinin iki kaydı varsa: kaynak kaydın bu sitedeki borç, tahsilat, icra, bölüm ilişkileri, talep ve mesajları hedef kayda taşınır; kaynak kaydın üyeliği kapanır.",
+    "source": "Kaynak (kapanacak kayıt)",
+    "target": "Hedef (kalacak kayıt)",
+    "pick": "Kişi seçin…",
+    "loading": "Hazırlanıyor",
+    "sourceCard": "Kapanacak",
+    "targetCard": "Kalacak",
+    "noUnits": "Bölüm yok",
+    "moves": "Taşınacaklar",
+    "noMoves": "Taşınacak kayıt yok; yalnız üyelik kapanır.",
+    "moveLine": "{what}: {count}",
+    "table": {
+      "debts_debtor_user_id": "Borçlar",
+      "payments_debtor_user_id": "Tahsilatlar (borçlu)",
+      "payments_payer_user_id": "Tahsilatlar (ödeyen)",
+      "legal_cases_debtor_user_id": "İcra dosyaları",
+      "unit_occupancies_user_id": "Bölüm ilişkileri",
+      "units_current_owner_id": "Bölüm maliki",
+      "units_current_tenant_id": "Bölüm kiracısı",
+      "requests_created_by_user_id": "Talepler",
+      "request_comments_user_id": "Talep yorumları",
+      "messages_user_id": "Mesajlar",
+      "notifications_user_id": "Bildirimler",
+      "reservations_user_id": "Rezervasyonlar"
+    },
+    "irreversible": "Birleştirme geri alınamaz. Aynı bölümde iki malik kaydı oluşursa hisseler toplanır.",
+    "reason": "Gerekçe",
+    "reasonPlaceholder": "Örn. Aynı kişi geçişte iki kez girilmiş",
+    "reasonShort": "Gerekçe en az 10 karakter olmalı.",
+    "mergeAction": "Birleştir",
+    "merged": "Birleştirildi: {count} kayıt taşındı.",
+    "mergeFailed": "Birleştirilemedi."
+  },
+  "expenseImport": {
+    "title": "Giderleri Excel'den yükle",
+    "description": "Muhasebe programından ya da elle hazırlanmış gider listesini Excel/CSV olarak yükleyin; gider grubu ve firma adla eşleşir, mükerrer ve kilitli dönem satırları atlanır.",
+    "step1": "Dosya",
+    "step1Hint": "Gerekli sütunlar: Tarih, Açıklama, Tutar. İsteğe bağlı: Gider grubu, Firma, Fatura no, Ödendi (evet/hayır).",
+    "pickFile": "Dosya seçin",
+    "fileHint": ".xlsx, .xls, .csv — en çok 4 MB",
+    "tooLarge": "Dosya 4 MB'tan büyük.",
+    "createCategories": "Olmayan gider gruplarını oluştur",
+    "createCategoriesHint": "Kapalıysa tanınmayan gruptaki gider grupsuz kaydedilir.",
+    "defaultPaid": "Ödendi sütunu boşsa ödendi say",
+    "defaultPaidHint": "Kapalıysa ödenecekler listesine düşer.",
+    "checking": "Kontrol ediliyor",
+    "failed": "Dosya işlenemedi.",
+    "missingTitle": "Sütun bulunamadı",
+    "missing": {
+      "date": "Tarih sütunu yok",
+      "description": "Açıklama sütunu yok",
+      "amount": "Tutar sütunu yok"
+    },
+    "newCategories": "Oluşturulacak gider grupları: {names}",
+    "unknownCategories": "Tanınmayan gider grupları (grupsuz kaydedilecek): {names}",
+    "step2": "{ok} / {total} satır kaydedilecek",
+    "step2Hint": "Toplam {amount} ₺. Kırmızı ve mavi satırlar atlanır.",
+    "commit": "{count} gideri kaydet",
+    "created": "{count} gider kaydedildi.",
+    "line": "Satır",
+    "date": "Tarih",
+    "descriptionCol": "Açıklama",
+    "category": "Gider grubu",
+    "vendor": "Firma",
+    "amount": "Tutar",
+    "status": "Durum",
+    "newBadge": "yeni grup",
+    "freeText": "kartsız",
+    "paid": "ödendi",
+    "unpaid": "ödenecek",
+    "state": {
+      "ok": "Kaydedilecek",
+      "bad_date": "Tarih hatalı",
+      "bad_amount": "Tutar yok",
+      "no_description": "Açıklama yok",
+      "duplicate": "Zaten var",
+      "locked": "Kilitli dönem"
+    }
   }
 }

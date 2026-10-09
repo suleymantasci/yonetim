@@ -71,6 +71,7 @@ const ICONS: Record<string, ComponentType<{ className?: string; "aria-hidden"?: 
   letters: FileSignature,
   knowledge: Library,
   lists: ListChecks,
+  dataTools: Wrench,
   bulkNotice: Send,
   kvkk: ShieldCheck,
   audit: ScrollText,

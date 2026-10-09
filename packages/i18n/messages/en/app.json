@@ -73,7 +73,8 @@
     "letters": "Legal documents",
     "knowledge": "Knowledge base",
     "lists": "Member lists",
-    "bulkNotice": "Bulk notice"
+    "bulkNotice": "Bulk notice",
+    "dataTools": "Data tools"
   },
   "shell": {
     "trialDaysLeft": "Trial · {days} days left",
@@ -4668,7 +4669,8 @@
     "amount": "Amount",
     "paidOn": "Paid {date}",
     "waiting": "Pending",
-    "recurringBadge": "From recurring bill"
+    "recurringBadge": "From recurring bill",
+    "import": "Import"
   },
   "recurring": {
     "title": "Recurring bills",
@@ -4998,5 +5000,136 @@
     "needDueDate": "Enter the due date first.",
     "bill": "Charge {count} units",
     "billed": "{count} debts created; the period's readings are locked."
+  },
+  "dataTools": {
+    "title": "Data tools",
+    "description": "Find inconsistencies (debts without a debtor, owner shares not adding to 100%, duplicate people…) and merge two records of the same person.",
+    "checksTitle": "Consistency check",
+    "allGood": "No problems found.",
+    "problems": "{count} records need attention.",
+    "ok": "OK",
+    "more": "… and {count} more",
+    "mergeThis": "Merge",
+    "shareTotal": "share total {pct}%",
+    "samePhone": "same phone",
+    "sameName": "same name",
+    "statusLabel": "{value}",
+    "check": {
+      "open_debt_no_debtor": {
+        "title": "Open debt without a debtor",
+        "hint": "A debt with no owner can't be collected and doesn't appear on statements."
+      },
+      "overpaid_debt": {
+        "title": "Paid more than the debt",
+        "hint": "Overpayment; needs offset or refund."
+      },
+      "debt_status_mismatch": {
+        "title": "Debt status mismatch",
+        "hint": "Paid amount and status (paid / partial / pending) disagree."
+      },
+      "unit_no_owner": {
+        "title": "Unit without an owner",
+        "hint": "Owner-paid charges (e.g. fixtures) stay debtor-less for this unit."
+      },
+      "owner_share_not_100": {
+        "title": "Owner shares not 100%",
+        "hint": "Share-based splits charge too much or too little."
+      },
+      "member_no_unit": {
+        "title": "Resident without a unit",
+        "hint": "Resident record exists but isn't linked to any unit."
+      },
+      "duplicate_people": {
+        "title": "Possible duplicate people",
+        "hint": "Several records with the same phone or name; merge them."
+      },
+      "meter_no_unit": {
+        "title": "Meter without a unit",
+        "hint": "Pick the unit unless it's a common-area meter; otherwise it can't be charged."
+      },
+      "unit_no_area": {
+        "title": "Unit without m²",
+        "hint": "Left out of m²-based and heat-cost allocation."
+      }
+    },
+    "mergeTitle": "Merge people",
+    "mergeHint": "If one person has two records: the source's debts, payments, legal cases, unit links, requests and messages in this site move to the target; the source membership is closed.",
+    "source": "Source (to close)",
+    "target": "Target (to keep)",
+    "pick": "Pick a person…",
+    "loading": "Preparing",
+    "sourceCard": "Closing",
+    "targetCard": "Keeping",
+    "noUnits": "No units",
+    "moves": "To move",
+    "noMoves": "Nothing to move; only the membership closes.",
+    "moveLine": "{what}: {count}",
+    "table": {
+      "debts_debtor_user_id": "Debts",
+      "payments_debtor_user_id": "Payments (debtor)",
+      "payments_payer_user_id": "Payments (payer)",
+      "legal_cases_debtor_user_id": "Legal cases",
+      "unit_occupancies_user_id": "Unit links",
+      "units_current_owner_id": "Unit owner",
+      "units_current_tenant_id": "Unit tenant",
+      "requests_created_by_user_id": "Requests",
+      "request_comments_user_id": "Request comments",
+      "messages_user_id": "Messages",
+      "notifications_user_id": "Notifications",
+      "reservations_user_id": "Reservations"
+    },
+    "irreversible": "Merging can't be undone. If two owner links end up on the same unit, shares are added.",
+    "reason": "Reason",
+    "reasonPlaceholder": "e.g. Same person entered twice during migration",
+    "reasonShort": "Reason must be at least 10 characters.",
+    "mergeAction": "Merge",
+    "merged": "Merged: {count} records moved.",
+    "mergeFailed": "Could not merge."
+  },
+  "expenseImport": {
+    "title": "Import expenses from Excel",
+    "description": "Upload an expense list from your accounting software or a spreadsheet; groups and vendors match by name, duplicates and locked-period rows are skipped.",
+    "step1": "File",
+    "step1Hint": "Required columns: Date, Description, Amount. Optional: Expense group, Vendor, Invoice no, Paid (yes/no).",
+    "pickFile": "Choose a file",
+    "fileHint": ".xlsx, .xls, .csv — up to 4 MB",
+    "tooLarge": "File is larger than 4 MB.",
+    "createCategories": "Create missing expense groups",
+    "createCategoriesHint": "If off, expenses in unknown groups are saved without a group.",
+    "defaultPaid": "Treat empty Paid as paid",
+    "defaultPaidHint": "If off, they land in payables.",
+    "checking": "Checking",
+    "failed": "Could not process the file.",
+    "missingTitle": "Column not found",
+    "missing": {
+      "date": "No date column",
+      "description": "No description column",
+      "amount": "No amount column"
+    },
+    "newCategories": "Groups to create: {names}",
+    "unknownCategories": "Unknown groups (saved without a group): {names}",
+    "step2": "{ok} / {total} rows will be saved",
+    "step2Hint": "Total {amount} ₺. Red and blue rows are skipped.",
+    "commit": "Save {count} expenses",
+    "created": "{count} expenses saved.",
+    "line": "Row",
+    "date": "Date",
+    "descriptionCol": "Description",
+    "category": "Expense group",
+    "vendor": "Vendor",
+    "amount": "Amount",
+    "status": "Status",
+    "newBadge": "new group",
+    "freeText": "no card",
+    "paid": "paid",
+    "unpaid": "payable",
+    "state": {
+      "ok": "Will be saved",
+      "bad_date": "Bad date",
+      "bad_amount": "No amount",
+      "no_description": "No description",
+      "duplicate": "Already exists",
+      "locked": "Locked period"
+    }
   }
 }

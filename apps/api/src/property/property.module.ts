@@ -18,13 +18,22 @@ import { LettersService } from "./letters/letters.service";
 import { ListsController } from "./lists/lists.controller";
 import { ListsService } from "./lists/lists.service";
 import { UnitExtrasController, UnitExtrasService } from "./unit/unit-extras.controller";
+import { DataToolsController, DataToolsService } from "./data-tools/data-tools.controller";
 
 /**
  * `property` bağlamı — blok, birim, sakin, adres, sayaç (MIMARI-PLAN §6.3).
  * A1'de blok + birim, A3'te sakin; sayaç Track E'de eklenir.
  */
 @Module({
-  controllers: [ListsController, UnitExtrasController, UnitController, ResidentController, PortalController, LettersController],
+  controllers: [
+    ListsController,
+    UnitExtrasController,
+    UnitController,
+    ResidentController,
+    PortalController,
+    LettersController,
+    DataToolsController,
+  ],
   providers: [
     LettersService,
     ListsService,
@@ -39,6 +48,7 @@ import { UnitExtrasController, UnitExtrasService } from "./unit/unit-extras.cont
     PiiService,
     PortalService,
     AccessRequestService,
+    DataToolsService,
   ],
   exports: [UnitService, UnitRepository, ResidentService, PiiService],
 })

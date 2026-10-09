@@ -305,3 +305,39 @@ export const expenseDistributeResult = z.object({
 export type ExpenseDistributeResult = z.infer<typeof expenseDistributeResult>;
 
 export const expenseIds = z.object({ ids: z.array(uuid).min(1) });
+
+/* ------------------------------------------------------------------ *
+ * Giderleri Excel'den yükle (Y9)
+ * ------------------------------------------------------------------ */
+
+export const expenseImport = z.object({
+  fileBase64: z.string().min(4).max(6_000_000),
+  /** Dosyada olmayan gider grupları oluşturulsun (eşit dağıtım formülüyle). */
+  createCategories: z.coerce.boolean().default(false),
+  /** "Ödendi" sütunu yoksa hepsi ödendi sayılsın. */
+  defaultPaid: z.coerce.boolean().default(false),
+});
+export type ExpenseImport = z.infer<typeof expenseImport>;
+
+export const expenseImportPreview = z.object({
+  rows: z.array(
+    z.object({
+      line: z.number().int(),
+      date: z.string().nullable(),
+      description: z.string(),
+      amountMinor: moneyMinor,
+      category: z.string().nullable(),
+      categoryMatched: z.boolean(),
+      vendor: z.string().nullable(),
+      vendorMatched: z.boolean(),
+      invoiceNo: z.string().nullable(),
+      paid: z.boolean(),
+      status: z.enum(["ok", "bad_date", "bad_amount", "no_description", "duplicate", "locked"]),
+    }),
+  ),
+  newCategories: z.array(z.string()),
+  totalMinor: moneyMinor,
+  missing: z.array(z.enum(["date", "description", "amount"])),
+  created: z.number().int().default(0),
+});
+export type ExpenseImportPreview = z.infer<typeof expenseImportPreview>;

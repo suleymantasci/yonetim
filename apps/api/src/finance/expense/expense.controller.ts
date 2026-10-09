@@ -23,17 +23,37 @@ import {
   type ExpenseDistribute,
   type ExpenseListQuery,
   type ExpenseSave,
+  expenseImport,
+  type ExpenseImport,
 } from "@yonetim/contracts";
 
 import { RequirePermission } from "../../identity/decorators";
 import { ZodBodyPipe, ZodQueryPipe } from "../../infra/zod/zod-dto";
 import { ExpenseService } from "./expense.service";
+import { ExpenseImportService } from "./expense-import.service";
 
 /** Panel iç BFF yüzeyi — `/v1/panel/expenses`. */
 @ApiTags("panel/expenses")
 @Controller("v1/panel/expenses")
 export class ExpenseController {
-  constructor(private readonly service: ExpenseService) {}
+  constructor(
+    private readonly service: ExpenseService,
+    private readonly importer: ExpenseImportService,
+  ) {}
+
+  @Post("import/preview")
+  @RequirePermission("expense:write")
+  @ApiOperation({ summary: "Giderleri Excel/CSV'den yükle — önizleme" })
+  importPreview(@Body(new ZodBodyPipe(expenseImport)) dto: ExpenseImport) {
+    return this.importer.run(dto, false);
+  }
+
+  @Post("import")
+  @RequirePermission("expense:write")
+  @ApiOperation({ summary: "Giderleri Excel/CSV'den yükle" })
+  importFile(@Body(new ZodBodyPipe(expenseImport)) dto: ExpenseImport) {
+    return this.importer.run(dto, true);
+  }
 
   @Get()
   @RequirePermission("expense:read")

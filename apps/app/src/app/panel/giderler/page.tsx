@@ -1,4 +1,4 @@
-import { FolderTree, Plus, Receipt, Repeat, Wallet } from "lucide-react";
+import { FileSpreadsheet, FolderTree, Plus, Receipt, Repeat, Wallet } from "lucide-react";
 import Link from "@/components/link";
 import { getTranslations } from "next-intl/server";
 
@@ -75,6 +75,13 @@ export default async function ExpensesPage({
 
   const actions = (
     <>
+      <Link
+        href="/panel/giderler/aktar"
+        className="inline-flex h-10 items-center gap-2 rounded-lg border border-border-strong bg-surface px-3 text-sm font-semibold text-fg hover:bg-hover"
+      >
+        <FileSpreadsheet aria-hidden className="h-4 w-4" />
+        {tPay("import")}
+      </Link>
       <Link
         href="/panel/giderler/odenecekler"
         className="inline-flex h-10 items-center gap-2 rounded-lg border border-border-strong bg-surface px-3 text-sm font-semibold text-fg hover:bg-hover"
