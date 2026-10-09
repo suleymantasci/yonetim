@@ -959,7 +959,23 @@
     "presetBody": "The formula, amount, due day and scope were copied from the plan; you can change all of them. This charge is **not linked** to the plan — it creates a one-off record independent of the plan's periodic run.",
     "collectFromUnit": "Record payment",
     "collectUnitLabel": "Unit",
-    "debtTypesLink": "Debt types"
+    "debtTypesLink": "Debt types",
+    "untilPeriod": "Future-dated: end period",
+    "untilPeriodHint": "If set, the same charge is written for every month from the start to this period, each with its own due date (max 24 months). Empty: single period.",
+    "previewPeriods": "{count} periods ({from} → {to}): total covers all months.",
+    "previewEditHint": "Change the amount, exclude the unit or pick the debtor per row; the preview recalculates on each change.",
+    "rowInclude": "Include",
+    "rowIncludeUnit": "Include {unit}",
+    "rowDebtor": "Debtor",
+    "rowDebtorUnit": "Debtor for {unit}",
+    "rowDebtorDefault": "General choice",
+    "rowAmountUnit": "Amount for {unit}",
+    "rowAmountChanged": "formula: {amount} ₺",
+    "debtorError": {
+      "no_tenant": "No tenant — change the debtor or exclude.",
+      "split_needs_both": "Needs both an owner and a tenant.",
+      "other": "Could not resolve the debtor."
+    }
   },
   "expenses": {
     "title": "Expenses",
@@ -1885,7 +1901,12 @@
     "reason": "Reason",
     "reasonHint": "At least 10 characters.",
     "readingCorrected": "Reading corrected.",
-    "readingDeleted": "Reading deleted."
+    "readingDeleted": "Reading deleted.",
+    "readingFee": "Reading fee (per reading)",
+    "readingFeeHint": "The reading company's fee added to each unit; empty = 0.",
+    "roundLira": "Round to whole lira",
+    "roundLiraHint": "Rounds the kuruş (50 and above up).",
+    "vendorFile": "Reading company file"
   },
   "reservations": {
     "title": "Common area reservations",
@@ -4868,6 +4889,46 @@
       "updatedAt": "Date",
       "updatedBy": "Saved by",
       "note": "Note"
+    }
+  },
+  "meterVendor": {
+    "title": "Reading company file",
+    "description": "Upload the per-unit amounts calculated by the heat-cost / meter reading company (Excel or CSV): rows match by meter serial number and a debt is written for the chosen period. Not an API integration.",
+    "step1": "Period and file",
+    "step1Hint": "The file needs at least a “Meter no” and an “Amount” (or “Payable”, “Total”) column; “Consumption” is added to the description if present.",
+    "period": "Period",
+    "dueDate": "Due date",
+    "readingFee": "Reading fee (per unit)",
+    "debtDescription": "Debt description",
+    "debtDescriptionPlaceholder": "e.g. Heating October 2026",
+    "pickFile": "Choose a file",
+    "fileHint": ".xlsx, .xls, .csv — up to 4 MB",
+    "tooLarge": "File is larger than 4 MB.",
+    "checking": "Checking",
+    "recheck": "Check again",
+    "fileError": "Could not read the file.",
+    "missingTitle": "Column not found",
+    "missing": {
+      "serial": "No meter / serial no column",
+      "amount": "No amount / payable column"
+    },
+    "step2": "Matched: {ok} / {total} rows will be charged",
+    "step2Hint": "Total to charge {amount} ₺ (incl. reading fee). Charged to the tenant, or the owner if none.",
+    "needDueDate": "Enter the due date first.",
+    "commit": "Charge {count} units",
+    "created": "{count} debts created.",
+    "line": "Row",
+    "serialNo": "Meter no",
+    "unit": "Unit",
+    "consumption": "Consumption",
+    "amount": "Amount",
+    "status": "Status",
+    "state": {
+      "ok": "Will be charged",
+      "unmatched": "Meter not found",
+      "no_unit": "Common-area meter",
+      "already": "Already charged",
+      "zero": "No amount"
     }
   }
 }

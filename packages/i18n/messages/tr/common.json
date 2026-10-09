@@ -203,7 +203,11 @@
       "plate_taken": "Bu plaka başka bir daireye kayıtlı.",
       "no_recipients": "Seçili alıcı yok.",
       "too_many_recipients": "En fazla 2000 alıcıya gönderilebilir.",
-      "period_locked": "Bu tarih kilitli dönemde: kayıt eklenemez ya da değiştirilemez (Kasa → Dönem kilidi)."
+      "period_locked": "Bu tarih kilitli dönemde: kayıt eklenemez ya da değiştirilemez (Kasa → Dönem kilidi).",
+      "no_tenant": "Seçilen dairede kiracı yok.",
+      "split_needs_both": "Bölüşüm için dairede hem malik hem kiracı olmalı.",
+      "nothing_to_create": "Yazılacak borç kalmadı: seçilen dönemlerde hepsi zaten var ya da hariç tutuldu.",
+      "no_target_units": "Seçime uyan bölüm yok."
     }
   },
   "errorPage": {

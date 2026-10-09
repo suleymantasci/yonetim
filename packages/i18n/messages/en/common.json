@@ -203,7 +203,11 @@
       "plate_taken": "This plate is registered to another unit.",
       "no_recipients": "No recipients selected.",
       "too_many_recipients": "At most 2000 recipients.",
-      "period_locked": "This date is in a locked period: records cannot be added or changed (Cash → Period lock)."
+      "period_locked": "This date is in a locked period: records cannot be added or changed (Cash → Period lock).",
+      "no_tenant": "The unit has no tenant.",
+      "split_needs_both": "Splitting needs both an owner and a tenant.",
+      "nothing_to_create": "Nothing to create: all already exist for the chosen periods or were excluded.",
+      "no_target_units": "No units match the selection."
     }
   },
   "errorPage": {

@@ -696,8 +696,41 @@ export type MeterReadingRemove = z.infer<typeof meterReadingRemove>;
 export const meterBill = z.object({
   period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
   dueDate: dateTime,
+  /** Okuma bedeli: her borçlandırılan okumaya eklenen sabit tutar (kuruş). */
+  readingFeeMinor: z.coerce.number().int().min(0).max(100_000_00).default(0),
+  /** Borç tutarını tam liraya yuvarla (kuruşlar 50'den küçükse aşağı). */
+  roundLira: z.coerce.boolean().default(false),
 });
 export type MeterBill = z.infer<typeof meterBill>;
+
+/**
+ * Okuma firması dosyası — firmanın hesapladığı sayaç başı tutarlar (Excel/CSV).
+ * Sayaç seri no ile eşleşir; borç doğrudan yazılır (okuma geçmişine dokunmaz).
+ */
+export const meterVendorImport = z.object({
+  period: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+  fileBase64: z.string().min(4).max(6_000_000),
+  dueDate: dateTime.optional(),
+  description: z.string().trim().min(3).max(120).optional(),
+  readingFeeMinor: z.coerce.number().int().min(0).max(100_000_00).default(0),
+});
+export type MeterVendorImport = z.infer<typeof meterVendorImport>;
+export const meterVendorPreview = z.object({
+  rows: z.array(
+    z.object({
+      line: z.number().int(),
+      serialNo: z.string(),
+      consumption: z.string().nullable(),
+      amountMinor: moneyMinor,
+      unitLabel: z.string().nullable(),
+      status: z.enum(["ok", "unmatched", "no_unit", "already", "zero"]),
+    }),
+  ),
+  totalMinor: moneyMinor,
+  /** Başlık bulunamadıysa hangi sütunlar eksik. */
+  missing: z.array(z.enum(["serial", "amount"])),
+});
+export type MeterVendorPreview = z.infer<typeof meterVendorPreview>;
 
 export const meterBillResult = z.object({
   billed: z.number().int(),

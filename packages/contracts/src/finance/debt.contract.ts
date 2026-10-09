@@ -371,6 +371,26 @@ export const debtBulkCreate = z.object({
   unitTypes: z.array(z.string()).default([]),
   skipExisting: z.coerce.boolean().default(true),
   lateFeeExempt: z.coerce.boolean().default(false),
+  /**
+   * İleri tarihli borçlandırma: `period`'dan bu döneme kadar (dahil) her ay
+   * aynı borç, kendi vadesiyle. Boş = yalnız `period`. En çok 24 ay.
+   */
+  untilPeriod: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/).nullish(),
+  /**
+   * Önizlemede satır bazında düzeltme: tutar, hariç tut, borçlu. Verilmeyen
+   * daire formülün hesapladığıyla kalır.
+   */
+  overrides: z
+    .array(
+      z.object({
+        unitId: uuid,
+        amountMinor: z.coerce.number().int().min(0).optional(),
+        excluded: z.coerce.boolean().optional(),
+        target: shareTarget.optional(),
+      }),
+    )
+    .max(5000)
+    .default([]),
 });
 
 export type DebtBulkCreate = z.infer<typeof debtBulkCreate>;
@@ -382,12 +402,23 @@ export const debtBulkPreviewRow = z.object({
   amountMinor: moneyMinor,
   exempt: z.boolean(),
   alreadyExists: z.boolean(),
+  /** Hesaplanan (düzeltme öncesi) tutar. */
+  formulaMinor: moneyMinor,
+  excluded: z.boolean(),
+  /** Bu satırın borçlu kuralı (`rule` çözülmüş) ve borçluların adları. */
+  target: shareTarget,
+  debtorNames: z.array(z.string()),
+  hasOwner: z.boolean(),
+  hasTenant: z.boolean(),
+  /** Borçlu çözülemediyse (ör. kiracı yok) hata kodu. */
+  debtorError: z.string().nullable(),
 });
 
 export const debtBulkPreview = z.object({
   rows: z.array(debtBulkPreviewRow),
-  /** Atlanacaklar düşülmüş net toplam. */
+  /** Atlanacaklar düşülmüş net toplam (tüm dönemler). */
   totalMinor: moneyMinor,
+  periods: z.array(z.string()),
 });
 
 export type DebtBulkPreview = z.infer<typeof debtBulkPreview>;

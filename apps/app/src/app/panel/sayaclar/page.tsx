@@ -1,4 +1,4 @@
-import { ClipboardList, Pencil, Plus, ReceiptText, Trash2 } from "lucide-react";
+import { ClipboardList, FileSpreadsheet, Pencil, Plus, ReceiptText, Trash2 } from "lucide-react";
 import Link from "@/components/link";
 import { getTranslations } from "next-intl/server";
 
@@ -6,15 +6,17 @@ import { hasPermission } from "@yonetim/auth/guard";
 import { meterListResponse } from "@yonetim/contracts";
 import {
   Badge,
-  DateInput,
-  Input,
-  Textarea,
   Card,
   CardBody,
   CardHeader,
+  DateInput,
   EmptyState,
+  Input,
+  MoneyInput,
   Stat,
+  Switch,
   tableClasses as tc,
+  Textarea,
 } from "@yonetim/ui";
 
 import { PageHeader } from "@/components/app-shell";
@@ -53,6 +55,13 @@ export default async function MetersPage() {
       >
         <ClipboardList aria-hidden className="h-4 w-4" />
         {t("batchTitle")}
+      </Link>
+      <Link
+        href="/panel/sayaclar/firma-dosyasi"
+        className="inline-flex h-10 items-center gap-2 rounded-lg border border-border px-4 text-sm font-semibold text-fg hover:bg-hover"
+      >
+        <FileSpreadsheet aria-hidden className="h-4 w-4" />
+        {t("vendorFile")}
       </Link>
       <Link
         href="/panel/sayaclar/yeni"
@@ -203,6 +212,10 @@ export default async function MetersPage() {
                 <FormField name="dueDate" label={t("billDueDate")} required>
                   <DateInput name="dueDate" required />
                 </FormField>
+                <FormField name="readingFeeKurus" label={t("readingFee")} hint={t("readingFeeHint")}>
+                  <MoneyInput name="readingFeeKurus" />
+                </FormField>
+                <Switch name="roundLira" label={t("roundLira")} description={t("roundLiraHint")} />
               </ActionDrawerButton>
             ) : undefined
           }

@@ -2,7 +2,7 @@
 
 import { Eye } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 
 import {
   Alert,
@@ -78,27 +78,49 @@ export function BulkDebtWizard({
   const [description, setDescription] = useState(preset?.planName ?? "");
   const [debtTypeId, setDebtTypeId] = useState(debtTypes[0]?.id ?? "");
   const selectedType = debtTypes.find((type) => type.id === debtTypeId);
-  const [period] = useState(defaultPeriod);
   const [dueDay, setDueDay] = useState(preset?.dueDay ?? 10);
   const [formula, setFormula] = useState(preset?.formula ?? "equal");
   const [amountKurus, setAmountKurus] = useState(preset?.amountKurus ?? 0);
   const [shareTarget, setShareTarget] = useState("rule");
-  const [blockIds] = useState<string[]>([]);
   const [skipExisting, setSkipExisting] = useState(true);
+  /** Satır düzeltmeleri — önizlemede tutar, hariç tut, borçlu. */
+  const [overrides, setOverrides] = useState<Record<string, Override>>({});
+  const formWrap = useRef<HTMLDivElement>(null);
 
   const [preview, setPreview] = useState<{
     rows: BulkDebtPreview[];
     totalKurus: number;
+    periods: string[];
     error?: string;
   } | null>(null);
   const [pending, startTransition] = useTransition();
 
-  function runPreview() {
+  /** Ana alanlardan biri değişince önizleme ve satır düzeltmeleri geçersiz. */
+  function invalidate() {
+    invalidate();
+    setOverrides({});
+  }
+
+  function overrideList(map: Record<string, Override>) {
+    return Object.entries(map)
+      .map(([unitId, o]) => ({ unitId, ...o }))
+      .filter((o) => o.amountMinor !== undefined || o.excluded || o.target);
+  }
+
+  /**
+   * Önizleme **formdaki** değerlerle: dönem, bitiş dönemi, bloklar ve
+   * anahtarlar doğrudan formdan okunuyor — ekranda görülen, kaydedilenle aynı.
+   */
+  function runPreview(nextOverrides: Record<string, Override> = overrides) {
+    const form = formWrap.current?.querySelector("form");
+    if (!form) return;
+    const fd = new FormData(form);
     startTransition(async () => {
       const result = await previewBulkDebts({
         description: description || "önizleme",
         debtTypeId,
-        period,
+        period: String(fd.get("period") ?? ""),
+        untilPeriod: String(fd.get("untilPeriod") ?? ""),
         dueDay,
         formula: formula as
           "equal" | "land_share" | "area" | "person_count" | "custom",
@@ -110,20 +132,28 @@ export function BulkDebtWizard({
           | "tenant"
           | "split"
           | "share",
-        blockIds,
+        blockIds: fd.getAll("blockIds").map(String),
         unitTypes: [],
         skipExisting,
-        lateFeeExempt: false,
+        lateFeeExempt: fd.get("lateFeeExempt") === "on",
+        overrides: overrideList(nextOverrides),
       });
       setPreview(result);
     });
   }
 
+  function setOverride(unitId: string, patch: Partial<Override>, refresh = true) {
+    const next = { ...overrides, [unitId]: { ...overrides[unitId], ...patch } };
+    setOverrides(next);
+    if (refresh) runPreview(next);
+  }
+
   const canSubmit =
     preview !== null && !preview.error && preview.rows.length > 0;
   const skippedCount =
-    preview?.rows.filter((row) => skipExisting && row.alreadyExists).length ??
-    0;
+    preview?.rows.filter(
+      (row) => row.excluded || row.debtorError || (skipExisting && row.alreadyExists),
+    ).length ?? 0;
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
@@ -135,7 +165,15 @@ export function BulkDebtWizard({
             </Alert>
           </div>
         ) : null}
-        <div className="rounded-lg border border-border bg-surface p-4 sm:p-6">
+        <div
+          ref={formWrap}
+          onChange={(event) => {
+            // Açıklama metni önizlemeyi değiştirmez; diğer her alan değiştirir.
+            const name = (event.target as HTMLInputElement).name;
+            if (name && name !== "description" && name !== "overrides") invalidate();
+          }}
+          className="rounded-lg border border-border bg-surface p-4 sm:p-6"
+        >
           <ActionForm
             action={createBulkDebts}
             submitLabel={t("bulkSubmit")}
@@ -144,7 +182,7 @@ export function BulkDebtWizard({
               <div className="sticky bottom-0 z-10 -mx-4 mt-6 flex flex-wrap items-center justify-end gap-2 border-t border-border bg-surface/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
                 <button
                   type="button"
-                  onClick={runPreview}
+                  onClick={() => runPreview()}
                   disabled={pending || amountKurus <= 0}
                   className="inline-flex h-10 items-center gap-2 rounded-lg border border-border-strong bg-surface px-4 text-sm font-semibold text-fg hover:bg-hover disabled:opacity-50"
                 >
@@ -199,7 +237,7 @@ export function BulkDebtWizard({
                   value={debtTypeId}
                   onChange={(event) => {
                     setDebtTypeId(event.target.value);
-                    setPreview(null);
+                    invalidate();
                   }}
                   required
                 >
@@ -212,8 +250,21 @@ export function BulkDebtWizard({
               </FormField>
 
               <FormField name="period" label={tUnits("period")} required>
-                <PeriodInput name="period" defaultValue={period} required />
+                <PeriodInput name="period" defaultValue={defaultPeriod} required />
               </FormField>
+
+              <FormField
+                name="untilPeriod"
+                label={t("untilPeriod")}
+                hint={t("untilPeriodHint")}
+              >
+                <PeriodInput name="untilPeriod" />
+              </FormField>
+              <input
+                type="hidden"
+                name="overrides"
+                value={JSON.stringify(overrideList(overrides))}
+              />
 
               <FormField
                 name="dueDay"
@@ -247,7 +298,7 @@ export function BulkDebtWizard({
                 defaultValue={formula}
                 onChange={(value) => {
                   setFormula(value);
-                  setPreview(null);
+                  invalidate();
                 }}
                 options={[
                   {
@@ -289,7 +340,7 @@ export function BulkDebtWizard({
                   name="amountKurus"
                   onKurusChange={(value) => {
                     setAmountKurus(value);
-                    setPreview(null);
+                    invalidate();
                   }}
                   required
                 />
@@ -325,7 +376,7 @@ export function BulkDebtWizard({
                 defaultValue={shareTarget}
                 onChange={(value) => {
                   setShareTarget(value);
-                  setPreview(null);
+                  invalidate();
                 }}
                 options={[
                   {
@@ -421,6 +472,17 @@ export function BulkDebtWizard({
                 </div>
               </dl>
 
+              {preview.periods.length > 1 ? (
+                <div className="p-4 pb-0">
+                  <Alert tone="info">
+                    {t("previewPeriods", {
+                      count: preview.periods.length,
+                      from: preview.periods[0] ?? "",
+                      to: preview.periods.at(-1) ?? "",
+                    })}
+                  </Alert>
+                </div>
+              ) : null}
               {skippedCount > 0 ? (
                 <div className="p-4 pb-0">
                   <Alert tone="info">
@@ -428,13 +490,20 @@ export function BulkDebtWizard({
                   </Alert>
                 </div>
               ) : null}
+              <p className="px-4 pt-3 text-xs text-fg-subtle">{t("previewEditHint")}</p>
 
-              <div className={`${tc.wrapper} max-h-96 overflow-y-auto`}>
+              <div className={`${tc.wrapper} max-h-[32rem] overflow-y-auto`}>
                 <table className={tc.table}>
-                  <thead className={`${tc.thead} sticky top-0 bg-surface`}>
+                  <thead className={`${tc.thead} sticky top-0 z-10 bg-surface`}>
                     <tr>
                       <th scope="col" className={tc.th}>
+                        <span className="sr-only">{t("rowInclude")}</span>
+                      </th>
+                      <th scope="col" className={tc.th}>
                         {tUnits("number")}
+                      </th>
+                      <th scope="col" className={tc.th}>
+                        {t("rowDebtor")}
                       </th>
                       <th scope="col" className={`${tc.th} text-right`}>
                         {tUnits("amount")}
@@ -443,31 +512,88 @@ export function BulkDebtWizard({
                   </thead>
                   <tbody>
                     {preview.rows.map((row) => {
+                      const label = row.blockName
+                        ? `${row.blockName}/${row.unitNumber}`
+                        : row.unitNumber;
                       const skipped = skipExisting && row.alreadyExists;
+                      const off = row.excluded || skipped || Boolean(row.debtorError);
+                      const o = overrides[row.unitId];
                       return (
                         <tr
                           key={row.unitId}
-                          className={`${tc.tr} ${skipped || row.exempt ? "opacity-45" : ""}`}
+                          className={`${tc.tr} ${off ? "bg-subtle" : ""}`}
                         >
-                          <td className={tc.td}>
-                            {row.blockName
-                              ? `${row.blockName}/${row.unitNumber}`
-                              : row.unitNumber}
+                          <td className={`${tc.td} w-8`}>
+                            <input
+                              type="checkbox"
+                              className="h-4 w-4"
+                              aria-label={t("rowIncludeUnit", { unit: label })}
+                              checked={!(o?.excluded ?? row.excluded)}
+                              disabled={pending}
+                              onChange={(e) =>
+                                setOverride(row.unitId, { excluded: !e.target.checked })
+                              }
+                            />
+                          </td>
+                          <td className={`${tc.td} ${off ? "text-fg-subtle" : ""}`}>
+                            {label}
                             {row.exempt ? (
-                              <span className="ml-1 text-xs text-warning-fg">
+                              <span className="block text-xs text-warning-fg">
                                 {tUnits("duesExempt")}
                               </span>
                             ) : null}
                             {skipped ? (
-                              <span className="ml-1 text-xs text-info-fg">
+                              <span className="block text-xs text-info-fg">
                                 {t("existsBadge")}
                               </span>
                             ) : null}
                           </td>
-                          <td className={tc.tdNum}>
-                            {skipped
-                              ? "—"
-                              : `${kurusToDisplay(row.amountKurus)} ₺`}
+                          <td className={tc.td}>
+                            <Select
+                              aria-label={t("rowDebtorUnit", { unit: label })}
+                              value={o?.target ?? ""}
+                              disabled={pending || (o?.excluded ?? row.excluded)}
+                              onChange={(e) =>
+                                setOverride(row.unitId, {
+                                  target: (e.target.value || undefined) as Override["target"],
+                                })
+                              }
+                              className="h-8 min-w-[8rem] text-xs"
+                            >
+                              <option value="">{t("rowDebtorDefault")}</option>
+                              <option value="owner" disabled={!row.hasOwner}>
+                                {t("shareOwner")}
+                              </option>
+                              <option value="tenant" disabled={!row.hasTenant}>
+                                {t("shareTenant")}
+                              </option>
+                              <option value="split" disabled={!row.hasOwner || !row.hasTenant}>
+                                {t("shareSplit")}
+                              </option>
+                              <option value="share" disabled={!row.hasOwner}>
+                                {t("shareByShare")}
+                              </option>
+                            </Select>
+                            <span
+                              className={`mt-0.5 block text-xs ${row.debtorError ? "text-danger-fg" : "text-fg-subtle"}`}
+                            >
+                              {row.debtorError
+                                ? t(`debtorError.${row.debtorError.split(":")[1] ?? "other"}`)
+                                : row.debtorNames.join(", ") || "—"}
+                            </span>
+                          </td>
+                          <td className={`${tc.td} w-32`}>
+                            <RowAmount
+                              unitLabel={label}
+                              kurus={row.amountKurus}
+                              formulaKurus={row.formulaKurus}
+                              disabled={pending || (o?.excluded ?? row.excluded)}
+                              onCommit={(value) =>
+                                setOverride(row.unitId, {
+                                  amountMinor: value === row.formulaKurus ? undefined : value,
+                                })
+                              }
+                            />
                           </td>
                         </tr>
                       );
@@ -480,5 +606,62 @@ export function BulkDebtWizard({
         </div>
       </div>
     </div>
+  );
+}
+
+interface Override {
+  amountMinor?: number;
+  excluded?: boolean;
+  target?: "owner" | "tenant" | "split" | "share";
+}
+
+/**
+ * Satır tutarı — yazarken yerel, odak çıkınca (ya da Enter) önizleme
+ * sunucuda yeniden hesaplanır; toplam ve atlananlar hep sunucudan.
+ */
+function RowAmount({
+  unitLabel,
+  kurus,
+  formulaKurus,
+  disabled,
+  onCommit,
+}: {
+  unitLabel: string;
+  kurus: number;
+  formulaKurus: number;
+  disabled: boolean;
+  onCommit: (kurus: number) => void;
+}) {
+  const t = useTranslations("app.debts");
+  const [text, setText] = useState(kurusToDisplay(kurus));
+  useEffect(() => setText(kurusToDisplay(kurus)), [kurus]);
+  const commit = () => {
+    const value = Math.round(Number(text.replace(/\./g, "").replace(",", ".")) * 100);
+    if (Number.isFinite(value) && value >= 0 && value !== kurus) onCommit(value);
+    else setText(kurusToDisplay(kurus));
+  };
+  return (
+    <>
+      <Input
+        aria-label={t("rowAmountUnit", { unit: unitLabel })}
+        value={text}
+        inputMode="decimal"
+        disabled={disabled}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            commit();
+          }
+        }}
+        className="h-8 text-right text-sm tabular-nums"
+      />
+      {kurus !== formulaKurus ? (
+        <span className="mt-0.5 block text-right text-xs text-warning-fg">
+          {t("rowAmountChanged", { amount: kurusToDisplay(formulaKurus) })}
+        </span>
+      ) : null}
+    </>
   );
 }

@@ -13,7 +13,7 @@ import type {
   PaymentCollect,
   ShareTargetValue,
 } from "./types";
-import { dueDateFor, parsePeriodKey } from "@yonetim/core";
+import { addMonths, dueDateFor, parsePeriodKey } from "@yonetim/core";
 import {
   blocks,
   debtorRuleFor,
@@ -25,6 +25,7 @@ import {
   unitOccupancies,
   unitOrder,
   units,
+  users,
   type DebtTypeRow,
 } from "@yonetim/db";
 import {
@@ -139,41 +140,66 @@ export class DebtWriteRepository {
    * ---------------------------------------------------------------- */
 
   async preview(dto: DebtBulkCreate) {
+    const periods = periodRange(dto);
     return this.db.tx(async (tx) => {
-      await resolveDebtType(tx, this.db.ctx().tenantId, dto);
+      const { type } = await resolveDebtType(tx, this.db.ctx().tenantId, dto);
       const targets = await selectTargetUnits(tx, dto);
       if (targets.length === 0)
         throw new BadRequestException("validation_failed:no_target_units");
 
       const distribution = distributeShares(dto, targets);
-      const existing = await existingUnitIds(tx, dto);
+      const overrides = new Map(dto.overrides.map((o) => [o.unitId, o]));
+      const existingByPeriod = await Promise.all(
+        periods.map((p) => existingUnitIds(tx, { ...dto, period: p })),
+      );
+      const people = await occupantsOf(tx, targets.map((t) => t.id));
 
-      const rows = targets.map((row) => {
-        const share = distribution.shares.find(
-          (entry) => entry.unitId === row.id,
-        );
-        return {
-          unitId: row.id,
-          unitNumber: row.number,
-          blockName: row.blockName,
-          amountMinor: share?.amountKurus ?? 0,
-          exempt: row.duesExempt,
-          alreadyExists: existing.has(row.id),
-        };
-      });
+      let totalMinor = 0;
+      const rows = [];
+      for (const unit of targets) {
+        const formulaMinor =
+          distribution.shares.find((entry) => entry.unitId === unit.id)?.amountKurus ?? 0;
+        const o = overrides.get(unit.id);
+        const amountMinor = o?.amountMinor ?? formulaMinor;
+        const excluded = o?.excluded === true;
+        const target = targetFor(o?.target ?? dto.shareTarget, type, unit);
+        let debtorNames: string[] = [];
+        let debtorError: string | null = null;
+        try {
+          const debtors = await resolveDebtors(tx, unit.id, target);
+          debtorNames = debtors.map((d) => (d.userId ? people.get(`${unit.id}:${d.userId}`)?.name ?? "—" : "—"));
+        } catch (error) {
+          debtorError = error instanceof BadRequestException ? String(error.message) : "validation_failed";
+        }
+        const unitPeople = [...people.values()].filter((p) => p.unitId === unit.id);
+        if (!excluded && !debtorError) {
+          for (const existing of existingByPeriod) {
+            if (!(dto.skipExisting && existing.has(unit.id))) totalMinor += amountMinor;
+          }
+        }
+        rows.push({
+          unitId: unit.id,
+          unitNumber: unit.number,
+          blockName: unit.blockName,
+          amountMinor,
+          formulaMinor,
+          excluded,
+          exempt: unit.duesExempt,
+          alreadyExists: existingByPeriod[0]!.has(unit.id),
+          target,
+          debtorNames,
+          hasOwner: unitPeople.some((p) => p.relation === "owner"),
+          hasTenant: unitPeople.some((p) => p.relation === "tenant"),
+          debtorError,
+        });
+      }
 
-      return {
-        rows,
-        totalMinor: rows
-          .filter((row) => !(dto.skipExisting && row.alreadyExists))
-          .reduce((sum, row) => sum + row.amountMinor, 0),
-      };
+      return { rows, totalMinor, periods };
     });
   }
 
   async bulkCreate(dto: DebtBulkCreate) {
-    const period = parsePeriodKey(dto.period);
-    if (!period) throw new BadRequestException("validation_failed:period");
+    const periods = periodRange(dto);
 
     return this.db.tx(async (tx) => {
       const ctx = this.db.ctx();
@@ -183,50 +209,59 @@ export class DebtWriteRepository {
         throw new BadRequestException("validation_failed:no_target_units");
 
       const distribution = distributeShares(dto, targets);
-      const existing = await existingUnitIds(tx, dto);
-      const dueDate = dueDateFor(period, dto.dueDay);
-
+      const overrides = new Map(dto.overrides.map((o) => [o.unitId, o]));
       const rows: (typeof debts.$inferInsert)[] = [];
       let skipped = 0;
 
-      for (const unit of targets) {
-        const share = distribution.shares.find(
-          (entry) => entry.unitId === unit.id,
-        );
-        if (!share || share.amountKurus <= 0) {
-          skipped += 1;
-          continue;
-        }
-        if (dto.skipExisting && existing.has(unit.id)) {
-          skipped += 1;
-          continue;
-        }
+      for (const periodKey of periods) {
+        const period = parsePeriodKey(periodKey)!;
+        const existing = await existingUnitIds(tx, { ...dto, period: periodKey });
+        const dueDate = dueDateFor(period, dto.dueDay);
 
-        const debtors = await resolveDebtors(
-          tx,
-          unit.id,
-          targetFor(dto.shareTarget, type, unit),
-        );
-        const amounts = splitAmount(
-          share.amountKurus,
-          debtors.map((entry) => entry.weight),
-        );
+        for (const unit of targets) {
+          const o = overrides.get(unit.id);
+          const share = distribution.shares.find(
+            (entry) => entry.unitId === unit.id,
+          );
+          const amountKurus = o?.amountMinor ?? share?.amountKurus ?? 0;
+          if (o?.excluded || amountKurus <= 0) {
+            skipped += 1;
+            continue;
+          }
+          if (dto.skipExisting && existing.has(unit.id)) {
+            skipped += 1;
+            continue;
+          }
 
-        for (const [index, debtor] of debtors.entries()) {
-          const amount = amounts[index] ?? 0;
-          if (amount <= 0) continue;
-          rows.push({
-            tenantId: ctx.tenantId,
-            unitId: unit.id,
-            debtorUserId: debtor.userId,
-            kind,
-            debtTypeId: type?.id ?? null,
-            period: dto.period,
-            description: dto.description,
-            amountKurus: amount,
-            dueDate,
-            lateFeeExempt: dto.lateFeeExempt || unit.lateFeeExempt,
-          });
+          const debtors = await resolveDebtors(
+            tx,
+            unit.id,
+            targetFor(o?.target ?? dto.shareTarget, type, unit),
+          );
+          const amounts = splitAmount(
+            amountKurus,
+            debtors.map((entry) => entry.weight),
+          );
+
+          for (const [index, debtor] of debtors.entries()) {
+            const amount = amounts[index] ?? 0;
+            if (amount <= 0) continue;
+            rows.push({
+              tenantId: ctx.tenantId,
+              unitId: unit.id,
+              debtorUserId: debtor.userId,
+              kind,
+              debtTypeId: type?.id ?? null,
+              period: periodKey,
+              description: dto.description,
+              amountKurus: amount,
+              dueDate,
+              lateFeeExempt: dto.lateFeeExempt || unit.lateFeeExempt,
+              ...(o?.amountMinor !== undefined || o?.target
+                ? { metadata: { bulkOverride: { amount: o.amountMinor ?? null, target: o.target ?? null } } }
+                : {}),
+            });
+          }
         }
       }
 
@@ -242,6 +277,7 @@ export class DebtWriteRepository {
       };
     });
   }
+
 
   /* ---------------------------------------------------------------- *
    * 3) Düzeltme — gerekçe zorunlu
@@ -748,6 +784,46 @@ function distributeShares(dto: DebtBulkCreate, targets: TargetUnit[]) {
 }
 
 /** Bu dönem+tür ile zaten borcu olan birimler. */
+/** `period` … `untilPeriod` (dahil); en çok 24 ay. */
+export function periodRange(dto: { period: string; untilPeriod?: string | null }): string[] {
+  const start = parsePeriodKey(dto.period);
+  if (!start) throw new BadRequestException("validation_failed:period");
+  const end = dto.untilPeriod ? parsePeriodKey(dto.untilPeriod) : start;
+  if (!end) throw new BadRequestException("validation_failed:period");
+  const count = (end.year - start.year) * 12 + (end.month - start.month) + 1;
+  if (count < 1) throw new BadRequestException("validation_failed:range_order");
+  if (count > 24) throw new BadRequestException("validation_failed:range_too_long");
+  return Array.from({ length: count }, (_, i) => {
+    const p = addMonths(start, i);
+    return `${p.year}-${String(p.month).padStart(2, "0")}`;
+  });
+}
+
+/** Önizleme için dairelerdeki bugünkü kişiler (ad + ilişki). */
+async function occupantsOf(
+  tx: Database,
+  unitIds: string[],
+): Promise<Map<string, { unitId: string; relation: string; name: string }>> {
+  if (unitIds.length === 0) return new Map();
+  const rows = await tx
+    .select({
+      unitId: unitOccupancies.unitId,
+      userId: unitOccupancies.userId,
+      relation: unitOccupancies.relation,
+      first: users.firstName,
+      last: users.lastName,
+    })
+    .from(unitOccupancies)
+    .innerJoin(users, eq(users.id, unitOccupancies.userId))
+    .where(and(inArray(unitOccupancies.unitId, unitIds), isNull(unitOccupancies.endDate)));
+  // Anahtar `daire:kişi` — aynı kişi başka dairede başka ilişkiyle olabilir.
+  const out = new Map<string, { unitId: string; relation: string; name: string }>();
+  for (const r of rows) {
+    out.set(`${r.unitId}:${r.userId}`, { unitId: r.unitId, relation: r.relation, name: [r.first, r.last].filter(Boolean).join(" ") });
+  }
+  return out;
+}
+
 async function existingUnitIds(
   tx: Database,
   dto: DebtBulkCreate,

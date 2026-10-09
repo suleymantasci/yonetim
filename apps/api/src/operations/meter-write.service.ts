@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { and, asc, desc, eq, gt, inArray, isNull, lt } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNull, lt, sql } from "drizzle-orm";
 
 import type {
   MeterBill,
@@ -15,12 +15,22 @@ import type {
   MeterReadingBatchResult,
   MeterSave,
   MeterSaveResult,
+  MeterVendorImport,
+  MeterVendorPreview,
 } from "@yonetim/contracts";
-import { debts, meterReadings, meters, unitOccupancies, units } from "@yonetim/db";
+import { readTable, type Cell } from "@yonetim/bank";
+import { blocks, debts, meterReadings, meters, unitOccupancies, units } from "@yonetim/db";
 
 import { AuditService, diffOf } from "../governance/audit/audit.service";
 import { DbService } from "../infra/db/db.service";
 import type { Database } from "../property/unit/types";
+import { parseVendorFile, serialKey } from "./meter-vendor-file";
+
+/** Tüketim + okuma bedeli; istenirse tam liraya yuvarlanır. */
+export function billAmount(consumptionMinor: number, feeMinor: number, roundLira: boolean): number {
+  const total = consumptionMinor + feeMinor;
+  return roundLira ? Math.round(total / 100) * 100 : total;
+}
 
 /**
  * Anomali eşiği — son okumaların ortalamasının kaç katı "sıçrama" sayılır.
@@ -437,7 +447,12 @@ export class MeterWriteService {
       let skipped = 0;
       let totalMinor = 0;
       for (const row of rows) {
-        if (row.debtId || !row.unitId || row.amountKurus <= 0) {
+        if (row.debtId || !row.unitId || row.amountKurus + dto.readingFeeMinor <= 0) {
+          skipped += 1;
+          continue;
+        }
+        const amountKurus = billAmount(row.amountKurus, dto.readingFeeMinor, dto.roundLira);
+        if (amountKurus <= 0) {
           skipped += 1;
           continue;
         }
@@ -459,10 +474,10 @@ export class MeterWriteService {
             debtorUserId: debtor?.userId ?? null,
             kind: "utility",
             period: dto.period,
-            description: `${METER_LABEL[row.type] ?? "Sayaç"} tüketimi ${dto.period} (${Number(row.consumption).toLocaleString("tr-TR")})`,
-            amountKurus: row.amountKurus,
+            description: `${METER_LABEL[row.type] ?? "Sayaç"} tüketimi ${dto.period} (${Number(row.consumption).toLocaleString("tr-TR")})${dto.readingFeeMinor > 0 ? " + okuma bedeli" : ""}`,
+            amountKurus,
             dueDate: dto.dueDate,
-            metadata: { meterReadingId: row.id },
+            metadata: { meterReadingId: row.id, consumptionMinor: row.amountKurus, readingFeeMinor: dto.readingFeeMinor },
           })
           .returning({ id: debts.id });
         await tx
@@ -470,7 +485,7 @@ export class MeterWriteService {
           .set({ debtId: debt!.id, updatedAt: new Date() })
           .where(eq(meterReadings.id, row.id));
         billed += 1;
-        totalMinor += row.amountKurus;
+        totalMinor += amountKurus;
       }
       return { billed, skipped, totalMinor };
     });
@@ -485,6 +500,95 @@ export class MeterWriteService {
       },
     });
     return outcome;
+  }
+
+  /**
+   * Okuma firması dosyası — önizleme ve borçlandırma aynı eşleşmeden.
+   * Aynı dönemde aynı sayaca firma dosyasından borç varsa `already`.
+   */
+  async vendorImport(dto: MeterVendorImport, commit: boolean): Promise<MeterVendorPreview & { created: number }> {
+    let table: Cell[][];
+    try {
+      table = readTable(Buffer.from(dto.fileBase64, "base64")).rows;
+    } catch {
+      throw new BadRequestException("validation_failed:file");
+    }
+    const parsed = parseVendorFile(table);
+    const tenantId = this.db.ctx().tenantId;
+    const outcome = await this.db.tx(async (tx) => {
+      const list = await tx
+        .select({ id: meters.id, serialNo: meters.serialNo, unitId: meters.unitId, type: meters.type, number: units.number, blockName: blocks.name })
+        .from(meters)
+        .leftJoin(units, eq(units.id, meters.unitId))
+        .leftJoin(blocks, eq(blocks.id, units.blockId))
+        .where(isNull(meters.deletedAt));
+      const bySerial = new Map(list.filter((m) => m.serialNo).map((m) => [serialKey(m.serialNo!), m]));
+      const done = new Set(
+        (
+          await tx
+            .select({ serial: sql<string>`${debts.metadata}->>'vendorSerial'` })
+            .from(debts)
+            .where(and(eq(debts.period, dto.period), isNull(debts.deletedAt), sql`${debts.metadata} ? 'vendorSerial'`))
+        ).map((r) => r.serial),
+      );
+      const rows = parsed.rows.map((r) => {
+        const m = bySerial.get(serialKey(r.serialNo));
+        const amountMinor = r.amountMinor + (r.amountMinor > 0 ? dto.readingFeeMinor : 0);
+        const status: MeterVendorPreview["rows"][number]["status"] = !m
+          ? "unmatched"
+          : !m.unitId
+            ? "no_unit"
+            : done.has(serialKey(r.serialNo))
+              ? "already"
+              : amountMinor <= 0
+                ? "zero"
+                : "ok";
+        return {
+          line: r.line,
+          serialNo: r.serialNo,
+          consumption: r.consumption,
+          amountMinor,
+          unitLabel: m?.number ? (m.blockName ? `${m.blockName} / ${m.number}` : m.number) : null,
+          status,
+          meter: m,
+        };
+      });
+      let created = 0;
+      if (commit) {
+        if (!dto.dueDate) throw new BadRequestException("validation_failed:dueDate");
+        for (const r of rows) {
+          if (r.status !== "ok" || !r.meter?.unitId) continue;
+          const occupants = await tx
+            .select({ userId: unitOccupancies.userId, relation: unitOccupancies.relation })
+            .from(unitOccupancies)
+            .where(and(eq(unitOccupancies.unitId, r.meter.unitId), isNull(unitOccupancies.endDate)))
+            .orderBy(asc(unitOccupancies.startDate));
+          const debtor = occupants.find((o) => o.relation === "tenant") ?? occupants.find((o) => o.relation === "owner") ?? null;
+          await tx.insert(debts).values({
+            tenantId,
+            unitId: r.meter.unitId,
+            debtorUserId: debtor?.userId ?? null,
+            kind: "utility",
+            period: dto.period,
+            description: (dto.description ?? `${METER_LABEL[r.meter.type] ?? "Sayaç"} ${dto.period}`) + (r.consumption ? ` (${r.consumption})` : ""),
+            amountKurus: r.amountMinor,
+            dueDate: dto.dueDate,
+            metadata: { vendorSerial: serialKey(r.serialNo), vendorLine: r.line, readingFeeMinor: dto.readingFeeMinor },
+          });
+          created += 1;
+        }
+      }
+      return { rows: rows.map(({ meter: _m, ...r }) => r), created };
+    });
+    const totalMinor = outcome.rows.filter((r) => r.status === "ok").reduce((a, r) => a + r.amountMinor, 0);
+    if (commit) {
+      await this.audit.record({
+        action: "meter_vendor_billed",
+        resource: "meter_reading",
+        diff: { period: { from: null, to: dto.period }, created: { from: null, to: outcome.created }, totalMinor: { from: null, to: totalMinor } },
+      });
+    }
+    return { rows: outcome.rows, totalMinor, missing: parsed.missing, created: outcome.created };
   }
 
   private async lockedReading(tx: Database, id: string) {

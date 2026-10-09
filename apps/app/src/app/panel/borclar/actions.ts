@@ -25,6 +25,7 @@ import {
   optionalText,
   optionalUuidField,
   periodField,
+  reasonMessage,
   requiredText,
   runAction,
   uuidField,
@@ -175,6 +176,31 @@ const bulkDebtSchema = z.object({
   ),
   skipExisting: checkboxField,
   lateFeeExempt: checkboxField,
+  /** İleri tarihli: bu döneme kadar her ay. Boş = tek dönem. */
+  untilPeriod: z.preprocess((v) => (v === "" || v === null ? undefined : v), periodField.optional()),
+  /** Önizlemede satır düzeltmeleri — gizli alanda JSON. */
+  overrides: z.preprocess(
+    (v) => {
+      if (Array.isArray(v)) return v;
+      if (typeof v !== "string" || v === "") return [];
+      try {
+        return JSON.parse(v);
+      } catch {
+        return [];
+      }
+    },
+    z
+      .array(
+        z.object({
+          unitId: z.string().uuid(),
+          amountMinor: z.number().int().min(0).optional(),
+          excluded: z.boolean().optional(),
+          target: z.enum(SHARE_TARGETS).optional(),
+        }),
+      )
+      .max(5000)
+      .default([]),
+  ),
 });
 
 type BulkInput = z.output<typeof bulkDebtSchema>;
@@ -184,8 +210,15 @@ export interface BulkDebtPreview {
   unitNumber: string;
   blockName: string | null;
   amountKurus: number;
+  formulaKurus: number;
+  excluded: boolean;
   exempt: boolean;
   alreadyExists: boolean;
+  target: (typeof SHARE_TARGETS)[number];
+  debtorNames: string[];
+  hasOwner: boolean;
+  hasTenant: boolean;
+  debtorError: string | null;
 }
 
 export interface BulkDebtResult {
@@ -207,6 +240,8 @@ function toBulkBody(input: BulkInput) {
     unitTypes: input.unitTypes,
     skipExisting: input.skipExisting,
     lateFeeExempt: input.lateFeeExempt,
+    untilPeriod: input.untilPeriod ?? null,
+    overrides: input.overrides,
   };
 }
 
@@ -219,12 +254,12 @@ function toBulkBody(input: BulkInput) {
  */
 export async function previewBulkDebts(
   input: z.input<typeof bulkDebtSchema>,
-): Promise<{ rows: BulkDebtPreview[]; totalKurus: number; error?: string }> {
+): Promise<{ rows: BulkDebtPreview[]; totalKurus: number; periods: string[]; error?: string }> {
   await requirePermission("debt:write");
   const t = await getTranslations("app.debts");
   const parsed = bulkDebtSchema.safeParse(input);
   if (!parsed.success)
-    return { rows: [], totalKurus: 0, error: t("previewInvalid") };
+    return { rows: [], totalKurus: 0, periods: [], error: t("previewInvalid") };
 
   try {
     const preview = await apiPost(
@@ -238,15 +273,24 @@ export async function previewBulkDebts(
         unitNumber: row.unitNumber,
         blockName: row.blockName,
         amountKurus: row.amountMinor,
+        formulaKurus: row.formulaMinor,
+        excluded: row.excluded,
         exempt: row.exempt,
         alreadyExists: row.alreadyExists,
+        target: row.target,
+        debtorNames: row.debtorNames,
+        hasOwner: row.hasOwner,
+        hasTenant: row.hasTenant,
+        debtorError: row.debtorError,
       })),
       totalKurus: preview.totalMinor,
+      periods: preview.periods,
     };
-  } catch {
+  } catch (error) {
     // Önizleme kritik yol değil: hata halinde sihirbaz açık kalsın, yönetici
     // filtresini düzeltip yeniden denesin.
-    return { rows: [], totalKurus: 0, error: t("noTargetUnits") };
+    const reason = await reasonMessage(error);
+    return { rows: [], totalKurus: 0, periods: [], error: reason ?? t("noTargetUnits") };
   }
 }
 

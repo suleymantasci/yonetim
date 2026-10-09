@@ -14,6 +14,8 @@ import {
   maintenanceComplete,
   maintenanceSave,
   meterBill,
+  meterVendorImport,
+  type MeterVendorImport,
   meterReadingBatch,
   meterReadingCorrect,
   meterReadingRemove,
@@ -406,6 +408,20 @@ export class OperationsController {
   })
   billMeterReadings(@Body(new ZodBodyPipe(meterBill)) dto: MeterBill) {
     return this.meterWrite.bill(dto);
+  }
+
+  @Post("meters/vendor-import/preview")
+  @RequirePermission("meter:write")
+  @ApiOperation({ summary: "Okuma firması dosyası — eşleşme önizlemesi" })
+  previewVendorImport(@Body(new ZodBodyPipe(meterVendorImport)) dto: MeterVendorImport) {
+    return this.meterWrite.vendorImport(dto, false);
+  }
+
+  @Post("meters/vendor-import")
+  @RequirePermission("meter:write", "debt:write")
+  @ApiOperation({ summary: "Okuma firması dosyasıyla borçlandır" })
+  vendorImport(@Body(new ZodBodyPipe(meterVendorImport)) dto: MeterVendorImport) {
+    return this.meterWrite.vendorImport(dto, true);
   }
 
   @Patch("meters/readings/:id")

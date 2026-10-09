@@ -3,7 +3,13 @@
 import { getTranslations } from "next-intl/server";
 import { z } from "zod";
 
-import { meterBillResult, meterReadingBatchResult, meterSaveResult } from "@yonetim/contracts";
+import {
+  meterBillResult,
+  meterReadingBatchResult,
+  meterSaveResult,
+  meterVendorPreview,
+  type MeterVendorPreview,
+} from "@yonetim/contracts";
 
 import { apiDelete, apiPatch, apiPost } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
@@ -17,6 +23,7 @@ import {
   optionalText,
   optionalUuidField,
   periodField,
+  reasonMessage,
   requiredText,
   runAction,
   uuidField,
@@ -275,6 +282,9 @@ export async function removeMeterReading(
 const billSchema = z.object({
   period: periodField,
   dueDate: dateField,
+  /** Okuma bedeli — her okumaya eklenir; boş = 0. */
+  readingFeeKurus: kurusField({ min: 0 }).optional(),
+  roundLira: checkboxField,
 });
 
 /** Dönem tüketimini daire borcu olarak yaz. */
@@ -293,7 +303,12 @@ export async function billMeterPeriod(
       const t = await getTranslations("app.meters");
       const result = await apiPost(
         "/v1/panel/operations/meters/readings/bill",
-        { period: input.period, dueDate: input.dueDate },
+        {
+          period: input.period,
+          dueDate: input.dueDate,
+          readingFeeMinor: input.readingFeeKurus ?? 0,
+          roundLira: input.roundLira,
+        },
         meterBillResult,
       );
       return okState(
@@ -303,4 +318,53 @@ export async function billMeterPeriod(
       );
     },
   );
+}
+
+/* ------------------------------------------------------------------ *
+ * Okuma firması dosyası
+ * ------------------------------------------------------------------ */
+
+export interface VendorFileInput {
+  period: string;
+  fileBase64: string;
+  dueDate?: string;
+  description?: string;
+  readingFeeKurus: number;
+}
+
+function vendorBody(input: VendorFileInput) {
+  return {
+    period: input.period,
+    fileBase64: input.fileBase64,
+    dueDate: input.dueDate ? new Date(`${input.dueDate}T20:59:00.000Z`).toISOString() : undefined,
+    description: input.description?.trim() || undefined,
+    readingFeeMinor: input.readingFeeKurus,
+  };
+}
+
+export async function previewVendorFile(
+  input: VendorFileInput,
+): Promise<{ ok: true; data: MeterVendorPreview } | { ok: false; message: string }> {
+  await requirePermission("meter:write");
+  const tVendor = await getTranslations("app.meterVendor");
+  try {
+    return { ok: true, data: await apiPost("/v1/panel/operations/meters/vendor-import/preview", vendorBody(input), meterVendorPreview) };
+  } catch (error) {
+    return { ok: false, message: (await reasonMessage(error)) ?? tVendor("fileError") };
+  }
+}
+
+export async function importVendorFile(input: VendorFileInput): Promise<{ ok: boolean; message: string }> {
+  await requirePermission("meter:write");
+  const tVendor = await getTranslations("app.meterVendor");
+  try {
+    const r = await apiPost(
+      "/v1/panel/operations/meters/vendor-import",
+      vendorBody(input),
+      meterVendorPreview.extend({ created: z.number() }),
+    );
+    return { ok: true, message: tVendor("created", { count: r.created }) };
+  } catch (error) {
+    return { ok: false, message: (await reasonMessage(error)) ?? tVendor("fileError") };
+  }
 }

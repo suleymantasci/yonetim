@@ -959,7 +959,23 @@
     "presetBody": "Formül, tutar, vade günü ve kapsam plandan kopyalandı; hepsini değiştirebilirsiniz. Bu borçlandırma plana **bağlı değil** — planın kendi dönemsel koşusundan bağımsız, tek seferlik bir kayıt üretir.",
     "collectFromUnit": "Tahsilat gir",
     "collectUnitLabel": "Bağımsız bölüm",
-    "debtTypesLink": "Borç türleri"
+    "debtTypesLink": "Borç türleri",
+    "untilPeriod": "İleri tarihli: bitiş dönemi",
+    "untilPeriodHint": "Doldurursanız başlangıçtan bu döneme kadar her ay aynı borç, kendi vadesiyle yazılır (en çok 24 ay). Boş: yalnız tek dönem.",
+    "previewPeriods": "{count} dönem ({from} → {to}): toplam tüm aylar için.",
+    "previewEditHint": "Satırda tutarı değiştirebilir, daireyi hariç tutabilir ya da borçluyu seçebilirsiniz; önizleme her değişiklikte yeniden hesaplanır.",
+    "rowInclude": "Dahil",
+    "rowIncludeUnit": "{unit} dahil",
+    "rowDebtor": "Borçlu",
+    "rowDebtorUnit": "{unit} borçlusu",
+    "rowDebtorDefault": "Genel seçim",
+    "rowAmountUnit": "{unit} tutarı",
+    "rowAmountChanged": "formül: {amount} ₺",
+    "debtorError": {
+      "no_tenant": "Kiracı yok — borçluyu değiştirin ya da hariç tutun.",
+      "split_needs_both": "Malik ve kiracı birlikte yok.",
+      "other": "Borçlu belirlenemedi."
+    }
   },
   "expenses": {
     "title": "Giderler",
@@ -1885,7 +1901,12 @@
     "reason": "Gerekçe",
     "reasonHint": "En az 10 karakter. Ör. \"Sayaç fotoğrafı yanlış daireye ait\".",
     "readingCorrected": "Okuma düzeltildi.",
-    "readingDeleted": "Okuma silindi."
+    "readingDeleted": "Okuma silindi.",
+    "readingFee": "Okuma bedeli (okuma başına)",
+    "readingFeeHint": "Okuma firmasına ödenen bedel her daireye eklenir; boş = 0.",
+    "roundLira": "Tam liraya yuvarla",
+    "roundLiraHint": "Kuruşları yuvarlar (50 kuruş ve üstü yukarı).",
+    "vendorFile": "Okuma firması dosyası"
   },
   "reservations": {
     "title": "Ortak Alan Rezervasyonu",
@@ -4868,6 +4889,46 @@
       "updatedAt": "Tarih",
       "updatedBy": "Kaydeden",
       "note": "Not"
+    }
+  },
+  "meterVendor": {
+    "title": "Okuma firması dosyası",
+    "description": "Pay ölçer / sayaç okuma firmasının daire başı hesapladığı tutarları Excel ya da CSV ile yükleyin: sayaç seri numarasıyla eşleşir, seçtiğiniz dönem için borç yazılır. Firma API entegrasyonu değildir.",
+    "step1": "Dönem ve dosya",
+    "step1Hint": "Dosyada en az “Sayaç no” ve “Tutar” (ya da “Ödenecek”, “Toplam”) sütunu olmalı; “Tüketim” varsa açıklamaya yazılır.",
+    "period": "Dönem",
+    "dueDate": "Son ödeme tarihi",
+    "readingFee": "Okuma bedeli (daire başı)",
+    "debtDescription": "Borç açıklaması",
+    "debtDescriptionPlaceholder": "Örn. Isınma Ekim 2026",
+    "pickFile": "Dosya seçin",
+    "fileHint": ".xlsx, .xls, .csv — en çok 4 MB",
+    "tooLarge": "Dosya 4 MB'tan büyük.",
+    "checking": "Kontrol ediliyor",
+    "recheck": "Yeniden kontrol et",
+    "fileError": "Dosya okunamadı.",
+    "missingTitle": "Sütun bulunamadı",
+    "missing": {
+      "serial": "Sayaç no / seri no sütunu yok",
+      "amount": "Tutar / ödenecek sütunu yok"
+    },
+    "step2": "Eşleşme: {ok} / {total} satır borçlandırılacak",
+    "step2Hint": "Borçlandırılacak toplam {amount} ₺ (okuma bedeli dahil). Borç kiracıya, kiracı yoksa malike yazılır.",
+    "needDueDate": "Önce son ödeme tarihini girin.",
+    "commit": "{count} daireyi borçlandır",
+    "created": "{count} borç yazıldı.",
+    "line": "Satır",
+    "serialNo": "Sayaç no",
+    "unit": "Bölüm",
+    "consumption": "Tüketim",
+    "amount": "Tutar",
+    "status": "Durum",
+    "state": {
+      "ok": "Borçlandırılacak",
+      "unmatched": "Sayaç bulunamadı",
+      "no_unit": "Ortak alan sayacı",
+      "already": "Bu dönem yazıldı",
+      "zero": "Tutar yok"
     }
   }
 }
