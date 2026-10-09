@@ -97,8 +97,8 @@ export function BulkDebtWizard({
 
   /** Ana alanlardan biri değişince önizleme ve satır düzeltmeleri geçersiz. */
   function invalidate() {
-    invalidate();
-    setOverrides({});
+    setPreview(null);
+    setOverrides((prev) => (Object.keys(prev).length === 0 ? prev : {}));
   }
 
   function overrideList(map: Record<string, Override>) {
