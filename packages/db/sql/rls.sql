@@ -498,3 +498,60 @@ BEGIN
   END LOOP;
 END
 $$;
+
+-- Avans: her borç üretim yolu (elle/toplu/aidat/okuma/göç) aynı mahsubu yapar.
+-- Yalnız aynı site + daire + kişinin tamamlanmış gerçek ödemesi kullanılabilir.
+-- Yeni bir ödeme açılmaz; mevcut makbuzun kalan tutarı allocation'a dönüşür.
+CREATE OR REPLACE FUNCTION app_apply_prepaid_credit() RETURNS trigger
+LANGUAGE plpgsql SET search_path = public, pg_temp AS $$
+DECLARE
+  source_payment record;
+  available bigint;
+  needed bigint;
+  applied bigint;
+  new_paid bigint := NEW.paid_kurus;
+BEGIN
+  IF NEW.deleted_at IS NOT NULL OR NEW.status IN ('paid', 'written_off', 'cancelled') THEN
+    RETURN NEW;
+  END IF;
+  needed := NEW.amount_kurus + NEW.late_fee_kurus - NEW.paid_kurus;
+  IF needed <= 0 THEN RETURN NEW; END IF;
+
+  -- Tahsilat/iptal ile ortak kilit sırası: daire -> ödeme -> borç.
+  PERFORM 1 FROM units WHERE id = NEW.unit_id AND tenant_id = NEW.tenant_id FOR UPDATE;
+  FOR source_payment IN
+    SELECT p.id, p.amount_kurus, p.refunded_kurus
+    FROM payments p
+    WHERE p.tenant_id = NEW.tenant_id AND p.unit_id = NEW.unit_id
+      AND COALESCE(p.debtor_user_id, p.payer_user_id) IS NOT DISTINCT FROM NEW.debtor_user_id
+      AND p.status = 'completed' AND p.method NOT IN ('offset', 'credit_balance')
+      AND p.amount_kurus - p.refunded_kurus > COALESCE((
+        SELECT SUM(a.amount_kurus) FROM payment_allocations a
+        WHERE a.payment_id = p.id AND a.tenant_id = NEW.tenant_id
+      ), 0)
+    ORDER BY COALESCE(p.paid_at, p.created_at), p.id
+    FOR UPDATE OF p
+  LOOP
+    SELECT GREATEST(0, source_payment.amount_kurus - source_payment.refunded_kurus -
+      COALESCE(SUM(a.amount_kurus), 0)) INTO available
+      FROM payment_allocations a WHERE a.payment_id = source_payment.id AND a.tenant_id = NEW.tenant_id;
+    applied := LEAST(needed, available);
+    IF applied <= 0 THEN CONTINUE; END IF;
+    INSERT INTO payment_allocations (tenant_id, payment_id, debt_id, amount_kurus)
+      VALUES (NEW.tenant_id, source_payment.id, NEW.id, applied);
+    new_paid := new_paid + applied;
+    needed := needed - applied;
+    EXIT WHEN needed <= 0;
+  END LOOP;
+  IF new_paid > NEW.paid_kurus THEN
+    UPDATE debts SET paid_kurus = new_paid,
+      status = CASE WHEN needed <= 0 THEN 'paid'::debt_status ELSE 'partial'::debt_status END,
+      updated_at = now()
+    WHERE id = NEW.id AND tenant_id = NEW.tenant_id;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+DROP TRIGGER IF EXISTS trg_debts_prepaid_credit ON debts;
+CREATE TRIGGER trg_debts_prepaid_credit AFTER INSERT ON debts
+  FOR EACH ROW EXECUTE FUNCTION app_apply_prepaid_credit();

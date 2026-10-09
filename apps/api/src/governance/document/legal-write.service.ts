@@ -83,7 +83,7 @@ export class LegalWriteService {
           and(
             eq(debts.unitId, dto.unitId),
             isNull(debts.deletedAt),
-            notInArray(debts.status, ["paid", "written_off"]),
+            notInArray(debts.status, ["paid", "written_off", "cancelled"]),
           ),
         );
 

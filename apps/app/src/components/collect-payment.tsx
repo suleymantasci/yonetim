@@ -64,6 +64,8 @@ export interface CollectLabels {
   bankAccountHint: string;
   bankAccountNone: string;
   noBankAccounts: string;
+  accountHolder: string;
+  accountHolderHint: string;
   payer: string;
   payerHint: string;
   receiptNo: string;
@@ -81,6 +83,7 @@ export function CollectPaymentButton({
   bankAccounts,
   labels,
   defaultPayerId,
+  defaultDebtorId,
 }: {
   units: CollectUnitOption[];
   openDebts: CollectDebtOption[];
@@ -91,6 +94,7 @@ export function CollectPaymentButton({
   labels: CollectLabels;
   /** Sakin ekranından açıldığında ödeyen önceden seçili gelir. */
   defaultPayerId?: string;
+  defaultDebtorId?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [method, setMethod] = useState(collectDefaults?.method ?? "bank_transfer");
@@ -197,6 +201,13 @@ export function CollectPaymentButton({
             {method !== "cash" && bankAccounts.length === 0 ? (
               <Alert tone="info">{labels.noBankAccounts}</Alert>
             ) : null}
+
+            <FormField name="debtorUserId" label={labels.accountHolder} hint={labels.accountHolderHint}>
+              <Select name="debtorUserId" defaultValue={defaultDebtorId ?? ""}>
+                <option value="">—</option>
+                {payers.map((person) => <option key={person.id} value={person.id}>{person.label}</option>)}
+              </Select>
+            </FormField>
 
             <FormField
               name="payerUserId"

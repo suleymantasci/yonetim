@@ -1,5 +1,6 @@
 export * from "./client";
 export * from "./ordering";
+export * from "./payment-credit";
 export * from "./debt-types";
 export * from "./schema/index";
 export { PLAN_SEED } from "./seed-data/plans";

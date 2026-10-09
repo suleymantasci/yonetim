@@ -273,7 +273,7 @@ export class WhatsappBotService {
               and(
                 eq(debts.unitId, identity.unitId),
                 isNull(debts.deletedAt),
-                sql`${debts.status} NOT IN ('paid','written_off')`,
+                sql`${debts.status} NOT IN ('paid','written_off','cancelled')`,
               ),
             )
             .orderBy(debts.dueDate)

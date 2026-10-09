@@ -106,6 +106,8 @@ export const residentRow = z.object({
   roles: z.array(z.string()),
   occupancies: z.array(residentOccupancyBrief),
   outstandingMinor: moneyMinor,
+    /** Unallocated real payments, available for future debts. */
+    creditBalanceMinor: moneyMinor.optional(),
   overdueMinor: moneyMinor,
 });
 
@@ -173,6 +175,8 @@ export const residentDetail = z.object({
   occupancies: z.array(residentOccupancy),
   balance: z.object({
     outstandingMinor: moneyMinor,
+    /** Unallocated real payments, available for future debts. */
+    creditBalanceMinor: moneyMinor.optional(),
     overdueMinor: moneyMinor,
     paidTotalMinor: moneyMinor,
   }),

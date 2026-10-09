@@ -139,6 +139,7 @@ export default async function UnitDetailPage({
         action={
           <>
             <CollectPaymentButton
+              defaultDebtorId={activeOccupants.find((o) => o.relation === "tenant")?.userId ?? (activeOccupants.length === 1 ? activeOccupants[0]?.userId : undefined)}
               units={[
                 {
                   id,
@@ -187,7 +188,9 @@ export default async function UnitDetailPage({
                 bankAccountHint: tDebts("bankAccountHint"),
                 bankAccountNone: tDebts("bankAccountNone"),
                 noBankAccounts: tDebts("noBankAccounts"),
-                payer: tDebts("payer"),
+                accountHolder: tDebts("accountHolder"),
+    accountHolderHint: tDebts("accountHolderHint"),
+    payer: tDebts("payer"),
                 payerHint: tDebts("payerHint"),
                 receiptNo: t("receiptNo"),
                 targetDebts: tDebts("targetDebts"),
@@ -224,8 +227,9 @@ export default async function UnitDetailPage({
       <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Stat
           label={t("outstanding")}
-          value={fmt.money(detail.debtSummary.outstandingMinor)}
-          tone={detail.debtSummary.outstandingMinor > 0 ? "danger" : "success"}
+          value={fmt.money(detail.debtSummary.outstandingMinor - (detail.debtSummary.creditBalanceMinor ?? 0))}
+          hint={(detail.debtSummary.creditBalanceMinor ?? 0) > 0 ? t("creditBalanceHint", { amount: fmt.money(detail.debtSummary.creditBalanceMinor ?? 0) }) : undefined}
+          tone={detail.debtSummary.outstandingMinor - (detail.debtSummary.creditBalanceMinor ?? 0) > 0 ? "danger" : "success"}
         />
         <Stat
           label={t("overdue")}

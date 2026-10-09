@@ -487,7 +487,7 @@ export class ResidentWriteRepository {
             eq(debts.unitId, occupancy.unitId),
             eq(debts.debtorUserId, occupancy.userId),
             isNull(debts.deletedAt),
-            sql`${debts.status} NOT IN ('paid','written_off')`,
+            sql`${debts.status} NOT IN ('paid','written_off','cancelled')`,
           ),
         );
 
@@ -585,7 +585,7 @@ export class ResidentWriteRepository {
             and(
               eq(debts.debtorUserId, userId),
               isNull(debts.deletedAt),
-              sql`${debts.status} NOT IN ('paid','written_off')`,
+              sql`${debts.status} NOT IN ('paid','written_off','cancelled')`,
             ),
           );
         if (Number(debtRow?.value ?? 0) > 0) continue;

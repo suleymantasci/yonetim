@@ -403,6 +403,7 @@ const collectSchema = z.object({
   /** Nakit dışı tahsilatta paranın girdiği hesap. */
   bankAccountId: optionalUuidField,
   payerUserId: optionalUuidField,
+  debtorUserId: optionalUuidField,
   receiptNo: optionalText(30),
   /** Belirli borçlara öncelik verilsin (boşsa en eski vade önce). */
   debtIds: z.preprocess(
@@ -451,6 +452,7 @@ export async function collectPayment(
           bankAccountId: input.bankAccountId ?? null,
           paidAt: input.paidAt,
           payerUserId: input.payerUserId,
+          debtorUserId: input.debtorUserId,
           receiptNo: input.receiptNo,
           debtIds: input.debtIds,
           note: input.note,

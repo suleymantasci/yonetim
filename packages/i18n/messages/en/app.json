@@ -226,6 +226,8 @@
     "deltaPrevMonth": "vs. previous month"
   },
   "units": {
+    "creditBalanceHint": "Prepaid credit: {amount}. Applied to future debts.",
+    "creditAmount": "{amount} credit",
     "title": "Units",
     "summary": "{units} units · {blocks} blocks · {area} m² total · land share total {share}",
     "landShareWarning": "Land shares don't add up to 1 (or 1000). Land-share billing distributes proportionally, but we recommend checking against the title deed records.",
@@ -454,6 +456,8 @@
     }
   },
   "residents": {
+    "creditBalanceHint": "Prepaid credit: {amount}. Applied to future debts.",
+    "creditAmount": "{amount} credit",
     "title": "Residents",
     "description": "Contact details are masked for data-protection reasons; opening a record reveals them and the access is logged.",
     "privacyNotice": "Debt information may not be shared on community channels. Use the “Send message” flow on the resident card for individual notices.",
@@ -759,6 +763,8 @@
     "bulkFromPlanAction": "Prefill the bulk debt wizard from this plan"
   },
   "debts": {
+    "accountHolder": "Account holder",
+    "accountHolderHint": "The payment and any excess belong to this person's account. The payer may be someone else.",
     "title": "Debts & collection",
     "description": "Current balance per unit. Late fees are recalculated daily (Condominium Act art. 20).",
     "overdueAlertTitle": "There are overdue receivables",
@@ -1330,6 +1336,7 @@
     "rowError": {
       "already_resolved": "This transaction is already resolved.",
       "no_open_debts": "This unit has no open debt.",
+      "choose_debtor": "The account holder could not be determined. Select the person when recording the payment on the unit page.",
       "unit_required": "Choose a unit.",
       "not_incoming": "Only incoming transactions can be collected.",
       "bank_transaction_not_found": "Transaction not found."
@@ -1342,7 +1349,7 @@
     "queueTitle": "Match bank transactions",
     "queueDescription": "Unresolved transactions from imported statements. Collect incoming ones to units, record outgoing ones as expenses.",
     "queueIncoming": "Incoming ({count})",
-    "queueIncomingHint": "The suggested unit is preselected. Check and collect in bulk or one by one; payments settle the oldest open debts first.",
+    "queueIncomingHint": "Review the suggested unit and collect individually or in bulk. Open debts are settled and the remaining amount is saved as an advance.",
     "collectSelected": "Collect selected ({count})",
     "queueIncomingEmpty": "No pending incoming transactions",
     "queueEmptyHint": "Import the bank statement to get new transactions.",

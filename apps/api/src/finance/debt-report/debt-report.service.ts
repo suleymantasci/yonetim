@@ -234,11 +234,11 @@ export class DebtReportService {
     const rows = await this.db.tx(async (tx) =>
       (await tx.execute(sql`
         SELECT * FROM (
-          SELECT 'debt' AS kind, d.id, d.deleted_at AS at, d.description, ${UNIT_LABEL} AS unit_label,
+          SELECT 'debt' AS kind, d.id, COALESCE(d.deleted_at, d.updated_at) AS at, d.description, ${UNIT_LABEL} AS unit_label,
                  d.amount_kurus AS amount, (d.metadata->'cancelled'->>'by')::uuid AS by_id,
                  d.metadata->'cancelled'->>'reason' AS reason
           FROM debts d JOIN units u ON u.id = d.unit_id LEFT JOIN blocks b ON b.id = u.block_id
-          WHERE ${want("debt")} AND d.deleted_at IS NOT NULL AND d.status = 'cancelled'
+          WHERE ${want("debt")} AND d.status = 'cancelled'
           UNION ALL
           SELECT 'payment', p.id, (p.metadata->'voided'->>'at')::timestamptz, 'Tahsilat' || COALESCE(' · makbuz ' || p.receipt_no, ''),
                  CASE WHEN u.id IS NULL THEN NULL ELSE ${UNIT_LABEL} END,

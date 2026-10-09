@@ -190,7 +190,7 @@ export async function kvkkRetentionScan(params: { tenantId: string; now?: Date }
         ), m.deleted_at) < ${cutoff.toISOString()}::timestamptz
         AND NOT EXISTS (
           SELECT 1 FROM debts d
-          WHERE d.debtor_user_id = m.user_id AND d.deleted_at IS NULL AND d.status NOT IN ('paid','written_off')
+          WHERE d.debtor_user_id = m.user_id AND d.deleted_at IS NULL AND d.status NOT IN ('paid','written_off','cancelled')
         )
       GROUP BY m.user_id
     `)) as unknown as Array<{ user_id: string }>;

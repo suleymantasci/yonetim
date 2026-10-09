@@ -65,8 +65,8 @@ export default async function DebtDetailPage({
 
   const debt = detail.debt;
   const total = debt.amountMinor + debt.lateFeeMinor;
-  const outstanding = total - debt.paidMinor;
-  const overdue = debt.status !== "paid" && debt.dueDate.getTime() < Date.now();
+  const outstanding = ["cancelled", "written_off"].includes(debt.status) ? 0 : total - debt.paidMinor;
+  const overdue = !["paid", "written_off", "cancelled"].includes(debt.status) && debt.dueDate.getTime() < Date.now();
 
   /*
    * Banka hesapları tahsilat formundaki "hangi hesaba yattı" seçimi için.
@@ -175,12 +175,14 @@ export default async function DebtDetailPage({
         action={
           <DebtActionPanels
             debtId={id}
+            debtorUserId={debt.debtorUserId}
+            closed={["cancelled", "written_off"].includes(debt.status)}
             unitId={debt.unitId}
             currentAmountKurus={debt.amountMinor}
             currentDueDate={debt.dueDate.toISOString().slice(0, 10)}
             lateFeeExempt={debt.lateFeeExempt}
             paidKurus={debt.paidMinor}
-            openDebts={openDebts.rows.map((row) => ({
+            openDebts={openDebts.rows.filter((row) => row.debtorUserId === debt.debtorUserId).map((row) => ({
               id: row.id,
               label: `${row.description}${row.period ? ` · ${fmt.period(row.period)}` : ""}`,
               remaining: fmt.money(

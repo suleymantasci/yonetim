@@ -34,6 +34,7 @@ import {
   documents,
   meters,
   payments,
+  paymentCreditAmount,
   unitOccupancies,
   unitOrder,
   units,
@@ -232,8 +233,9 @@ export class UnitRepository {
       outstandingMinor: sql<number>`COALESCE((
         SELECT SUM(d.amount_kurus + d.late_fee_kurus - d.paid_kurus)
         FROM debts d
-        WHERE d.unit_id = ${units.id} AND d.deleted_at IS NULL AND d.status NOT IN ('paid','written_off')
+        WHERE d.unit_id = ${units.id} AND d.deleted_at IS NULL AND d.status NOT IN ('paid','written_off','cancelled')
       ), 0)`,
+      creditBalanceMinor: paymentCreditAmount({ unit: sql`units.id` }),
       occupantCount: sql<number>`(
         SELECT COUNT(*) FROM unit_occupancies o
         WHERE o.unit_id = ${units.id} AND o.end_date IS NULL
@@ -286,24 +288,25 @@ export class UnitRepository {
 
         tx
           .select({
-            outstanding: sql<number>`COALESCE(SUM(CASE WHEN ${debts.status} NOT IN ('paid','written_off')
+            outstanding: sql<number>`COALESCE(SUM(CASE WHEN ${debts.status} NOT IN ('paid','written_off','cancelled')
                 THEN ${debts.amountKurus} + ${debts.lateFeeKurus} - ${debts.paidKurus} ELSE 0 END), 0)`,
-            overdue: sql<number>`COALESCE(SUM(CASE WHEN ${debts.status} NOT IN ('paid','written_off') AND ${debts.dueDate} < now()
+            overdue: sql<number>`COALESCE(SUM(CASE WHEN ${debts.status} NOT IN ('paid','written_off','cancelled') AND ${debts.dueDate} < now()
                 THEN ${debts.amountKurus} + ${debts.lateFeeKurus} - ${debts.paidKurus} ELSE 0 END), 0)`,
-            openCount: sql<number>`COUNT(*) FILTER (WHERE ${debts.status} NOT IN ('paid','written_off'))`,
+            openCount: sql<number>`COUNT(*) FILTER (WHERE ${debts.status} NOT IN ('paid','written_off','cancelled'))`,
           })
           .from(debts)
-          .where(and(eq(debts.unitId, unitId), isNull(debts.deletedAt))),
+          .where(and(eq(debts.unitId, unitId), and(isNull(debts.deletedAt), sql`${debts.status} <> 'cancelled'`))),
 
         tx
           .select({
-            total: sql<number>`COALESCE(SUM(${payments.amountKurus}), 0)`,
+            total: sql<number>`COALESCE(SUM(${payments.amountKurus} - ${payments.refundedKurus}), 0)`,
           })
           .from(payments)
           .where(
             and(
               eq(payments.unitId, unitId),
               eq(payments.status, "completed"),
+              sql`${payments.method} NOT IN ('offset', 'credit_balance')`,
               sql`${payments.paidAt} >= date_trunc('year', now())`,
             ),
           ),
@@ -321,7 +324,7 @@ export class UnitRepository {
             status: debts.status,
           })
           .from(debts)
-          .where(and(eq(debts.unitId, unitId), isNull(debts.deletedAt)))
+          .where(and(eq(debts.unitId, unitId), and(isNull(debts.deletedAt), sql`${debts.status} <> 'cancelled'`)))
           .orderBy(desc(debts.dueDate))
           .limit(20),
 
@@ -394,6 +397,7 @@ export class UnitRepository {
         occupancyRows,
         debtSummary: {
           outstandingMinor: Number(debtAggregate[0]?.outstanding ?? 0),
+          creditBalanceMinor: Number(unit.creditBalanceMinor ?? 0),
           overdueMinor: Number(debtAggregate[0]?.overdue ?? 0),
           paidThisYearMinor: Number(paidAggregate[0]?.total ?? 0),
           openCount: Number(debtAggregate[0]?.openCount ?? 0),
@@ -617,6 +621,7 @@ function toUnitRow(row: {
   return {
     ...row,
     outstandingMinor: Number(row.outstandingMinor),
+    creditBalanceMinor: Number(row.creditBalanceMinor ?? 0),
     occupantCount: Number(row.occupantCount),
   } as UnitRow;
 }

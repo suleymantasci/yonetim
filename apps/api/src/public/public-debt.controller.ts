@@ -47,6 +47,7 @@ export class PublicDebtController {
 
     const result = await this.db.tx(async (tx) => {
       const conditions = [isNull(debts.deletedAt)];
+      if (status !== "cancelled") conditions.push(sql`${debts.status} <> 'cancelled'`);
       if (page.q) {
         const needle = `%${page.q}%`;
         const search = or(ilike(debts.description, needle), ilike(units.number, needle));
@@ -54,7 +55,7 @@ export class PublicDebtController {
       }
       if (unitId) conditions.push(eq(debts.unitId, unitId));
       if (period) conditions.push(eq(debts.period, period));
-      if (status === "open") conditions.push(sql`${debts.status} NOT IN ('paid','written_off')`);
+      if (status === "open") conditions.push(sql`${debts.status} NOT IN ('paid','written_off','cancelled')`);
       else if (status) conditions.push(sql`${debts.status}::text = ${status}`);
 
       const where = and(...conditions);

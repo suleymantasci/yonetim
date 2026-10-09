@@ -16,6 +16,7 @@ import type {
 import { addMonths, dueDateFor, parsePeriodKey } from "@yonetim/core";
 import {
   blocks,
+  memberships,
   debtorRuleFor,
   debts,
   debtTypes,
@@ -152,13 +153,17 @@ export class DebtWriteRepository {
       const existingByPeriod = await Promise.all(
         periods.map((p) => existingUnitIds(tx, { ...dto, period: p })),
       );
-      const people = await occupantsOf(tx, targets.map((t) => t.id));
+      const people = await occupantsOf(
+        tx,
+        targets.map((t) => t.id),
+      );
 
       let totalMinor = 0;
       const rows = [];
       for (const unit of targets) {
         const formulaMinor =
-          distribution.shares.find((entry) => entry.unitId === unit.id)?.amountKurus ?? 0;
+          distribution.shares.find((entry) => entry.unitId === unit.id)
+            ?.amountKurus ?? 0;
         const o = overrides.get(unit.id);
         const amountMinor = o?.amountMinor ?? formulaMinor;
         const excluded = o?.excluded === true;
@@ -167,14 +172,24 @@ export class DebtWriteRepository {
         let debtorError: string | null = null;
         try {
           const debtors = await resolveDebtors(tx, unit.id, target);
-          debtorNames = debtors.map((d) => (d.userId ? people.get(`${unit.id}:${d.userId}`)?.name ?? "—" : "—"));
+          debtorNames = debtors.map((d) =>
+            d.userId
+              ? (people.get(`${unit.id}:${d.userId}`)?.name ?? "—")
+              : "—",
+          );
         } catch (error) {
-          debtorError = error instanceof BadRequestException ? String(error.message) : "validation_failed";
+          debtorError =
+            error instanceof BadRequestException
+              ? String(error.message)
+              : "validation_failed";
         }
-        const unitPeople = [...people.values()].filter((p) => p.unitId === unit.id);
+        const unitPeople = [...people.values()].filter(
+          (p) => p.unitId === unit.id,
+        );
         if (!excluded && !debtorError) {
           for (const existing of existingByPeriod) {
-            if (!(dto.skipExisting && existing.has(unit.id))) totalMinor += amountMinor;
+            if (!(dto.skipExisting && existing.has(unit.id)))
+              totalMinor += amountMinor;
           }
         }
         rows.push({
@@ -215,7 +230,10 @@ export class DebtWriteRepository {
 
       for (const periodKey of periods) {
         const period = parsePeriodKey(periodKey)!;
-        const existing = await existingUnitIds(tx, { ...dto, period: periodKey });
+        const existing = await existingUnitIds(tx, {
+          ...dto,
+          period: periodKey,
+        });
         const dueDate = dueDateFor(period, dto.dueDay);
 
         for (const unit of targets) {
@@ -258,7 +276,14 @@ export class DebtWriteRepository {
               dueDate,
               lateFeeExempt: dto.lateFeeExempt || unit.lateFeeExempt,
               ...(o?.amountMinor !== undefined || o?.target
-                ? { metadata: { bulkOverride: { amount: o.amountMinor ?? null, target: o.target ?? null } } }
+                ? {
+                    metadata: {
+                      bulkOverride: {
+                        amount: o.amountMinor ?? null,
+                        target: o.target ?? null,
+                      },
+                    },
+                  }
                 : {}),
             });
           }
@@ -278,7 +303,6 @@ export class DebtWriteRepository {
     });
   }
 
-
   /* ---------------------------------------------------------------- *
    * 3) Düzeltme — gerekçe zorunlu
    * ---------------------------------------------------------------- */
@@ -290,6 +314,7 @@ export class DebtWriteRepository {
       const [before] = await tx
         .select({
           id: debts.id,
+          status: debts.status,
           amountKurus: debts.amountKurus,
           paidKurus: debts.paidKurus,
         })
@@ -298,6 +323,8 @@ export class DebtWriteRepository {
         .limit(1);
       if (!before) throw new NotFoundException("not_found");
 
+      if (before.status === "cancelled" || before.status === "written_off")
+        throw new ConflictException("conflict:debt_closed");
       if (dto.amountMinor < before.paidKurus) {
         // Ödenmiş tutarın altına indirmek iade akışı gerektirir; sessizce
         // negatif bakiye üretmek yerine reddediliyor.
@@ -320,11 +347,69 @@ export class DebtWriteRepository {
    * 4) Tahsilat + mahsup
    * ---------------------------------------------------------------- */
 
-  async collect(dto: PaymentCollect) {
+  async collect(dto: PaymentCollect, idempotencyKey?: string) {
     return this.db.tx(async (tx) => {
       const ctx = this.db.ctx();
+      // Serialize collections and automatic credit allocation for this unit.
+      const [unit] = await tx
+        .select({ id: units.id })
+        .from(units)
+        .where(and(eq(units.id, dto.unitId), isNull(units.deletedAt)))
+        .for("update");
+      if (!unit) throw new NotFoundException("not_found:unit");
 
-      const openDebts = await tx
+      if (idempotencyKey) {
+        const [existing] = await tx
+          .select()
+          .from(payments)
+          .where(eq(payments.idempotencyKey, idempotencyKey));
+        if (existing) {
+          if (
+            existing.status !== "completed" ||
+            existing.unitId !== dto.unitId ||
+            existing.amountKurus !== dto.amountMinor
+          )
+            throw new ConflictException("conflict:payment_idempotency");
+          const entries = await tx
+            .select({ amount: paymentAllocations.amountKurus })
+            .from(paymentAllocations)
+            .where(eq(paymentAllocations.paymentId, existing.id));
+          const allocatedMinor = entries.reduce((sum, e) => sum + e.amount, 0);
+          return {
+            paymentId: existing.id,
+            allocatedMinor,
+            creditBalanceMinor: Math.max(
+              0,
+              existing.amountKurus - existing.refundedKurus - allocatedMinor,
+            ),
+            closedDebtCount: 0,
+            reused: true,
+          };
+        }
+      }
+      if (dto.payerUserId) {
+        const [payer] = await tx
+          .select({ id: memberships.id })
+          .from(memberships)
+          .where(
+            and(
+              eq(memberships.userId, dto.payerUserId),
+              isNull(memberships.deletedAt),
+            ),
+          )
+          .limit(1);
+        if (!payer)
+          throw new BadRequestException("validation_failed:payer_not_member");
+      }
+      const active = await tx
+        .select({
+          userId: unitOccupancies.userId,
+          relation: unitOccupancies.relation,
+          endDate: unitOccupancies.endDate,
+        })
+        .from(unitOccupancies)
+        .where(eq(unitOccupancies.unitId, dto.unitId));
+      const unitDebts = await tx
         .select({
           id: debts.id,
           dueDate: debts.dueDate,
@@ -333,29 +418,67 @@ export class DebtWriteRepository {
           lateFeeKurus: debts.lateFeeKurus,
           debtorUserId: debts.debtorUserId,
           kind: debts.kind,
+          status: debts.status,
         })
         .from(debts)
         .where(
           and(
             eq(debts.unitId, dto.unitId),
             isNull(debts.deletedAt),
-            sql`${debts.status} NOT IN ('paid','written_off')`,
+            sql`${debts.status} NOT IN ('paid','written_off','cancelled')`,
           ),
-        );
-
-      if (openDebts.length === 0)
-        throw new BadRequestException("validation_failed:no_open_debts");
-
-      // Mahsup sırası `packages/dues/allocation` tarafından belirlenir (en eski
-      // vade, her borçta önce gecikme tazminatı). Aynı kural ödeme webhook'unda
-      // da işlediği için paket içinde duruyor — iki kopya olamaz.
+        )
+        .for("update");
+      const preferred = unitDebts.filter((d) => dto.debtIds.includes(d.id));
+      if (
+        new Set(preferred.map((d) => d.id)).size !== new Set(dto.debtIds).size
+      )
+        throw new BadRequestException("validation_failed:invalid_target_debts");
+      const preferredPeople = [
+        ...new Set(preferred.map((d) => d.debtorUserId)),
+      ];
+      if (preferredPeople.length > 1)
+        throw new BadRequestException("validation_failed:mixed_debtors");
+      const current = active.filter((o) => o.endDate === null);
+      const tenants = current.filter((o) => o.relation === "tenant");
+      const owners = current.filter((o) => o.relation === "owner");
+      let debtorUserId: string | null;
+      if (dto.debtorUserId) {
+        if (
+          !active.some((o) => o.userId === dto.debtorUserId) &&
+          !unitDebts.some((d) => d.debtorUserId === dto.debtorUserId)
+        )
+          throw new BadRequestException("validation_failed:debtor_not_in_unit");
+        debtorUserId = dto.debtorUserId;
+      } else if (preferredPeople.length) debtorUserId = preferredPeople[0]!;
+      else if (
+        dto.payerUserId &&
+        current.some((o) => o.userId === dto.payerUserId)
+      )
+        debtorUserId = dto.payerUserId;
+      else if (tenants.length === 1) debtorUserId = tenants[0]!.userId;
+      else if (owners.length === 1) debtorUserId = owners[0]!.userId;
+      else {
+        const people = [...new Set(unitDebts.map((d) => d.debtorUserId))];
+        if (owners.length > 1 || people.length > 1)
+          throw new BadRequestException("validation_failed:choose_debtor");
+        debtorUserId = people[0] ?? null;
+      }
+      if (preferred.some((d) => d.debtorUserId !== debtorUserId))
+        throw new BadRequestException("validation_failed:mixed_debtors");
+      const openDebts = unitDebts.filter(
+        (d) => d.debtorUserId === debtorUserId,
+      );
       const allocation = allocatePayment(dto.amountMinor, openDebts, {
         preferDebtIds: dto.debtIds,
       });
-
-      const firstDebt = openDebts.find(
-        (debt) => debt.id === allocation.allocations[0]?.debtId,
-      );
+      // Non-cash offsets cannot manufacture a prepaid cash balance.
+      if (dto.method === "credit_balance")
+        throw new BadRequestException(
+          "validation_failed:credit_balance_not_a_payment",
+        );
+      if (dto.method === "offset" && allocation.creditBalanceKurus > 0)
+        throw new BadRequestException("validation_failed:offset_exceeds_debt");
 
       const [payment] = await tx
         .insert(payments)
@@ -363,58 +486,54 @@ export class DebtWriteRepository {
           tenantId: ctx.tenantId,
           unitId: dto.unitId,
           payerUserId: dto.payerUserId ?? null,
-          debtorUserId: firstDebt?.debtorUserId ?? null,
+          debtorUserId,
           amountKurus: dto.amountMinor,
           method: dto.method,
-          /*
-           * Nakit tahsilatın banka hesabı yok: hesap seçilmiş olsa bile
-           * `cash` yönteminde **yok sayılıyor**. Aksi hâlde kasaya giren
-           * para bir hesabın ekstresinde aranır ve mutabakat o hesapta
-           * kalıcı bir fark gösterirdi.
-           */
           bankAccountId:
-            dto.method === "cash" ? null : (dto.bankAccountId ?? null),
+            dto.method === "cash" || dto.method === "offset"
+              ? null
+              : (dto.bankAccountId ?? null),
           processor: "manual",
           status: "completed",
           paidAt: dto.paidAt,
           receiptNo: dto.receiptNo || (await nextReceiptNo(tx, ctx.tenantId)),
+          idempotencyKey: idempotencyKey ?? null,
           metadata: dto.note ? { note: dto.note } : {},
         })
         .returning({ id: payments.id });
-
       if (!payment) throw new BadRequestException("internal");
-
       let closed = 0;
       for (const entry of allocation.allocations) {
-        await tx.insert(paymentAllocations).values({
-          tenantId: ctx.tenantId,
-          paymentId: payment.id,
-          debtId: entry.debtId,
-          amountKurus: entry.amountKurus,
-        });
-
-        const debt = openDebts.find((row) => row.id === entry.debtId)!;
+        await tx
+          .insert(paymentAllocations)
+          .values({
+            tenantId: ctx.tenantId,
+            paymentId: payment.id,
+            debtId: entry.debtId,
+            amountKurus: entry.amountKurus,
+          });
+        const debt = openDebts.find((d) => d.id === entry.debtId)!;
         const newPaid = debt.paidKurus + entry.amountKurus;
-        const status = resolveStatus(
-          debt.amountKurus + debt.lateFeeKurus,
-          newPaid,
-          debt.dueDate,
-        );
+        const status =
+          debt.status === "cancelled" || debt.status === "written_off"
+            ? debt.status
+            : resolveStatus(
+                debt.amountKurus + debt.lateFeeKurus,
+                newPaid,
+                debt.dueDate,
+              );
         if (status === "paid") closed += 1;
-
-        // Tahsilat tutarı değiştirmediği için timeline trigger'ı tetiklenmez;
-        // ödeme izi `payment_allocations` üzerinden zaten kalıcı.
         await tx
           .update(debts)
           .set({ paidKurus: newPaid, status })
           .where(eq(debts.id, debt.id));
       }
-
       return {
         paymentId: payment.id,
         allocatedMinor: allocation.allocatedKurus,
         creditBalanceMinor: allocation.creditBalanceKurus,
         closedDebtCount: closed,
+        reused: false,
       };
     });
   }
@@ -439,6 +558,16 @@ export class DebtWriteRepository {
   async voidPayment(paymentId: string, reason: string) {
     return this.db.txWithReason(reason, async (tx) => {
       const ctx = this.db.ctx();
+      const [target] = await tx
+        .select({ unitId: payments.unitId })
+        .from(payments)
+        .where(eq(payments.id, paymentId));
+      if (target?.unitId)
+        await tx
+          .select({ id: units.id })
+          .from(units)
+          .where(eq(units.id, target.unitId))
+          .for("update");
       // FOR UPDATE: aynı tahsilatın iki sekmeden iki kez iptali yarışmasın.
       const [payment] = await tx
         .select({
@@ -446,6 +575,7 @@ export class DebtWriteRepository {
           status: payments.status,
           processor: payments.processor,
           amountKurus: payments.amountKurus,
+          refundedKurus: payments.refundedKurus,
           metadata: payments.metadata,
         })
         .from(payments)
@@ -456,9 +586,13 @@ export class DebtWriteRepository {
       if (payment.status === "cancelled")
         throw new ConflictException("conflict:payment_already_cancelled");
       if (payment.processor !== "manual")
-        throw new BadRequestException("validation_failed:card_payment_requires_refund");
+        throw new BadRequestException(
+          "validation_failed:card_payment_requires_refund",
+        );
       if (payment.status !== "completed")
-        throw new ConflictException(`conflict:payment_not_completed:${payment.status}`);
+        throw new ConflictException(
+          `conflict:payment_not_completed:${payment.status}`,
+        );
 
       const allocations = await tx
         .select({
@@ -485,12 +619,24 @@ export class DebtWriteRepository {
         if (!debt) continue;
 
         const newPaid = Math.max(0, debt.paidKurus - allocation.amountKurus);
-        const status = resolveStatus(debt.amountKurus + debt.lateFeeKurus, newPaid, debt.dueDate);
+        const status =
+          debt.status === "cancelled" || debt.status === "written_off"
+            ? debt.status
+            : resolveStatus(
+                debt.amountKurus + debt.lateFeeKurus,
+                newPaid,
+                debt.dueDate,
+              );
         if (debt.status === "paid" && status !== "paid") reopened += 1;
-        await tx.update(debts).set({ paidKurus: newPaid, status }).where(eq(debts.id, debt.id));
+        await tx
+          .update(debts)
+          .set({ paidKurus: newPaid, status })
+          .where(eq(debts.id, debt.id));
       }
 
-      await tx.delete(paymentAllocations).where(eq(paymentAllocations.paymentId, paymentId));
+      await tx
+        .delete(paymentAllocations)
+        .where(eq(paymentAllocations.paymentId, paymentId));
 
       await tx
         .update(payments)
@@ -511,7 +657,7 @@ export class DebtWriteRepository {
       return {
         paymentId,
         reopenedDebtCount: reopened,
-        reversedMinor: allocations.reduce((sum, a) => sum + a.amountKurus, 0),
+        reversedMinor: Math.max(0, payment.amountKurus - payment.refundedKurus),
       };
     });
   }
@@ -558,7 +704,11 @@ export class DebtWriteRepository {
    * çözülmeli. Affedilen tutar, karar referansı ve zaman `metadata.forgiven`'a
    * yazılıyor; gecikme tazminatı da durduruluyor.
    */
-  async forgive(ids: string[], reason: string, decisionRef: string): Promise<number> {
+  async forgive(
+    ids: string[],
+    reason: string,
+    decisionRef: string,
+  ): Promise<number> {
     return this.db.txWithReason(reason, async (tx) => {
       const rows = await tx
         .update(debts)

@@ -6,6 +6,7 @@ import {
   eq,
   inArray,
   isNull,
+  or,
   sql,
   type SQL,
 } from "drizzle-orm";
@@ -22,6 +23,7 @@ import {
   debts,
   memberships,
   payments,
+  paymentCreditAmount,
   unitOccupancies,
   units,
   users,
@@ -66,7 +68,7 @@ export class ResidentRepository {
       const [memberRows, occupancyRows, balanceRows, blockRows] =
         await Promise.all([
           tx
-            .select({ userId: memberships.userId, role: memberships.role })
+            .select({ userId: memberships.userId, role: memberships.role, credit: paymentCreditAmount({ user: sql`memberships.user_id` }) })
             .from(memberships)
             .where(and(...conditions)),
 
@@ -97,7 +99,7 @@ export class ResidentRepository {
             .from(debts)
             .where(
               and(
-                isNull(debts.deletedAt),
+                and(isNull(debts.deletedAt), sql`${debts.status} <> 'cancelled'`),
                 sql`${debts.status} NOT IN ('paid','written_off','cancelled')`,
                 ...(q.debtTypeId ? [eq(debts.debtTypeId, q.debtTypeId)] : []),
               ),
@@ -260,6 +262,7 @@ export class ResidentRepository {
           roles: rolesByUser.get(person.id) ?? [],
           occupancies: occupanciesByUser.get(person.id) ?? [],
           outstandingMinor: balance?.outstanding ?? 0,
+          creditBalanceMinor: Number(scoped.memberRows.find((m) => m.userId === person.id)?.credit ?? 0),
           overdueMinor: balance?.overdue ?? 0,
         };
       })
@@ -361,25 +364,29 @@ export class ResidentRepository {
 
           tx
             .select({
-              outstanding: sql<number>`COALESCE(SUM(CASE WHEN ${debts.status} NOT IN ('paid','written_off')
+              credit: paymentCreditAmount({ user: sql`${userId}` }),
+              outstanding: sql<number>`COALESCE(SUM(CASE WHEN ${debts.status} NOT IN ('paid','written_off','cancelled')
               THEN ${debts.amountKurus} + ${debts.lateFeeKurus} - ${debts.paidKurus} ELSE 0 END), 0)`,
-              overdue: sql<number>`COALESCE(SUM(CASE WHEN ${debts.status} NOT IN ('paid','written_off') AND ${debts.dueDate} < now()
+              overdue: sql<number>`COALESCE(SUM(CASE WHEN ${debts.status} NOT IN ('paid','written_off','cancelled') AND ${debts.dueDate} < now()
               THEN ${debts.amountKurus} + ${debts.lateFeeKurus} - ${debts.paidKurus} ELSE 0 END), 0)`,
             })
             .from(debts)
             .where(
-              and(eq(debts.debtorUserId, userId), isNull(debts.deletedAt)),
+              and(eq(debts.debtorUserId, userId), and(isNull(debts.deletedAt), sql`${debts.status} <> 'cancelled'`)),
             ),
 
           tx
             .select({
-              total: sql<number>`COALESCE(SUM(${payments.amountKurus}), 0)`,
+              total: sql<number>`COALESCE(SUM(${payments.amountKurus} - ${payments.refundedKurus}), 0)`,
             })
             .from(payments)
             .where(
               and(
-                eq(payments.payerUserId, userId),
+                or(eq(payments.payerUserId, userId), eq(payments.debtorUserId, userId),
+                  sql`EXISTS (SELECT 1 FROM payment_allocations a JOIN debts d ON d.id = a.debt_id
+                    WHERE a.payment_id = payments.id AND d.debtor_user_id = ${userId})`),
                 eq(payments.status, "completed"),
+                sql`${payments.method} NOT IN ('offset', 'credit_balance')`,
               ),
             ),
 
@@ -402,7 +409,7 @@ export class ResidentRepository {
             })
             .from(debts)
             .innerJoin(units, eq(units.id, debts.unitId))
-            .where(and(eq(debts.debtorUserId, userId), isNull(debts.deletedAt)))
+            .where(and(eq(debts.debtorUserId, userId), and(isNull(debts.deletedAt), sql`${debts.status} <> 'cancelled'`)))
             .orderBy(desc(debts.dueDate))
             .limit(50),
 
@@ -418,7 +425,9 @@ export class ResidentRepository {
               debtorUserId: payments.debtorUserId,
             })
             .from(payments)
-            .where(eq(payments.payerUserId, userId))
+            .where(or(eq(payments.payerUserId, userId), eq(payments.debtorUserId, userId),
+                  sql`EXISTS (SELECT 1 FROM payment_allocations a JOIN debts d ON d.id = a.debt_id
+                    WHERE a.payment_id = payments.id AND d.debtor_user_id = ${userId})`))
             .orderBy(desc(payments.createdAt))
             .limit(50),
         ]);

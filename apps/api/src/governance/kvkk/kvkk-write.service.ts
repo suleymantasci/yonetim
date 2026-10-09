@@ -252,7 +252,7 @@ export class KvkkWriteService {
         .select({ id: debts.id })
         .from(debts)
         .where(
-          and(eq(debts.debtorUserId, subjectId), isNull(debts.deletedAt), notInArray(debts.status, ["paid", "written_off"])),
+          and(eq(debts.debtorUserId, subjectId), isNull(debts.deletedAt), notInArray(debts.status, ["paid", "written_off", "cancelled"])),
         )
         .limit(1);
       if (openDebt) throw new ConflictException("conflict:erasure_open_debts");

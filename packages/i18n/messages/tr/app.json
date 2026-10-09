@@ -226,6 +226,8 @@
     "deltaPrevMonth": "geçen aya göre"
   },
   "units": {
+    "creditBalanceHint": "Avans/alacak: {amount}. Sonraki borçlardan mahsup edilir.",
+    "creditAmount": "{amount} alacak",
     "title": "Bağımsız Bölümler",
     "summary": "{units} bağımsız bölüm · {blocks} blok · toplam {area} m² · arsa payı toplamı {share}",
     "landShareWarning": "Arsa payları toplamı 1 (veya 1000) etmiyor. Arsa payına göre borçlandırmada dağıtım oransal yapılır, ancak tapu kayıtlarıyla uyum için kontrol etmenizi öneririz.",
@@ -454,6 +456,8 @@
     }
   },
   "residents": {
+    "creditBalanceHint": "Avans/alacak: {amount}. Sonraki borçlardan mahsup edilir.",
+    "creditAmount": "{amount} alacak",
     "title": "Sakinler",
     "description": "İletişim bilgileri KVKK kapsamında maskeli gösterilir; tam görünüm için kayda tıklamanız gerekir ve bu erişim loglanır.",
     "privacyNotice": "Borç bilgisi topluluk kanallarında paylaşılamaz. Bireysel bildirim için sakin kartındaki “Mesaj gönder” akışını kullanın.",
@@ -759,6 +763,8 @@
     "bulkFromPlanAction": "Toplu borç sihirbazını plandan doldur"
   },
   "debts": {
+    "accountHolder": "İşlenecek kişi",
+    "accountHolderHint": "Ödeme ve varsa fazla tutar bu kişinin cari hesabına yazılır. Ödeyen farklı olabilir.",
     "title": "Borçlar & Tahsilat",
     "description": "Daire bazlı güncel bakiye. Gecikme tazminatı her gün yeniden hesaplanır (KMK md.20).",
     "overdueAlertTitle": "Gecikmiş alacak var",
@@ -1330,6 +1336,7 @@
     "rowError": {
       "already_resolved": "Bu hareket zaten sonuçlanmış.",
       "no_open_debts": "Bu dairenin açık borcu yok.",
+      "choose_debtor": "Hesabına işlenecek kişi belirlenemedi. Birim ekranından tahsilat girerken kişiyi seçin.",
       "unit_required": "Daire seçin.",
       "not_incoming": "Yalnız gelen hareket tahsil edilebilir.",
       "bank_transaction_not_found": "Hareket bulunamadı."
@@ -1342,7 +1349,7 @@
     "queueTitle": "Banka hareketlerini eşleştir",
     "queueDescription": "Dökümden gelen, henüz sonuçlanmamış hareketler. Gelenleri dairelere tahsil edin, çıkanları gider olarak kaydedin.",
     "queueIncoming": "Gelen hareketler ({count})",
-    "queueIncomingHint": "Önerilen daire seçili gelir. Kontrol edip toplu ya da tek tek tahsil edin; tahsilat açık borçlara en eskiden mahsup edilir.",
+    "queueIncomingHint": "Önerilen daire seçili gelir. Kontrol edip toplu ya da tek tek tahsil edin; açık borçlar kapanır, kalan tutar avans olarak saklanır.",
     "collectSelected": "Seçilenleri tahsil et ({count})",
     "queueIncomingEmpty": "Bekleyen gelen hareket yok",
     "queueEmptyHint": "Yeni hareketler için bankanın dökümünü aktarın.",

@@ -166,7 +166,7 @@ export class PortalService {
           and(
             eq(debts.unitId, unit.unitId),
             isNull(debts.deletedAt),
-            notInArray(debts.status, ["paid", "written_off"]),
+            notInArray(debts.status, ["paid", "written_off", "cancelled"]),
           ),
         )
         .orderBy(debts.dueDate);
@@ -281,7 +281,7 @@ export class PortalService {
       const rows = await tx
         .select()
         .from(debts)
-        .where(and(eq(debts.unitId, unit.unitId), isNull(debts.deletedAt)))
+        .where(and(eq(debts.unitId, unit.unitId), isNull(debts.deletedAt), notInArray(debts.status, ["cancelled"])))
         .orderBy(desc(debts.dueDate))
         .limit(200);
 
@@ -299,7 +299,7 @@ export class PortalService {
 
       const now = new Date();
       const day = 24 * 60 * 60 * 1000;
-      const open = rows.filter((d) => d.status !== "paid");
+      const open = rows.filter((d) => !["paid", "written_off", "cancelled"].includes(d.status));
       const remaining = (d: (typeof rows)[number]) =>
         d.amountKurus + d.lateFeeKurus - d.paidKurus;
 
@@ -321,7 +321,7 @@ export class PortalService {
           paidMinor: d.paidKurus,
           remainingMinor: remaining(d),
           status: d.status,
-          overdue: d.status !== "paid" && d.dueDate < now,
+          overdue: !["paid", "written_off", "cancelled"].includes(d.status) && d.dueDate < now,
           daysToDue: Math.round((d.dueDate.getTime() - now.getTime()) / day),
         })),
         changes: changes.map((c) => ({

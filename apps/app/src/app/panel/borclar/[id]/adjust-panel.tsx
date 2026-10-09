@@ -32,6 +32,8 @@ import { adjustDebt, collectPayment } from "../actions";
 export function DebtActionPanels({
   collectDefaults,
   debtId,
+  debtorUserId,
+  closed = false,
   unitId,
   currentAmountKurus,
   currentDueDate,
@@ -43,6 +45,8 @@ export function DebtActionPanels({
   labels,
 }: {
   debtId: string;
+  debtorUserId?: string | null;
+  closed?: boolean;
   unitId: string;
   currentAmountKurus: number;
   currentDueDate: string;
@@ -96,6 +100,8 @@ export function DebtActionPanels({
   const [collecting, setCollecting] = useState(false);
   // Ödeme yöntemi banka hesabı alanının görünürlüğünü belirliyor.
   const [method, setMethod] = useState(collectDefaults?.method ?? "bank_transfer");
+
+  if (closed) return null;
 
   return (
     <>
@@ -204,6 +210,7 @@ export function DebtActionPanels({
           onCancel={() => setCollecting(false)}
         >
           <input type="hidden" name="unitId" value={unitId} />
+          {debtorUserId ? <input type="hidden" name="debtorUserId" value={debtorUserId} /> : null}
 
           <div className="space-y-4">
             <FormField name="amountKurus" label={labels.collectAmount} required>

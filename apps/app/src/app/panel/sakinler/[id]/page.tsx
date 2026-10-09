@@ -138,7 +138,7 @@ export default async function ResidentDetailPage({
     }));
 
   const collectDebts = detail.debts
-    .filter((debt) => debt.status !== "paid")
+    .filter((debt) => !["paid", "written_off", "cancelled"].includes(debt.status))
     .map((debt) => ({
       id: debt.id,
       unitId: debt.unitId,
@@ -173,6 +173,8 @@ export default async function ResidentDetailPage({
     bankAccountHint: tDebts("bankAccountHint"),
     bankAccountNone: tDebts("bankAccountNone"),
     noBankAccounts: tDebts("noBankAccounts"),
+    accountHolder: tDebts("accountHolder"),
+    accountHolderHint: tDebts("accountHolderHint"),
     payer: tDebts("payer"),
     payerHint: tDebts("payerHint"),
     receiptNo: tUnits("receiptNo"),
@@ -219,6 +221,7 @@ export default async function ResidentDetailPage({
               openDebts={collectDebts}
               payers={[{ id, label: name }]}
               defaultPayerId={id}
+              defaultDebtorId={id}
               bankAccounts={collectBankAccounts}
               collectDefaults={bank?.collectionDefaults}
               labels={collectLabels}
@@ -244,8 +247,9 @@ export default async function ResidentDetailPage({
       <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Stat
           label={t("outstanding")}
-          value={fmt.money(detail.balance.outstandingMinor)}
-          tone={detail.balance.outstandingMinor > 0 ? "danger" : "success"}
+          value={fmt.money(detail.balance.outstandingMinor - (detail.balance.creditBalanceMinor ?? 0))}
+          hint={(detail.balance.creditBalanceMinor ?? 0) > 0 ? t("creditBalanceHint", { amount: fmt.money(detail.balance.creditBalanceMinor ?? 0) }) : undefined}
+          tone={detail.balance.outstandingMinor - (detail.balance.creditBalanceMinor ?? 0) > 0 ? "danger" : "success"}
         />
         <Stat
           label={t("overdue")}
@@ -440,7 +444,7 @@ export default async function ResidentDetailPage({
           {
             key: "borclar",
             label: t("tabDebts"),
-            count: detail.debts.filter((d) => d.status !== "paid").length,
+            count: detail.debts.filter((d) => !["paid", "written_off", "cancelled"].includes(d.status)).length,
             panel: (
               <Card>
                 <CardHeader

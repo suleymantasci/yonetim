@@ -162,8 +162,10 @@ export default async function UnitsPage({
       landShare: share,
       statusBadge,
       outstanding:
-        row.outstandingMinor > 0 ? fmt.money(row.outstandingMinor) : "—",
-      hasOutstanding: row.outstandingMinor > 0,
+        row.outstandingMinor - (row.creditBalanceMinor ?? 0) < 0
+        ? t("creditAmount", { amount: fmt.money((row.creditBalanceMinor ?? 0) - row.outstandingMinor) })
+        : row.outstandingMinor - (row.creditBalanceMinor ?? 0) > 0 ? fmt.money(row.outstandingMinor - (row.creditBalanceMinor ?? 0)) : "—",
+      hasOutstanding: row.outstandingMinor - (row.creditBalanceMinor ?? 0) > 0,
       occupantCount: row.occupantCount,
       multiplier: row.duesMultiplier === "1.000" ? null : row.duesMultiplier,
     };

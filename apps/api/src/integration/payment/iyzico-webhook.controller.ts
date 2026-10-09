@@ -1,10 +1,10 @@
 import { Body, Controller, HttpCode, Post } from "@nestjs/common";
 import { ApiExcludeController } from "@nestjs/swagger";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { errors, formatKurus } from "@yonetim/core";
-import { debts, paymentAllocations, payments } from "@yonetim/db";
+import { debts, paymentAllocations, payments, units } from "@yonetim/db";
 import { allocatePayment } from "@yonetim/dues";
 import { retrievePayment } from "@yonetim/payment";
 
@@ -102,6 +102,18 @@ export class IyzicoWebhookController {
     // borçlar kapanmadan kalırsa sakin ödediği borcu ekranda görmeye devam
     // eder.
     await this.db.tenantScoped(record.tenantId, undefined, async (tx) => {
+      if (record.unitId)
+        await tx
+          .select({ id: units.id })
+          .from(units)
+          .where(eq(units.id, record.unitId))
+          .for("update");
+      const [latest] = await tx
+        .select({ processorRef: payments.processorRef })
+        .from(payments)
+        .where(eq(payments.id, record.id))
+        .for("update");
+      if (latest?.processorRef === payment.paymentId) return;
       await tx
         .update(payments)
         .set({
@@ -119,7 +131,23 @@ export class IyzicoWebhookController {
         .where(eq(payments.id, record.id));
 
       const open = record.unitId
-        ? await tx.select().from(debts).where(eq(debts.unitId, record.unitId))
+        ? await tx
+            .select()
+            .from(debts)
+            .where(
+              and(
+                eq(debts.unitId, record.unitId),
+                isNull(debts.deletedAt),
+                sql`${debts.status} NOT IN ('paid','written_off','cancelled')`,
+                (record.debtorUserId ?? record.payerUserId)
+                  ? eq(
+                      debts.debtorUserId,
+                      (record.debtorUserId ?? record.payerUserId)!,
+                    )
+                  : isNull(debts.debtorUserId),
+              ),
+            )
+            .for("update")
         : [];
 
       /*
@@ -164,10 +192,7 @@ export class IyzicoWebhookController {
             amountKurus: a.amountKurus,
           })
           .onConflictDoNothing({
-            target: [
-              paymentAllocations.paymentId,
-              paymentAllocations.debtId,
-            ],
+            target: [paymentAllocations.paymentId, paymentAllocations.debtId],
           });
         const debt = open.find((d) => d.id === a.debtId);
         if (!debt) continue;

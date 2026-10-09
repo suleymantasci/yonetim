@@ -287,7 +287,7 @@ export class BankReconcileService {
         paidAt: claimed.row.transactionAt,
         debtIds: [],
         note: `Banka ekstresi: ${[claimed.row.counterparty, claimed.row.description].filter(Boolean).join(" — ")}`.slice(0, 500),
-      });
+      }, `bank:${id}`);
 
       const status = unitId && unitId !== claimed.row.matchedUnitId ? "manual" : "auto";
       await this.db.tx((tx) =>

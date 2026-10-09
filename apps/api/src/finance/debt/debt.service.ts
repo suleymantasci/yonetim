@@ -167,8 +167,9 @@ export class DebtService {
     return { id };
   }
 
-  async collect(dto: PaymentCollect) {
-    const result = await this.write.collect(dto);
+  async collect(dto: PaymentCollect, idempotencyKey?: string) {
+    const { reused, ...result } = await this.write.collect(dto, idempotencyKey);
+    if (reused) return result;
     await this.audit.record({
       action: "payment_collected",
       resource: "payment",

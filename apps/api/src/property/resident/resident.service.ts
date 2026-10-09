@@ -75,6 +75,7 @@ export class ResidentService {
         roles: row.roles,
         occupancies: row.occupancies,
         outstandingMinor: row.outstandingMinor,
+        creditBalanceMinor: row.creditBalanceMinor,
         overdueMinor: row.overdueMinor,
       })),
       meta: {
@@ -142,6 +143,7 @@ export class ResidentService {
         outstandingMinor: Number(scoped.balanceRow?.outstanding ?? 0),
         overdueMinor: Number(scoped.balanceRow?.overdue ?? 0),
         paidTotalMinor: Number(scoped.paidRow?.total ?? 0),
+        creditBalanceMinor: Number(scoped.balanceRow?.credit ?? 0),
       },
       debts: scoped.debtRows,
       payments: scoped.paymentRows.map((row) => {

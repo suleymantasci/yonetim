@@ -471,6 +471,8 @@ export const paymentCollect = z.object({
   bankAccountId: uuid.nullish(),
   paidAt: dateTime,
   payerUserId: uuid.optional(),
+  /** Cari hesap sahibi; ödeyen farklı bir kişi olabilir. */
+  debtorUserId: uuid.optional(),
   receiptNo: z.string().trim().max(30).optional(),
   /** Belirli borçlara öncelik; boşsa en eski vade önce. */
   debtIds: z.array(uuid).default([]),
@@ -542,6 +544,7 @@ export type DebtBulkResultSimple = z.infer<typeof debtBulkResultSimple>;
 /** Bir birimin açık borçları — tahsilat formu için. */
 export const openDebtRow = z.object({
   id: uuid,
+  debtorUserId: uuid.nullable().optional(),
   description: z.string(),
   period: z.string().nullable(),
   amountMinor: moneyMinor,

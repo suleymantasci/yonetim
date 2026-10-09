@@ -74,6 +74,8 @@ export const unitRow = z.object({
   deletedAt: z.coerce.date().nullable(),
   /** Ödenmemiş bakiye, kuruş (gecikme tazminatı dahil). */
   outstandingMinor: moneyMinor,
+    /** Unallocated real payments, available for future debts. */
+    creditBalanceMinor: moneyMinor.optional(),
   occupantCount: z.number().int(),
 });
 
@@ -135,6 +137,8 @@ export const unitDetail = z.object({
   occupants: z.array(unitOccupant),
   debtSummary: z.object({
     outstandingMinor: moneyMinor,
+    /** Unallocated real payments, available for future debts. */
+    creditBalanceMinor: moneyMinor.optional(),
     overdueMinor: moneyMinor,
     paidThisYearMinor: moneyMinor,
     openCount: z.number().int(),
