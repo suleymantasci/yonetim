@@ -581,7 +581,7 @@
     "addOccupancy": "Add unit relation",
     "addOccupancyHint": "Link the resident to a unit as owner or tenant.",
     "endOccupancyTitle": "Close relation (departure)",
-    "endOccupancyHint": "Enter the departure date and choose who inherits the remaining balance. The decision is written to the audit log.",
+    "endOccupancyHint": "Enter the departure date and choose who inherits the remaining balance. Ending a tenant occupancy deletes the unit's household and vehicle records. The decision is written to the audit log.",
     "endOccupancyAction": "Record departure",
     "endOccupancyDebtWarning": "This unit has an unpaid balance. Your transfer choice changes who owes it.",
     "transferLabel": "Remaining balance",

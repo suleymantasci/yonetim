@@ -18,8 +18,10 @@ import { normalizePhone } from "@yonetim/core";
 import {
   consents,
   debts,
+  householdMembers,
   memberships,
   unitOccupancies,
+  unitVehicles,
   units,
   users,
   type Database,
@@ -459,6 +461,19 @@ export class ResidentWriteRepository {
         .set({ endDate: dto.endDate, debtTransferPolicy: dto.transferTo })
         .where(eq(unitOccupancies.id, occupancyId));
 
+      if (occupancy.relation === "tenant") {
+        await clearResidentExtras(tx, occupancy.unitId);
+        await tx
+          .update(units)
+          .set({ currentTenantId: null, ownershipType: "owner" })
+          .where(
+            and(
+              eq(units.id, occupancy.unitId),
+              eq(units.currentTenantId, occupancy.userId),
+            ),
+          );
+      }
+
       const openDebts = await tx
         .select({
           id: debts.id,
@@ -581,7 +596,7 @@ export class ResidentWriteRepository {
           .where(
             and(eq(memberships.userId, userId), isNull(memberships.deletedAt)),
           );
-        await tx
+        const ended = await tx
           .update(unitOccupancies)
           .set({ endDate: new Date() })
           .where(
@@ -589,7 +604,24 @@ export class ResidentWriteRepository {
               eq(unitOccupancies.userId, userId),
               isNull(unitOccupancies.endDate),
             ),
-          );
+          )
+          .returning({
+            unitId: unitOccupancies.unitId,
+            relation: unitOccupancies.relation,
+          });
+        for (const occupancy of ended) {
+          if (occupancy.relation !== "tenant") continue;
+          await clearResidentExtras(tx, occupancy.unitId);
+          await tx
+            .update(units)
+            .set({ currentTenantId: null, ownershipType: "owner" })
+            .where(
+              and(
+                eq(units.id, occupancy.unitId),
+                eq(units.currentTenantId, userId),
+              ),
+            );
+        }
         count += 1;
       }
       return count;
@@ -719,7 +751,7 @@ async function linkOccupancy(
 
   // Kiracı ilişkisi tekildir: yeni kiracı gelirse öncekinin kaydı kapanmalı.
   if (params.relation === "tenant") {
-    await tx
+    const ended = await tx
       .update(unitOccupancies)
       .set({ endDate: params.startDate })
       .where(
@@ -728,7 +760,9 @@ async function linkOccupancy(
           eq(unitOccupancies.relation, "tenant"),
           isNull(unitOccupancies.endDate),
         ),
-      );
+      )
+      .returning({ id: unitOccupancies.id });
+    if (ended.length > 0) await clearResidentExtras(tx, params.unitId);
   }
 
   const [created] = await tx
@@ -755,4 +789,13 @@ async function linkOccupancy(
     .where(eq(units.id, params.unitId));
 
   return created?.id;
+}
+
+/** Daireye bağlı oturan bilgileri kiracı değişince yeni kiracıya taşınmaz. */
+async function clearResidentExtras(
+  tx: Database,
+  unitId: string,
+): Promise<void> {
+  await tx.delete(householdMembers).where(eq(householdMembers.unitId, unitId));
+  await tx.delete(unitVehicles).where(eq(unitVehicles.unitId, unitId));
 }

@@ -581,7 +581,7 @@
     "addOccupancy": "Daire ilişkisi ekle",
     "addOccupancyHint": "Sakini bir daireye malik veya kiracı olarak bağlayın.",
     "endOccupancyTitle": "İlişkiyi kapat (çıkış)",
-    "endOccupancyHint": "Çıkış tarihini girin ve kalan borcun kime geçeceğini seçin. Karar denetim kütüğüne yazılır.",
+    "endOccupancyHint": "Çıkış tarihini girin ve kalan borcun kime geçeceğini seçin. Kiracı çıkışında dairenin hane halkı ve araç kayıtları silinir. Karar denetim kütüğüne yazılır.",
     "endOccupancyAction": "Çıkışı kaydet",
     "endOccupancyDebtWarning": "Bu dairede ödenmemiş bakiye var. Devir seçiminiz bu borçların yükümlüsünü değiştirir.",
     "transferLabel": "Kalan borç",
