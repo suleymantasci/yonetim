@@ -202,7 +202,8 @@
       "last_manager": "The site's last manager can't be removed; add another manager first.",
       "plate_taken": "This plate is registered to another unit.",
       "no_recipients": "No recipients selected.",
-      "too_many_recipients": "At most 2000 recipients."
+      "too_many_recipients": "At most 2000 recipients.",
+      "period_locked": "This date is in a locked period: records cannot be added or changed (Cash → Period lock)."
     }
   },
   "errorPage": {

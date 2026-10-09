@@ -94,6 +94,21 @@ interface Translated {
 }
 
 function translate(exception: unknown): Translated {
+  /*
+   * Dönem kilidi veritabanı tetikleyicisinden geliyor (`app_guard_period_lock`,
+   * rls.sql): kilitli tarihe yazma her yoldan — servis, iş, toplu işlem —
+   * aynı yerde durur. Kullanıcıya 409 + `conflict:period_locked` döner.
+   */
+  const cause = exception instanceof DrizzleQueryError ? (exception.cause as { message?: string } | undefined) : undefined;
+  if (cause?.message?.startsWith("period_locked")) {
+    return {
+      status: HttpStatus.CONFLICT,
+      code: "conflict",
+      message: humanize("conflict"),
+      details: { hint: "conflict:period_locked" },
+    };
+  }
+
   if (exception instanceof AppError) {
     const code = LEGACY_ERROR_CODE_MAP[exception.code] ?? "internal";
     const status = HTTP_STATUS_BY_ERROR_CODE[code];

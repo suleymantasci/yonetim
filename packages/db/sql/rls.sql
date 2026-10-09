@@ -409,3 +409,92 @@ BEGIN
   END IF;
 END
 $$;
+
+-- -----------------------------------------------------------------------------
+-- Dönem kilidi (Yönetimcell "kasa devir — seçilen tarih ve öncesini kilitle").
+--
+-- `tenants.settings.lockedUntil` (YYYY-MM-DD) ve öncesine tarihli kayıt:
+--   * eklenemez,
+--   * tutarı / tarihi değiştirilemez, silinemez, iptal edilemez.
+-- Sonraki hareketlerin yan etkisi serbest: yeni tahsilatın eski borcu kapatması
+-- (paid_kurus/status), gecikme hesabı (late_fee_kurus), eski giderin bugün
+-- ödenmesi (paid_at/status). Tarih: borçta vade, tahsilatta ödeme, giderde
+-- gider, kasada hareket tarihi (İstanbul günü).
+-- -----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION app_period_locked_until(t uuid) RETURNS date
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT NULLIF(settings->>'lockedUntil', '')::date FROM public.tenants WHERE id = t
+$$;
+
+CREATE OR REPLACE FUNCTION app_guard_period_lock() RETURNS trigger
+LANGUAGE plpgsql AS $$
+DECLARE
+  lock date;
+  old_day date;
+  new_day date;
+  guarded boolean := false;
+BEGIN
+  IF current_setting('app.bypass_period_lock', true) = 'on' THEN
+    RETURN COALESCE(NEW, OLD);
+  END IF;
+  lock := app_period_locked_until(COALESCE(NEW.tenant_id, OLD.tenant_id));
+  IF lock IS NULL THEN
+    RETURN COALESCE(NEW, OLD);
+  END IF;
+
+  IF TG_TABLE_NAME = 'debts' THEN
+    IF TG_OP <> 'INSERT' THEN old_day := (OLD.due_date AT TIME ZONE 'Europe/Istanbul')::date; END IF;
+    IF TG_OP <> 'DELETE' THEN new_day := (NEW.due_date AT TIME ZONE 'Europe/Istanbul')::date; END IF;
+    IF TG_OP = 'UPDATE' THEN
+      guarded := NEW.amount_kurus IS DISTINCT FROM OLD.amount_kurus
+        OR NEW.due_date IS DISTINCT FROM OLD.due_date
+        OR (NEW.deleted_at IS NOT NULL AND OLD.deleted_at IS NULL)
+        OR (NEW.status IN ('cancelled', 'written_off') AND NEW.status IS DISTINCT FROM OLD.status);
+    END IF;
+  ELSIF TG_TABLE_NAME = 'payments' THEN
+    IF TG_OP <> 'INSERT' THEN old_day := (COALESCE(OLD.paid_at, OLD.created_at) AT TIME ZONE 'Europe/Istanbul')::date; END IF;
+    IF TG_OP <> 'DELETE' THEN new_day := (COALESCE(NEW.paid_at, NEW.created_at, now()) AT TIME ZONE 'Europe/Istanbul')::date; END IF;
+    IF TG_OP = 'UPDATE' THEN
+      guarded := NEW.amount_kurus IS DISTINCT FROM OLD.amount_kurus
+        OR NEW.paid_at IS DISTINCT FROM OLD.paid_at
+        OR (NEW.status IN ('cancelled', 'refunded') AND NEW.status IS DISTINCT FROM OLD.status);
+    END IF;
+  ELSIF TG_TABLE_NAME = 'expenses' THEN
+    IF TG_OP <> 'INSERT' THEN old_day := (OLD.expense_date AT TIME ZONE 'Europe/Istanbul')::date; END IF;
+    IF TG_OP <> 'DELETE' THEN new_day := (NEW.expense_date AT TIME ZONE 'Europe/Istanbul')::date; END IF;
+    IF TG_OP = 'UPDATE' THEN
+      guarded := NEW.amount_kurus IS DISTINCT FROM OLD.amount_kurus
+        OR NEW.expense_date IS DISTINCT FROM OLD.expense_date
+        OR NEW.category_id IS DISTINCT FROM OLD.category_id
+        OR (NEW.deleted_at IS NOT NULL AND OLD.deleted_at IS NULL);
+    END IF;
+  ELSIF TG_TABLE_NAME = 'cash_movements' THEN
+    IF TG_OP <> 'INSERT' THEN old_day := (OLD.movement_date AT TIME ZONE 'Europe/Istanbul')::date; END IF;
+    IF TG_OP <> 'DELETE' THEN new_day := (NEW.movement_date AT TIME ZONE 'Europe/Istanbul')::date; END IF;
+    IF TG_OP = 'UPDATE' THEN
+      guarded := NEW.amount_kurus IS DISTINCT FROM OLD.amount_kurus
+        OR NEW.movement_date IS DISTINCT FROM OLD.movement_date
+        OR (NEW.voided_at IS NOT NULL AND OLD.voided_at IS NULL);
+    END IF;
+  END IF;
+
+  IF (TG_OP = 'INSERT' AND new_day <= lock)
+     OR (TG_OP = 'DELETE' AND old_day <= lock)
+     OR (TG_OP = 'UPDATE' AND ((guarded AND old_day <= lock) OR (new_day <= lock AND new_day IS DISTINCT FROM old_day))) THEN
+    RAISE EXCEPTION 'period_locked: % tarihi ve öncesi kilitli', lock USING ERRCODE = 'P0001';
+  END IF;
+  RETURN COALESCE(NEW, OLD);
+END;
+$$;
+
+DO $$
+DECLARE t text;
+BEGIN
+  FOREACH t IN ARRAY ARRAY['debts', 'payments', 'expenses', 'cash_movements'] LOOP
+    EXECUTE format('DROP TRIGGER IF EXISTS trg_%s_period_lock ON public.%I', t, t);
+    EXECUTE format(
+      'CREATE TRIGGER trg_%s_period_lock BEFORE INSERT OR UPDATE OR DELETE ON public.%I
+         FOR EACH ROW EXECUTE FUNCTION app_guard_period_lock()', t, t);
+  END LOOP;
+END
+$$;

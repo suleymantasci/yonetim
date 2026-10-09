@@ -1,6 +1,8 @@
 import { ArrowLeftRight, FileSignature, HandCoins, Pencil, Plus } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 
+import { z } from "zod";
+
 import { hasPermission } from "@yonetim/auth/guard";
 import { cashHandoverList, cashOverview } from "@yonetim/contracts";
 import {
@@ -33,6 +35,7 @@ import {
   TransferFields,
   VoidFields,
 } from "./fields";
+import { LockCard } from "./lock-card";
 
 export const dynamic = "force-dynamic";
 
@@ -45,14 +48,23 @@ export default async function CashPage() {
   const t = await getTranslations("app.cash");
   const tCommon = await getTranslations("common");
   const f = await formatters();
-  const [data, handovers] = await Promise.all([
+  const [data, handovers, lock] = await Promise.all([
     apiGet("/v1/panel/cash", cashOverview),
     apiGet("/v1/panel/cash/handovers", cashHandoverList),
+    apiGet("/v1/panel/cash/lock", z.object({ until: z.string().nullable() })).catch(() => ({ until: null })),
   ]);
   const canWrite = hasPermission(ctx.roles, "bank:write");
+  const tIns = await getTranslations("app.instruction");
 
   const actions = canWrite ? (
     <div className="flex flex-wrap gap-2">
+      <Link
+        href="/panel/kasa/talimat"
+        className="inline-flex h-10 items-center gap-2 rounded-lg border border-border-strong bg-surface px-3 text-sm font-semibold text-fg hover:bg-hover"
+      >
+        <FileSignature aria-hidden className="h-4 w-4" />
+        {tIns("title")}
+      </Link>
       <ActionDrawerButton
         action={saveIncome}
         hidden={{}}
@@ -103,6 +115,11 @@ export default async function CashPage() {
         action={actions}
       />
 
+      <LockCard
+        until={lock.until}
+        untilLabel={lock.until ? f.date(new Date(`${lock.until}T12:00:00`)) : null}
+        canWrite={hasPermission(ctx.roles, "settings:write")}
+      />
       <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Stat
           label={t("total")}

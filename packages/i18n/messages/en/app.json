@@ -4679,5 +4679,48 @@
     "deleted": "Definition deleted; created expenses remain.",
     "failed": "Could not complete.",
     "footnote": "A nightly job creates the due period; a period is never created twice. Deleting doesn't delete past expenses."
+  },
+  "periodLock": {
+    "title": "Period lock",
+    "activeHint": "Debts, payments, expenses and cash movements on or before {date} are locked: no adding, changing or deleting. Later payments may still settle old debts.",
+    "inactiveHint": "No lock. Lock past periods after the general assembly or a cash handover so they can't be changed by mistake.",
+    "on": "Locked",
+    "off": "Unlocked",
+    "until": "Lock date",
+    "untilHint": "This date and earlier are locked; save empty to remove the lock.",
+    "reason": "Reason",
+    "reasonPlaceholder": "e.g. 2026 assembly approval",
+    "save": "Save lock",
+    "locked": "Locked through {date}.",
+    "unlocked": "Period lock removed."
+  },
+  "instruction": {
+    "title": "Bank instruction",
+    "description": "Description",
+    "header": "Instruction",
+    "date": "Date",
+    "account": "Paying account",
+    "noAccounts": "No bank accounts",
+    "lines": "Payments · {count}",
+    "linesHint": "Picking a vendor or staff fills name and IBAN; you can also type a payee.",
+    "line": "Payment {n}",
+    "pick": "Pick payee",
+    "pickPlaceholder": "Select…",
+    "kind": {
+      "vendor": "Vendor",
+      "staff": "Staff"
+    },
+    "noIban": "no IBAN",
+    "name": "Payee",
+    "iban": "IBAN",
+    "amount": "Amount (₺)",
+    "remove": "Remove payment {n}",
+    "addLine": "Add payment",
+    "total": "Total",
+    "makePdf": "Instruction PDF",
+    "pdfTitle": "EFT / Transfer Instruction",
+    "pdfBody": "Please transfer a total of {total} to the {count} payees below from our account {account}.",
+    "signer1": "Manager",
+    "signer2": "Board member"
   }
 }

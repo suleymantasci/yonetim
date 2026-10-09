@@ -4679,5 +4679,48 @@
     "deleted": "Tanım silindi; üretilmiş giderler kalır.",
     "failed": "İşlem yapılamadı.",
     "footnote": "Her gece çalışan iş vadesi gelen dönemi üretir; aynı dönem iki kez üretilmez. Silmek geçmiş gider kayıtlarını silmez."
+  },
+  "periodLock": {
+    "title": "Dönem kilidi",
+    "activeHint": "{date} ve öncesindeki borç, tahsilat, gider ve kasa hareketleri kilitli: eklenemez, değiştirilemez, silinemez. Sonraki tahsilatların eski borcu kapatması serbesttir.",
+    "inactiveHint": "Kilit yok. Genel kurul ibrası ya da kasa devri sonrası geçmiş dönemi kilitleyin; geçmişe dönük yanlışlıkla değişiklik yapılamaz.",
+    "on": "Kilitli",
+    "off": "Kilit yok",
+    "until": "Kilit tarihi",
+    "untilHint": "Bu tarih ve öncesi kilitlenir; boş bırakıp kaydederseniz kilit kalkar.",
+    "reason": "Gerekçe",
+    "reasonPlaceholder": "Örn. 2026 olağan genel kurul ibrası",
+    "save": "Kilidi kaydet",
+    "locked": "{date} ve öncesi kilitlendi.",
+    "unlocked": "Dönem kilidi kaldırıldı."
+  },
+  "instruction": {
+    "title": "Banka talimatı",
+    "description": "Açıklama",
+    "header": "Talimat bilgileri",
+    "date": "İşlem tarihi",
+    "account": "Ödemenin yapılacağı hesap",
+    "noAccounts": "Kayıtlı banka hesabı yok",
+    "lines": "Ödemeler · {count}",
+    "linesHint": "Firma ya da personel seçince ad ve IBAN dolar; listede olmayan alıcıyı elle girebilirsiniz.",
+    "line": "{n}. ödeme",
+    "pick": "Alıcı seç",
+    "pickPlaceholder": "Seçin…",
+    "kind": {
+      "vendor": "Firma",
+      "staff": "Personel"
+    },
+    "noIban": "IBAN yok",
+    "name": "Alıcı adı",
+    "iban": "IBAN",
+    "amount": "Tutar (₺)",
+    "remove": "{n}. ödemeyi kaldır",
+    "addLine": "Ödeme ekle",
+    "total": "Toplam",
+    "makePdf": "Talimat PDF",
+    "pdfTitle": "EFT / Havale Talimatı",
+    "pdfBody": "Bankanızdaki {account} hesabımızdan aşağıda yazılı {count} alıcıya toplam {total} tutarında EFT/havale yapılmasını rica ederiz.",
+    "signer1": "Yönetici",
+    "signer2": "Yönetim kurulu üyesi"
   }
 }
