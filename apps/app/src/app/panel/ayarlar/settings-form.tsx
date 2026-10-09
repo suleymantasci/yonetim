@@ -27,6 +27,10 @@ export interface SettingsFormDefaults {
   onlinePaymentEnabled: boolean;
   defaultPaymentMethod: string;
   defaultBankAccountId: string | null;
+  receiptAutoNumber: boolean;
+  receiptPrefix: string | null;
+  receiptNextNo: number;
+  receiptFooter: string | null;
 }
 
 /**
@@ -280,6 +284,28 @@ export function SettingsForm({
             ))}
           </Select>
         </FormField>
+      </FormSection>
+
+      <FormSection title={t("receiptSection")} description={t("receiptSectionHint")}>
+        <div className="sm:col-span-2">
+          <Switch
+            name="receiptAutoNumber"
+            label={t("receiptAutoNumber")}
+            description={t("receiptAutoNumberHint")}
+            defaultChecked={defaults.receiptAutoNumber}
+          />
+        </div>
+        <FormField name="receiptPrefix" label={t("receiptPrefix")} hint={t("receiptPrefixHint")}>
+          <Input name="receiptPrefix" maxLength={10} defaultValue={defaults.receiptPrefix ?? ""} placeholder="M-" />
+        </FormField>
+        <FormField name="receiptNextNo" label={t("receiptNextNo")} hint={t("receiptNextNoHint")}>
+          <Input name="receiptNextNo" type="number" inputMode="numeric" min={1} defaultValue={String(defaults.receiptNextNo)} />
+        </FormField>
+        <div className="sm:col-span-2">
+          <FormField name="receiptFooter" label={t("receiptFooter")} hint={t("receiptFooterHint")}>
+            <Textarea name="receiptFooter" rows={2} maxLength={300} defaultValue={defaults.receiptFooter ?? ""} />
+          </FormField>
+        </div>
       </FormSection>
     </ActionForm>
   );

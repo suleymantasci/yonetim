@@ -341,7 +341,7 @@ export class DebtWriteRepository {
           processor: "manual",
           status: "completed",
           paidAt: dto.paidAt,
-          receiptNo: dto.receiptNo ?? null,
+          receiptNo: dto.receiptNo || (await nextReceiptNo(tx, ctx.tenantId)),
           metadata: dto.note ? { note: dto.note } : {},
         })
         .returning({ id: payments.id });
@@ -767,4 +767,22 @@ async function existingUnitIds(
       ),
     );
   return new Set(rows.map((row) => row.unitId));
+}
+
+/**
+ * Otomatik makbuz numarası — site ayarında açıksa `önek + sıradaki no`.
+ * Sayaç tek UPDATE ile ilerletiliyor (aynı anda iki tahsilat aynı numarayı
+ * alamaz); kapalıysa `null` (numarasız makbuz, eski davranış).
+ */
+async function nextReceiptNo(tx: Database, tenantId: string): Promise<string | null> {
+  const rows = (await tx.execute(sql`
+    UPDATE tenants
+    SET settings = jsonb_set(settings, '{receipt,nextNo}',
+          to_jsonb(COALESCE((settings->'receipt'->>'nextNo')::bigint, 1) + 1))
+    WHERE id = ${tenantId} AND (settings->'receipt'->>'auto')::boolean IS TRUE
+    RETURNING COALESCE((settings->'receipt'->>'nextNo')::bigint, 2) - 1 AS no,
+              settings->'receipt'->>'prefix' AS prefix
+  `)) as unknown as { no: number | string; prefix: string | null }[];
+  const row = rows[0];
+  return row ? `${row.prefix ?? ""}${row.no}`.slice(0, 30) : null;
 }

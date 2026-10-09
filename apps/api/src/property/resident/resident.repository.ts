@@ -95,7 +95,13 @@ export class ResidentRepository {
               THEN ${debts.amountKurus} + ${debts.lateFeeKurus} - ${debts.paidKurus} ELSE 0 END), 0)`,
             })
             .from(debts)
-            .where(and(isNull(debts.deletedAt), sql`${debts.status} NOT IN ('paid','written_off')`))
+            .where(
+              and(
+                isNull(debts.deletedAt),
+                sql`${debts.status} NOT IN ('paid','written_off','cancelled')`,
+                ...(q.debtTypeId ? [eq(debts.debtTypeId, q.debtTypeId)] : []),
+              ),
+            )
             .groupBy(debts.debtorUserId),
 
           tx
@@ -186,6 +192,13 @@ export class ResidentRepository {
       candidateIds = candidateIds.filter(
         (id) => (balances.get(id)?.outstanding ?? 0) > 0,
       );
+    }
+    if (q.status === "noDebt") {
+      candidateIds = candidateIds.filter((id) => (balances.get(id)?.outstanding ?? 0) <= 0);
+    }
+    if (q.minOutstanding !== undefined && q.minOutstanding > 0) {
+      const min = q.minOutstanding;
+      candidateIds = candidateIds.filter((id) => (balances.get(id)?.outstanding ?? 0) >= min);
     }
     if (q.status === "multiUnit") {
       candidateIds = candidateIds.filter(

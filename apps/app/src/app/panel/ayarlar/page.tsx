@@ -66,6 +66,7 @@ export default async function SettingsPage() {
     whatsappOptInRequired?: boolean;
     payment?: { onlineEnabled?: boolean };
     collection?: { method?: string; bankAccountId?: string | null };
+    receipt?: { auto?: boolean; prefix?: string | null; nextNo?: number; footer?: string | null };
     invoiceInfo?: {
       title?: string | null;
       taxNumber?: string | null;
@@ -128,6 +129,10 @@ export default async function SettingsPage() {
                       settings.payment?.onlineEnabled === true,
                     defaultPaymentMethod: settings.collection?.method ?? "bank_transfer",
                     defaultBankAccountId: settings.collection?.bankAccountId ?? null,
+                    receiptAutoNumber: settings.receipt?.auto === true,
+                    receiptPrefix: settings.receipt?.prefix ?? null,
+                    receiptNextNo: settings.receipt?.nextNo ?? 1,
+                    receiptFooter: settings.receipt?.footer ?? null,
                   }}
                   bankAccounts={bankAccounts}
                 />

@@ -53,6 +53,10 @@ const settingsSchema = z.object({
   onlinePaymentEnabled: checkboxField,
   defaultPaymentMethod: z.enum(["bank_transfer", "cash", "card"]).default("bank_transfer"),
   defaultBankAccountId: optionalUuidField,
+  receiptAutoNumber: checkboxField,
+  receiptPrefix: optionalText(10),
+  receiptNextNo: intField({ min: 1, max: 99_999_999 }),
+  receiptFooter: optionalText(300),
 });
 
 export async function saveSettings(
@@ -90,6 +94,10 @@ export async function saveSettings(
           onlinePaymentEnabled: input.onlinePaymentEnabled,
           defaultPaymentMethod: input.defaultPaymentMethod,
           defaultBankAccountId: input.defaultBankAccountId ?? null,
+          receiptAutoNumber: input.receiptAutoNumber,
+          receiptPrefix: input.receiptPrefix ?? null,
+          receiptNextNo: input.receiptNextNo,
+          receiptFooter: input.receiptFooter ?? null,
         },
         z.object({ id: z.string().uuid() }),
       );

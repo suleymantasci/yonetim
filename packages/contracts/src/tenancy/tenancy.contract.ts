@@ -98,6 +98,13 @@ export const tenantSettingsSave = z.object({
   defaultPaymentMethod: z.enum(["bank_transfer", "cash", "card"]).default("bank_transfer"),
   /** Varsayılan kasa/banka hesabı — nakit dışı tahsilatta önceden seçilir. */
   defaultBankAccountId: z.string().uuid().nullish(),
+
+  /** Makbuz: numara elle girilmezse önek + sıradaki numara verilir. */
+  receiptAutoNumber: z.coerce.boolean().default(false),
+  receiptPrefix: z.string().trim().max(10).nullish(),
+  receiptNextNo: z.coerce.number().int().min(1).max(99_999_999).default(1),
+  /** Makbuzun altına basılan not (ör. "Bu makbuz yönetim adına düzenlenmiştir"). */
+  receiptFooter: z.string().trim().max(300).nullish(),
 });
 
 export type TenantSettingsSave = z.infer<typeof tenantSettingsSave>;

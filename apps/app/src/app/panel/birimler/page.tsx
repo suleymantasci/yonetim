@@ -6,6 +6,7 @@ import {
   UNIT_SORT_KEYS,
   UNIT_TYPES,
   unitListResponse,
+  debtTypeList,
 } from "@yonetim/contracts";
 import { landShareTotalLooksWrong } from "@yonetim/dues";
 import {
@@ -30,6 +31,7 @@ import {
   type SearchParamsInput,
 } from "@/lib/list-params";
 import { UnitsTable, type UnitRowView } from "./units-table";
+import { debtTypeFilter, thresholdFilter, thresholdValue, uuidParam } from "@/lib/debt-filters";
 
 export const dynamic = "force-dynamic";
 
@@ -54,12 +56,13 @@ export default async function UnitsPage({
   const t = await getTranslations("app.units");
   const tCommon = await getTranslations("common");
   const tEnum = await getTranslations("enum");
+  const tLists = await getTranslations("app.lists");
   const fmt = await formatters();
 
   const params = parseListParams(await searchParams, {
     sortableKeys: UNIT_SORT_KEYS,
     defaultSort: "number",
-    filterKeys: ["blok", "tip", "durum"],
+    filterKeys: ["blok", "tip", "durum", "tur", "esik"],
   });
 
   const data = await apiGet(
@@ -67,9 +70,13 @@ export default async function UnitsPage({
       blockId: params.filters.blok,
       type: params.filters.tip,
       status: params.filters.durum,
+      debtTypeId: uuidParam(params.filters.tur),
+      minOutstanding: thresholdValue(params.filters.esik),
     })}`,
     unitListResponse,
   );
+  const debtTypes = await apiGet("/v1/panel/debt-types", debtTypeList).catch(() => ({ rows: [] }));
+  const fmt2 = await formatters();
   const { from, to, pageCount } = pageRange(params, data.meta.total);
 
   // Hiç birim yoksa (çöp kutusu dahil) eğitici boş durum göster (SPEC 11.2).
@@ -253,10 +260,17 @@ export default async function UnitsPage({
             options: [
               { value: "", label: t("allStatuses") },
               { value: "borclu", label: t("filterInDebt") },
+              { value: "borcsuz", label: tLists("noDebt") },
               { value: "bos", label: tEnum("occupancy.vacant") },
               { value: "muaf", label: t("duesExempt") },
             ],
           },
+          debtTypeFilter(debtTypes.rows, params.filters.tur, { label: tLists("debtType"), all: tLists("allDebtTypes") }),
+          thresholdFilter(
+            params.filters.esik,
+            { label: tLists("threshold"), all: tLists("anyAmount"), atLeast: (amount) => tLists("atLeast", { amount }) },
+            fmt2.money,
+          ),
         ]}
         trailing={
           <Link

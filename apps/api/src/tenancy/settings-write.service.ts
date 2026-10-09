@@ -77,6 +77,17 @@ export class SettingsWriteService {
           method: dto.defaultPaymentMethod,
           bankAccountId: dto.defaultBankAccountId ?? null,
         },
+        receipt: {
+          auto: dto.receiptAutoNumber,
+          prefix: dto.receiptPrefix || null,
+          // Sıradaki numara geriye çekilemez: verilmiş makbuz numarası
+          // tekrar kullanılmasın.
+          nextNo: Math.max(
+            dto.receiptNextNo,
+            Number(((previous.receipt ?? {}) as { nextNo?: number }).nextNo ?? 1),
+          ),
+          footer: dto.receiptFooter || null,
+        },
         invoiceInfo: {
           title: dto.invoiceTitle ?? null,
           taxNumber: dto.invoiceTaxNumber ?? null,

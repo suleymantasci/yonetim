@@ -2,7 +2,7 @@ import { Plus, Siren, Users } from "lucide-react";
 import Link from "@/components/link";
 import { getTranslations } from "next-intl/server";
 
-import { residentListResponse, RESIDENT_SORT_KEYS } from "@yonetim/contracts";
+import { residentListResponse, RESIDENT_SORT_KEYS, debtTypeList } from "@yonetim/contracts";
 import type { Role } from "@yonetim/core";
 import {
   Alert,
@@ -19,6 +19,7 @@ import { apiGet } from "@/lib/api/server";
 import { requirePermission } from "@/lib/context";
 import { toListQuery } from "@/lib/api/list";
 import { formatters } from "@/lib/format";
+import { debtTypeFilter, thresholdFilter, thresholdValue, uuidParam } from "@/lib/debt-filters";
 import { memberScopeFromParam, memberScopeOptions } from "@/lib/member-scope";
 import {
   buildListHref,
@@ -43,12 +44,14 @@ export default async function ResidentsPage({
   const tCommon = await getTranslations("common");
   const tEnum = await getTranslations("enum");
   const tMember = await getTranslations("app.memberScope");
+  const tLists = await getTranslations("app.lists");
+  const debtTypes = await apiGet("/v1/panel/debt-types", debtTypeList).catch(() => ({ rows: [] }));
   const fmt = await formatters();
 
   const params = parseListParams(await searchParams, {
     sortableKeys: RESIDENT_SORT_KEYS,
     defaultSort: "name",
-    filterKeys: ["blok", "rol", "durum", "uye"],
+    filterKeys: ["blok", "rol", "durum", "uye", "tur", "esik"],
   });
 
   // KVKK md.12 erişim kaydını artık API yazıyor: kayıt, uçtan **dönen**
@@ -63,7 +66,11 @@ export default async function ResidentsPage({
           ? "inDebt"
           : params.filters.durum === "coklu"
             ? "multiUnit"
-            : undefined,
+            : params.filters.durum === "borcsuz"
+              ? "noDebt"
+              : undefined,
+      debtTypeId: uuidParam(params.filters.tur),
+      minOutstanding: thresholdValue(params.filters.esik),
       member: params.filters.uye ? memberScopeFromParam(params.filters.uye) : undefined,
     })}`,
     residentListResponse,
@@ -204,6 +211,12 @@ export default async function ResidentsPage({
               ).map((role) => ({ value: role, label: tEnum(`role.${role}`) })),
             ],
           },
+          debtTypeFilter(debtTypes.rows, params.filters.tur, { label: tLists("debtType"), all: tLists("allDebtTypes") }),
+          thresholdFilter(
+            params.filters.esik,
+            { label: tLists("threshold"), all: tLists("anyAmount"), atLeast: (amount) => tLists("atLeast", { amount }) },
+            fmt.money,
+          ),
           {
             param: "uye",
             label: tMember("label"),
@@ -217,6 +230,7 @@ export default async function ResidentsPage({
             options: [
               { value: "", label: t("allStatuses") },
               { value: "borclu", label: t("filterInDebt") },
+              { value: "borcsuz", label: tLists("noDebt") },
               { value: "coklu", label: t("filterMultiUnit") },
             ],
           },

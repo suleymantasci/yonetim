@@ -154,6 +154,7 @@ export const NAV_ITEMS: NavItem[] = [
     group: "property",
     badge: "pendingAccessRequests",
   },
+  { href: "/panel/listeler", key: "lists", permission: "resident:read", group: "property" },
   { href: "/panel/gecis", key: "migration", permission: "unit:write", group: "property" },
   { href: "/panel/aidat", key: "duesPlans", permission: "dues:read", group: "finance" },
   { href: "/panel/borclar", key: "debts", permission: "debt:read", group: "finance" },

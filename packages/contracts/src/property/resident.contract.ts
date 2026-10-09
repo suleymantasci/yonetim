@@ -73,7 +73,11 @@ export const residentListQuery = listQuery.extend({
   blockId: uuid.optional(),
   role: residentRole.optional(),
   /** `inDebt` = açık bakiyesi olanlar, `multiUnit` = birden çok birimde ilişkisi olanlar. */
-  status: z.enum(["inDebt", "multiUnit"]).optional(),
+  status: z.enum(["inDebt", "noDebt", "multiUnit"]).optional(),
+  /** Bakiye yalnız bu borç türünden hesaplanır. */
+  debtTypeId: uuid.optional(),
+  /** Kalan borç alt sınırı (kuruş). */
+  minOutstanding: z.coerce.number().int().min(0).optional(),
   /** Üye kapsamı — eski malik/kiracılar dahil (bkz. `MEMBER_SCOPES`). */
   member: memberScope.optional(),
 });

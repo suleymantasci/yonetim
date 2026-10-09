@@ -17,7 +17,7 @@ Durum: ✓ var · ◐ kısmen · ✗ yok · ⏸ beklemede (entegrasyon/maliyet) 
 | İş takibi (iş alanı/türü, görevli, teslim tarihi, durumlar) | ✓ `/panel/talepler` (kategori, atama, SLA, durum) | |
 | Program ayarları → genel bilgiler, fatura | ✓ `/panel/ayarlar` | |
 | Program ayarları → **makbuz ayarları** | ✗ | Y1 |
-| Program ayarları → **sakinlerle paylaşılan IBAN** | ✗ | Y1 |
+| Program ayarları → sakinlerle paylaşılan IBAN | ✓ `/odeme` (aidat hesaplarının açık IBAN'ı, erişim denetim kaydı) | |
 | Program ayarları → e-posta / SMS / sanal POS | ⏸ | §3 |
 | Web sitesi yönetimi | ◐ landing | — (ürün kararı) |
 | Yardım (videolar) | ◐ `/panel/bilgi-bankasi` | |
@@ -99,8 +99,8 @@ Tamamı ✓ (2026-10-08 analizi §6). Banka entegrasyon tanımları ⏸.
 
 ## 2. Yapılacaklar (sırayla)
 
-- [ ] **Y1 — Ayarlar:** makbuz ayarları (makbuz başlığı, alt not, numara öneki ve sıradaki numara; tahsilatta otomatik makbuz no), sakinlerle paylaşılan IBAN (portalde "nasıl öderim" kartı).
-- [ ] **Y2 — Üye listeleri:** sakin/daire listelerinde borç türü ve borç eşiği (alacaklı / borcu olmayan / ≥ tutar) süzgeçleri; ikamet edenler listesi; araç plaka listesi; TC kimlik listesi (yönetici, denetim kaydı); boş/dolu listesi (malik, kiracı, bakiye); detaylı üye listesi (sütun seçmeli CSV).
+- [x] **Y1 — Ayarlar:** makbuz ayarları (otomatik numara: önek + sıradaki no, geri çekilemez; makbuz alt notu toplu makbuz PDF'inde). IBAN paylaşımı zaten vardı.
+- [x] **Y2 — Üye listeleri:** (`/panel/listeler`, sakin/daire süzgeçleri) sakin/daire listelerinde borç türü ve borç eşiği (alacaklı / borcu olmayan / ≥ tutar) süzgeçleri; ikamet edenler listesi; araç plaka listesi; TC kimlik listesi (yönetici, denetim kaydı); boş/dolu listesi (malik, kiracı, bakiye); detaylı üye listesi (sütun seçmeli CSV).
 - [ ] **Y3 — Toplu bildirim:** metin girerek, borç durumu bildir, maliklere kiracı borcu bildir, giriş bilgisi gönder, e-postayla hesap özeti / borç dökümü; parametreler (`{ad}` `{daire}` `{borc}` `{link}`), kapsam süzgeci, önizleme; kanal: uygulama içi + e-posta (SMS/WhatsApp seçeneği ayar yapılınca açılır).
 - [ ] **Y4 — Ödenecekler:** borç listesi (gider/firma/personel, bekleyen/ödenmiş); tekrarlayan (ileri tarihli) faturalar — her ay kendiliğinden ödenecek gider kaydı açan tanım + iş.
 - [ ] **Y5 — Kasa:** banka EFT/havale talimatı (firma/personel seç, IBAN, tutar → talimat listesi PDF); dönem kilidi (seçilen tarih ve öncesindeki finans hareketleri değiştirilemez).

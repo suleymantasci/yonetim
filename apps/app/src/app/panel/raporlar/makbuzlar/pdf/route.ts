@@ -1,6 +1,6 @@
 import { getTranslations } from "next-intl/server";
 
-import { receiptListResponse } from "@yonetim/contracts";
+import { receiptListResponse, tenantSettingsResponse } from "@yonetim/contracts";
 
 import { apiGet, toQuery } from "@/lib/api/server";
 import type { Block } from "@/lib/pdf/report-pdf";
@@ -20,10 +20,15 @@ export const { GET, POST } = pdfRoute(async ({ params, f, day }) => {
   const tEnum = await getTranslations("enum");
   const { from, to } = parseRange(params);
   const member = memberScopeFromParam(params.uye);
-  const data = await apiGet(
-    `/v1/panel/reports/debts/receipts?${toQuery({ from, to, member: member === "all" ? undefined : member })}`,
-    receiptListResponse,
-  );
+  const [data, settings] = await Promise.all([
+    apiGet(
+      `/v1/panel/reports/debts/receipts?${toQuery({ from, to, member: member === "all" ? undefined : member })}`,
+      receiptListResponse,
+    ),
+    // Makbuz alt notu site ayarında; ayarları okuyamayan rol notsuz basar.
+    apiGet("/v1/panel/settings", tenantSettingsResponse).catch(() => null),
+  ]);
+  const footer = ((settings?.settings.receipt ?? {}) as { footer?: string | null }).footer ?? null;
 
   const receipts: Block[] = data.rows.flatMap((r): Block[] => [
     { type: "heading", text: td("receiptHeading", { no: r.receiptNo ?? "—" }) },
@@ -40,6 +45,7 @@ export const { GET, POST } = pdfRoute(async ({ params, f, day }) => {
         { kind: "grand" as const, cells: [td("amount"), f.money(r.amountMinor)] },
       ],
     },
+    ...(footer ? [{ type: "paragraph" as const, text: footer, muted: true }] : []),
     { type: "signatures", labels: [td("receivedBy")], caption: "" },
   ]);
 

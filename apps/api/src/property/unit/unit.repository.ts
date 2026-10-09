@@ -199,12 +199,15 @@ export class UnitRepository {
     if (q.status === "muaf") conditions.push(eq(units.duesExempt, true));
     if (q.status === "bos")
       conditions.push(sql`${units.ownershipType}::text = 'vacant'`);
-    if (q.status === "borclu") {
-      conditions.push(
-        sql`EXISTS (SELECT 1 FROM debts d WHERE d.unit_id = ${units.id}
-              AND d.deleted_at IS NULL AND d.status NOT IN ('paid','written_off'))`,
-      );
-    }
+    // Kalan borç (isteğe göre tek borç türü) — borçlu / borçsuz / eşik.
+    const typeSql = q.debtTypeId ? sql`AND d.debt_type_id = ${q.debtTypeId}` : sql``;
+    const remaining = sql`COALESCE((SELECT SUM(d.amount_kurus + d.late_fee_kurus - d.paid_kurus) FROM debts d
+      WHERE d.unit_id = ${units.id} AND d.deleted_at IS NULL
+        AND d.status NOT IN ('paid','written_off','cancelled') ${typeSql}), 0)`;
+    if (q.status === "borclu") conditions.push(sql`${remaining} > 0`);
+    if (q.status === "borcsuz") conditions.push(sql`${remaining} <= 0`);
+    if (q.minOutstanding !== undefined && q.minOutstanding > 0)
+      conditions.push(sql`${remaining} >= ${q.minOutstanding}`);
     return and(...conditions);
   }
 

@@ -45,7 +45,11 @@ export const unitListQuery = listQuery.extend({
   blockId: uuid.optional(),
   type: unitType.optional(),
   /** `muaf` aidat muafı · `bos` boş daire · `borclu` açık borcu olan. */
-  status: z.enum(["all", "muaf", "bos", "borclu"]).default("all"),
+  status: z.enum(["all", "muaf", "bos", "borclu", "borcsuz"]).default("all"),
+  /** Yalnız bu borç türünün kalanına bakılır (borçlu / borçsuz / eşik). */
+  debtTypeId: uuid.optional(),
+  /** Kalan borç alt sınırı (kuruş). */
+  minOutstanding: z.coerce.number().int().min(0).optional(),
 });
 
 export type UnitListQuery = z.infer<typeof unitListQuery>;

@@ -15,6 +15,8 @@ import { UnitRepository } from "./unit/unit.repository";
 import { UnitService } from "./unit/unit.service";
 import { LettersController } from "./letters/letters.controller";
 import { LettersService } from "./letters/letters.service";
+import { ListsController } from "./lists/lists.controller";
+import { ListsService } from "./lists/lists.service";
 import { UnitExtrasController, UnitExtrasService } from "./unit/unit-extras.controller";
 
 /**
@@ -22,9 +24,10 @@ import { UnitExtrasController, UnitExtrasService } from "./unit/unit-extras.cont
  * A1'de blok + birim, A3'te sakin; sayaç Track E'de eklenir.
  */
 @Module({
-  controllers: [UnitExtrasController, UnitController, ResidentController, PortalController, LettersController],
+  controllers: [ListsController, UnitExtrasController, UnitController, ResidentController, PortalController, LettersController],
   providers: [
     LettersService,
+    ListsService,
     UnitExtrasService,
     UnitService,
     UnitRepository,
