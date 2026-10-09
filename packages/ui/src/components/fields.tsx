@@ -9,6 +9,7 @@ import {
 import { isValidIban, isValidTckn, normalizePhone } from "@yonetim/core";
 
 import { cn } from "../cn";
+import { Select } from "./input";
 
 /**
  * Alan bileşenleri — GAP 4.3.5 / 4.6.
@@ -447,7 +448,7 @@ export function PhoneInput({
   return (
     <div>
       <div className="flex gap-2">
-        <select
+        <Select
           value={dial}
           onChange={(event) => setDial(event.target.value)}
           disabled={disabled}
@@ -459,7 +460,7 @@ export function PhoneInput({
               +{country.dial} {country.code}
             </option>
           ))}
-        </select>
+        </Select>
         <input
           id={id}
           type="tel"
@@ -759,13 +760,13 @@ export function Combobox({
         aria-invalid={invalid || undefined}
         className={cn(
           fieldBase,
-          "flex items-center justify-between gap-2 text-left",
+          "flex h-10 items-center justify-between gap-2 rounded-lg pr-2.5 text-left",
           selected.length === 0 && "text-fg-subtle",
           invalid && invalidRing,
         )}
       >
         <span className="truncate">{summary}</span>
-        <ChevronDown aria-hidden className="h-4 w-4 shrink-0 text-fg-subtle" />
+        <ChevronDown aria-hidden className={cn("h-4 w-4 shrink-0 text-fg-subtle transition-transform motion-reduce:transition-none", open && "rotate-180")} />
       </button>
 
       {open ? (

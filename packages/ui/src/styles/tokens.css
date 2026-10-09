@@ -692,3 +692,23 @@
 .skip-link:focus-visible {
   transform: none;
 }
+
+/* Shared native select: theme-aware chevron, exactly 10px from the right edge.
+   Keep browser selection, form validation and mobile pickers intact. */
+@layer components {
+  .ui-select:not([multiple]):not([size]) {
+    background-image:
+      linear-gradient(45deg, transparent 50%, var(--t-fg-subtle) 50%),
+      linear-gradient(135deg, var(--t-fg-subtle) 50%, transparent 50%);
+    background-position: right 15px center, right 10px center;
+    background-size: 5px 5px;
+    background-repeat: no-repeat;
+  }
+}
+
+@media (forced-colors: active) {
+  .ui-select:not([multiple]):not([size]) {
+    appearance: auto;
+    background-image: none;
+  }
+}

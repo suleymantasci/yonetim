@@ -34,7 +34,12 @@ export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTex
 }
 
 export function Select({ className, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
-  return <select className={cn(field, "h-10", className)} {...props} />;
+  return (
+    <select
+      className={cn(field, "h-10", className, !props.multiple && !props.size && "ui-select appearance-none pr-9")}
+      {...props}
+    />
+  );
 }
 
 export function Field({

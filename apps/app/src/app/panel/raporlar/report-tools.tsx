@@ -3,9 +3,8 @@ import type { ReactNode } from "react";
 
 import { Input, Select } from "@yonetim/ui";
 
-import Link from "@/components/link";
 import { memberScopeOptions } from "@/lib/member-scope";
-import { SubnavScroll } from "./subnav-scroll";
+import { ReportNavigator } from "./report-navigator";
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -119,28 +118,63 @@ export async function ReportsSubnav({ active }: { active: ReportTab }) {
     { key: "memberNotes", href: "/panel/raporlar/uye-notlari" },
     { key: "accountCodes", href: "/panel/raporlar/muhasebe-kodlari" },
   ];
+  const categories: { key: string; tabs: ReportTab[] }[] = [
+    {
+      key: "financial",
+      tabs: [
+        "incomeStatement",
+        "balanceSheet",
+        "operatingBook",
+        "monthly",
+        "accountCodes",
+      ],
+    },
+    {
+      key: "cash",
+      tabs: ["cashDays", "collections", "expenseDetail", "receipts"],
+    },
+    {
+      key: "residents",
+      tabs: [
+        "unitStatements",
+        "debtMatrix",
+        "openItems",
+        "debtRuns",
+        "memberNotes",
+      ],
+    },
+    {
+      key: "management",
+      tabs: ["activity", "auditReport", "messages", "deleted"],
+    },
+  ];
   return (
-    <nav
-      id="reports-subnav"
-      aria-label={t("navLabel")}
-      className="relative mb-4 flex gap-1 overflow-x-auto border-b border-border print:hidden"
-    >
-      <SubnavScroll id="reports-subnav" />
-      {items.map((item) => (
-        <Link
-          key={item.key}
-          href={item.href}
-          aria-current={item.key === active ? "page" : undefined}
-          className={`whitespace-nowrap border-b-2 px-3 py-2 text-sm font-medium ${
-            item.key === active
-              ? "border-primary text-fg"
-              : "border-transparent text-fg-subtle hover:text-fg"
-          }`}
-        >
-          {t(`tab.${item.key}`)}
-        </Link>
-      ))}
-    </nav>
+    <ReportNavigator
+      key={active}
+      active={active}
+      summary={{
+        key: "summary",
+        href: "/panel/raporlar",
+        label: t("tab.summary"),
+      }}
+      groups={categories.map((category) => ({
+        key: category.key,
+        label: t(`category.${category.key}`),
+        items: category.tabs.map((key) => ({
+          key,
+          href: items.find((item) => item.key === key)!.href,
+          label: t(`tab.${key}`),
+        })),
+      }))}
+      labels={{
+        nav: t("navLabel"),
+        choose: t("chooseReport"),
+        close: t("closeDirectory"),
+        search: t("searchReports"),
+        empty: t("noReportsFound"),
+        clear: t("clearSearch"),
+      }}
+    />
   );
 }
 
@@ -149,7 +183,11 @@ export async function ReportsSubnav({ active }: { active: ReportTab }) {
  * raporlarda aynı seçenekler (Yönetimcell'deki "Tümü / Aktif malik ve
  * kiracılar / … / Eski kiracılar").
  */
-export async function MemberScopeSelect({ value }: { value: string | undefined }) {
+export async function MemberScopeSelect({
+  value,
+}: {
+  value: string | undefined;
+}) {
   const tMember = await getTranslations("app.memberScope");
   return (
     <label className="text-xs text-fg-subtle">

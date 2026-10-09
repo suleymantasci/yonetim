@@ -4,6 +4,7 @@ import { Search, X } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { cn } from "../cn";
+import { Select } from "./input";
 
 /**
  * Liste araç çubuğu — GAP 4.3.1 (arama + filtre çipleri).
@@ -237,12 +238,12 @@ export function ToolbarSelect({
   return (
     <label className="inline-flex items-center gap-1.5 text-xs text-fg-muted">
       <span className="sr-only sm:not-sr-only">{label}</span>
-      <select
+      <Select
         value={value}
         onChange={(event) => onChange(event.target.value)}
         aria-label={label}
         className={cn(
-          "rounded-lg border border-border-strong bg-surface px-2 py-2 text-sm text-fg",
+          "h-9 w-auto max-w-full px-2",
           "focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/40",
         )}
       >
@@ -251,7 +252,7 @@ export function ToolbarSelect({
             {option.label}
           </option>
         ))}
-      </select>
+      </Select>
     </label>
   );
 }

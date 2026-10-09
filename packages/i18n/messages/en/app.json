@@ -4050,6 +4050,17 @@
     "deleted": "Draft deleted."
   },
   "reportsHub": {
+    "chooseReport": "Choose report",
+    "closeDirectory": "Close directory",
+    "searchReports": "Search reports…",
+    "noReportsFound": "No reports match your search.",
+    "clearSearch": "Clear search",
+    "category": {
+      "financial": "Financial statements",
+      "cash": "Cash and transactions",
+      "residents": "Members and debts",
+      "management": "Management and records"
+    },
     "navLabel": "Reports",
     "tab": {
       "summary": "Summary",

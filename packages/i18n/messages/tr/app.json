@@ -4050,6 +4050,17 @@
     "deleted": "Taslak silindi."
   },
   "reportsHub": {
+    "chooseReport": "Rapor seç",
+    "closeDirectory": "Listeyi kapat",
+    "searchReports": "Rapor ara…",
+    "noReportsFound": "Aramanızla eşleşen rapor bulunamadı.",
+    "clearSearch": "Aramayı temizle",
+    "category": {
+      "financial": "Mali tablolar",
+      "cash": "Kasa ve hareketler",
+      "residents": "Üye ve borçlar",
+      "management": "Yönetim ve kayıtlar"
+    },
     "navLabel": "Raporlar",
     "tab": {
       "summary": "Özet",

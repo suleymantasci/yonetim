@@ -311,6 +311,8 @@ Compact, clear actions. Shared primary buttons use `primary`/`primary-fg`, 8px c
 
 40px controls, 8px corners, 12px horizontal padding, `surface` background and `border-strong`. Hover strengthens the boundary, focus uses the primary border and a ring at 40% opacity, and invalid fields use the danger border. Labels, hints and error text remain associated with the field. Disabled controls use `surface-sunken` and subtle foreground. Textareas keep their own minimum height.
 
+Single-choice selects share a theme-aware chevron inset 10px from the right edge, with reserved text padding. Native selection and mobile pickers remain available; multi-select/listbox fields and forced-colors mode retain native indicators. Searchable comboboxes use the same inset and 8px corners.
+
 ### Cards / Containers
 
 Shared cards use a 1px border, surface background, 8px corners and low shadow. Header/body/footer use 16px padding with dividing borders where present. Marketing containers inherit the scoped small-corner and flatter treatment; do not add nested decorative cards merely to fill space.
@@ -322,6 +324,8 @@ Pill badges use 10px/2px padding, 12px medium text and semantic soft/foreground 
 ### Navigation
 
 Marketing header uses a 72px row and all six desktop links from 1024px; its mobile menu appears below 1024px, and desktop sign-in also starts at 1024px. At 1024–1279px the wordmark is 22px, nav/action labels are 12px, link padding and row/control gaps tighten, and the trial arrow is hidden. Locale, theme, sign-in and trial controls remain alongside all six links. The final 1024px measurement places nav right at 572.55px and actions left at 603.53px in a 1009px client area, with zero horizontal overflow. The panel's active sidebar row uses `selected`, semibold text and a narrow primary marker. URL tabs use a 2px primary underline, foreground text for the active tab and muted text for inactive tabs; counts use tabular figures. Preserve link semantics and current-page announcements.
+
+Reports use a compact current-report bar instead of a horizontally scrolling row of all report names. “Choose report” expands a searchable directory grouped into financial statements, cash/transactions, members/debts and management/records. The summary opens the directory by default; individual reports start collapsed. Preserve report URLs, current-page announcements, keyboard focus and Escape-to-close behavior.
 
 ### Data Tables
 
