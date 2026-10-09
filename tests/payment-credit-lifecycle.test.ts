@@ -168,6 +168,35 @@ describe("collection and advance lifecycle", () => {
     expect(writes[0]!.value.debtorUserId).toBe("owner");
   });
 
+  it("settles the sole active owner's open account before assigning an unspecified payment to the tenant", async () => {
+    const { repo, writes } = repository([
+      [{ id: "unit" }],
+      [occupancy, { ...occupancy, userId: "owner", relation: "owner" }],
+      [{ ...debt, debtorUserId: "owner" }],
+    ]);
+    expect(await repo.collect(payment)).toMatchObject({
+      allocatedMinor: 1_000,
+      creditBalanceMinor: 11_000,
+    });
+    expect(writes[0]!.value.debtorUserId).toBe("owner");
+  });
+
+  it("does not assign an unspecified new payment to the sole former tenant's account", async () => {
+    const { repo, writes } = repository([
+      [{ id: "unit" }],
+      [
+        occupancy,
+        { ...occupancy, userId: "former", endDate: new Date("2025-01-01") },
+      ],
+      [{ ...debt, debtorUserId: "former" }],
+    ]);
+    expect(await repo.collect(payment)).toMatchObject({
+      allocatedMinor: 0,
+      creditBalanceMinor: 12_000,
+    });
+    expect(writes[0]!.value.debtorUserId).toBe("resident");
+  });
+
   it("rejects an account from another unit", async () => {
     const { repo, writes } = repository([
       [{ id: "unit" }],

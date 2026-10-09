@@ -7,7 +7,7 @@ import { createSession } from "@yonetim/auth";
 import { SESSION_COOKIE } from "@yonetim/auth/cookie";
 import {
   bankAccounts, bankTransactions, blocks, closeDb, debts, expenseCategories, expenses, memberships, notifications,
-  payments, sessions, tenants, unitOccupancies, units, users, withBypassRls,
+  paymentAllocations, payments, sessions, tenants, unitOccupancies, units, users, withBypassRls,
 } from "@yonetim/db";
 import { BANK_FIXTURES } from "@yonetim/bank/fixtures";
 
@@ -295,7 +295,7 @@ describe.skipIf(!process.env.INTEGRATION)("banka ekstresi mutabakatı", () => {
     expect(res.body.totals.rows).toBe(6000);
   });
 
-  it("açık borcu olmayan daireye onay tahsilat yazmaz ve hareket yeniden onaylanabilir kalır", async () => {
+  it("açık borcu olmayan daireye onay avans kaydeder ve hareketi sonuçlandırır", async () => {
     if (!apiReachable) return;
     await withBypassRls("t", (tx) => tx.insert(bankTransactions).values({
       tenantId: T, accountId: ACCOUNT, externalId: "DKT-9", direction: "in", amountKurus: 10_000,
@@ -303,7 +303,10 @@ describe.skipIf(!process.env.INTEGRATION)("banka ekstresi mutabakatı", () => {
     }));
     const row = await byRef("DKT-9");
     const res = await call("POST", `/v1/panel/bank/transactions/${row.id}/confirm`, { unitId });
-    expect(res.status).toBe(400); // no_open_debts
-    expect((await byRef("DKT-9")).matchStatus).toBe("unmatched");
+    expect(res.status).toBe(201);
+    expect(await byRef("DKT-9")).toMatchObject({ matchStatus: "manual", matchedPaymentId: res.body.paymentId });
+    const [advance] = await withBypassRls("test:bank-advance", (tx) => tx.select().from(payments).where(eq(payments.id, String(res.body.paymentId))));
+    expect(advance).toMatchObject({ amountKurus: 10_000, debtorUserId: RESIDENT, status: "completed" });
+    expect(await withBypassRls("test:bank-advance", (tx) => tx.select().from(paymentAllocations).where(eq(paymentAllocations.paymentId, advance!.id)))).toHaveLength(0);
   });
 });

@@ -442,6 +442,7 @@ export class DebtWriteRepository {
       const current = active.filter((o) => o.endDate === null);
       const tenants = current.filter((o) => o.relation === "tenant");
       const owners = current.filter((o) => o.relation === "owner");
+      const existingPeople = [...new Set(unitDebts.map((d) => d.debtorUserId))];
       let debtorUserId: string | null;
       if (dto.debtorUserId) {
         if (
@@ -456,6 +457,8 @@ export class DebtWriteRepository {
         current.some((o) => o.userId === dto.payerUserId)
       )
         debtorUserId = dto.payerUserId;
+      else if (existingPeople.length === 1 && (existingPeople[0] === null || current.some((o) => o.userId === existingPeople[0])))
+        debtorUserId = existingPeople[0]!;
       else if (tenants.length === 1) debtorUserId = tenants[0]!.userId;
       else if (owners.length === 1) debtorUserId = owners[0]!.userId;
       else {

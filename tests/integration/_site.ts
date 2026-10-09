@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, sql } from "drizzle-orm";
 
 import { createSession, SESSION_COOKIE } from "@yonetim/auth";
 import {
@@ -117,6 +117,8 @@ export async function createSite(label: string, unitCount = 3): Promise<TestSite
   async function cleanup() {
     const people = [managerId, tenantResidentId, ...ownerIds];
     await withBypassRls(`test:${label}-cleanup`, async (tx) => {
+      // Only this disposable test tenant is removed, including its guarded audit records.
+      await tx.execute(sql`SELECT set_config('app.allow_log_purge', 'on', true)`);
       await tx.delete(sessions).where(inArray(sessions.userId, people));
       await tx.delete(tenants).where(eq(tenants.id, tenantId));
       await tx.delete(users).where(inArray(users.id, people));
