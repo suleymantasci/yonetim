@@ -72,7 +72,8 @@
     "calendar": "Takvim",
     "letters": "Hukuki evrak",
     "knowledge": "Bilgi bankası",
-    "lists": "Üye listeleri"
+    "lists": "Üye listeleri",
+    "bulkNotice": "Toplu bildirim"
   },
   "shell": {
     "trialDaysLeft": "Deneme · {days} gün kaldı",
@@ -4537,5 +4538,72 @@
     "threshold": "Kalan borç",
     "anyAmount": "Tutar fark etmez",
     "atLeast": "{amount} ve üzeri"
+  },
+  "bulkNotice": {
+    "title": "Toplu bildirim",
+    "description": "Seçtiğiniz kişilere tek seferde yazın: serbest metin, borç durumu, maliklere kiracı borcu ya da panele giriş bilgisi. Uygulama içi bildirim ve e-posta ile gider.",
+    "kindLabel": "Bildirim türü",
+    "kind": {
+      "text": "Metin girerek",
+      "debt": "Borç durumu bildir",
+      "tenant_debt": "Maliklere kiracı borcu",
+      "login": "Giriş bilgisi gönder"
+    },
+    "kindHint": {
+      "text": "Süzgece uyan kişilere aynı metin (kişi adıyla) gider. Varsayılan: aktif malik ve kiracılar.",
+      "debt": "Açık borcu olan her kişiye kendi borç toplamı (isteğe bağlı kalem dökümüyle) gider.",
+      "tenant_debt": "Kiracısının (ya da taşınmış kiracısının) ödenmemiş borcu olan dairelerin maliklerine bilgi verilir.",
+      "login": "Kişilere panele nasıl gireceklerini anlatan bağlantı gider; giriş telefon ya da e-postayla kodla yapılır."
+    },
+    "defaults": {
+      "text": {
+        "subject": "{site} yönetiminden duyuru",
+        "body": "Sayın {ad},\n\n\n\n{site} Yönetimi"
+      },
+      "debt": {
+        "subject": "{daire} borç durumu",
+        "body": "Sayın {ad},\n\n{daire} bölümüne ait ödenmemiş borcunuz {borc} tutarındadır. Ödemenizi yönetim hesabına daire numaranızla yapabilirsiniz. Ödediyseniz bu mesajı dikkate almayınız.\n\n{site} Yönetimi"
+      },
+      "tenant_debt": {
+        "subject": "{daire} kiracı borcu hakkında",
+        "body": "Sayın {ad},\n\nMaliki olduğunuz {daire} bölümünde kiracınız {kiraci} adına {borc} tutarında ödenmemiş ortak gider borcu bulunmaktadır. Bilginize sunarız (KMK md.22: kiracı ile malik müteselsilen sorumludur).\n\n{site} Yönetimi"
+      },
+      "login": {
+        "subject": "{site} yönetim paneli giriş bilgisi",
+        "body": "Sayın {ad},\n\n{site} panelinde borç ve ödemelerinizi, duyuruları görebilir; talep oluşturabilirsiniz. Giriş için {link} adresine gidin ve kayıtlı telefonunuz ya da e-postanızla gelen kodu girin.\n\n{site} Yönetimi"
+      }
+    },
+    "recipientsTitle": "Alıcılar · {count}",
+    "block": "Blok",
+    "allBlocks": "Tüm bloklar",
+    "activeDefault": "Aktif malik ve kiracılar (varsayılan)",
+    "debtType": "Borç türü",
+    "allTypes": "Tüm türler",
+    "periodUntil": "Dönem (ve öncesi)",
+    "minAmount": "En az borç (₺)",
+    "loadRecipients": "Alıcıları getir",
+    "noRecipients": "Bu süzgeçle alıcı yok.",
+    "selectAll": "Tümünü seç",
+    "tenantOf": "kiracı: {name}",
+    "noEmail": "e-posta yok",
+    "messageTitle": "Mesaj",
+    "placeholders": "Yer tutucular: {keys}",
+    "subject": "Konu",
+    "body": "Metin",
+    "includeItems": "E-postaya borç kalemleri dökümünü ekle",
+    "channels": "Kanallar",
+    "channel": {
+      "in_app": "Uygulama içi bildirim",
+      "email": "E-posta",
+      "sms": "SMS",
+      "whatsapp": "WhatsApp"
+    },
+    "emailCount": "{count} kişinin e-postası var",
+    "pendingIntegration": "entegrasyon bekleniyor",
+    "send": "Gönder ({count})",
+    "sent": "{recipients} kişiye gönderildi (uygulama içi {inApp}, e-posta {email}).",
+    "resultDetail": "{recipients} alıcı · uygulama içi {inApp} · e-posta gönderildi {email}, e-postası olmayan {skipped}, başarısız {failed}.",
+    "invalid": "Seçimleri kontrol edin.",
+    "failed": "Gönderilemedi."
   }
 }

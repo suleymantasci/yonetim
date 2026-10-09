@@ -72,7 +72,8 @@
     "calendar": "Calendar",
     "letters": "Legal documents",
     "knowledge": "Knowledge base",
-    "lists": "Member lists"
+    "lists": "Member lists",
+    "bulkNotice": "Bulk notice"
   },
   "shell": {
     "trialDaysLeft": "Trial · {days} days left",
@@ -4537,5 +4538,72 @@
     "threshold": "Remaining debt",
     "anyAmount": "Any amount",
     "atLeast": "{amount} or more"
+  },
+  "bulkNotice": {
+    "title": "Bulk notice",
+    "description": "Write to the selected people at once: free text, debt status, tenant debt to owners, or panel sign-in info. Sent as in-app notification and email.",
+    "kindLabel": "Notice type",
+    "kind": {
+      "text": "Free text",
+      "debt": "Debt status",
+      "tenant_debt": "Tenant debt to owners",
+      "login": "Sign-in info"
+    },
+    "kindHint": {
+      "text": "Everyone matching the filter gets the same text (with their name). Default: active owners and tenants.",
+      "debt": "Each person with open debt gets their own total (optionally with item list).",
+      "tenant_debt": "Owners of units whose (current or former) tenant has unpaid debt are informed.",
+      "login": "People get a link explaining how to sign in; sign-in uses a code sent to their phone or email."
+    },
+    "defaults": {
+      "text": {
+        "subject": "Announcement from {site}",
+        "body": "Dear {ad},\n\n\n\n{site} Management"
+      },
+      "debt": {
+        "subject": "{daire} debt status",
+        "body": "Dear {ad},\n\nYour unpaid balance for {daire} is {borc}. Please pay to the management account with your unit number. Ignore this if you have paid.\n\n{site} Management"
+      },
+      "tenant_debt": {
+        "subject": "Tenant debt for {daire}",
+        "body": "Dear {ad},\n\nYour tenant {kiraci} at {daire} has {borc} of unpaid shared costs. For your information.\n\n{site} Management"
+      },
+      "login": {
+        "subject": "{site} panel sign-in",
+        "body": "Dear {ad},\n\nYou can see your debts, payments and announcements and open requests on the {site} panel. Go to {link} and enter the code sent to your registered phone or email.\n\n{site} Management"
+      }
+    },
+    "recipientsTitle": "Recipients · {count}",
+    "block": "Block",
+    "allBlocks": "All blocks",
+    "activeDefault": "Active owners and tenants (default)",
+    "debtType": "Debt type",
+    "allTypes": "All types",
+    "periodUntil": "Period (and before)",
+    "minAmount": "Minimum debt (₺)",
+    "loadRecipients": "Load recipients",
+    "noRecipients": "No recipients for this filter.",
+    "selectAll": "Select all",
+    "tenantOf": "tenant: {name}",
+    "noEmail": "no email",
+    "messageTitle": "Message",
+    "placeholders": "Placeholders: {keys}",
+    "subject": "Subject",
+    "body": "Text",
+    "includeItems": "Add the debt item list to the email",
+    "channels": "Channels",
+    "channel": {
+      "in_app": "In-app notification",
+      "email": "Email",
+      "sms": "SMS",
+      "whatsapp": "WhatsApp"
+    },
+    "emailCount": "{count} have email",
+    "pendingIntegration": "integration pending",
+    "send": "Send ({count})",
+    "sent": "Sent to {recipients} people (in-app {inApp}, email {email}).",
+    "resultDetail": "{recipients} recipients · in-app {inApp} · email sent {email}, no email {skipped}, failed {failed}.",
+    "invalid": "Check the selections.",
+    "failed": "Could not send."
   }
 }

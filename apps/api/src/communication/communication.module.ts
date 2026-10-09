@@ -8,6 +8,7 @@ import { NotificationController } from "./notification.controller";
 import { WhatsappBotService } from "./whatsapp/whatsapp-bot.service";
 import { WhatsappWebhookController } from "./whatsapp/whatsapp-webhook.controller";
 import { MeetingGovernanceService } from "./meeting-governance.service";
+import { BulkNoticeController, BulkNoticeService } from "./bulk-notice.service";
 
 /**
  * `communication` bağlamı — duyuru, anket, mesaj, toplantı (MIMARI-PLAN §6.3).
@@ -19,6 +20,7 @@ import { MeetingGovernanceService } from "./meeting-governance.service";
     CommunicationController,
     NotificationController,
     WhatsappWebhookController,
+    BulkNoticeController,
   ],
   providers: [
     CommunicationService,
@@ -26,6 +28,7 @@ import { MeetingGovernanceService } from "./meeting-governance.service";
     CommunicationRepository,
     MeetingGovernanceService,
     WhatsappBotService,
+    BulkNoticeService,
   ],
   exports: [CommunicationService],
 })

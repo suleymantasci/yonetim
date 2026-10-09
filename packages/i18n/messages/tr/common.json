@@ -200,7 +200,9 @@
       "member_exists": "Bu kişi bu rolde zaten kullanıcı.",
       "team_self": "Kendi rolünüzü değiştiremez ya da kendi erişiminizi kaldıramazsınız.",
       "last_manager": "Sitenin son yöneticisi kaldırılamaz; önce başka bir yönetici ekleyin.",
-      "plate_taken": "Bu plaka başka bir daireye kayıtlı."
+      "plate_taken": "Bu plaka başka bir daireye kayıtlı.",
+      "no_recipients": "Seçili alıcı yok.",
+      "too_many_recipients": "En fazla 2000 alıcıya gönderilebilir."
     }
   },
   "errorPage": {

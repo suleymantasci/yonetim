@@ -200,7 +200,9 @@
       "member_exists": "This person already has this role.",
       "team_self": "You can't change your own role or remove your own access.",
       "last_manager": "The site's last manager can't be removed; add another manager first.",
-      "plate_taken": "This plate is registered to another unit."
+      "plate_taken": "This plate is registered to another unit.",
+      "no_recipients": "No recipients selected.",
+      "too_many_recipients": "At most 2000 recipients."
     }
   },
   "errorPage": {

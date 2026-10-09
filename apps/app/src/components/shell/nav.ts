@@ -181,6 +181,7 @@ export const NAV_ITEMS: NavItem[] = [
     group: "communication",
     audience: ["staff", "resident"],
   },
+  { href: "/panel/bildirim", key: "bulkNotice", permission: "announcement:write", group: "communication" },
   { href: "/panel/anketler", key: "polls", permission: "poll:read", group: "communication" },
   { href: "/panel/toplantilar", key: "meetings", permission: "meeting:read", group: "communication" },
   {
