@@ -30,10 +30,10 @@ const text = (v: string | undefined) => (v ? v.trim().slice(0, 100) || undefined
 const monthParam = (p: Params, key = "ay") => (p[key] && MONTH.test(p[key]!) ? p[key]! : todayIstanbul().slice(0, 7));
 
 async function rangeFilters(from: string, to: string): Promise<FilterField[]> {
-  const t = await getTranslations("app.reportsHub");
+  const tHub = await getTranslations("app.reportsHub");
   return [
-    { name: "from", label: t("from"), type: "date", value: from },
-    { name: "to", label: t("to"), type: "date", value: to },
+    { name: "from", label: tHub("from"), type: "date", value: from },
+    { name: "to", label: tHub("to"), type: "date", value: to },
   ];
 }
 
