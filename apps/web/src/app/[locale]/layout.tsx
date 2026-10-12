@@ -112,6 +112,7 @@ export default async function LocaleLayout({
       className={`${body.variable} ${heading.variable} ${editorial.variable}`}
     >
       <head>
+        <meta name="dijital-asistan-verification" content="VP6Ya4Dz1h0v5B5gILH6dQmgoS_aexZZWVfpUE9MWDs" />
         <style>{`:root{
           --brand-primary:${c.primary};
           --brand-ink:${c.ink};
