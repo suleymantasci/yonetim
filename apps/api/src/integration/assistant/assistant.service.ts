@@ -29,6 +29,7 @@ type Unit = { id: string; number: string; block: string | null; person?: string 
 
 const fail = (status: number, message: string) => new HttpException({ error: { message } }, status);
 const norm = (value: string) => value.toLocaleLowerCase("tr-TR").normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/ı/g, "i").replace(/\s+/g, "").replace(/^0+(?=\d)/, "");
+const words = (value: string) => value.toLocaleLowerCase("tr-TR").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/ı/g, "i").split(/[^a-z0-9]+/).filter(Boolean);
 const money = (kurus: number) => new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY" }).format(kurus / 100);
 const dateText = (value: Date | string) => new Intl.DateTimeFormat("tr-TR", { dateStyle: "medium", timeZone: "Europe/Istanbul" }).format(new Date(value));
 const label = (unit: Unit) => {
@@ -131,7 +132,8 @@ export class AssistantService {
         if (selector.number && norm(row.number) !== norm(selector.number)) continue;
         if (selector.block && norm(row.block ?? "").replace(/blok$/, "") !== norm(selector.block).replace(/blok$/, "")) continue;
         const person = [row.firstName, row.lastName].filter(Boolean).join(" ");
-        if (selector.name && !norm(person).includes(norm(selector.name))) continue;
+        // "ali" → "Mehmet Ali Ayan" evet, "Samet Çalışır" hayır: her aranan kelime bir ad/soyad başı olmalı.
+        if (selector.name && !words(selector.name).every((part) => words(person).some((word) => word.startsWith(part)))) continue;
         if (!result.has(row.id)) result.set(row.id, { id: row.id, number: row.number, block: row.block, ...(selector.name ? { person } : {}) });
       }
       return [...result.values()].slice(0, 11);
