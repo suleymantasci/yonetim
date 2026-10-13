@@ -11,8 +11,10 @@ import {
 } from "@yonetim/ui";
 
 import { AppShell } from "@/components/app-shell";
+import { AssistantScript } from "@/components/assistant/assistant-script";
 import { ScrollMemory } from "@/components/scroll-memory";
 import { audienceOf, navItemsFor } from "@/components/shell/nav";
+import { assistantInstall } from "@/lib/assistant";
 import { requireContext } from "@/lib/context";
 import { getAgendaNotes, getInAppNotifications, getNavBadges } from "@/lib/shell-data";
 
@@ -56,6 +58,7 @@ export default async function PanelLayout({
     canAgenda ? getAgendaNotes() : Promise.resolve(null),
   ]);
 
+  const assistant = assistantInstall();
   return (
     <AppShell
       tenantId={ctx.tenantId}
@@ -78,6 +81,9 @@ export default async function PanelLayout({
       notes={notes}
     >
       <ScrollMemory />
+      {assistant ? (
+        <AssistantScript key={`${ctx.tenantId}:${ctx.userId}`} src={assistant.src} installation={assistant.installation} verification={assistant.verification} />
+      ) : null}
       {children}
       {modal}
     </AppShell>

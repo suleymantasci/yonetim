@@ -86,6 +86,8 @@ services:
       <<: *api-env
       PORT: "3000"
       CORS_ORIGINS: https://${APP_DOMAIN:?zorunlu},https://${SITE_DOMAIN:?zorunlu}
+      # Dijital Asistan veri ucu (docs/entegrasyon/dijital-asistan.md). Boşsa /v1/dijital-asistan 404.
+      DA_SECRET: ${DA_SECRET:-}
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
@@ -130,6 +132,10 @@ services:
       API_INTERNAL_URL: http://api:3000
       NEXT_PUBLIC_BASE_URL: https://${SITE_DOMAIN}
       NEXT_PUBLIC_APP_URL: https://${APP_DOMAIN}
+      # Dijital Asistan script'i; üçü de doluysa panel yükler, CSP bu adrese açılır.
+      DA_ORIGIN: ${DA_ORIGIN:-}
+      DA_INSTALLATION_ID: ${DA_INSTALLATION_ID:-}
+      DA_VERIFICATION: ${DA_VERIFICATION:-}
     depends_on:
       api: { condition: service_healthy }
     networks: [default, traefik-public]
@@ -160,6 +166,13 @@ services:
       - traefik.http.routers.yonetim-web.tls.certresolver=letsencrypt
       - traefik.http.routers.yonetim-web.middlewares=yonetim-auth,yonetim-noindex
       - traefik.http.services.yonetim-web.loadbalancer.server.port=3000
+      # Dijital Asistan tarayıcısı aynı sunucuda çalışıyor: yalnızca sunucunun kendi
+      # adresinden gelen istekler parola/noindex olmadan landing'i okuyabilir.
+      - traefik.http.routers.yonetim-web-crawler.rule=Host(`${SITE_DOMAIN}`) && (ClientIP(`72.62.93.150/32`) || ClientIP(`172.18.0.1/32`))
+      - traefik.http.routers.yonetim-web-crawler.priority=1000
+      - traefik.http.routers.yonetim-web-crawler.entrypoints=websecure
+      - traefik.http.routers.yonetim-web-crawler.tls.certresolver=letsencrypt
+      - traefik.http.routers.yonetim-web-crawler.service=yonetim-web
 
 volumes:
   pgdata:

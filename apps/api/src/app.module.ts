@@ -16,6 +16,7 @@ import { IdentityModule } from "./identity/identity.module";
 import { InsightModule } from "./insight/insight.module";
 import { CommunicationModule } from "./communication/communication.module";
 import { IntegrationModule } from "./integration/integration.module";
+import { AssistantModule } from "./integration/assistant/assistant.module";
 import { TenancyModule } from "./tenancy/tenancy.module";
 import { OperationsModule } from "./operations/operations.module";
 import { PermissionGuard } from "./identity/guards/permission.guard";
@@ -101,6 +102,7 @@ import { PublicModule } from "./public/public.module";
     CommunicationModule,
     TenancyModule,
     IntegrationModule,
+    AssistantModule,
 
     // Dış sözleşme (§9.1) — bağlam değil, istemci ayrımı.
     PublicModule,

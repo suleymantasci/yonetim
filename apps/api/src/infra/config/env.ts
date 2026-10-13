@@ -39,6 +39,12 @@ const envSchema = z.object({
         "FIELD_ENCRYPTION_KEY yeterli entropi taşımıyor; tekrar eden karakterlerden oluşuyor.",
     }),
 
+  /**
+   * Dijital Asistan kurulumunun gizli anahtarı (panel → Kurulum → Uygulama verisi).
+   * Kullanıcının takma adını ve imzayı üretir; boşsa `/v1/dijital-asistan/*` 404 döner.
+   */
+  DA_SECRET: z.string().regex(/^das_[A-Za-z0-9_-]{43}$/).optional(),
+
   /** Worker → api iç çağrıları için paylaşılan sır (§8.1 dördüncü kimlik yolu). */
   INTERNAL_API_TOKEN: z.string().min(16).optional(),
 

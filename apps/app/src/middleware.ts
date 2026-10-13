@@ -3,6 +3,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE } from "@yonetim/auth/cookie";
 import { siteConfig } from "@yonetim/config";
 
+import { assistantOrigin } from "@/lib/assistant";
+
 /**
  * H-6: CSP nonce-based script policy. Her istek için rastgele bir nonce
  * üretilir, `script-src 'self' 'nonce-XXX'` ile yalnız bu nonce'a sahip
@@ -97,20 +99,23 @@ export function middleware(request: NextRequest) {
   // Üretimde CSP'yi uygulayıp geliştirmede `eval`'e izin vererek iki ortamı
   // ayrı tutuyoruz — `unsafe-eval` sadece yerel geliştirmede açılır.
   const isDev = process.env.NODE_ENV !== "production";
+  // Dijital Asistan (DA_ORIGIN): script, stili, oturum/sohbet istekleri ve widget iframe'i.
+  const da = assistantOrigin();
+  const extra = da ? ` ${da}` : "";
   const csp = [
     `default-src 'self'`,
     `base-uri 'self'`,
     `object-src 'none'`,
     `frame-ancestors 'none'`,
     isDev
-      ? `script-src 'self' 'unsafe-inline' 'unsafe-eval'`
-      : `script-src 'self' 'unsafe-inline'`,
-    `style-src 'self' 'unsafe-inline'`,
+      ? `script-src 'self' 'unsafe-inline' 'unsafe-eval'${extra}`
+      : `script-src 'self' 'unsafe-inline'${extra}`,
+    `style-src 'self' 'unsafe-inline'${extra}`,
     `img-src 'self' data: https:`,
     `font-src 'self' data:`,
-    `connect-src 'self' https://*.sentry.io https://*.ingest.sentry.io https://*.cloudflareinsights.com https://*.posthog.com`,
+    `connect-src 'self' https://*.sentry.io https://*.ingest.sentry.io https://*.cloudflareinsights.com https://*.posthog.com${extra}`,
     `form-action 'self'`,
-    `frame-src 'self' https://js.stripe.com`,
+    `frame-src 'self' https://js.stripe.com${extra}`,
     `upgrade-insecure-requests`,
   ].join("; ");
   response.headers.set("Content-Security-Policy", csp);
