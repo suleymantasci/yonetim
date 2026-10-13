@@ -75,7 +75,8 @@ export class AssistantService {
     const staff = !roles.every(isResidentRole);
     if (staff && can("unit:read"))
       tools.push({ name: "ozet", title: "Site özeti", description: "Bağımsız bölüm, sakin, alacak, talep ve bu ayın gider/tahsilat sayıları",
-        keywords: ["özet", "kaç daire", "daire sayısı", "bağımsız bölüm sayısı", "kaç bağımsız bölüm", "sakin sayısı", "kaç sakin", "kaç kişi", "genel durum", "site durumu", "toplam alacak"] });
+        keywords: ["özet", "kaç daire", "daire sayısı", "bağımsız bölüm sayısı", "kaç bağımsız bölüm", "sakin sayısı", "kaç sakin", "kaç kişi", "genel durum", "site durumu", "toplam alacak",
+          "bu ay tahsilat", "bu ayki tahsilat", "tahsilat ne kadar", "toplam tahsilat", "bu ay ne kadar tahsil", "tahsilat oranı"] });
     if (can("expense:read"))
       tools.push({ name: "giderler", title: "Giderler", description: "Dönemin giderleri ve toplamı (varsayılan: bu ay)",
         keywords: ["gider", "giderler", "harcama", "masraf", "fatura", "ne harcandı"], params: { period: "period" } });
