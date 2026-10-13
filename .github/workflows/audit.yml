@@ -1,0 +1,39 @@
+# Bağımlılık denetimi — SPEC Bölüm 21.2 (sıfır kritik açık hedefi).
+#
+# ⚠ BU DOSYA `infra/ci/audit.yml` İLE EŞ TUTULMALI.
+#
+# ci.yml'den ayrıldı: her push'ta ayrı bir job olarak 1 dk faturalanıyordu,
+# oysa sonuç yalnız lockfile değişince ya da yeni bir açık yayımlanınca
+# değişir. Haftalık koşu ikinci durumu yakalıyor.
+name: Audit
+
+on:
+  push:
+    branches: [main]
+    paths: ["pnpm-lock.yaml"]
+  pull_request:
+    paths: ["pnpm-lock.yaml"]
+  schedule:
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  security:
+    name: Bağımlılık denetimi
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      # Sürüm package.json `packageManager` alanından; burada ikinci kez
+      # verilirse action "Multiple versions of pnpm specified" ile duruyor.
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Bilinen güvenlik açıklarını tara
+        run: pnpm audit --audit-level high

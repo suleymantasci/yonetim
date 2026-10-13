@@ -4,10 +4,13 @@
 # İkisinden birini değiştirdiğinizde diğerini de güncelleyin.
 name: CI
 
+# Yalnız doküman değişen push'lar CI dakikası harcamasın (her koşu ~24 dk).
 on:
   push:
     branches: [main]
+    paths-ignore: ["docs/**", "**/*.md"]
   pull_request:
+    paths-ignore: ["docs/**", "**/*.md"]
 
 # PR'da yeni push eskisini iptal eder; main'de etmez — sık push'ta her çalışma
 # iptal ediliyor ve hiçbiri deploy'a ulaşmıyordu. main koşuları sırayla biter
@@ -31,6 +34,11 @@ jobs:
     # metadata yazabilir; bizim için yalnız `contents: read` yeterli.
     permissions:
       contents: read
+      # Son başarılı main koşusunu bulmak için (değişen imajlar adımı).
+      actions: read
+
+    outputs:
+      services: ${{ steps.changes.outputs.services }}
 
     services:
       postgres:
@@ -57,6 +65,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Değişen imajları bulmak için son başarılı koşunun commit'i lazım.
+          fetch-depth: 0
 
       # Sürüm package.json `packageManager` alanından; burada ikinci kez
       # verilirse action "Multiple versions of pnpm specified" ile duruyor.
@@ -69,6 +80,40 @@ jobs:
 
       - name: Bağımlılıkları kur
         run: pnpm install --frozen-lockfile
+
+      - name: Değişen imajlar
+        # İmaj job'ları dakikanın büyük kısmını yiyordu (push başına ~16 dk):
+        # landing (`web`) neredeyse hiç değişmediği halde her push'ta derleniyordu.
+        # Taban, main'deki SON BAŞARILI koşu — yalnız bir önceki push değil:
+        # kırmızı biten bir koşunun derleyemediği imaj bir sonrakinde atlanmasın.
+        # Etkilenen uygulamaları turbo bağımlılık grafiğinden alıyoruz
+        # (packages/i18n değişirse onu kullanan web de derlenir).
+        # Taban bulunamazsa hepsi derlenir.
+        id: changes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          all='["api","worker","app","web"]'
+          if [ -z "$BASE" ]; then
+            BASE=$(gh api "repos/${{ github.repository }}/actions/workflows/ci.yml/runs?branch=main&event=push&status=success&per_page=1" \
+              --jq '.workflow_runs[0].head_sha // empty' || true)
+          fi
+          if [ -z "$BASE" ] || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            echo "Taban commit yok — tüm imajlar derlenecek."
+            echo "services=$all" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "Taban: $BASE"
+          apps=$(pnpm exec turbo ls --filter="...[$BASE...HEAD]" --output=json \
+            | jq -c '[.packages.items[] | select(.path | startswith("apps/")) | .path | ltrimstr("apps/")]')
+          # Dockerfile değişikliği turbo grafiğinde görünmüyor.
+          docker=$(git diff --name-only "$BASE" HEAD -- infra/docker \
+            | sed -nE 's#^infra/docker/Dockerfile\.(api|worker|app|web)$#\1#p' | jq -R . | jq -sc .)
+          services=$(jq -nc --argjson a "$apps" --argjson d "$docker" --argjson all "$all" \
+            '$all | map(select(. as $s | ($a + $d) | index($s)))')
+          echo "Derlenecek imajlar: $services"
+          echo "services=$services" >> "$GITHUB_OUTPUT"
 
       - name: Tip kontrolü (paketler + testler)
         run: pnpm exec tsc --noEmit -p tsconfig.check.json
@@ -128,32 +173,22 @@ jobs:
         # betikler bu adım olmadan hiç lint'lenmiyordu.
         run: pnpm lint
 
+      # Next uygulamaları imaj job'unda bir kez daha derleniyor. app/web
+      # etkilenmediyse (yalnız api/worker değişikliği) bu iki adım boşa
+      # dakika harcıyordu; PR'da her zaman koşar.
       - name: Uygulamaları derle
+        if: github.event_name == 'pull_request' || contains(steps.changes.outputs.services, '"app"') || contains(steps.changes.outputs.services, '"web"')
         run: pnpm build
 
       - name: Bundle bütçesi (§12.3 — 250 kB)
         # Derleme sonrası çalışır: manifest'e ihtiyaç duyuyor. Bu kapı olmadan
         # `packages/ui` barrel'ına eklenen tek bir `export *` satırı pazarlama
         # sitesinin ilk yükünü 137 kB'den 184 kB'ye çıkarmıştı — kimse görmedi.
+        if: github.event_name == 'pull_request' || contains(steps.changes.outputs.services, '"app"') || contains(steps.changes.outputs.services, '"web"')
         run: node scripts/bundle-budget.mjs
 
-  security:
-    name: Bağımlılık denetimi
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-      # Sürüm package.json `packageManager` alanından; burada ikinci kez
-      # verilirse action "Multiple versions of pnpm specified" ile duruyor.
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      # SPEC Bölüm 21.2: sıfır kritik güvenlik açığı hedefi.
-      - name: Bilinen güvenlik açıklarını tara
-        run: pnpm audit --audit-level high
+  # Bağımlılık denetimi (pnpm audit) ayrı iş akışında: .github/workflows/audit.yml
+  # (haftalık + lockfile değişince) — her push'ta ayrı job 1 dk yiyordu.
 
   # ---------------------------------------------------------------------------
   # Test ortamı: main'e her push'ta imajlar derlenip vekil.tasci.cloud'a çıkar.
@@ -163,7 +198,8 @@ jobs:
   images:
     name: İmaj (${{ matrix.service }})
     needs: quality
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # Hiçbir imaj etkilenmediyse job da deploy da atlanır.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.quality.outputs.services != '[]'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -172,7 +208,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        service: [api, worker, app, web]
+        service: ${{ fromJSON(needs.quality.outputs.services) }}
     env:
       IMAGE: ghcr.io/${{ github.repository }}
       PUBLIC_BASE_URL: https://vekil.tasci.cloud
