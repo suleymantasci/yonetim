@@ -161,6 +161,9 @@ importers:
       '@yonetim/notifications':
         specifier: workspace:*
         version: link:../../packages/notifications
+      '@yonetim/panel-messages':
+        specifier: workspace:*
+        version: link:../../packages/panel-messages
       '@yonetim/payment':
         specifier: workspace:*
         version: link:../../packages/payment
@@ -288,6 +291,9 @@ importers:
       '@yonetim/kvkk':
         specifier: workspace:*
         version: link:../../packages/kvkk
+      '@yonetim/panel-messages':
+        specifier: workspace:*
+        version: link:../../packages/panel-messages
       '@yonetim/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -476,6 +482,9 @@ importers:
       '@yonetim/notifications':
         specifier: workspace:*
         version: link:../../packages/notifications
+      '@yonetim/panel-messages':
+        specifier: workspace:*
+        version: link:../../packages/panel-messages
       '@yonetim/payment':
         specifier: workspace:*
         version: link:../../packages/payment
@@ -780,6 +789,16 @@ importers:
       '@yonetim/whatsapp':
         specifier: workspace:*
         version: link:../whatsapp
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
+  packages/panel-messages:
+    dependencies:
+      '@yonetim/i18n':
+        specifier: workspace:*
+        version: link:../i18n
     devDependencies:
       typescript:
         specifier: ^5.7.2

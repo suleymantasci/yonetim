@@ -2,13 +2,24 @@ import { describe, expect, it } from "vitest";
 
 import {
   DEFAULT_LOCALE, LOCALES, LOCALE_META, formatDateFor, formatMoney, formatPercent,
-  formatPeriodFor, getMessages, isLocale, isRtl, negotiateLocale, parseLocale,
+  formatPeriodFor, isLocale, isRtl, negotiateLocale, parseLocale,
 } from "@yonetim/i18n";
+import { getMessages as getPanelMessages } from "@yonetim/panel-messages";
 import { CAMPAIGN_TEMPLATES } from "@yonetim/campaigns";
 import { DUES_FORMULAS, QUORUM_RULES } from "@yonetim/dues";
 import { INTENTS, REQUEST_CATEGORIES } from "@yonetim/whatsapp";
 import { KVKK_REQUEST_TYPES } from "@yonetim/kvkk";
 import { ROLES } from "@yonetim/core";
+
+import { getMessages as getWebMessages } from "../apps/web/src/i18n/messages";
+
+type Bundle = (locale: string) => unknown;
+
+/** Panel ve landing ayrı mesaj kümeleri; parite testleri ikisinde de koşar. */
+const BUNDLES: [string, Bundle][] = [
+  ["panel", getPanelMessages],
+  ["landing", getWebMessages],
+];
 
 /** Nesneyi `a.b.c` biçiminde düz anahtar listesine çevirir. */
 function flatten(value: unknown, prefix = ""): string[] {
@@ -18,12 +29,12 @@ function flatten(value: unknown, prefix = ""): string[] {
   );
 }
 
-function keysOf(locale: string): string[] {
+function keysOf(locale: string, getMessages: Bundle = getPanelMessages): string[] {
   return flatten(getMessages(locale)).sort();
 }
 
 /** Bir anahtarın değerini döner (yoksa undefined). */
-function valueAt(locale: string, key: string): unknown {
+function valueAt(locale: string, key: string, getMessages: Bundle = getPanelMessages): unknown {
   return key
     .split(".")
     .reduce<unknown>(
@@ -66,13 +77,13 @@ describe("dil yapılandırması", () => {
   });
 });
 
-describe("mesaj dosyası paritesi", () => {
+describe.each(BUNDLES)("mesaj dosyası paritesi (%s)", (_name, bundle) => {
   it("tüm dillerde birebir aynı anahtar kümesi bulunur", () => {
-    const reference = keysOf(DEFAULT_LOCALE);
+    const reference = keysOf(DEFAULT_LOCALE, bundle);
 
     for (const locale of LOCALES) {
       if (locale === DEFAULT_LOCALE) continue;
-      const current = keysOf(locale);
+      const current = keysOf(locale, bundle);
 
       const missing = reference.filter((k) => !current.includes(k));
       const extra = current.filter((k) => !reference.includes(k));
@@ -84,8 +95,8 @@ describe("mesaj dosyası paritesi", () => {
 
   it("hiçbir çeviri boş bırakılmamıştır", () => {
     for (const locale of LOCALES) {
-      for (const key of keysOf(locale)) {
-        const value = valueAt(locale, key);
+      for (const key of keysOf(locale, bundle)) {
+        const value = valueAt(locale, key, bundle);
         expect(typeof value, `${locale}:${key}`).toBe("string");
         expect(String(value).trim().length, `${locale}:${key} boş`).toBeGreaterThan(0);
       }
@@ -97,9 +108,9 @@ describe("mesaj dosyası paritesi", () => {
     // zamanında eksik değer hatası oluşur.
     const placeholder = /\{(\w+)(?:,[^}]*)?\}/g;
 
-    for (const key of keysOf(DEFAULT_LOCALE)) {
+    for (const key of keysOf(DEFAULT_LOCALE, bundle)) {
       const names = (locale: string) => {
-        const value = String(valueAt(locale, key) ?? "");
+        const value = String(valueAt(locale, key, bundle) ?? "");
         return [...value.matchAll(placeholder)].map((m) => m[1]).sort();
       };
 
@@ -116,9 +127,9 @@ describe("mesaj dosyası paritesi", () => {
     const identical: string[] = [];
     const compared: string[] = [];
 
-    for (const key of keysOf(DEFAULT_LOCALE)) {
-      const tr = String(valueAt("tr", key) ?? "");
-      const en = String(valueAt("en", key) ?? "");
+    for (const key of keysOf(DEFAULT_LOCALE, bundle)) {
+      const tr = String(valueAt("tr", key, bundle) ?? "");
+      const en = String(valueAt("en", key, bundle) ?? "");
       if (tr.length < 8) continue;
       compared.push(key);
       if (tr === en) identical.push(key);
@@ -161,10 +172,10 @@ describe("kampanya şablonları her dilde tam", () => {
       for (const template of CAMPAIGN_TEMPLATES) {
         const base = `marketing.campaigns.template.${template.key}`;
         for (const field of ["name", "description", "headline"]) {
-          const value = valueAt(locale, `${base}.${field}`);
+          const value = valueAt(locale, `${base}.${field}`, getWebMessages);
           expect(typeof value, `${base}.${field}`).toBe("string");
         }
-        const bullets = valueAt(locale, `${base}.bullets`);
+        const bullets = valueAt(locale, `${base}.bullets`, getWebMessages);
         expect(typeof bullets, `${base}.bullets`).toBe("string");
         expect(String(bullets).split("|").length).toBeGreaterThanOrEqual(2);
       }
@@ -173,7 +184,7 @@ describe("kampanya şablonları her dilde tam", () => {
     it(`${locale}: kullanılan tüm rozetler çevrilmiş`, () => {
       const badges = [...new Set(CAMPAIGN_TEMPLATES.map((t) => t.badge).filter(Boolean))];
       for (const badge of badges) {
-        expect(typeof valueAt(locale, `marketing.campaigns.badge.${badge}`), badge).toBe("string");
+        expect(typeof valueAt(locale, `marketing.campaigns.badge.${badge}`, getWebMessages), badge).toBe("string");
       }
     });
   }

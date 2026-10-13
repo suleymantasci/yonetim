@@ -132,6 +132,10 @@ export default defineConfig({
       ).pathname,
       "@yonetim/i18n": new URL("./packages/i18n/src/index.ts", import.meta.url)
         .pathname,
+      "@yonetim/panel-messages": new URL(
+        "./packages/panel-messages/src/index.ts",
+        import.meta.url,
+      ).pathname,
       "@yonetim/ui": new URL("./packages/ui/src/index.ts", import.meta.url)
         .pathname,
       "@yonetim/contracts/shared": new URL(

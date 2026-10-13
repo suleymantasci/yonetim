@@ -1,11 +1,12 @@
-import { DEFAULT_LOCALE, getMessages, isLocale, type Locale } from "@yonetim/i18n";
+import { DEFAULT_LOCALE, isLocale, type Locale } from "@yonetim/i18n";
+import { getMessages } from "@yonetim/panel-messages";
 
 /**
  * Sunucu tarafı çevirici — `next-intl` olmadan.
  *
  * `apps/app` bu işi `getTranslations()` ile yapıyor ama o fonksiyon Next'in
  * istek bağlamına bağlı; Nest'te böyle bir bağlam yok. Katalog zaten
- * `@yonetim/i18n` içinde düz JSON olarak duruyor, dolayısıyla ihtiyaç duyulan
+ * `@yonetim/panel-messages` içinde düz JSON olarak duruyor, dolayısıyla ihtiyaç duyulan
  * tek şey nokta yollu arama ve `{param}` yerleştirme.
  *
  * ICU'nun `plural`/`select` yapıları **desteklenmiyor** — bilerek: bot ve

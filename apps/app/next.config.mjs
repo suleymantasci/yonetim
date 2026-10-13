@@ -51,6 +51,7 @@ const nextConfig = {
     "@yonetim/config",
     "@yonetim/core",
     "@yonetim/i18n",
+    "@yonetim/panel-messages",
     "@yonetim/auth",
     "@yonetim/dues",
     "@yonetim/kvkk",

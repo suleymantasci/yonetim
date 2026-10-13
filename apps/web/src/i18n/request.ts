@@ -1,7 +1,9 @@
 import { getRequestConfig } from "next-intl/server";
 
-import { getMessages, LOCALE_META, parseLocale } from "@yonetim/i18n";
+import { LOCALE_META, parseLocale } from "@yonetim/i18n";
 import { routing } from "@yonetim/i18n/routing";
+
+import { getMessages } from "./messages";
 
 /**
  * next-intl istek yapılandırması — SPEC Bölüm 4.2.

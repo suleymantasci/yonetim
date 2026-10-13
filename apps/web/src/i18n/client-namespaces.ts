@@ -1,4 +1,4 @@
-import type { Namespace } from "@yonetim/i18n";
+import type { Namespace } from "./messages";
 
 /**
  * İstemci bileşenlerine gönderilen mesaj namespace'leri — SPEC Bölüm 4.2.

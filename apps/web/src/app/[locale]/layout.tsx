@@ -6,9 +6,7 @@ import { Manrope, Source_Serif_4 } from "next/font/google";
 import type { Metadata, Viewport } from "next";
 
 import { siteConfig } from "@yonetim/config";
-import {
-  getNamespaces, isLocale, LOCALES, LOCALE_META, type Locale,
-} from "@yonetim/i18n";
+import { isLocale, LOCALES, LOCALE_META, type Locale } from "@yonetim/i18n";
 import { jsonLdScript, organizationSchema } from "@yonetim/seo";
 import {
   a11yInitScript, A11Y_COOKIE, parseA11y, parseThemePreference,
@@ -20,6 +18,7 @@ import { MotionEngine } from "@/components/motion";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { CLIENT_NAMESPACES } from "@/i18n/client-namespaces";
+import { getNamespaces } from "@/i18n/messages";
 import { hreflangEntries, localizedPath } from "@/lib/paths";
 
 const body = Manrope({ subsets: ["latin", "latin-ext"], variable: "--font-body-src", display: "swap" });

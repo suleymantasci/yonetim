@@ -18,6 +18,7 @@
     "@yonetim/core": "workspace:*",
     "@yonetim/dues": "workspace:*",
     "@yonetim/i18n": "workspace:*",
+    "@yonetim/panel-messages": "workspace:*",
     "@yonetim/kvkk": "workspace:*",
     "@yonetim/ui": "workspace:*",
     "lucide-react": "^0.469.0",

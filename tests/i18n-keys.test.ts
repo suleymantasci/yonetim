@@ -3,7 +3,10 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { getMessages, LOCALES } from "@yonetim/i18n";
+import { LOCALES } from "@yonetim/i18n";
+import { getMessages as getPanelMessages } from "@yonetim/panel-messages";
+
+import { getMessages as getWebMessages } from "../apps/web/src/i18n/messages";
 
 /**
  * Kullanılan çeviri anahtarları gerçekten var mı? — SPEC Bölüm 4.2.
@@ -14,7 +17,11 @@ import { getMessages, LOCALES } from "@yonetim/i18n";
  * ifadeli (`t(\`x.${y}\`)`) çağrılar dinamiktir ve atlanır; onları
  * `i18n.test.ts` içindeki enum kapsama testleri korur.
  */
-const ROOTS = ["apps/app/src", "apps/web/src"];
+/** Panel ve landing ayrı mesaj kümeleri kullanıyor; her kök kendi kümesine bakılır. */
+const ROOTS = [
+  { root: "apps/app/src", getMessages: getPanelMessages as (locale: string) => unknown },
+  { root: "apps/web/src", getMessages: getWebMessages as (locale: string) => unknown },
+];
 
 function walk(dir: string): string[] {
   const out: string[] = [];
@@ -51,31 +58,38 @@ function resolve(bundle: unknown, key: string): unknown {
     );
 }
 
-const files = ROOTS.flatMap((root) => walk(root));
-const usages = new Map<string, string[]>();
-for (const file of files) {
-  for (const key of extractKeys(readFileSync(file, "utf8"))) {
-    const existing = usages.get(key);
-    if (existing) existing.push(file);
-    else usages.set(key, [file]);
+function collect(root: string): Map<string, string[]> {
+  const usages = new Map<string, string[]>();
+  for (const file of walk(root)) {
+    for (const key of extractKeys(readFileSync(file, "utf8"))) {
+      const existing = usages.get(key);
+      if (existing) existing.push(file);
+      else usages.set(key, [file]);
+    }
   }
+  return usages;
 }
+
+const scanned = ROOTS.map((entry) => ({ ...entry, usages: collect(entry.root) }));
 
 describe("kullanılan çeviri anahtarları", () => {
   it("kaynak taraması anlamlı sayıda anahtar buluyor", () => {
-    expect(usages.size).toBeGreaterThan(300);
+    const total = scanned.reduce((sum, entry) => sum + entry.usages.size, 0);
+    expect(total).toBeGreaterThan(300);
   });
 
-  for (const locale of LOCALES) {
-    it(`'${locale}' dilinde tüm anahtarlar tanımlı`, () => {
-      const bundle = getMessages(locale);
-      const missing: string[] = [];
-      for (const [key, where] of usages) {
-        const value = resolve(bundle, key);
-        // `.has()` ile korunan opsiyonel anahtarlar dışında hepsi metin olmalı.
-        if (typeof value !== "string") missing.push(`${key} (${where[0]})`);
-      }
-      expect(missing).toEqual([]);
-    });
+  for (const { root, getMessages, usages } of scanned) {
+    for (const locale of LOCALES) {
+      it(`${root}: '${locale}' dilinde tüm anahtarlar tanımlı`, () => {
+        const bundle = getMessages(locale);
+        const missing: string[] = [];
+        for (const [key, where] of usages) {
+          const value = resolve(bundle, key);
+          // `.has()` ile korunan opsiyonel anahtarlar dışında hepsi metin olmalı.
+          if (typeof value !== "string") missing.push(`${key} (${where[0]})`);
+        }
+        expect(missing).toEqual([]);
+      });
+    }
   }
 });

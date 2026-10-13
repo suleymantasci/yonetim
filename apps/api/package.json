@@ -32,6 +32,7 @@
     "@yonetim/dues": "workspace:*",
     "@yonetim/emails": "workspace:*",
     "@yonetim/i18n": "workspace:*",
+    "@yonetim/panel-messages": "workspace:*",
     "@yonetim/jobs": "workspace:*",
     "@yonetim/kvkk": "workspace:*",
     "@yonetim/notifications": "workspace:*",

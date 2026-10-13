@@ -5,7 +5,8 @@ import { Manrope } from "next/font/google";
 import type { Metadata, Viewport } from "next";
 
 import { siteConfig } from "@yonetim/config";
-import { getNamespaces, LOCALE_META, type Locale } from "@yonetim/i18n";
+import { LOCALE_META, type Locale } from "@yonetim/i18n";
+import { getNamespaces } from "@yonetim/panel-messages";
 import {
   a11yInitScript, A11Y_COOKIE, parseA11y, parseThemePreference,
   serverA11yAttributes, serverThemeAttribute, themeInitScript, THEME_COOKIE,

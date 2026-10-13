@@ -2,8 +2,9 @@ import { cookies, headers } from "next/headers";
 import { getRequestConfig } from "next-intl/server";
 
 import {
-  DEFAULT_LOCALE, LOCALE_COOKIE, LOCALE_META, getMessages, negotiateLocale, parseLocale,
+  DEFAULT_LOCALE, LOCALE_COOKIE, LOCALE_META, negotiateLocale, parseLocale,
 } from "@yonetim/i18n";
+import { getMessages } from "@yonetim/panel-messages";
 
 /**
  * Ürün uygulamasında locale URL'de taşınmaz — SPEC Bölüm 4.2.

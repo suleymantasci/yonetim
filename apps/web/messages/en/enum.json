@@ -1,0 +1,26 @@
+{
+  "billingPeriod": {
+    "yearly": "Annual, paid upfront",
+    "semiannual": "Every 6 months",
+    "quarterly": "Quarterly",
+    "monthly": "Monthly"
+  },
+  "migrationSource": {
+    "apsiyon": "Apsiyon",
+    "biyos": "Biyos",
+    "dijiyon": "Dijiyon",
+    "yonetimcell": "Yönetimcell",
+    "excel": "Excel / CSV",
+    "diger": "Other"
+  },
+  "tenantType": {
+    "apartment": "Apartment building",
+    "site": "Gated community",
+    "residence": "Residence",
+    "plaza": "Plaza",
+    "avm": "Shopping centre",
+    "office": "Office building",
+    "vakif": "Foundation",
+    "dernek": "Association"
+  }
+}

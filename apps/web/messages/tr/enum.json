@@ -1,0 +1,26 @@
+{
+  "billingPeriod": {
+    "yearly": "Yıllık peşin",
+    "semiannual": "6 aylık",
+    "quarterly": "3 aylık",
+    "monthly": "Aylık"
+  },
+  "migrationSource": {
+    "apsiyon": "Apsiyon",
+    "biyos": "Biyos",
+    "dijiyon": "Dijiyon",
+    "yonetimcell": "Yönetimcell",
+    "excel": "Excel / CSV",
+    "diger": "Diğer"
+  },
+  "tenantType": {
+    "apartment": "Apartman",
+    "site": "Site",
+    "residence": "Rezidans",
+    "plaza": "Plaza",
+    "avm": "AVM",
+    "office": "İş Merkezi",
+    "vakif": "Vakıf",
+    "dernek": "Dernek"
+  }
+}

@@ -1,4 +1,5 @@
-import { getMessages, LOCALES, type Locale } from "@yonetim/i18n";
+import { LOCALES, type Locale } from "@yonetim/i18n";
+import { getMessages } from "@yonetim/panel-messages";
 
 /**
  * Test çevirmeni — gerçek mesaj dosyalarını okur.
