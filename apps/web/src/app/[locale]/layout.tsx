@@ -17,6 +17,7 @@ import { MotionProvider } from "@yonetim/ui/motion";
 import { MotionEngine } from "@/components/motion";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { AssistantScript } from "@/components/assistant-script";
 import { CLIENT_NAMESPACES } from "@/i18n/client-namespaces";
 import { getNamespaces } from "@/i18n/messages";
 import { hreflangEntries, localizedPath } from "@/lib/paths";
@@ -147,6 +148,7 @@ export default async function LocaleLayout({
               <SiteHeader themePreference={themePreference} />
               <main id="icerik">{children}</main>
               <SiteFooter />
+              <AssistantScript />
             </MotionEngine>
           </MotionProvider>
         </NextIntlClientProvider>

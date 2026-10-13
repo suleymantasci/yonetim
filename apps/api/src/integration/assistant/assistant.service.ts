@@ -6,7 +6,7 @@ import type { Request } from "express";
 
 import { hasPermission, rateLimit } from "@yonetim/auth";
 import { isPlatformContext, isResidentRole, type Role } from "@yonetim/core";
-import { agendaItems, blocks, debts, payments, unitOccupancies, units, users } from "@yonetim/db";
+import { agendaItems, blocks, debts, expenses, payments, requests, unitOccupancies, units, users } from "@yonetim/db";
 
 import { ContextResolver } from "../../identity/context-resolver.service";
 import { DbService } from "../../infra/db/db.service";
@@ -28,7 +28,7 @@ type UnitArg = { id?: string; block?: string; number?: string; name?: string };
 type Unit = { id: string; number: string; block: string | null; person?: string };
 
 const fail = (status: number, message: string) => new HttpException({ error: { message } }, status);
-const norm = (value: string) => value.toLocaleLowerCase("tr-TR").normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/ı/g, "i").replace(/\s+/g, "").replace(/^0+(?=\d)/, "");
+const norm = (value: string) => value.toLocaleLowerCase("tr-TR").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/ı/g, "i").replace(/\s+/g, "").replace(/^0+(?=\d)/, "");
 const words = (value: string) => value.toLocaleLowerCase("tr-TR").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/ı/g, "i").split(/[^a-z0-9]+/).filter(Boolean);
 const money = (kurus: number) => new Intl.NumberFormat("tr-TR", { style: "currency", currency: "TRY" }).format(kurus / 100);
 const dateText = (value: Date | string) => new Intl.DateTimeFormat("tr-TR", { dateStyle: "medium", timeZone: "Europe/Istanbul" }).format(new Date(value));
@@ -72,6 +72,19 @@ export class AssistantService {
     if (can("payment:read") || can("payment:read_own"))
       tools.push({ name: "odemeler", title: "Son ödemeler", description: "Bağımsız bölümün son ödemeleri",
         keywords: ["ödeme", "ödemeler", "ödemelerim", "tahsilat", "makbuz", "son ödeme"], params: { unit: "unit" } });
+    const staff = !roles.every(isResidentRole);
+    if (staff && can("unit:read"))
+      tools.push({ name: "ozet", title: "Site özeti", description: "Bağımsız bölüm, sakin, alacak, talep ve bu ayın gider/tahsilat sayıları",
+        keywords: ["özet", "kaç daire", "daire sayısı", "bağımsız bölüm sayısı", "kaç bağımsız bölüm", "sakin sayısı", "kaç sakin", "kaç kişi", "genel durum", "site durumu", "toplam alacak"] });
+    if (can("expense:read"))
+      tools.push({ name: "giderler", title: "Giderler", description: "Dönemin giderleri ve toplamı (varsayılan: bu ay)",
+        keywords: ["gider", "giderler", "harcama", "masraf", "fatura", "ne harcandı"], params: { period: "period" } });
+    if (can("request:read") || can("request:read_own"))
+      tools.push({ name: "talepler", title: "Açık talepler", description: "Bekleyen arıza, şikâyet ve öneri talepleri",
+        keywords: ["talep", "talepler", "bekleyen talep", "açık talep", "arıza", "şikayet", "taleplerim"] });
+    if (staff && can("resident:read"))
+      tools.push({ name: "sakinler", title: "Sakinler", description: "Bir bağımsız bölümde oturanlar veya isimle sakin arama",
+        keywords: ["sakin", "sakinler", "kim oturuyor", "oturan", "malik", "kiracı", "ev sahibi"], params: { unit: "unit" } });
     if (can("agenda:read"))
       tools.push({ name: "takvim", title: "Takvim", description: "Takvimdeki görev ve notlar",
         keywords: ["takvim", "ajanda", "görev", "hatırlatma", "toplantı", "yapılacak"], params: { period: "period" } });
@@ -99,6 +112,10 @@ export class AssistantService {
     if (!tool) throw fail(404, "Bu bilgi için uygun araç yok.");
     const args = input.args && typeof input.args === "object" ? input.args : {};
     if (tool.name === "takvim") return this.agenda(ctx, args.period as { from?: string; to?: string } | undefined);
+    if (tool.name === "ozet") return this.summary(ctx);
+    if (tool.name === "giderler") return this.expenses(args.period as { from?: string; to?: string } | undefined);
+    if (tool.name === "talepler") return this.requests(ctx, hasPermission(ctx.roles, "request:read"));
+    if (tool.name === "sakinler") return this.residents(ctx, (args.unit && typeof args.unit === "object" ? args.unit : {}) as UnitArg);
     const any = hasPermission(ctx.roles, tool.name === "borc" ? "debt:read" : "payment:read");
     const unit = (args.unit && typeof args.unit === "object" ? args.unit : {}) as UnitArg;
     const found = await this.units(ctx, unit, any);
@@ -152,7 +169,7 @@ export class AssistantService {
       const total = open.reduce((sum, d) => sum + Number(d.remaining), 0);
       const overdue = open.filter((d) => d.dueDate && new Date(d.dueDate).getTime() < now).reduce((sum, d) => sum + Number(d.remaining), 0);
       return {
-        kind: "result", title: label({ ...unit, person: undefined }),
+        kind: "result", title: label(unit),
         fields: [{ label: "Kalan borç", value: money(total) }, { label: "Vadesi geçmiş", value: money(overdue) }],
         items: open.filter((d) => Number(d.remaining) > 0).slice(0, 5).map((d) => ({
           title: d.description, ...(d.dueDate ? { subtitle: `Son ödeme ${dateText(d.dueDate)}` } : {}), value: money(Number(d.remaining)) })),
@@ -176,6 +193,115 @@ export class AssistantService {
         items: rows.map((row) => ({ title: dateText(row.paidAt ?? row.createdAt), subtitle: `${METHOD[row.method] ?? "Diğer"} · ${STATUS[row.status] ?? row.status}`, value: money(Number(row.amount)) })),
         links: [{ label: "Bağımsız bölüm kartı", href: `/panel/birimler/${unit.id}` }],
         note: "Vekil'in canlı kaydı · son 6 ödeme", asOf: new Date().toISOString(),
+      };
+    });
+  }
+
+  /** Sayılar: yalnız kullanıcının izinli olduğu kalemler eklenir. */
+  private async summary(ctx: Ctx) {
+    const can = (permission: Parameters<typeof hasPermission>[1]) => hasPermission(ctx.roles, permission);
+    const month = monthRange(), fields: { label: string; value: string }[] = [];
+    return this.db.tx(async (tx) => {
+      const [unitCount] = await tx.select({ n: sql<number>`count(*)` }).from(units).where(isNull(units.deletedAt));
+      const [people] = await tx.select({ n: sql<number>`count(DISTINCT ${unitOccupancies.userId})` }).from(unitOccupancies)
+        .innerJoin(units, and(eq(units.id, unitOccupancies.unitId), isNull(units.deletedAt))).where(isNull(unitOccupancies.endDate));
+      fields.push({ label: "Bağımsız bölüm", value: String(Number(unitCount?.n ?? 0)) }, { label: "Kayıtlı sakin", value: String(Number(people?.n ?? 0)) });
+      if (can("debt:read")) {
+        const [debt] = await tx.select({
+          total: sql<number>`COALESCE(SUM(${debts.amountKurus} + ${debts.lateFeeKurus} - ${debts.paidKurus}), 0)`,
+          overdue: sql<number>`COALESCE(SUM(CASE WHEN ${debts.dueDate} < now() THEN ${debts.amountKurus} + ${debts.lateFeeKurus} - ${debts.paidKurus} ELSE 0 END), 0)` })
+          .from(debts).where(and(isNull(debts.deletedAt), notInArray(debts.status, ["paid", "written_off", "cancelled"])));
+        fields.push({ label: "Toplam alacak", value: money(Number(debt?.total ?? 0)) }, { label: "Vadesi geçmiş", value: money(Number(debt?.overdue ?? 0)) });
+      }
+      if (can("request:read")) {
+        const [open] = await tx.select({ n: sql<number>`count(*)` }).from(requests)
+          .where(and(isNull(requests.deletedAt), notInArray(requests.status, ["resolved", "closed", "rejected"])));
+        fields.push({ label: "Açık talep", value: String(Number(open?.n ?? 0)) });
+      }
+      if (can("expense:read")) {
+        const [spent] = await tx.select({ total: sql<number>`COALESCE(SUM(${expenses.amountKurus}), 0)` }).from(expenses)
+          .where(and(isNull(expenses.deletedAt), notInArray(expenses.status, ["draft", "rejected"]), gte(expenses.expenseDate, month.start), lte(expenses.expenseDate, month.end)));
+        fields.push({ label: "Bu ay gider", value: money(Number(spent?.total ?? 0)) });
+      }
+      if (can("payment:read")) {
+        const [paid] = await tx.select({ total: sql<number>`COALESCE(SUM(${payments.amountKurus}), 0)` }).from(payments)
+          .where(and(eq(payments.status, "completed"), gte(payments.paidAt, month.start), lte(payments.paidAt, month.end)));
+        fields.push({ label: "Bu ay tahsilat", value: money(Number(paid?.total ?? 0)) });
+      }
+      return { kind: "result", title: "Site özeti", fields, links: [{ label: "Paneli aç", href: "/panel" }], note: "Vekil'in canlı kaydı", asOf: new Date().toISOString() };
+    });
+  }
+
+  /** Dönemin onaylı giderleri; dönem yoksa bu ay. */
+  private async expenses(period: { from?: string; to?: string } | undefined) {
+    const valid = (value?: string) => (value && /^\d{4}-\d\d-\d\d$/.test(value) ? value : undefined);
+    const month = monthRange();
+    const start = valid(period?.from) ? new Date(`${period!.from}T00:00:00+03:00`) : month.start;
+    const end = valid(period?.to) ? new Date(`${period!.to}T23:59:59+03:00`) : month.end;
+    return this.db.tx(async (tx) => {
+      const where = and(isNull(expenses.deletedAt), notInArray(expenses.status, ["draft", "rejected"]), gte(expenses.expenseDate, start), lte(expenses.expenseDate, end));
+      const [sum] = await tx.select({ total: sql<number>`COALESCE(SUM(${expenses.amountKurus}), 0)`, n: sql<number>`count(*)` }).from(expenses).where(where);
+      const rows = await tx.select({ id: expenses.id, description: expenses.description, vendor: expenses.vendorName, date: expenses.expenseDate, amount: expenses.amountKurus, status: expenses.status })
+        .from(expenses).where(where).orderBy(desc(expenses.amountKurus)).limit(8);
+      const range = `${dateText(start)} – ${dateText(end)}`;
+      if (!rows.length) return { kind: "empty", message: `${range} arasında gider kaydı yok.` };
+      return {
+        kind: "result", title: `Giderler · ${range}`,
+        fields: [{ label: "Toplam", value: money(Number(sum?.total ?? 0)) }, { label: "Kayıt", value: String(Number(sum?.n ?? 0)) }],
+        items: rows.map((row) => ({ title: row.description, subtitle: [row.vendor, dateText(row.date), EXPENSE_STATUS[row.status] ?? row.status].filter(Boolean).join(" · "), value: money(Number(row.amount)), href: `/panel/giderler/${row.id}` })),
+        links: [{ label: "Giderler", href: "/panel/giderler" }],
+        note: "En yüksek 8 gider · Vekil'in canlı kaydı", asOf: new Date().toISOString(),
+      };
+    });
+  }
+
+  /** Kapanmamış talepler: yetkili tüm site, sakin kendi açtıkları. */
+  private async requests(ctx: Ctx, all: boolean) {
+    return this.db.tx(async (tx) => {
+      const where = and(isNull(requests.deletedAt), notInArray(requests.status, ["resolved", "closed", "rejected"]), all ? undefined : eq(requests.createdByUserId, ctx.userId));
+      const [count] = await tx.select({ n: sql<number>`count(*)` }).from(requests).where(where);
+      const rows = await tx.select({ id: requests.id, code: requests.code, title: requests.title, status: requests.status, priority: requests.priority, createdAt: requests.createdAt })
+        .from(requests).where(where).orderBy(desc(requests.createdAt)).limit(8);
+      if (!rows.length) return { kind: "empty", message: "Bekleyen talep yok." };
+      return {
+        kind: "result", title: `Açık talepler · ${Number(count?.n ?? rows.length)}`,
+        items: rows.map((row) => ({ title: `${row.code} · ${row.title}`, subtitle: `${REQUEST_STATUS[row.status] ?? row.status} · ${PRIORITY[row.priority] ?? row.priority} · ${dateText(row.createdAt)}`,
+          href: all ? `/panel/talepler/${row.id}` : "/panel/taleplerim" })),
+        links: [{ label: all ? "Talepler" : "Taleplerim", href: all ? "/panel/talepler" : "/panel/taleplerim" }],
+        note: "Son 8 talep · Vekil'in canlı kaydı", asOf: new Date().toISOString(),
+      };
+    });
+  }
+
+  /** Bir bölümde oturanlar veya isimle sakin arama; seçici yoksa toplam ve ekran bağlantısı. */
+  private async residents(ctx: Ctx, arg: UnitArg) {
+    const selector = { id: str(arg.id), block: str(arg.block), number: str(arg.number), name: str(arg.name) };
+    return this.db.tx(async (tx) => {
+      const rows = await tx
+        .select({ unitId: units.id, number: units.number, block: blocks.name, relation: unitOccupancies.relation, firstName: users.firstName, lastName: users.lastName, userId: users.id })
+        .from(unitOccupancies)
+        .innerJoin(units, and(eq(units.id, unitOccupancies.unitId), isNull(units.deletedAt)))
+        .leftJoin(blocks, eq(blocks.id, units.blockId))
+        .innerJoin(users, eq(users.id, unitOccupancies.userId))
+        .where(isNull(unitOccupancies.endDate))
+        .orderBy(asc(units.number))
+        .limit(5000);
+      const any = selector.id || selector.block || selector.number || selector.name;
+      if (!any) return { kind: "result", title: "Sakinler", fields: [{ label: "Kayıtlı sakin", value: String(new Set(rows.map((r) => r.userId)).size) }],
+        links: [{ label: "Sakinler", href: "/panel/sakinler" }], note: "Bir kişiyi görmek için daire numarasını veya adını yazın." };
+      const matches = rows.filter((row) => {
+        if (selector.id && row.unitId !== selector.id) return false;
+        if (selector.number && norm(row.number) !== norm(selector.number)) return false;
+        if (selector.block && norm(row.block ?? "").replace(/blok$/, "") !== norm(selector.block).replace(/blok$/, "")) return false;
+        const person = [row.firstName, row.lastName].filter(Boolean).join(" ");
+        return !selector.name || words(selector.name).every((part) => words(person).some((word) => word.startsWith(part)));
+      }).slice(0, 15);
+      if (!matches.length) return { kind: "empty", message: "Bu kapsamda kayıtlı sakin bulunamadı." };
+      return {
+        kind: "result", title: "Sakinler",
+        items: matches.map((row) => ({ title: [row.firstName, row.lastName].filter(Boolean).join(" ") || "İsimsiz kayıt",
+          subtitle: `${label({ id: row.unitId, number: row.number, block: row.block })} · ${RELATION[row.relation] ?? row.relation}`, href: `/panel/sakinler/${row.userId}` })),
+        links: [{ label: "Sakinler", href: "/panel/sakinler" }],
       };
     });
   }
@@ -204,9 +330,19 @@ export class AssistantService {
   }
 }
 
+/** İstanbul'a göre bu ayın başı ve sonu. */
+function monthRange(): { start: Date; end: Date } {
+  const local = new Date(Date.now() + 3 * 3600_000), y = local.getUTCFullYear(), m = local.getUTCMonth();
+  return { start: new Date(Date.UTC(y, m, 1) - 3 * 3600_000), end: new Date(Date.UTC(y, m + 1, 1) - 3 * 3600_000 - 1) };
+}
+
 function str(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() && value.length <= 80 ? value.trim() : undefined;
 }
 
 const STATUS: Record<string, string> = { initiated: "Başlatıldı", pending_3ds: "Bekliyor", authorized: "Onaylandı", completed: "Tamamlandı", failed: "Başarısız", refunded: "İade", chargeback: "Ters ibraz" };
 const METHOD: Record<string, string> = { card: "Kart", bank_transfer: "Havale/EFT", auto_debit: "Otomatik ödeme", cash: "Nakit", credit_balance: "Alacak mahsubu", offset: "Mahsup" };
+const EXPENSE_STATUS: Record<string, string> = { pending_approval: "Onay bekliyor", approved: "Onaylı", paid: "Ödendi" };
+const REQUEST_STATUS: Record<string, string> = { open: "Açık", assigned: "Atandı", in_progress: "İşlemde", waiting_resident: "Sakin bekleniyor" };
+const PRIORITY: Record<string, string> = { critical: "Kritik", high: "Yüksek", normal: "Normal", low: "Düşük" };
+const RELATION: Record<string, string> = { owner: "Malik", tenant: "Kiracı", vacant: "Boş" };

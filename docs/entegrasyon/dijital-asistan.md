@@ -26,6 +26,10 @@ Dijital Asistan'da değişir; Vekil'de deploy gerektirmez.
 | `borc` | `debt:read` (tüm site) / `debt:read_own` (kendi bölümleri) | `unit` (blok, numara, kişi adı, id) | Kalan ve vadesi geçmiş borç, açık kalemler |
 | `odemeler` | `payment:read` / `payment:read_own` | `unit` | Son 6 ödeme |
 | `takvim` | `agenda:read` | `period` | Kendi ve paylaşılan takvim kayıtları |
+| `ozet` | yönetim rolü + `unit:read` | — | Bölüm ve sakin sayısı; izne göre alacak, açık talep, bu ay gider/tahsilat |
+| `giderler` | `expense:read` | `period` (varsayılan bu ay) | Toplam, kayıt sayısı, en yüksek 8 gider |
+| `talepler` | `request:read` / `request:read_own` | — | Kapanmamış talepler (sakin: kendi açtıkları) |
+| `sakinler` | yönetim rolü + `resident:read` | `unit` | Bölümde oturanlar veya isimle sakin arama |
 
 - Yönetici bölüm belirtmeden sorarsa `ask` ("Hangi bağımsız bölüm?") döner; kullanıcının sonraki cevabı
   bu soruyu tamamlar. Birden çok eşleşmede `choose` seçenekleri döner.
@@ -43,3 +47,10 @@ Dijital Asistan'da değişir; Vekil'de deploy gerektirmez.
 
 Asistan panelinde kurulumun veri ucu: `/v1/dijital-asistan`. Test ortamı (vekil): profil "Vekil Panel",
 kurulum `015b9f81-…`, değerler `/docker/yonetim/.env`.
+
+## Landing (vekil.tasci.cloud)
+
+Landing statik üretildiği için script değerleri çalışma anında `GET /api/dijital-asistan`
+(`apps/web/src/app/api/dijital-asistan/route.ts`) ucundan alınır; `apps/web/src/components/assistant-script.tsx`
+script'i ekler. Web servisinde `DA_ORIGIN`, `DA_INSTALLATION_ID`, `DA_VERIFICATION` (sunucu `.env`:
+`DA_LANDING_INSTALLATION_ID`, `DA_LANDING_VERIFICATION`). Asistan profili: "Vekil Landing" (açık site).
