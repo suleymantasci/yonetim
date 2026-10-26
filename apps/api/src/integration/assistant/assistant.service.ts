@@ -252,7 +252,9 @@ export class AssistantService {
   private async paymentList(period: { from?: string; to?: string } | undefined) {
     const { start, end, range } = periodRange(period);
     return this.db.tx(async (tx) => {
-      const where = and(notInArray(payments.status, ["failed", "initiated", "pending_3ds"]), gte(sql`COALESCE(${payments.paidAt}, ${payments.createdAt})`, start), lte(sql`COALESCE(${payments.paidAt}, ${payments.createdAt})`, end));
+      // Sütuna bağlı olmayan ifadede tarih metin olarak gider: drizzle postgres-js'te Date'i serileştirmiyor.
+      const paidOn = sql`COALESCE(${payments.paidAt}, ${payments.createdAt})`;
+      const where = and(notInArray(payments.status, ["failed", "initiated", "pending_3ds"]), sql`${paidOn} >= ${start.toISOString()}::timestamptz`, sql`${paidOn} <= ${end.toISOString()}::timestamptz`);
       const [sum] = await tx.select({ total: sql<number>`COALESCE(SUM(${payments.amountKurus}), 0)`, n: sql<number>`count(*)` }).from(payments).where(where);
       const rows = await tx
         .select({ unitId: units.id, number: units.number, block: blocks.name, firstName: users.firstName, lastName: users.lastName, amount: payments.amountKurus,
