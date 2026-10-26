@@ -259,16 +259,23 @@ export class AssistantService {
       const rows = await tx
         .select({ unitId: units.id, number: units.number, block: blocks.name, firstName: users.firstName, lastName: users.lastName, amount: payments.amountKurus,
           method: payments.method, status: payments.status, paidAt: payments.paidAt, createdAt: payments.createdAt })
-        .from(payments).leftJoin(units, eq(units.id, payments.unitId)).leftJoin(blocks, eq(blocks.id, units.blockId)).leftJoin(users, eq(users.id, payments.payerUserId))
+        .from(payments).leftJoin(units, eq(units.id, payments.unitId)).leftJoin(blocks, eq(blocks.id, units.blockId)).leftJoin(users, eq(users.id, sql`COALESCE(${payments.payerUserId}, ${payments.debtorUserId})`))
         .where(where).orderBy(sql`COALESCE(${payments.paidAt}, ${payments.createdAt}) DESC`).limit(50);
+      // Havale/EFT kayıtlarında ödeyen çoğu zaman boş: bölümün şu anki sakinleri gösterilir.
+      const missing = [...new Set(rows.filter((row) => !row.firstName && !row.lastName && row.unitId).map((row) => row.unitId!))];
+      const occupants = missing.length ? await tx.select({ unitId: unitOccupancies.unitId, firstName: users.firstName, lastName: users.lastName })
+        .from(unitOccupancies).innerJoin(users, eq(users.id, unitOccupancies.userId))
+        .where(and(isNull(unitOccupancies.endDate), sql`${unitOccupancies.unitId} IN (${sql.join(missing.map((id) => sql`${id}`), sql`, `)})`)) : [];
+      const payer = (row: (typeof rows)[number]) => [row.firstName, row.lastName].filter(Boolean).join(" ") ||
+        occupants.filter((o) => o.unitId === row.unitId).map((o) => [o.firstName, o.lastName].filter(Boolean).join(" ")).filter(Boolean).join(", ") || "—";
       const count = Number(sum?.n ?? 0);
       if (!count) return { kind: "empty", message: `${range} arasında ödeme kaydı yok.` };
       return {
         kind: "result", title: `Ödemeler · ${range}`,
         fields: [{ label: "Toplam", value: money(Number(sum?.total ?? 0)) }, { label: "Ödeme sayısı", value: String(count) }],
-        blocks: [{ type: "table", columns: [{ key: "date", label: "Tarih" }, { key: "unit", label: "Bölüm" }, { key: "payer", label: "Ödeyen" }, { key: "amount", label: "Tutar", align: "right" }, { key: "method", label: "Yöntem" }],
+        blocks: [{ type: "table", columns: [{ key: "date", label: "Tarih" }, { key: "unit", label: "Bölüm" }, { key: "payer", label: "Ödeyen / sakin" }, { key: "amount", label: "Tutar", align: "right" }, { key: "method", label: "Yöntem" }],
           rows: rows.map((row) => ({ cells: { date: dateText(row.paidAt ?? row.createdAt), unit: row.unitId ? label({ id: row.unitId, number: row.number ?? "", block: row.block }) : "—",
-            payer: [row.firstName, row.lastName].filter(Boolean).join(" ") || "—", amount: money(Number(row.amount)), method: `${METHOD[row.method] ?? "Diğer"}${row.status === "completed" ? "" : " · " + (STATUS[row.status] ?? row.status)}` },
+            payer: payer(row), amount: money(Number(row.amount)), method: `${METHOD[row.method] ?? "Diğer"}${row.status === "completed" ? "" : " · " + (STATUS[row.status] ?? row.status)}` },
             ...(row.unitId ? { href: `/panel/birimler/${row.unitId}` } : {}) })),
           ...(count > rows.length ? { footer: `Son ${rows.length} ödeme gösteriliyor (toplam ${count}).` } : {}) }],
         links: [{ label: "Borçlar ve tahsilat", href: "/panel/borclar" }],
