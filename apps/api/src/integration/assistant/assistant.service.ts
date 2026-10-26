@@ -6,7 +6,7 @@ import type { Request } from "express";
 
 import { hasPermission, rateLimit } from "@yonetim/auth";
 import { isPlatformContext, isResidentRole, type Role } from "@yonetim/core";
-import { agendaItems, blocks, debts, expenses, payments, requests, unitOccupancies, units, users } from "@yonetim/db";
+import { agendaItems, bankAccounts, blocks, debts, expenses, payments, requests, unitOccupancies, units, users } from "@yonetim/db";
 
 import { ContextResolver } from "../../identity/context-resolver.service";
 import { DbService } from "../../infra/db/db.service";
@@ -70,13 +70,22 @@ export class AssistantService {
       tools.push({ name: "borc", title: "Borç durumu", description: "Bağımsız bölümün kalan ve vadesi geçmiş borcu",
         keywords: ["borç", "borcum", "bakiye", "aidat", "alacak", "ne kadar borç"], params: { unit: "unit" } });
     if (can("payment:read") || can("payment:read_own"))
-      tools.push({ name: "odemeler", title: "Son ödemeler", description: "Bağımsız bölümün son ödemeleri",
-        keywords: ["ödeme", "ödemeler", "ödemelerim", "tahsilat", "makbuz", "son ödeme"], params: { unit: "unit" } });
+      tools.push({ name: "odemeler", title: "Ödemeler", description: "Bir bağımsız bölümün son ödemeleri; bölüm verilmezse dönemde gelen tüm ödemeler (kim, hangi bölüm, tutar)",
+        keywords: ["ödeme", "ödemeler", "ödemelerim", "makbuz", "son ödeme", "ödeme yapan", "ödeyen", "ödeyenler", "kimler ödedi", "gelen ödeme"], params: { unit: "unit", period: "period" } });
     const staff = !roles.every(isResidentRole);
+    if (staff && can("debt:read") && can("payment:read"))
+      tools.push({ name: "tahsilat", title: "Tahsilat durumu", description: "Dönemde tahakkuk eden borcun ne kadarı tahsil edildi, tahsilat oranı ve ödemeyen bölümler (varsayılan: bu ay)",
+        keywords: ["tahsilat", "tahsilat oranı", "toplandı", "toplanan", "tahsil", "ödemeyen", "ödemeyenler", "vermeyen", "vermeyenler", "kimler ödemedi", "borçlular", "aidat toplandı", "ödeme oranı"],
+        params: { period: "period", soru: "text" } });
     if (staff && can("unit:read"))
-      tools.push({ name: "ozet", title: "Site özeti", description: "Bağımsız bölüm, sakin, alacak, talep ve bu ayın gider/tahsilat sayıları",
-        keywords: ["özet", "kaç daire", "daire sayısı", "bağımsız bölüm sayısı", "kaç bağımsız bölüm", "sakin sayısı", "kaç sakin", "kaç kişi", "genel durum", "site durumu", "toplam alacak",
-          "bu ay tahsilat", "bu ayki tahsilat", "tahsilat ne kadar", "toplam tahsilat", "bu ay ne kadar tahsil", "tahsilat oranı"] });
+      tools.push({ name: "ozet", title: "Site özeti", description: "Bu sitedeki bağımsız bölüm, sakin, alacak, talep ve bu ayın gider/tahsilat sayıları",
+        keywords: ["özet", "kaç daire", "daire sayısı", "bağımsız bölüm sayısı", "kaç bağımsız bölüm", "sakin sayısı", "kaç sakin", "kaç kişi", "genel durum", "site durumu", "toplam alacak"] });
+    if (staff)
+      tools.push({ name: "siteler", title: "Yönettiğim siteler", description: "Kullanıcının yönettiği tüm siteler/apartmanlar: adları, daire sayıları, alacak ve bu ayın tahsilatı",
+        keywords: ["siteler", "kaç site", "sitelerim", "apartmanlar", "kaç apartman", "apartmanlarım", "portföy", "yönettiğim", "tanımlı site", "hangi siteler", "tüm siteler"] });
+    if (can("bank:read"))
+      tools.push({ name: "banka", title: "Banka hesapları", description: "Sitenin banka hesapları ve son eşitlenen bakiyeleri",
+        keywords: ["banka", "banka hesabı", "banka bakiyesi", "hesapta ne kadar", "hesabında", "hesaptaki para"] });
     if (can("expense:read"))
       tools.push({ name: "giderler", title: "Giderler", description: "Dönemin giderleri ve toplamı (varsayılan: bu ay)",
         keywords: ["gider", "giderler", "harcama", "masraf", "fatura", "ne harcandı"], params: { period: "period" } });
@@ -117,8 +126,14 @@ export class AssistantService {
     if (tool.name === "giderler") return this.expenses(args.period as { from?: string; to?: string } | undefined);
     if (tool.name === "talepler") return this.requests(ctx, hasPermission(ctx.roles, "request:read"));
     if (tool.name === "sakinler") return this.residents(ctx, (args.unit && typeof args.unit === "object" ? args.unit : {}) as UnitArg);
+    if (tool.name === "tahsilat") return this.collections(args.period as { from?: string; to?: string } | undefined, typeof args.soru === "string" ? args.soru : "");
+    if (tool.name === "siteler") return this.portfolio(ctx);
+    if (tool.name === "banka") return this.bank();
     const any = hasPermission(ctx.roles, tool.name === "borc" ? "debt:read" : "payment:read");
     const unit = (args.unit && typeof args.unit === "object" ? args.unit : {}) as UnitArg;
+    // "Bu hafta kimler ödedi": bölüm verilmemişse yetkili kullanıcıya dönemdeki tüm ödemeler.
+    const selected = [unit.id, unit.block, unit.number, unit.name].some((v) => str(v));
+    if (tool.name === "odemeler" && any && !selected) return this.paymentList(args.period as { from?: string; to?: string } | undefined);
     const found = await this.units(ctx, unit, any);
     if (found === "ask") return { kind: "ask", message: "Hangi bağımsız bölümün kaydını görmek istiyorsunuz? Blok ve daire numarasını ya da kişinin adını yazın." };
     if (found === "own-only") return { kind: "empty", message: "Yalnızca kendi bağımsız bölümlerinizin kayıtlarını görebilirsiniz." };
@@ -233,6 +248,114 @@ export class AssistantService {
     });
   }
 
+  /** Dönemde gelen tüm ödemeler (yetkili kullanıcı); dönem yoksa bu ay. */
+  private async paymentList(period: { from?: string; to?: string } | undefined) {
+    const { start, end, range } = periodRange(period);
+    return this.db.tx(async (tx) => {
+      const where = and(notInArray(payments.status, ["failed", "initiated", "pending_3ds"]), gte(sql`COALESCE(${payments.paidAt}, ${payments.createdAt})`, start), lte(sql`COALESCE(${payments.paidAt}, ${payments.createdAt})`, end));
+      const [sum] = await tx.select({ total: sql<number>`COALESCE(SUM(${payments.amountKurus}), 0)`, n: sql<number>`count(*)` }).from(payments).where(where);
+      const rows = await tx
+        .select({ unitId: units.id, number: units.number, block: blocks.name, firstName: users.firstName, lastName: users.lastName, amount: payments.amountKurus,
+          method: payments.method, status: payments.status, paidAt: payments.paidAt, createdAt: payments.createdAt })
+        .from(payments).leftJoin(units, eq(units.id, payments.unitId)).leftJoin(blocks, eq(blocks.id, units.blockId)).leftJoin(users, eq(users.id, payments.payerUserId))
+        .where(where).orderBy(sql`COALESCE(${payments.paidAt}, ${payments.createdAt}) DESC`).limit(50);
+      const count = Number(sum?.n ?? 0);
+      if (!count) return { kind: "empty", message: `${range} arasında ödeme kaydı yok.` };
+      return {
+        kind: "result", title: `Ödemeler · ${range}`,
+        fields: [{ label: "Toplam", value: money(Number(sum?.total ?? 0)) }, { label: "Ödeme sayısı", value: String(count) }],
+        blocks: [{ type: "table", columns: [{ key: "date", label: "Tarih" }, { key: "unit", label: "Bölüm" }, { key: "payer", label: "Ödeyen" }, { key: "amount", label: "Tutar", align: "right" }, { key: "method", label: "Yöntem" }],
+          rows: rows.map((row) => ({ cells: { date: dateText(row.paidAt ?? row.createdAt), unit: row.unitId ? label({ id: row.unitId, number: row.number ?? "", block: row.block }) : "—",
+            payer: [row.firstName, row.lastName].filter(Boolean).join(" ") || "—", amount: money(Number(row.amount)), method: `${METHOD[row.method] ?? "Diğer"}${row.status === "completed" ? "" : " · " + (STATUS[row.status] ?? row.status)}` },
+            ...(row.unitId ? { href: `/panel/birimler/${row.unitId}` } : {}) })),
+          ...(count > rows.length ? { footer: `Son ${rows.length} ödeme gösteriliyor (toplam ${count}).` } : {}) }],
+        links: [{ label: "Borçlar ve tahsilat", href: "/panel/borclar" }],
+        note: "Vekil'in canlı kaydı", asOf: new Date().toISOString(),
+      };
+    });
+  }
+
+  /** Dönemde vadesi gelen borçların tahsilatı ve ödemeyen bölümler; soru "aidat" diyorsa yalnız aidat borçları. */
+  private async collections(period: { from?: string; to?: string } | undefined, question: string) {
+    const { start, end, range } = periodRange(period);
+    const duesOnly = words(question).some((w) => w.startsWith("aidat"));
+    return this.db.tx(async (tx) => {
+      const where = and(isNull(debts.deletedAt), notInArray(debts.status, ["cancelled", "written_off"]), gte(debts.dueDate, start), lte(debts.dueDate, end), duesOnly ? eq(debts.kind, "dues") : undefined);
+      const [sum] = await tx.select({ accrued: sql<number>`COALESCE(SUM(${debts.amountKurus} + ${debts.lateFeeKurus}), 0)`, paid: sql<number>`COALESCE(SUM(${debts.paidKurus}), 0)` }).from(debts).where(where);
+      const [received] = await tx.select({ total: sql<number>`COALESCE(SUM(${payments.amountKurus}), 0)` }).from(payments)
+        .where(and(eq(payments.status, "completed"), gte(payments.paidAt, start), lte(payments.paidAt, end)));
+      const open = await tx
+        .select({ unitId: units.id, number: units.number, block: blocks.name, remaining: sql<number>`SUM(${debts.amountKurus} + ${debts.lateFeeKurus} - ${debts.paidKurus})` })
+        .from(debts).innerJoin(units, eq(units.id, debts.unitId)).leftJoin(blocks, eq(blocks.id, units.blockId))
+        .where(and(where, sql`${debts.amountKurus} + ${debts.lateFeeKurus} - ${debts.paidKurus} > 0`))
+        .groupBy(units.id, units.number, blocks.name).orderBy(sql`SUM(${debts.amountKurus} + ${debts.lateFeeKurus} - ${debts.paidKurus}) DESC`).limit(50);
+      const people = open.length ? await tx.select({ unitId: unitOccupancies.unitId, firstName: users.firstName, lastName: users.lastName })
+        .from(unitOccupancies).innerJoin(users, eq(users.id, unitOccupancies.userId))
+        .where(and(isNull(unitOccupancies.endDate), sql`${unitOccupancies.unitId} IN (${sql.join(open.map((o) => sql`${o.unitId}`), sql`, `)})`)) : [];
+      const accrued = Number(sum?.accrued ?? 0), paid = Number(sum?.paid ?? 0);
+      if (!accrued) return { kind: "empty", message: `${range} arasında vadesi gelen ${duesOnly ? "aidat " : ""}borcu yok.` };
+      const rate = new Intl.NumberFormat("tr-TR", { style: "percent", maximumFractionDigits: 1 }).format(paid / accrued);
+      const [unpaid] = await tx.select({ n: sql<number>`count(DISTINCT ${debts.unitId})` }).from(debts).where(and(where, sql`${debts.amountKurus} + ${debts.lateFeeKurus} - ${debts.paidKurus} > 0`));
+      const unpaidCount = Number(unpaid?.n ?? open.length);
+      return {
+        kind: "result", title: `${duesOnly ? "Aidat tahsilatı" : "Tahsilat"} · ${range}`,
+        fields: [{ label: "Tahakkuk", value: money(accrued) }, { label: "Tahsil edilen", value: money(paid) }, { label: "Tahsilat oranı", value: rate },
+          { label: "Ödemeyen bölüm", value: String(unpaidCount) }, { label: "Dönemde gelen ödeme", value: money(Number(received?.total ?? 0)) }],
+        blocks: open.length ? [{ type: "table", title: "Ödemeyen bölümler", columns: [{ key: "unit", label: "Bölüm" }, { key: "person", label: "Sakin" }, { key: "remaining", label: "Kalan", align: "right" }],
+          rows: open.map((row) => ({ cells: { unit: label({ id: row.unitId, number: row.number, block: row.block }),
+            person: people.filter((p) => p.unitId === row.unitId).map((p) => [p.firstName, p.lastName].filter(Boolean).join(" ")).filter(Boolean).join(", ") || "—",
+            remaining: money(Number(row.remaining)) }, href: `/panel/birimler/${row.unitId}` })),
+          ...(unpaidCount > open.length ? { footer: `En yüksek kalan borçlu ${open.length} bölüm gösteriliyor (toplam ${unpaidCount}).` } : {}) }] : [],
+        links: [{ label: "Borç raporu", href: "/panel/borclar" }],
+        note: "Vadesi dönem içinde olan borçlar · Vekil'in canlı kaydı", asOf: new Date().toISOString(),
+      };
+    });
+  }
+
+  /** Kullanıcının üyesi olduğu siteler; üyelik koşulu kapsamın kendisi (bkz. PortfolioController). */
+  private async portfolio(ctx: Ctx) {
+    const rows = await this.db.bypass("assistant:portfolio", async (tx) => {
+      const result = await tx.execute(sql`
+        SELECT DISTINCT ON (t.id) t.id AS tenant_id, t.name AS name, t.unit_count AS unit_count,
+          COALESCE(d.outstanding, 0)::bigint AS outstanding, COALESCE(p.paid, 0)::bigint AS paid_this_month
+        FROM memberships m JOIN tenants t ON t.id = m.tenant_id
+        LEFT JOIN LATERAL (SELECT SUM(amount_kurus + late_fee_kurus - paid_kurus) FILTER (WHERE status NOT IN ('paid','written_off','cancelled')) AS outstanding
+          FROM debts WHERE debts.tenant_id = t.id AND debts.deleted_at IS NULL) d ON TRUE
+        LEFT JOIN LATERAL (SELECT SUM(amount_kurus) AS paid FROM payments WHERE payments.tenant_id = t.id AND payments.status = 'completed'
+          AND payments.paid_at >= date_trunc('month', now() AT TIME ZONE 'Europe/Istanbul') AT TIME ZONE 'Europe/Istanbul') p ON TRUE
+        WHERE m.user_id = ${ctx.userId} AND t.deleted_at IS NULL
+        ORDER BY t.id, t.name LIMIT 50`);
+      return result as unknown as { tenant_id: string; name: string; unit_count: number | null; outstanding: string | number; paid_this_month: string | number }[];
+    });
+    if (!rows.length) return { kind: "empty", message: "Yönettiğiniz bir site bulunamadı." };
+    rows.sort((a, b) => a.name.localeCompare(b.name, "tr"));
+    return {
+      kind: "result", title: "Yönettiğiniz siteler",
+      fields: [{ label: "Site sayısı", value: String(rows.length) }, { label: "Toplam daire", value: String(rows.reduce((n, r) => n + Number(r.unit_count ?? 0), 0)) }],
+      blocks: [{ type: "table", columns: [{ key: "name", label: "Site" }, { key: "units", label: "Daire", align: "right" }, { key: "outstanding", label: "Alacak", align: "right" }, { key: "paid", label: "Bu ay tahsilat", align: "right" }],
+        rows: rows.map((r) => ({ cells: { name: r.name, units: String(Number(r.unit_count ?? 0)), outstanding: money(Number(r.outstanding)), paid: money(Number(r.paid_this_month)) } })) }],
+      links: [{ label: "Portföy", href: "/panel/portfoy" }],
+      note: "Vekil'in canlı kaydı", asOf: new Date().toISOString(),
+    };
+  }
+
+  /** Sitenin etkin banka hesapları ve son eşitlenen bakiyeleri. */
+  private async bank() {
+    return this.db.tx(async (tx) => {
+      const rows = await tx.select({ id: bankAccounts.id, bank: bankAccounts.bankName, name: bankAccounts.accountName, iban: bankAccounts.ibanMasked, balance: bankAccounts.balanceKurus, syncedAt: bankAccounts.lastSyncedAt })
+        .from(bankAccounts).where(and(isNull(bankAccounts.deletedAt), eq(bankAccounts.isActive, true))).orderBy(asc(bankAccounts.bankName)).limit(20);
+      if (!rows.length) return { kind: "empty", message: "Tanımlı banka hesabı yok." };
+      return {
+        kind: "result", title: "Banka hesapları",
+        fields: [{ label: "Toplam bakiye", value: money(rows.reduce((n, r) => n + Number(r.balance), 0)) }],
+        blocks: [{ type: "table", columns: [{ key: "account", label: "Hesap" }, { key: "iban", label: "IBAN" }, { key: "balance", label: "Bakiye", align: "right" }, { key: "synced", label: "Son eşitleme" }],
+          rows: rows.map((r) => ({ cells: { account: [r.bank, r.name].filter(Boolean).join(" · "), iban: r.iban, balance: money(Number(r.balance)), synced: r.syncedAt ? dateText(r.syncedAt) : "Eşitlenmedi" } })) }],
+        links: [{ label: "Banka & Mutabakat", href: "/panel/banka" }],
+        note: "Bakiye, bankayla son eşitlemedeki tutardır · Vekil'in canlı kaydı", asOf: new Date().toISOString(),
+      };
+    });
+  }
+
   /** Dönemin onaylı giderleri; dönem yoksa bu ay. */
   private async expenses(period: { from?: string; to?: string } | undefined) {
     const valid = (value?: string) => (value && /^\d{4}-\d\d-\d\d$/.test(value) ? value : undefined);
@@ -329,6 +452,15 @@ export class AssistantService {
       };
     });
   }
+}
+
+/** Asistanın gönderdiği dönem (YYYY-AA-GG, İstanbul); yoksa bu ay. */
+function periodRange(period: { from?: string; to?: string } | undefined) {
+  const valid = (value?: string) => (value && /^\d{4}-\d\d-\d\d$/.test(value) ? value : undefined);
+  const month = monthRange();
+  const start = valid(period?.from) ? new Date(`${period!.from}T00:00:00+03:00`) : month.start;
+  const end = valid(period?.to) ? new Date(`${period!.to}T23:59:59.999+03:00`) : month.end;
+  return { start, end, range: `${dateText(start)} – ${dateText(end)}` };
 }
 
 /** İstanbul'a göre bu ayın başı ve sonu. */
